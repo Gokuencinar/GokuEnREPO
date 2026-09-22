@@ -11,6 +11,7 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 ## Paquetes actuales
 
 - BandLock 0.3.4 (`iphoneos-arm64e`)
+- BetterWiFi RH 0.3.8 (`iphoneos-arm64e`)
 
 El índice `Packages` y `Packages.gz` se regenera automáticamente cuando cambia cualquier archivo dentro de `debs/`.
 
