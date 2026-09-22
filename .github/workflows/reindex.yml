@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'debs/**'
+      - '.github/workflows/reindex.yml'
   workflow_dispatch:
 
 permissions:
