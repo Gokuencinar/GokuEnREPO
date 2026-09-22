@@ -1,0 +1,93 @@
+name: Import BetterWiFi RH 0.3.8
+
+on:
+  push:
+    paths:
+      - '.upload/bwrh038.part*'
+      - '.github/workflows/import-betterwifi-038.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check all upload chunks
+        id: chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for i in 0 1 2 3 4 5 6 7; do
+            if [ ! -f ".upload/bwrh038.part$i" ]; then
+              missing=1
+            fi
+          done
+          echo "ready=$((1-missing))" >> "$GITHUB_OUTPUT"
+
+      - name: Reconstruct and verify package
+        if: steps.chunks.outputs.ready == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .upload/bwrh038.part{0,1,2,3,4,5,6,7} > /tmp/bwrh038.b64
+          base64 -d /tmp/bwrh038.b64 > /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb
+          test "$(sha256sum /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb | awk '{print $1}')" = "40f189385a83bf175c8e7298fb3272eb10bde0520c6382648c3bb058032f81b2"
+          test "$(dpkg-deb -f /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb Package)" = "com.betterwifirh.tweak"
+          test "$(dpkg-deb -f /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb Version)" = "0.3.8"
+          test "$(dpkg-deb -f /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb Architecture)" = "iphoneos-arm64e"
+
+      - name: Publish package and rebuild APT index
+        if: steps.chunks.outputs.ready == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y dpkg-dev >/dev/null
+          mkdir -p debs
+          cp /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb debs/
+          dpkg-scanpackages -m debs /dev/null > Packages
+          gzip -9 -c Packages > Packages.gz
+          rm -rf .upload
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          readme = Path("README.md")
+          text = readme.read_text()
+          old = "- BandLock 0.3.4 (`iphoneos-arm64e`)"
+          new = "- BandLock 0.3.4 (`iphoneos-arm64e`)\n- BetterWiFi RH 0.3.8 (`iphoneos-arm64e`)"
+          if "BetterWiFi RH 0.3.8" not in text:
+              text = text.replace(old, new)
+              readme.write_text(text)
+
+          index = Path("index.html")
+          html = index.read_text()
+          old_html = "<ul><li><strong>BandLock</strong> — 0.3.4 — iphoneos-arm64e</li></ul>"
+          new_html = "<ul><li><strong>BandLock</strong> — 0.3.4 — iphoneos-arm64e</li><li><strong>BetterWiFi RH</strong> — 0.3.8 — iphoneos-arm64e</li></ul>"
+          if "BetterWiFi RH" not in html:
+              html = html.replace(old_html, new_html)
+              index.write_text(html)
+          PY
+
+          grep -q '^Package: com.local.bandlock$' Packages
+          grep -q '^Version: 0.3.4$' Packages
+          grep -q '^Package: com.betterwifirh.tweak$' Packages
+          grep -q '^Version: 0.3.8$' Packages
+          grep -q '^Architecture: iphoneos-arm64e$' Packages
+
+      - name: Commit repository update
+        if: steps.chunks.outputs.ready == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Add BetterWiFi RH 0.3.8"
+          git push
