@@ -30,3 +30,19 @@ Description: BandLock RootHide PreferenceBundle controller test
 Author: local
 Name: BandLock
 
+Package: com.local.bandlock
+Version: 0.3.5
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 180
+Depends: preferenceloader
+Filename: debs/com.local.bandlock_0.3.5_iphoneos-arm64e.deb
+Size: 9770
+MD5sum: 86ebe3441d4d31ebad37e3c1aacb390e
+SHA1: 332e54c1d93b40f725ea3e507e0f69488910d97b
+SHA256: c50078352ade19ac94932671196e63b9370c2e068061578d133859fa9fefc870
+Section: Tweaks
+Description: BandLock RootHide read-only cellular band inspector
+Author: Gokuencinar
+Name: BandLock
+
