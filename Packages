@@ -94,3 +94,19 @@ Description: LTE band locking for RootHide with frequency labels, Orange Spain p
 Author: Gokuencinar
 Name: BandLock
 
+Package: com.local.bandlock
+Version: 0.3.9
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 244
+Depends: preferenceloader
+Filename: debs/com.local.bandlock_0.3.9_iphoneos-arm64e.deb
+Size: 29288
+MD5sum: 00f0541a2432668a157e53a95db8c22d
+SHA1: e2c9a967708644c734f4abe148d2bfc74e850252
+SHA256: 0ab965671fa8e29e5cfb63642516c42e34c26a06b50c6150ed629111275e3fea
+Section: Tweaks
+Description: Spain-focused LTE band locking with Orange presets and FTMInternal launcher
+Author: Gokuencinar
+Name: BandLock
+
