@@ -352,8 +352,9 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         detail:listItemsController
         cell:PSLinkListCell
         edit:nil];
-    [networkMode setValues:@[@"automatic", @"lte"]
-                    titles:@[@"Automático", @"Solo LTE / 4G"]];
+    [networkMode setProperty:@[@"automatic", @"lte"] forKey:@"values"];
+    [networkMode setProperty:@[@"Automático", @"Solo LTE / 4G"] forKey:@"titles"];
+    [networkMode setProperty:@{@"automatic": @"Automático", @"lte": @"Solo LTE / 4G"} forKey:@"titleDictionary"];
     [networkMode setProperty:@"automatic" forKey:@"default"];
     [networkMode setProperty:@"networkMode" forKey:@"key"];
     [networkMode setProperty:@(_blHasRead && listItemsController != Nil) forKey:@"enabled"];
