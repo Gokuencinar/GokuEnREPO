@@ -100,18 +100,6 @@ static void BLWriteState(NSDictionary *changes) {
     [state writeToFile:BLStatePath atomically:YES];
 }
 
-static NSString *BLBandUseText(NSNumber *band) {
-    switch ([band integerValue]) {
-        case 28: return @"700 MHz · cobertura";
-        case 20: return @"800 MHz · cobertura";
-        case 8:  return @"900 MHz · cobertura";
-        case 3:  return @"1800 MHz · equilibrada";
-        case 1:  return @"2100 MHz · capacidad";
-        case 7:  return @"2600 MHz · alta capacidad";
-        default: return BLBandFrequencies()[band] ?: @"";
-    }
-}
-
 static NSString *BLBandTitle(NSNumber *band) {
     NSString *frequency = BLBandFrequencies()[band];
     return frequency.length
