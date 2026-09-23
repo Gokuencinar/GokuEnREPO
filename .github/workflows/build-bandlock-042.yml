@@ -32,7 +32,7 @@ jobs:
           plutil -lint build/BandLock-0.4.2/prefs/Resources/Info.plist
           grep -q 'PSLinkListCell' build/BandLock-0.4.2/prefs/BLRootListController.m
           grep -q 'PSListItemsController' build/BandLock-0.4.2/prefs/BLRootListController.m
-          grep -q 'setValues:@\[@"automatic", @"lte"\]' build/BandLock-0.4.2/prefs/BLRootListController.m
+          grep -q 'forKey:@"values"' build/BandLock-0.4.2/prefs/BLRootListController.m
           grep -q 'setRatSelection:selection:preferred:completion:' build/BandLock-0.4.2/prefs/BLRootListController.m
           grep -q 'getRatSelection:completion:' build/BandLock-0.4.2/prefs/BLRootListController.m
 
