@@ -1,0 +1,9 @@
+Package: com.local.bandlock
+Name: BandLock
+Version: 0.4.0
+Architecture: iphoneos-arm64e
+Description: Spain-focused LTE band locking with dedicated band selector and polished UI
+Maintainer: Gokuencinar
+Author: Gokuencinar
+Section: Tweaks
+Depends: preferenceloader
