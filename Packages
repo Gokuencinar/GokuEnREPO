@@ -78,3 +78,19 @@ Description: Experimental LTE band selection for RootHide using CoreTelephony
 Author: Gokuencinar
 Name: BandLock
 
+Package: com.local.bandlock
+Version: 0.3.8
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 228
+Depends: preferenceloader
+Filename: debs/com.local.bandlock_0.3.8_iphoneos-arm64e.deb
+Size: 25350
+MD5sum: 7e8cb4a82fafd3a8da96a474d714f3c0
+SHA1: a051ba712d2a482bdeb565434cf3e30d39c993bf
+SHA256: 7c4ad6e87090d08762be31f262332b93e47a9f02f456313f484639a51be9f3b9
+Section: Tweaks
+Description: LTE band locking for RootHide with frequency labels, Orange Spain preset and Field Test launcher
+Author: Gokuencinar
+Name: BandLock
+
