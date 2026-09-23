@@ -62,3 +62,19 @@ Description: BandLock RootHide read-only cellular band inspector with SSH diagno
 Author: Gokuencinar
 Name: BandLock
 
+Package: com.local.bandlock
+Version: 0.3.7
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 208
+Depends: preferenceloader
+Filename: debs/com.local.bandlock_0.3.7_iphoneos-arm64e.deb
+Size: 19892
+MD5sum: f331f4032de813063be1d883b4724df6
+SHA1: 8048747ad2cd874e3db47c6ff6387b8ea0d57f31
+SHA256: b93c55d11facfb98a2fead230336dd40fed823c320da026dc7dc70f55ebb14e9
+Section: Tweaks
+Description: Experimental LTE band selection for RootHide using CoreTelephony
+Author: Gokuencinar
+Name: BandLock
+
