@@ -174,3 +174,19 @@ Description: Spain-focused LTE band locking with safe LTE-only network mode cont
 Author: Gokuencinar
 Name: BandLock
 
+Package: com.local.bandlock
+Version: 0.4.4
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 276
+Depends: preferenceloader
+Filename: debs/com.local.bandlock_0.4.4_iphoneos-arm64e.deb
+Size: 40206
+MD5sum: c41c8474bd39a008109a23b3522bec65
+SHA1: 4d104610fc5f249e9b5aef69dd058b9e45a32ecd
+SHA256: a1b37a9367751b4a069d7e63087208d7283374097ecb253818e880c01e2edba9
+Section: Tweaks
+Description: Stable Spain-focused LTE band locking with automatic write verification retry
+Author: Gokuencinar
+Name: BandLock
+
