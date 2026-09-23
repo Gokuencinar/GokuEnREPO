@@ -2,6 +2,10 @@
 
 Este archivo documenta las versiones de BandLock que están publicadas actualmente en **GokuEnREPO**.
 
+**Descripción:** tweak RootHide para consultar y seleccionar bandas LTE, aplicar perfiles rápidos y controlar el modo de red desde Ajustes.
+
+**Compatibilidad:** iOS 16.x con jailbreak RootHide/Dopamine y arquitectura `iphoneos-arm64e`. El paquete actual está compilado con target iOS 16.0.
+
 ## 0.4.4
 
 ### Nuevo
