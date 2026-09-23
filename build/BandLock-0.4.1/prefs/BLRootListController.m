@@ -349,7 +349,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         set:@selector(setNetworkModeValue:specifier:)
         get:@selector(networkModeValue:)
         detail:nil
-        cell:PSListItemsCell
+        cell:PSListItemCell
         edit:nil];
     [networkMode setProperty:@[@"automatic", @"lte"] forKey:@"values"];
     [networkMode setProperty:@[@"Automático", @"Solo LTE / 4G"] forKey:@"titles"];
