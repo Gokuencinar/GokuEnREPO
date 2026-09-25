@@ -1,6 +1,14 @@
 name: Deploy repository site
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "bandlock.html"
+      - "betterwifi-rh.html"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
