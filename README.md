@@ -4,6 +4,14 @@ Repositorio APT público para **Sileo**, centrado en tweaks para **iOS 16**, **D
 
 Public APT repository for **Sileo**, focused on tweaks for **iOS 16**, **Dopamine** and **RootHide**.
 
+## Páginas de los tweaks / Tweak pages
+
+- **[BandLock — LTE/4G Band Lock](BANDLOCK.md)** — descripción completa en español e inglés, funciones, compatibilidad e instalación.
+- **[BetterWiFi RH — Wi-Fi Tools](BETTERWIFI-RH.md)** — descripción completa en español e inglés, funciones, compatibilidad e instalación.
+
+Estas páginas están pensadas también como enlaces directos para compartir cada tweak con la comunidad.
+These pages are also intended as direct shareable links for each tweak.
+
 ## Fuente / Repository URL
 
 ```
