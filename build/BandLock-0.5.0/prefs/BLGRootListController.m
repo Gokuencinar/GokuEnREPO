@@ -15,6 +15,15 @@ static NSString * const BLLastLogPath = @"/var/mobile/Library/Logs/BandLockGloba
 static NSString * const BLSSHLastLogPath = @"/rootfs/private/var/mobile/Library/Logs/BandLockGlobal/BandLock-last.txt";
 static NSString * const BLStatePath = @"/var/mobile/Library/Preferences/com.gokuencinar.bandlock.state.plist";
 
+static BOOL BLGUsesSpanish(void) {
+    NSString *language = NSLocale.preferredLanguages.firstObject.lowercaseString ?: @"";
+    return [language hasPrefix:@"es"];
+}
+
+static NSString *BLGT(NSString *es, NSString *en) {
+    return BLGUsesSpanish() ? es : en;
+}
+
 static id BLMsg0(id object, SEL selector) {
     return ((id (*)(id, SEL))objc_msgSend)(object, selector);
 }
@@ -131,12 +140,12 @@ static NSString *BLHumanRAT(id ratObject) {
 }
 
 static NSString *BLServingBandFromCellInfo(id cellInfo) {
-    if (!cellInfo) return @"No disponible";
+    if (!cellInfo) return BLGT(@"No disponible", @"Unavailable");
     SEL legacySelector = NSSelectorFromString(@"legacyInfo");
-    if (![cellInfo respondsToSelector:legacySelector]) return @"No disponible";
+    if (![cellInfo respondsToSelector:legacySelector]) return BLGT(@"No disponible", @"Unavailable");
 
     id legacy = BLMsg0(cellInfo, legacySelector);
-    if (![legacy isKindOfClass:[NSArray class]] || ![(NSArray *)legacy count]) return @"No disponible";
+    if (![legacy isKindOfClass:[NSArray class]] || ![(NSArray *)legacy count]) return BLGT(@"No disponible", @"Unavailable");
 
     NSDictionary *row = nil;
     for (id candidate in (NSArray *)legacy) {
@@ -151,10 +160,10 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         id first = [(NSArray *)legacy firstObject];
         if ([first isKindOfClass:[NSDictionary class]]) row = first;
     }
-    if (!row) return @"No disponible";
+    if (!row) return BLGT(@"No disponible", @"Unavailable");
 
     id band = row[@"kCTCellMonitorBandInfo"];
-    if (![band respondsToSelector:@selector(integerValue)] || [band integerValue] <= 0) return @"No disponible";
+    if (![band respondsToSelector:@selector(integerValue)] || [band integerValue] <= 0) return BLGT(@"No disponible", @"Unavailable");
 
     NSNumber *bandNumber = @([band integerValue]);
     NSString *rat = row[@"kCTCellMonitorCellRadioAccessTechnology"];
@@ -205,12 +214,12 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     self.navigationItem.title = @"BandLock";
 
     if (!_blStatus) {
-        _blStatus = @"Sin consultar";
+        _blStatus = BLGT(@"Sin consultar", @"Not queried");
         _blRAT = @"—";
         _blServingBand = @"—";
-        _blDetail = @"Pulsa «Actualizar estado» para leer la configuración del módem.";
-        _blLogStatus = [[NSFileManager defaultManager] fileExistsAtPath:BLLastLogPath] ? BLSSHLastLogPath : @"Sin registros";
-        _blConfiguredRATMode = @"Sin consultar";
+        _blDetail = BLGT(@"Pulsa «Actualizar estado» para leer la configuración del módem.", @"Tap “Refresh status” to read the modem configuration.");
+        _blLogStatus = [[NSFileManager defaultManager] fileExistsAtPath:BLLastLogPath] ? BLSSHLastLogPath : BLGT(@"Sin registros", @"No logs");
+        _blConfiguredRATMode = BLGT(@"Sin consultar", @"Not queried");
         _blRatSelectionRaw = @"—";
         _blRatPreferredRaw = @"—";
         _blSupportedLTE = @[];
@@ -255,7 +264,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
             [card addSubview:subtitle];
 
             UILabel *caption = [[UILabel alloc] initWithFrame:CGRectMake(18, 73, width - 68, 18)];
-            caption.text = @"Control LTE manual · estado verificado por el módem";
+            caption.text = BLGT(@"Control LTE manual · estado verificado por el módem", @"Manual LTE control · modem-verified state");
             caption.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
             caption.textColor = UIColor.tertiaryLabelColor;
             [card addSubview:caption];
@@ -285,145 +294,145 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSMutableArray *items = [NSMutableArray array];
 
     PSSpecifier *connectionGroup = [PSSpecifier emptyGroupSpecifier];
-    connectionGroup.name = @"Estado de red";
-    [connectionGroup setProperty:@"La lectura es manual. «Banda conectada» intenta identificar la celda servidora; «Bandas permitidas» muestra el bloqueo LTE actual." forKey:@"footerText"];
+    connectionGroup.name = BLGT(@"Estado de red", @"Network status");
+    [connectionGroup setProperty:BLGT(@"La lectura es manual. «Banda conectada» intenta identificar la celda servidora; «Bandas permitidas» muestra el bloqueo LTE actual.", @"Status is read on demand. “Serving band” attempts to identify the serving cell; “Allowed bands” shows the current LTE restriction.") forKey:@"footerText"];
     [items addObject:connectionGroup];
 
-    PSSpecifier *readButton = [PSSpecifier preferenceSpecifierNamed:@"Actualizar estado"
+    PSSpecifier *readButton = [PSSpecifier preferenceSpecifierNamed:BLGT(@"Actualizar estado", @"Refresh status")
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     readButton.buttonAction = @selector(reloadBands);
     [readButton setProperty:@YES forKey:@"enabled"];
     [items addObject:readButton];
 
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Estado" target:self set:nil get:@selector(statusValue) detail:nil cell:PSTitleValueCell edit:nil]];
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Red actual" target:self set:nil get:@selector(ratValue) detail:nil cell:PSTitleValueCell edit:nil]];
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Banda conectada" target:self set:nil get:@selector(servingBandValue) detail:nil cell:PSTitleValueCell edit:nil]];
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Modo LTE" target:self set:nil get:@selector(modeValue) detail:nil cell:PSTitleValueCell edit:nil]];
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Bandas permitidas" target:self set:nil get:@selector(activeLTEValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Estado", @"Status") target:self set:nil get:@selector(statusValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Red actual", @"Current network") target:self set:nil get:@selector(ratValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Banda conectada", @"Serving band") target:self set:nil get:@selector(servingBandValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Modo LTE", @"LTE mode") target:self set:nil get:@selector(modeValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Bandas permitidas", @"Allowed bands") target:self set:nil get:@selector(activeLTEValue) detail:nil cell:PSTitleValueCell edit:nil]];
 
     PSSpecifier *networkGroup = [PSSpecifier emptyGroupSpecifier];
-    networkGroup.name = @"Modo de red";
-    [networkGroup setProperty:@"Pulsa directamente el modo que quieras usar. Automático mantiene el comportamiento normal de iOS; Solo LTE / 4G evita el fallback a 3G/EDGE mientras esté activo." forKey:@"footerText"];
+    networkGroup.name = BLGT(@"Modo de red", @"Network mode");
+    [networkGroup setProperty:BLGT(@"Pulsa directamente el modo que quieras usar. Automático mantiene el comportamiento normal de iOS; Solo LTE / 4G evita el fallback a 3G/EDGE mientras esté activo.", @"Choose the network mode directly. Automatic keeps normal iOS behavior; LTE / 4G only prevents fallback to 3G/EDGE while enabled.") forKey:@"footerText"];
     [items addObject:networkGroup];
 
-    BOOL ratIsLTE = [_blConfiguredRATMode isEqualToString:@"Solo LTE / 4G"];
-    BOOL ratIsAutomatic = [_blConfiguredRATMode isEqualToString:@"Automático"];
+    BOOL ratIsLTE = [_blConfiguredRATMode isEqualToString:BLGT(@"Solo LTE / 4G", @"LTE / 4G only")];
+    BOOL ratIsAutomatic = [_blConfiguredRATMode isEqualToString:BLGT(@"Automático", @"Automatic")];
 
-    PSSpecifier *automaticMode = [PSSpecifier preferenceSpecifierNamed:(ratIsAutomatic ? @"✓ Automático" : @"Automático")
+    PSSpecifier *automaticMode = [PSSpecifier preferenceSpecifierNamed:(ratIsAutomatic ? BLGT(@"✓ Automático", @"✓ Automatic") : BLGT(@"Automático", @"Automatic"))
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     automaticMode.buttonAction = @selector(selectAutomaticNetworkMode);
     [automaticMode setProperty:@(_blHasRead) forKey:@"enabled"];
     [items addObject:automaticMode];
 
-    PSSpecifier *lteMode = [PSSpecifier preferenceSpecifierNamed:(ratIsLTE ? @"✓ Solo LTE / 4G" : @"Solo LTE / 4G")
+    PSSpecifier *lteMode = [PSSpecifier preferenceSpecifierNamed:(ratIsLTE ? BLGT(@"✓ Solo LTE / 4G", @"✓ LTE / 4G only") : BLGT(@"Solo LTE / 4G", @"LTE / 4G only"))
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     lteMode.buttonAction = @selector(confirmLTENetworkMode);
     [lteMode setProperty:@(_blHasRead) forKey:@"enabled"];
     [items addObject:lteMode];
 
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Configuración RAT"
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Configuración RAT", @"RAT configuration")
         target:self set:nil get:@selector(networkModeStatusValue) detail:nil cell:PSTitleValueCell edit:nil]];
 
     PSSpecifier *controlGroup = [PSSpecifier emptyGroupSpecifier];
-    controlGroup.name = @"Control LTE";
-    [controlGroup setProperty:@"La selección se genera con todas las bandas LTE que reporta el módem de este iPhone. No se aplica ningún filtro por país u operador." forKey:@"footerText"];
+    controlGroup.name = BLGT(@"Control LTE", @"LTE control");
+    [controlGroup setProperty:BLGT(@"La selección se genera con todas las bandas LTE que reporta el módem de este iPhone. No se aplica ningún filtro por país u operador.", @"The selector is generated from every LTE band reported by this iPhone modem. No country or carrier filter is applied.") forKey:@"footerText"];
     [items addObject:controlGroup];
 
     Class selectionClass = NSClassFromString(@"BLGBandSelectionController");
-    PSSpecifier *selection = [PSSpecifier preferenceSpecifierNamed:@"Seleccionar bandas"
+    PSSpecifier *selection = [PSSpecifier preferenceSpecifierNamed:BLGT(@"Seleccionar bandas", @"Select bands")
         target:self set:nil get:nil detail:selectionClass cell:PSLinkCell edit:nil];
     [selection setProperty:@(_blHasRead && selectionClass != Nil) forKey:@"enabled"];
     [selection setProperty:@"antenna.radiowaves.left.and.right" forKey:@"iconImageSystem"];
     [items addObject:selection];
 
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Selección pendiente" target:self set:nil get:@selector(pendingSelectionValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Selección pendiente", @"Pending selection") target:self set:nil get:@selector(pendingSelectionValue) detail:nil cell:PSTitleValueCell edit:nil]];
 
-    PSSpecifier *apply = [PSSpecifier preferenceSpecifierNamed:@"Aplicar selección LTE"
+    PSSpecifier *apply = [PSSpecifier preferenceSpecifierNamed:BLGT(@"Aplicar selección LTE", @"Apply LTE selection")
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     apply.buttonAction = @selector(confirmApplySelection);
     [apply setProperty:@(_blHasRead) forKey:@"enabled"];
     [items addObject:apply];
 
-    PSSpecifier *previous = [PSSpecifier preferenceSpecifierNamed:@"Restaurar selección anterior"
+    PSSpecifier *previous = [PSSpecifier preferenceSpecifierNamed:BLGT(@"Restaurar selección anterior", @"Restore previous selection")
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     previous.buttonAction = @selector(restorePreviousLTE);
     [previous setProperty:@(_blHasRead && _blPreviousLTE.count > 0) forKey:@"enabled"];
     [items addObject:previous];
 
-    PSSpecifier *automatic = [PSSpecifier preferenceSpecifierNamed:@"Restaurar modo automático"
+    PSSpecifier *automatic = [PSSpecifier preferenceSpecifierNamed:BLGT(@"Restaurar modo automático", @"Restore automatic mode")
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     automatic.buttonAction = @selector(restoreAllLTE);
     [automatic setProperty:@(_blHasRead) forKey:@"enabled"];
     [items addObject:automatic];
 
     PSSpecifier *toolsGroup = [PSSpecifier emptyGroupSpecifier];
-    toolsGroup.name = @"Herramientas";
-    [toolsGroup setProperty:@"FTMInternal-4 es la aplicación interna de Apple utilizada para Field Test Mode." forKey:@"footerText"];
+    toolsGroup.name = BLGT(@"Herramientas", @"Tools");
+    [toolsGroup setProperty:BLGT(@"FTMInternal-4 es la aplicación interna de Apple utilizada para Field Test Mode.", @"FTMInternal-4 is Apple's internal Field Test Mode application.") forKey:@"footerText"];
     [items addObject:toolsGroup];
 
-    PSSpecifier *fieldTest = [PSSpecifier preferenceSpecifierNamed:@"Abrir FTMInternal-4"
+    PSSpecifier *fieldTest = [PSSpecifier preferenceSpecifierNamed:BLGT(@"Abrir FTMInternal-4", @"Open FTMInternal-4")
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     fieldTest.buttonAction = @selector(openFieldTestMode);
     [fieldTest setProperty:@YES forKey:@"enabled"];
     [items addObject:fieldTest];
 
     PSSpecifier *diagGroup = [PSSpecifier emptyGroupSpecifier];
-    diagGroup.name = @"Diagnóstico";
+    diagGroup.name = BLGT(@"Diagnóstico", @"Diagnostics");
     [diagGroup setProperty:@"Último registro por SSH: /rootfs/private/var/mobile/Library/Logs/BandLockGlobal/BandLock-last.txt" forKey:@"footerText"];
     [items addObject:diagGroup];
 
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Resultado" target:self set:nil get:@selector(detailValue) detail:nil cell:PSTitleValueCell edit:nil]];
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Último registro" target:self set:nil get:@selector(logValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Resultado", @"Result") target:self set:nil get:@selector(detailValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Último registro", @"Latest log") target:self set:nil get:@selector(logValue) detail:nil cell:PSTitleValueCell edit:nil]];
 
-    PSSpecifier *clear = [PSSpecifier preferenceSpecifierNamed:@"Eliminar registros de BandLock"
+    PSSpecifier *clear = [PSSpecifier preferenceSpecifierNamed:BLGT(@"Eliminar registros de BandLock", @"Delete BandLock logs")
         target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     clear.buttonAction = @selector(clearLogs);
     [items addObject:clear];
 
     PSSpecifier *infoGroup = [PSSpecifier emptyGroupSpecifier];
-    infoGroup.name = @"Información";
+    infoGroup.name = BLGT(@"Información", @"Information");
     [items addObject:infoGroup];
-    [items addObject:[PSSpecifier preferenceSpecifierNamed:@"Versión" target:self set:nil get:@selector(versionValue) detail:nil cell:PSTitleValueCell edit:nil]];
+    [items addObject:[PSSpecifier preferenceSpecifierNamed:BLGT(@"Versión", @"Version") target:self set:nil get:@selector(versionValue) detail:nil cell:PSTitleValueCell edit:nil]];
 
     _specifiers = items;
     return _specifiers;
 }
 
-- (NSString *)statusValue { return _blStatus ?: @"Sin consultar"; }
+- (NSString *)statusValue { return _blStatus ?: BLGT(@"Sin consultar", @"Not queried"); }
 - (NSString *)ratValue { return _blRAT ?: @"—"; }
 - (NSString *)servingBandValue { return _blServingBand ?: @"—"; }
 - (NSString *)supportedLTEValue { return BLBandList(_blSupportedLTE); }
 - (NSString *)activeLTEValue { return BLBandList(_blActiveLTE); }
 - (NSString *)detailValue { return _blDetail ?: @"—"; }
-- (NSString *)logValue { return _blLogStatus ?: @"Sin registros"; }
+- (NSString *)logValue { return _blLogStatus ?: BLGT(@"Sin registros", @"No logs"); }
 - (NSString *)versionValue { return @"0.5.0 Global"; }
 - (NSString *)networkModeStatusValue {
-    return _blConfiguredRATMode ?: @"Sin consultar";
+    return _blConfiguredRATMode ?: BLGT(@"Sin consultar", @"Not queried");
 }
 
 - (void)selectAutomaticNetworkMode {
     [self applyNetworkModeSelection:BLRATAutomatic
                           preferred:BLRATAutomatic
-                              label:@"Automático"
+                          label:BLGT(@"Automático", @"Automatic")
                          stateValue:@"automatic"];
 }
 
 - (void)confirmLTENetworkMode {
     UIAlertController *alert = [UIAlertController
-        alertControllerWithTitle:@"Solo LTE / 4G"
-        message:@"El módem no podrá bajar a 3G o EDGE mientras este modo esté activo. Si no hay LTE disponible, puedes quedarte temporalmente sin servicio. Las llamadas también pueden verse afectadas si VoLTE no está disponible."
+        alertControllerWithTitle:BLGT(@"Solo LTE / 4G", @"LTE / 4G only")
+        message:BLGT(@"El módem no podrá bajar a 3G o EDGE mientras este modo esté activo. Si no hay LTE disponible, puedes quedarte temporalmente sin servicio. Las llamadas también pueden verse afectadas si VoLTE no está disponible.", @"The modem will not fall back to 3G or EDGE while this mode is active. If LTE is unavailable, you may temporarily lose service. Calls can also be affected when VoLTE is unavailable.")
         preferredStyle:UIAlertControllerStyleAlert];
 
     __weak typeof(self) weakSelf = self;
-    [alert addAction:[UIAlertAction actionWithTitle:@"Cancelar"
+    [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Cancelar", @"Cancel")
                                              style:UIAlertActionStyleCancel
                                            handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"Activar"
+    [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Activar", @"Enable")
                                              style:UIAlertActionStyleDestructive
                                            handler:^(__unused UIAlertAction *action) {
         [weakSelf applyNetworkModeSelection:BLRATLTE
                                   preferred:BLRATLTE
-                                      label:@"Solo LTE / 4G"
+                                      label:BLGT(@"Solo LTE / 4G", @"LTE / 4G only")
                                  stateValue:@"lte"];
     }]];
     [self presentViewController:alert animated:YES completion:nil];
@@ -433,16 +442,16 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 
 - (NSString *)pendingSelectionValue {
     NSArray *bands = [[_blSelectedLTE allObjects] sortedArrayUsingSelector:@selector(compare:)];
-    return bands.count ? BLBandList(bands) : @"Ninguna";
+    return bands.count ? BLBandList(bands) : BLGT(@"Ninguna", @"None");
 }
 
 - (NSString *)modeValue {
-    if (!_blHasRead) return @"Sin consultar";
+    if (!_blHasRead) return BLGT(@"Sin consultar", @"Not queried");
     NSSet *allSupported = [NSSet setWithArray:_blAllSupportedLTE ?: @[]];
     NSSet *allActive = [NSSet setWithArray:_blAllActiveLTE ?: @[]];
-    if (allSupported.count && [allSupported isEqualToSet:allActive]) return @"Automático";
+    if (allSupported.count && [allSupported isEqualToSet:allActive]) return BLGT(@"Automático", @"Automatic");
 
-    return _blActiveLTE.count ? BLBandList(_blActiveLTE) : @"Personalizado";
+    return _blActiveLTE.count ? BLBandList(_blActiveLTE) : BLGT(@"Personalizado", @"Custom");
 }
 
 - (id)bandSwitchValue:(PSSpecifier *)specifier {
@@ -590,13 +599,13 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     _blRatPreferredRaw = [query[@"ratPreferred"] isKindOfClass:[NSString class]] ? query[@"ratPreferred"] : @"—";
 
     if ([_blRatSelectionRaw rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound) {
-        _blConfiguredRATMode = @"Automático";
+        _blConfiguredRATMode = BLGT(@"Automático", @"Automatic");
     } else if ([_blRatSelectionRaw rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) {
-        _blConfiguredRATMode = @"Solo LTE / 4G";
+        _blConfiguredRATMode = BLGT(@"Solo LTE / 4G", @"LTE / 4G only");
     } else if (![_blRatSelectionRaw isEqualToString:@"—"]) {
         _blConfiguredRATMode = _blRatSelectionRaw;
     } else {
-        _blConfiguredRATMode = @"No disponible";
+        _blConfiguredRATMode = BLGT(@"No disponible", @"Unavailable");
     }
     _blHasRead = YES;
 
@@ -700,19 +709,19 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 - (void)updateLogForAction:(NSString *)action query:(NSDictionary *)query requestedLTE:(NSArray<NSNumber *> *)requestedLTE {
     NSError *error = nil;
     NSString *path = [self writeLogForAction:action query:query requestedLTE:requestedLTE error:&error];
-    _blLogStatus = path ? BLSSHLastLogPath : [NSString stringWithFormat:@"Error al guardar: %@", error.localizedDescription ?: @"desconocido"];
+    _blLogStatus = path ? BLSSHLastLogPath : [NSString stringWithFormat:BLGT(@"Error al guardar: %@", @"Save error: %@"), error.localizedDescription ?: BLGT(@"desconocido", @"unknown")];
 }
 
 - (void)applyNetworkModeSelection:(NSString *)selection preferred:(NSString *)preferred label:(NSString *)label stateValue:(NSString *)stateValue {
-    _blStatus = @"Cambiando modo de red…";
-    _blDetail = [NSString stringWithFormat:@"Solicitando %@", label];
+    _blStatus = BLGT(@"Cambiando modo de red…", @"Changing network mode…");
+    _blDetail = [NSString stringWithFormat:BLGT(@"Solicitando %@", @"Requesting %@"), label];
     [self rebuildUI];
 
     @try {
         NSDictionary *query = [self queryCoreTelephony];
         NSString *queryError = query[@"error"];
         if (queryError) {
-            _blStatus = @"No se pudo cambiar";
+            _blStatus = BLGT(@"No se pudo cambiar", @"Could not change");
             _blDetail = queryError;
             [self rebuildUI];
             return;
@@ -722,8 +731,8 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         id context = query[@"context"];
         SEL setter = NSSelectorFromString(@"setRatSelection:selection:preferred:completion:");
         if (![client respondsToSelector:setter]) {
-            _blStatus = @"No compatible";
-            _blDetail = @"CoreTelephonyClient no implementa setRatSelection:selection:preferred:completion:.";
+            _blStatus = BLGT(@"No compatible", @"Unsupported");
+            _blDetail = BLGT(@"CoreTelephonyClient no implementa setRatSelection:selection:preferred:completion:.", @"CoreTelephonyClient does not implement setRatSelection:selection:preferred:completion:.");
             [self rebuildUI];
             return;
         }
@@ -735,7 +744,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
                 if (!self) return;
 
                 if (error) {
-                    self->_blStatus = @"Cambio RAT rechazado";
+                    self->_blStatus = BLGT(@"Cambio RAT rechazado", @"RAT change rejected");
                     self->_blDetail = [error description];
                     [self rebuildUI];
                     return;
@@ -746,7 +755,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
                 NSDictionary *verify = [self queryCoreTelephony];
                 NSString *verifyError = verify[@"error"];
                 if (verifyError) {
-                    self->_blStatus = @"Aplicado; verificación fallida";
+                    self->_blStatus = BLGT(@"Aplicado; verificación fallida", @"Applied; verification failed");
                     self->_blDetail = verifyError;
                     [self rebuildUI];
                     return;
@@ -762,12 +771,12 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
                     matches = [self->_blRatSelectionRaw rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound;
                 }
 
-                self->_blStatus = matches ? @"Modo de red verificado" : @"Modo aplicado";
+                self->_blStatus = matches ? BLGT(@"Modo de red verificado", @"Network mode verified") : BLGT(@"Modo aplicado", @"Mode applied");
                 self->_blDetail = matches
-                    ? [NSString stringWithFormat:@"Configuración RAT: %@", label]
-                    : [NSString stringWithFormat:@"Solicitado %@. Lectura: %@", label, self->_blRatSelectionRaw ?: @"—"];
+                    ? [NSString stringWithFormat:BLGT(@"Configuración RAT: %@", @"RAT configuration: %@"), label]
+                    : [NSString stringWithFormat:BLGT(@"Solicitado %@. Lectura: %@", @"Requested %@. Readback: %@"), label, self->_blRatSelectionRaw ?: @"—"];
 
-                [self updateLogForAction:[NSString stringWithFormat:@"Modo de red: %@", label]
+                [self updateLogForAction:[NSString stringWithFormat:BLGT(@"Modo de red: %@", @"Network mode: %@"), label]
                                    query:verify
                             requestedLTE:nil];
                 [self rebuildUI];
@@ -775,35 +784,35 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         });
     }
     @catch (NSException *exception) {
-        _blStatus = @"Excepción";
-        _blDetail = [NSString stringWithFormat:@"%@: %@", exception.name ?: @"NSException", exception.reason ?: @"sin detalle"];
+        _blStatus = BLGT(@"Excepción", @"Exception");
+        _blDetail = [NSString stringWithFormat:@"%@: %@", exception.name ?: @"NSException", exception.reason ?: BLGT(@"sin detalle", @"no details")];
         [self rebuildUI];
     }
 }
 
 - (void)reloadBands {
-    _blStatus = @"Consultando…";
-    _blDetail = @"Leyendo CoreTelephony…";
+    _blStatus = BLGT(@"Consultando…", @"Querying…");
+    _blDetail = BLGT(@"Leyendo CoreTelephony…", @"Reading CoreTelephony…");
     [self rebuildUI];
 
     @try {
         NSDictionary *query = [self queryCoreTelephony];
         NSString *errorText = query[@"error"];
         if (errorText) {
-            _blStatus = @"Lectura fallida";
+            _blStatus = BLGT(@"Lectura fallida", @"Read failed");
             _blDetail = errorText;
             [self rebuildUI];
             return;
         }
 
         [self consumeQuery:query resetSelection:YES];
-        _blStatus = @"Lectura correcta";
-        _blDetail = @"Bandas LTE leídas. Los interruptores reflejan las bandas permitidas actuales.";
-        [self updateLogForAction:@"Lectura" query:query requestedLTE:nil];
+        _blStatus = BLGT(@"Lectura correcta", @"Read successful");
+        _blDetail = BLGT(@"Bandas LTE leídas. Los interruptores reflejan las bandas permitidas actuales.", @"LTE bands read successfully. The switches reflect the currently allowed bands.");
+        [self updateLogForAction:BLGT(@"Lectura", @"Read") query:query requestedLTE:nil];
     }
     @catch (NSException *exception) {
-        _blStatus = @"Excepción";
-        _blDetail = [NSString stringWithFormat:@"%@: %@", exception.name ?: @"NSException", exception.reason ?: @"sin detalle"];
+        _blStatus = BLGT(@"Excepción", @"Exception");
+        _blDetail = [NSString stringWithFormat:@"%@: %@", exception.name ?: @"NSException", exception.reason ?: BLGT(@"sin detalle", @"no details")];
     }
 
     [self rebuildUI];
@@ -812,63 +821,63 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 - (void)selectAllBands {
     if (!_blHasRead) return;
     _blSelectedLTE = [NSMutableSet setWithArray:_blSupportedLTE];
-    _blStatus = @"Selección preparada";
-    _blDetail = @"Todas las bandas LTE soportadas están seleccionadas.";
+    _blStatus = BLGT(@"Selección preparada", @"Selection ready");
+    _blDetail = BLGT(@"Todas las bandas LTE soportadas están seleccionadas.", @"All supported LTE bands are selected.");
     [self rebuildUI];
 }
 
 - (void)deselectAllBands {
     if (!_blHasRead) return;
     [_blSelectedLTE removeAllObjects];
-    _blStatus = @"Selección preparada";
-    _blDetail = @"Todas las bandas están desmarcadas. No podrás aplicar hasta seleccionar al menos una.";
+    _blStatus = BLGT(@"Selección preparada", @"Selection ready");
+    _blDetail = BLGT(@"Todas las bandas están desmarcadas. No podrás aplicar hasta seleccionar al menos una.", @"All bands are cleared. You cannot apply until at least one LTE band is selected.");
     [self rebuildUI];
 }
 
 - (void)confirmApplySelection {
     if (!_blHasRead) {
-        _blStatus = @"Lee las bandas primero";
-        _blDetail = @"Pulsa «Actualizar estado» antes de aplicar una selección.";
+        _blStatus = BLGT(@"Lee las bandas primero", @"Read bands first");
+        _blDetail = BLGT(@"Pulsa «Actualizar estado» antes de aplicar una selección.", @"Tap “Refresh status” before applying a selection.");
         [self rebuildUI];
         return;
     }
 
     NSArray<NSNumber *> *bands = [[_blSelectedLTE allObjects] sortedArrayUsingSelector:@selector(compare:)];
     if (!bands.count) {
-        _blStatus = @"Selección no válida";
-        _blDetail = @"Debes mantener al menos una banda LTE seleccionada.";
+        _blStatus = BLGT(@"Selección no válida", @"Invalid selection");
+        _blDetail = BLGT(@"Debes mantener al menos una banda LTE seleccionada.", @"At least one LTE band must remain selected.");
         [self rebuildUI];
         return;
     }
 
-    NSString *message = [NSString stringWithFormat:@"Se permitirán únicamente estas bandas LTE:\n\n%@\n\nSe guardará la selección actual para poder restaurarla.", BLBandList(bands)];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Aplicar selección LTE" message:message preferredStyle:UIAlertControllerStyleAlert];
+    NSString *message = [NSString stringWithFormat:BLGT(@"Se permitirán únicamente estas bandas LTE:\n\n%@\n\nSe guardará la selección actual para poder restaurarla.", @"Only these LTE bands will be allowed:\n\n%@\n\nThe current selection will be saved so it can be restored."), BLBandList(bands)];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLGT(@"Aplicar selección LTE", @"Apply LTE selection") message:message preferredStyle:UIAlertControllerStyleAlert];
     __weak typeof(self) weakSelf = self;
-    [alert addAction:[UIAlertAction actionWithTitle:@"Cancelar" style:UIAlertActionStyleCancel handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"Aplicar" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
-        [weakSelf applyLTEBands:bands action:@"Aplicar selección" savePrevious:YES];
+    [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Aplicar", @"Apply") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+        [weakSelf applyLTEBands:bands action:BLGT(@"Aplicar selección", @"Apply selection") savePrevious:YES];
     }]];
     [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)restorePreviousLTE {
     if (!_blPreviousLTE.count) {
-        _blStatus = @"Sin selección anterior";
-        _blDetail = @"Todavía no hay una selección anterior guardada.";
+        _blStatus = BLGT(@"Sin selección anterior", @"No previous selection");
+        _blDetail = BLGT(@"Todavía no hay una selección anterior guardada.", @"There is no saved previous selection yet.");
         [self rebuildUI];
         return;
     }
-    [self applyLTEBands:_blPreviousLTE action:@"Restaurar selección anterior" savePrevious:NO];
+    [self applyLTEBands:_blPreviousLTE action:BLGT(@"Restaurar selección anterior", @"Restore previous selection") savePrevious:NO];
 }
 
 - (void)restoreAllLTE {
     if (!_blHasRead || !_blAllSupportedLTE.count) {
-        _blStatus = @"Lee las bandas primero";
-        _blDetail = @"No hay una lista LTE soportada disponible.";
+        _blStatus = BLGT(@"Lee las bandas primero", @"Read bands first");
+        _blDetail = BLGT(@"No hay una lista LTE soportada disponible.", @"No supported LTE band list is available.");
         [self rebuildUI];
         return;
     }
-    [self applyLTEBands:_blAllSupportedLTE action:@"Restaurar modo automático" savePrevious:YES];
+    [self applyLTEBands:_blAllSupportedLTE action:BLGT(@"Restaurar modo automático", @"Restore automatic mode") savePrevious:YES];
 }
 
 - (NSArray<NSNumber *> *)allActiveLTEFromQuery:(NSDictionary *)query {
@@ -889,7 +898,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSDictionary *currentSupported = [currentBandInfo respondsToSelector:supportedSelector] ? BLMsg0(currentBandInfo, supportedSelector) : nil;
 
     if (![currentActive isKindOfClass:[NSDictionary class]]) {
-        if (errorText) *errorText = @"CTBandInfo no devolvió ActiveBands en el formato esperado.";
+        if (errorText) *errorText = BLGT(@"CTBandInfo no devolvió ActiveBands en el formato esperado.", @"CTBandInfo did not return ActiveBands in the expected format.");
         return NO;
     }
 
@@ -910,13 +919,13 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     }
 
     if (!modifiedBandInfo) {
-        if (errorText) *errorText = @"No se pudo construir CTBandInfo para la nueva selección.";
+        if (errorText) *errorText = BLGT(@"No se pudo construir CTBandInfo para la nueva selección.", @"Could not construct CTBandInfo for the new selection.");
         return NO;
     }
 
     SEL setter = NSSelectorFromString(@"setActiveBandInfo:bands:error:");
     if (![client respondsToSelector:setter]) {
-        if (errorText) *errorText = @"CoreTelephonyClient no implementa setActiveBandInfo:bands:error:.";
+        if (errorText) *errorText = BLGT(@"CoreTelephonyClient no implementa setActiveBandInfo:bands:error:.", @"CoreTelephonyClient does not implement setActiveBandInfo:bands:error:.");
         return NO;
     }
 
@@ -935,7 +944,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         NSDictionary *verify = [self queryCoreTelephony];
         NSString *verifyError = verify[@"error"];
         if (verifyError) {
-            _blStatus = @"Verificación fallida";
+            _blStatus = BLGT(@"Verificación fallida", @"Verification failed");
             _blDetail = verifyError;
             [self rebuildUI];
             return;
@@ -947,8 +956,8 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 
         if ([requestedSet isEqualToSet:readbackSet]) {
             [self consumeQuery:verify resetSelection:YES];
-            _blStatus = retryCount > 0 ? @"Aplicado tras reintento" : @"Aplicado y verificado";
-            _blDetail = [NSString stringWithFormat:@"El módem informa ahora: %@", BLBandList(readbackAllLTE)];
+            _blStatus = retryCount > 0 ? BLGT(@"Aplicado tras reintento", @"Applied after retry") : BLGT(@"Aplicado y verificado", @"Applied and verified");
+            _blDetail = [NSString stringWithFormat:BLGT(@"El módem informa ahora: %@", @"The modem now reports: %@"), BLBandList(readbackAllLTE)];
             [self updateLogForAction:action query:verify requestedLTE:bands];
             [self rebuildUI];
             return;
@@ -959,17 +968,17 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         // automáticamente sin perder la selección pendiente del usuario.
         if (retryCount < 1) {
             [self consumeQuery:verify resetSelection:NO];
-            _blStatus = @"Confirmando cambio…";
-            _blDetail = [NSString stringWithFormat:@"Primera lectura: %@. Reintentando automáticamente…",
+            _blStatus = BLGT(@"Confirmando cambio…", @"Confirming change…");
+            _blDetail = [NSString stringWithFormat:BLGT(@"Primera lectura: %@. Reintentando automáticamente…", @"First readback: %@. Retrying automatically…"),
                          BLBandList(readbackAllLTE)];
             [self rebuildUI];
 
             NSString *retryError = nil;
             BOOL wroteAgain = [self writeLTEBands:bands usingQuery:verify errorText:&retryError];
             if (!wroteAgain) {
-                _blStatus = @"Reintento fallido";
-                _blDetail = retryError ?: @"No se pudo repetir la escritura LTE.";
-                [self updateLogForAction:[action stringByAppendingString:@" (reintento fallido)"]
+                _blStatus = BLGT(@"Reintento fallido", @"Retry failed");
+                _blDetail = retryError ?: BLGT(@"No se pudo repetir la escritura LTE.", @"The LTE write could not be retried.");
+                [self updateLogForAction:[action stringByAppendingString:BLGT(@" (reintento fallido)", @" (retry failed)")]
                                    query:verify
                             requestedLTE:bands];
                 [self rebuildUI];
@@ -985,18 +994,18 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         }
 
         [self consumeQuery:verify resetSelection:NO];
-        _blStatus = @"Resultado distinto";
-        _blDetail = [NSString stringWithFormat:@"Solicitado: %@ | Leído: %@",
+        _blStatus = BLGT(@"Resultado distinto", @"Different result");
+        _blDetail = [NSString stringWithFormat:BLGT(@"Solicitado: %@ | Leído: %@", @"Requested: %@ | Readback: %@"),
                      BLBandList(bands), BLBandList(readbackAllLTE)];
-        [self updateLogForAction:[action stringByAppendingString:@" (resultado distinto)"]
+        [self updateLogForAction:[action stringByAppendingString:BLGT(@" (resultado distinto)", @" (different result)")]
                            query:verify
                     requestedLTE:bands];
     }
     @catch (NSException *exception) {
-        _blStatus = @"Excepción";
+        _blStatus = BLGT(@"Excepción", @"Exception");
         _blDetail = [NSString stringWithFormat:@"%@: %@",
                      exception.name ?: @"NSException",
-                     exception.reason ?: @"sin detalle"];
+                     exception.reason ?: BLGT(@"sin detalle", @"no details")];
     }
 
     [self rebuildUI];
@@ -1005,8 +1014,8 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 - (void)applyLTEBands:(NSArray<NSNumber *> *)requested action:(NSString *)action savePrevious:(BOOL)savePrevious {
     NSArray<NSNumber *> *bands = BLSortedBands(requested);
     if (!bands.count) {
-        _blStatus = @"Selección no válida";
-        _blDetail = @"No se puede aplicar una lista LTE vacía.";
+        _blStatus = BLGT(@"Selección no válida", @"Invalid selection");
+        _blDetail = BLGT(@"No se puede aplicar una lista LTE vacía.", @"An empty LTE band list cannot be applied.");
         [self rebuildUI];
         return;
     }
@@ -1014,14 +1023,14 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSSet *supportedSet = [NSSet setWithArray:_blAllSupportedLTE.count ? _blAllSupportedLTE : _blSupportedLTE];
     for (NSNumber *band in bands) {
         if (![supportedSet containsObject:band]) {
-            _blStatus = @"Selección no válida";
-            _blDetail = [NSString stringWithFormat:@"B%@ no figura entre las bandas LTE soportadas.", band];
+            _blStatus = BLGT(@"Selección no válida", @"Invalid selection");
+            _blDetail = [NSString stringWithFormat:BLGT(@"B%@ no figura entre las bandas LTE soportadas.", @"B%@ is not reported among the supported LTE bands."), band];
             [self rebuildUI];
             return;
         }
     }
 
-    _blStatus = @"Aplicando…";
+    _blStatus = BLGT(@"Aplicando…", @"Applying…");
     _blDetail = BLBandList(bands);
     [self rebuildUI];
 
@@ -1029,7 +1038,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         NSDictionary *query = [self queryCoreTelephony];
         NSString *queryError = query[@"error"];
         if (queryError) {
-            _blStatus = @"No se pudo aplicar";
+            _blStatus = BLGT(@"No se pudo aplicar", @"Could not apply");
             _blDetail = queryError;
             [self rebuildUI];
             return;
@@ -1044,14 +1053,14 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 
         NSString *writeError = nil;
         if (![self writeLTEBands:bands usingQuery:query errorText:&writeError]) {
-            _blStatus = @"Escritura rechazada";
-            _blDetail = writeError ?: @"CoreTelephony rechazó la selección.";
+            _blStatus = BLGT(@"Escritura rechazada", @"Write rejected");
+            _blDetail = writeError ?: BLGT(@"CoreTelephony rechazó la selección.", @"CoreTelephony rejected the selection.");
             [self rebuildUI];
             return;
         }
 
-        _blStatus = @"Esperando al módem…";
-        _blDetail = @"La escritura fue aceptada. Verificando cuando CommCenter haya consolidado el cambio.";
+        _blStatus = BLGT(@"Esperando al módem…", @"Waiting for modem…");
+        _blDetail = BLGT(@"La escritura fue aceptada. Verificando cuando CommCenter haya consolidado el cambio.", @"The write was accepted. Verifying after CommCenter commits the change.");
         [self rebuildUI];
 
         __weak typeof(self) weakSelf = self;
@@ -1061,10 +1070,10 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         });
     }
     @catch (NSException *exception) {
-        _blStatus = @"Excepción";
+        _blStatus = BLGT(@"Excepción", @"Exception");
         _blDetail = [NSString stringWithFormat:@"%@: %@",
                      exception.name ?: @"NSException",
-                     exception.reason ?: @"sin detalle"];
+                     exception.reason ?: BLGT(@"sin detalle", @"no details")];
         [self rebuildUI];
     }
 }
@@ -1088,9 +1097,9 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
                             dispatch_async(dispatch_get_main_queue(), ^{
                                 UIAlertController *alert = [UIAlertController
                                     alertControllerWithTitle:@"FTMInternal-4"
-                                    message:[NSString stringWithFormat:@"FrontBoard rechazó el lanzamiento: %@", error.localizedDescription ?: [error description]]
+                                    message:[NSString stringWithFormat:BLGT(@"FrontBoard rechazó el lanzamiento: %@", @"FrontBoard rejected the launch: %@"), error.localizedDescription ?: [error description]]
                                     preferredStyle:UIAlertControllerStyleAlert];
-                                [alert addAction:[UIAlertAction actionWithTitle:@"Aceptar" style:UIAlertActionStyleDefault handler:nil]];
+                                [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Aceptar", @"OK") style:UIAlertActionStyleDefault handler:nil]];
                                 [self presentViewController:alert animated:YES completion:nil];
                             });
                         }
@@ -1122,21 +1131,21 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 
     UIAlertController *alert = [UIAlertController
         alertControllerWithTitle:@"FTMInternal-4"
-        message:(attempted ? @"iOS rechazó el lanzamiento directo de com.apple.FTMInternal." : @"No se encontró una API disponible para lanzar com.apple.FTMInternal.")
+        message:(attempted ? BLGT(@"iOS rechazó el lanzamiento directo de com.apple.FTMInternal.", @"iOS rejected the direct launch of com.apple.FTMInternal.") : BLGT(@"No se encontró una API disponible para lanzar com.apple.FTMInternal.", @"No available API was found to launch com.apple.FTMInternal."))
         preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:@"Aceptar" style:UIAlertActionStyleDefault handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Aceptar", @"OK") style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)clearLogs {
     UIAlertController *alert = [UIAlertController
-        alertControllerWithTitle:@"Eliminar registros"
-        message:@"Se eliminarán únicamente los registros creados por BandLock."
+        alertControllerWithTitle:BLGT(@"Eliminar registros", @"Delete logs")
+        message:BLGT(@"Se eliminarán únicamente los registros creados por BandLock.", @"Only logs created by BandLock will be deleted.")
         preferredStyle:UIAlertControllerStyleAlert];
 
     __weak typeof(self) weakSelf = self;
-    [alert addAction:[UIAlertAction actionWithTitle:@"Cancelar" style:UIAlertActionStyleCancel handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"Eliminar" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+    [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:BLGT(@"Eliminar", @"Delete") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
         [weakSelf clearLogsConfirmed];
     }]];
     [self presentViewController:alert animated:YES completion:nil];
@@ -1146,9 +1155,9 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSFileManager *fm = [NSFileManager defaultManager];
     NSError *error = nil;
     if ([fm fileExistsAtPath:BLLogDirectory] && ![fm removeItemAtPath:BLLogDirectory error:&error]) {
-        _blLogStatus = [NSString stringWithFormat:@"Error al eliminar: %@", error.localizedDescription ?: @"desconocido"];
+        _blLogStatus = [NSString stringWithFormat:BLGT(@"Error al eliminar: %@", @"Delete error: %@"), error.localizedDescription ?: BLGT(@"desconocido", @"unknown")];
     } else {
-        _blLogStatus = @"Registros eliminados";
+        _blLogStatus = BLGT(@"Registros eliminados", @"Logs deleted");
     }
     [self rebuildUI];
 }
