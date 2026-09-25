@@ -18,13 +18,13 @@ Package: com.gokuencinar.bandlock
 Version: 0.5.0
 Architecture: iphoneos-arm64e
 Maintainer: Gokuencinar
-Installed-Size: 276
+Installed-Size: 340
 Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
 Filename: debs/com.gokuencinar.bandlock_0.5.0_iphoneos-arm64e.deb
-Size: 41880
-MD5sum: fb9dc7fbfe7df00e57ef4eadfe2fe71d
-SHA1: c0075756aeacc359fd40bc427dedb5e9941de81e
-SHA256: 2d4384e28b5142b9633119d29668570f067e2934035ec213a8ea73bb32007253
+Size: 46234
+MD5sum: 5c5b3067bbd1ecdf3a648cd61202ec72
+SHA1: 4beb271f1101b2fd3d6fda0f207c30300275148c
+SHA256: a2d979ef1be562b1b4a8ab519ba055cb132960ef608f689907b43732be6eed8a
 Section: Tweaks
 Description: Global LTE/4G band control for iOS 16 RootHide using modem-reported bands with FDD/TDD/SDL metadata and write verification
 Author: Gokuencinar
