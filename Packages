@@ -14,6 +14,22 @@ Description: Advanced Wi-Fi enhancements for iOS 16 with stable connected-networ
 Author: BetterWiFi RH
 Name: BetterWiFi RH
 
+Package: com.gokuencinar.bandlock
+Version: 0.5.0
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 276
+Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
+Filename: debs/com.gokuencinar.bandlock_0.5.0_iphoneos-arm64e.deb
+Size: 41880
+MD5sum: fb9dc7fbfe7df00e57ef4eadfe2fe71d
+SHA1: c0075756aeacc359fd40bc427dedb5e9941de81e
+SHA256: 2d4384e28b5142b9633119d29668570f067e2934035ec213a8ea73bb32007253
+Section: Tweaks
+Description: Global LTE/4G band control for iOS 16 RootHide using modem-reported bands with FDD/TDD/SDL metadata and write verification
+Author: Gokuencinar
+Name: BandLock
+
 Package: com.local.bandlock
 Version: 0.3.4
 Architecture: iphoneos-arm64e
