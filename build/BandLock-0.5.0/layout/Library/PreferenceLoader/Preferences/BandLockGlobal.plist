@@ -1,0 +1,10 @@
+{
+    entry = {
+        bundle = BandLockGlobalPrefs;
+        cell = PSLinkCell;
+        detail = BLGRootListController;
+        isController = 1;
+        id = "com.gokuencinar.bandlock.preferences";
+        label = "BandLock Global";
+    };
+}
