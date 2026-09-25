@@ -1,9 +1,0 @@
-Package: com.local.bandlock
-Name: BandLock
-Version: 0.3.6
-Architecture: iphoneos-arm64e
-Description: BandLock RootHide read-only cellular band inspector with SSH diagnostics
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: preferenceloader

@@ -1,9 +1,0 @@
-Package: com.local.bandlock
-Name: BandLock
-Version: 0.3.7
-Architecture: iphoneos-arm64e
-Description: Experimental LTE band selection for RootHide using CoreTelephony
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: preferenceloader

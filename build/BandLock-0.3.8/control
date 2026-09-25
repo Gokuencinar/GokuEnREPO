@@ -1,9 +1,0 @@
-Package: com.local.bandlock
-Name: BandLock
-Version: 0.3.8
-Architecture: iphoneos-arm64e
-Description: LTE band locking for RootHide with frequency labels, Orange Spain preset and Field Test launcher
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: preferenceloader

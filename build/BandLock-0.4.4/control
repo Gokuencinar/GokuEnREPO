@@ -1,9 +1,0 @@
-Package: com.local.bandlock
-Name: BandLock
-Version: 0.4.4
-Architecture: iphoneos-arm64e
-Description: Stable Spain-focused LTE band locking with automatic write verification retry
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: preferenceloader

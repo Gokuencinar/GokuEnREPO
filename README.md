@@ -24,18 +24,15 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 
 ## Español
 
-**BandLock** es un tweak para jailbreak orientado al control manual de la conectividad celular LTE/4G desde Ajustes.
+**BandLock Global** es la edición pública de BandLock para controlar manualmente bandas LTE/4G desde Ajustes. La lista se genera en tiempo real a partir de las bandas que el propio módem del iPhone reporta como soportadas, sin asumir España, un país concreto ni un operador concreto.
 
-Permite consultar las bandas LTE soportadas y permitidas por el módem, seleccionar manualmente las bandas que quieres utilizar, aplicar perfiles de bandas, restaurar la configuración automática del módem y controlar el modo de red entre **Automático** y **Solo LTE / 4G**.
-
-La interfaz está optimizada para España y muestra las principales bandas LTE utilizadas por operadores españoles, incluyendo **B1, B3, B7, B8, B20, B28 y B38**, con sus frecuencias. También incluye acceso directo a **FTMInternal / Field Test Mode**, verificación posterior de los cambios y logs de diagnóstico.
+Las bandas conocidas se muestran con su frecuencia nominal y clasificación **FDD, TDD o SDL**. BandLock mantiene también los modos **Automático** y **Solo LTE / 4G**, restauración de configuración, acceso a **FTMInternal / Field Test Mode**, verificación posterior de los cambios y logs de diagnóstico.
 
 ### Funciones principales
 
-- Selección manual de bandas LTE.
-- Bandas LTE utilizadas en España.
-- Frecuencia mostrada junto a cada banda.
-- Perfiles rápidos para Orange España y combinaciones habituales.
+- Selección manual de todas las bandas LTE reportadas como soportadas por el módem.
+- Clasificación **FDD / TDD / SDL** y frecuencia nominal para bandas conocidas.
+- Grupos dinámicos y filtros rápidos FDD/TDD, sin perfiles de país u operador.
 - Modo **Automático** y **Solo LTE / 4G**.
 - Restaurar selección anterior.
 - Restaurar todas las bandas LTE soportadas por el módem.
@@ -62,16 +59,15 @@ La interfaz está optimizada para España y muestra las principales bandas LTE u
 
 **BandLock** is a jailbreak tweak designed for manual LTE/4G cellular band control directly from the iOS Settings app.
 
-It can read the LTE bands supported and currently allowed by the modem, let the user manually choose which LTE bands may be used, apply band presets, restore the modem's automatic configuration, and switch the radio access mode between **Automatic** and **LTE / 4G only**.
+The public **Global** edition reads the LTE bands reported as supported by the iPhone modem at runtime and builds the selector from that device-specific set instead of assuming a country or carrier. Known bands are labelled with nominal frequency and **FDD, TDD or SDL** classification.
 
-The interface is optimized for Spain and focuses on the main LTE bands used by Spanish mobile operators, including **B1, B3, B7, B8, B20, B28 and B38**, with their frequencies displayed. BandLock also includes direct access to **FTMInternal / Field Test Mode**, post-write verification and diagnostic logging.
+BandLock also provides **Automatic** and **LTE / 4G only** radio modes, restore actions, direct **FTMInternal / Field Test Mode** access, post-write verification and diagnostic logging.
 
 ### Main features
 
-- Manual LTE band selection.
-- Spain-focused LTE band list.
-- Frequency labels for every displayed band.
-- Quick presets for Orange Spain and common band combinations.
+- Manual selection of every modem-reported supported LTE band.
+- **FDD / TDD / SDL** classification and frequency labels for known bands.
+- Dynamic grouping and generic FDD/TDD helpers instead of country/carrier presets.
 - **Automatic** and **LTE / 4G only** network modes.
 - Restore previous LTE selection.
 - Restore all LTE bands supported by the modem.
@@ -162,7 +158,7 @@ It adds richer information about the currently connected Wi-Fi network, live sig
 
 ## Paquetes actuales / Current packages
 
-- **BandLock 0.4.4** — `iphoneos-arm64e`
+- **BandLock Global 0.5.0** — `iphoneos-arm64e`
 - **BetterWiFi RH 0.3.8** — `iphoneos-arm64e`
 
 El índice `Packages` y `Packages.gz` se regenera automáticamente cuando cambia un paquete dentro de `debs/`.

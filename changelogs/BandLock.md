@@ -6,6 +6,30 @@ Este archivo documenta las versiones de BandLock que están publicadas actualmen
 
 **Compatibilidad:** iOS 16.x con jailbreak RootHide/Dopamine y arquitectura `iphoneos-arm64e`. El paquete actual está compilado con target iOS 16.0.
 
+## 0.5.0 Global
+
+### Nuevo
+- Primera edición pública de carácter global.
+- El selector usa todas las bandas LTE que `CTBandInfo.supportedBands` reporta para el módem del dispositivo, sin una allow-list de España.
+- Metadatos de frecuencia y clasificación FDD, TDD y SDL para bandas LTE conocidas.
+- Agrupación dinámica por FDD, TDD, SDL y otras bandas LTE reportadas.
+- Acciones rápidas para selección activa actual, todas las soportadas, solo FDD y solo TDD.
+- Identidad de paquete pública independiente: `com.gokuencinar.bandlock`.
+- PreferenceBundle, archivo de estado y carpeta de logs independientes de la edición privada española.
+
+### Cambiado
+- Se eliminan de la edición pública los perfiles Orange España, Todas las de España, Cobertura española y B3+B7.
+- La interfaz de selección deja de filtrar a B28/B20/B8/B3/B1/B7/B38.
+- El módem pasa a ser la fuente de verdad para determinar qué bandas LTE se pueden seleccionar.
+- Se mantiene la verificación diferida y el reintento único de CommCenter introducidos en 0.4.4.
+
+### Nota
+- Que una banda aparezca como soportada por el módem no garantiza que el operador la tenga desplegada en la ubicación actual.
+- La versión 0.5.0 controla LTE/4G; no declara soporte de bloqueo de bandas 5G NR.
+- La rama pública de desarrollo pasa a 0.5.0 Global. La 0.4.4 orientada a España se conserva como edición privada del autor.
+
+---
+
 ## 0.4.4
 
 ### Nuevo
