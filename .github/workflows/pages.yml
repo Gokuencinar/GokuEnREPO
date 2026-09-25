@@ -7,7 +7,7 @@ on:
     paths:
       - "index.html"
       - "bandlock.html"
-      - "betterwifi-rh.html"
+      - "betterwifi-rh.html"\n      - "sitemap.xml"\n      - "robots.txt"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
