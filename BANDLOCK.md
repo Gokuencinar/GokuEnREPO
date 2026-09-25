@@ -92,6 +92,16 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 
 Then install **BandLock**.
 
+## Community testing / Pruebas comunitarias
+
+BandLock is looking for reports from other iPhone models, carriers and countries. Share results in the official compatibility thread:
+
+**[BandLock 0.4.4 — community compatibility reports / pruebas de compatibilidad](https://github.com/Gokuencinar/GokuEnREPO/issues/1)**
+
+Please never include IMEI, IMSI, ICCID, phone numbers or other personal identifiers in public reports.
+
+Si BandLock te resulta útil, puedes marcar el repositorio con una **Star** y compartir esta página con otros usuarios de jailbreak. / If BandLock is useful to you, consider giving the repository a **Star** and sharing this page with other jailbreak users.
+
 ## Changelog
 
 See / Ver: [BandLock changelog](changelogs/BandLock.md)
