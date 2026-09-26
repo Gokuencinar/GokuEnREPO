@@ -1,4 +1,4 @@
-#import "BLControlViewController.h"
+﻿#import "BLControlViewController.h"
 #import "BLTelephonyManager.h"
 #import "BLBandPickerViewController.h"
 #import "BLCommon.h"
@@ -109,7 +109,6 @@
     if (symbol.length) {
         [button setImage:[UIImage systemImageNamed:symbol] forState:UIControlStateNormal];
         button.tintColor = destructive ? UIColor.systemRedColor : UIColor.systemBlueColor;
-        button.imageEdgeInsets = UIEdgeInsetsMake(0, 0, 0, 10);
     }
     [button.heightAnchor constraintGreaterThanOrEqualToConstant:44].active = YES;
     [button addTarget:self action:selector forControlEvents:UIControlEventTouchUpInside];
@@ -157,11 +156,11 @@
     self.resultValue = result;
     [self.stackView addArrangedSubview:statusCard];
 
-    UIButton *automatic = [self buttonWithTitle:BLT(@"Modo automático", @"Automatic mode") symbol:@"antenna.radiowaves.left.and.right" selector:@selector(automaticTapped:) destructive:NO];
+    UIButton *automatic = [self buttonWithTitle:BLT(@"Modo automÃ¡tico", @"Automatic mode") symbol:@"antenna.radiowaves.left.and.right" selector:@selector(automaticTapped:) destructive:NO];
     UIButton *lteOnly = [self buttonWithTitle:BLT(@"Solo LTE / 4G", @"LTE / 4G only") symbol:@"4g.lte" selector:@selector(lteOnlyTapped:) destructive:NO];
     UILabel *mode = nil;
     UIView *modeCard = [self cardWithTitle:BLT(@"MODO DE RED", @"NETWORK MODE") content:@[
-        [self rowWithTitle:BLT(@"Configuración", @"Configuration") valueLabel:&mode],
+        [self rowWithTitle:BLT(@"ConfiguraciÃ³n", @"Configuration") valueLabel:&mode],
         automatic,
         lteOnly
     ]];
@@ -169,12 +168,12 @@
     [self.stackView addArrangedSubview:modeCard];
 
     UIButton *edit = [self buttonWithTitle:BLT(@"Editar bandas", @"Edit bands") symbol:@"slider.horizontal.3" selector:@selector(editBandsTapped:) destructive:NO];
-    UIButton *apply = [self buttonWithTitle:BLT(@"Aplicar selección", @"Apply selection") symbol:@"checkmark.circle.fill" selector:@selector(applyTapped:) destructive:NO];
-    UIButton *restorePrevious = [self buttonWithTitle:BLT(@"Restaurar selección anterior", @"Restore previous selection") symbol:@"arrow.uturn.backward" selector:@selector(restorePreviousTapped:) destructive:NO];
+    UIButton *apply = [self buttonWithTitle:BLT(@"Aplicar selecciÃ³n", @"Apply selection") symbol:@"checkmark.circle.fill" selector:@selector(applyTapped:) destructive:NO];
+    UIButton *restorePrevious = [self buttonWithTitle:BLT(@"Restaurar selecciÃ³n anterior", @"Restore previous selection") symbol:@"arrow.uturn.backward" selector:@selector(restorePreviousTapped:) destructive:NO];
     UIButton *restoreAll = [self buttonWithTitle:BLT(@"Restaurar todas las soportadas", @"Restore all supported") symbol:@"arrow.counterclockwise.circle" selector:@selector(restoreAllTapped:) destructive:NO];
     UILabel *pending = nil;
     UIView *bandsCard = [self cardWithTitle:BLT(@"BANDAS LTE", @"LTE BANDS") content:@[
-        [self rowWithTitle:BLT(@"Selección pendiente", @"Pending selection") valueLabel:&pending],
+        [self rowWithTitle:BLT(@"SelecciÃ³n pendiente", @"Pending selection") valueLabel:&pending],
         edit, apply, restorePrevious, restoreAll
     ]];
     self.pendingValue = pending;
@@ -185,7 +184,7 @@
     [self.stackView addArrangedSubview:toolsCard];
 
     UILabel *version = [[UILabel alloc] init];
-    version.text = @"BandLock Global 0.6.4 · UIKit buttons + diagnostics";
+    version.text = @"BandLock Global 0.6.4 Â· UIKit buttons + diagnostics";
     version.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
     version.textColor = UIColor.tertiaryLabelColor;
     version.numberOfLines = 0;
@@ -194,14 +193,14 @@
 }
 
 - (void)refreshDisplay {
-    self.networkValue.text = self.manager.radioAccessTechnology ?: @"—";
-    self.servingValue.text = self.manager.servingBand ?: @"—";
+    self.networkValue.text = self.manager.radioAccessTechnology ?: @"â€”";
+    self.servingValue.text = self.manager.servingBand ?: @"â€”";
     self.activeValue.text = BLBandList(self.manager.activeBands);
     self.pendingValue.text = BLBandList(self.manager.pendingBands);
-    self.resultValue.text = self.manager.detailText ?: @"—";
-    self.modeValue.text = self.manager.networkMode ?: @"—";
+    self.resultValue.text = self.manager.detailText ?: @"â€”";
+    self.modeValue.text = self.manager.networkMode ?: @"â€”";
     self.refreshButton.enabled = !self.manager.busy;
-    [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar estado", @"Refresh status")) forState:UIControlStateNormal];
+    [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizandoâ€¦", @"Refreshingâ€¦") : BLT(@"Actualizar estado", @"Refresh status")) forState:UIControlStateNormal];
 }
 
 - (void)showAlert:(NSString *)message {
@@ -253,7 +252,7 @@
 - (void)editBandsTapped:(UIButton *)sender {
     BLDiagLog(@"tap edit-bands");
     if (!self.manager.supportedBands.count) {
-        [self showAlert:BLT(@"Pulsa «Actualizar estado» antes de editar bandas.", @"Tap “Refresh status” before editing bands.")];
+        [self showAlert:BLT(@"Pulsa Â«Actualizar estadoÂ» antes de editar bandas.", @"Tap â€œRefresh statusâ€ before editing bands.")];
         return;
     }
     BLBandPickerViewController *picker = [[BLBandPickerViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
@@ -267,8 +266,8 @@
         [self showAlert:BLT(@"No hay bandas pendientes para aplicar.", @"There are no pending bands to apply.")];
         return;
     }
-    NSString *message = [NSString stringWithFormat:BLT(@"Se permitirán únicamente estas bandas LTE:\n\n%@", @"Only these LTE bands will be allowed:\n\n%@"), BLBandList(bands)];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Aplicar selección", @"Apply selection") message:message preferredStyle:UIAlertControllerStyleAlert];
+    NSString *message = [NSString stringWithFormat:BLT(@"Se permitirÃ¡n Ãºnicamente estas bandas LTE:\n\n%@", @"Only these LTE bands will be allowed:\n\n%@"), BLBandList(bands)];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Aplicar selecciÃ³n", @"Apply selection") message:message preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
     __weak typeof(self) weakSelf = self;
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Aplicar", @"Apply") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
