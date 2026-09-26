@@ -74,7 +74,7 @@ static NSDictionary<NSString *, NSString *> *BLFrench(void) {
         @"Service may be temporarily lost if LTE is unavailable.": @"Le service peut être temporairement perdu si le LTE n’est pas disponible.",
         @"There are no pending bands to apply.": @"Aucune bande n’est en attente d’application.", @"Tap “Refresh status” before editing bands.": @"Touchez « Actualiser l’état » avant de modifier les bandes.",
         @"Only these LTE bands will be allowed:\n\n%@": @"Seules ces bandes LTE seront autorisées :\n\n%@",
-        @"Edit bands": @"Modifier les bandes", @"Quick selection": @"Sélection rapide", @"Current active selection": @"Sélection active actuelle", @"All supported": @"Toutes prises en charge",
+        @"Quick selection": @"Sélection rapide", @"Current active selection": @"Sélection active actuelle", @"All supported": @"Toutes prises en charge",
         @"FDD only": @"FDD uniquement", @"TDD only": @"TDD uniquement", @"Clear all": @"Tout désélectionner", @"Other": @"Autres",
         @"This only prepares the selection. Returning to Control and tapping Apply is what changes the modem.": @"Cela prépare uniquement la sélection. Seul le bouton Appliquer dans Contrôle modifie le modem.",
         @"SDL is supplemental downlink. Avoid selecting only SDL bands.": @"SDL est une liaison descendante supplémentaire. Évitez de sélectionner uniquement des bandes SDL.",
