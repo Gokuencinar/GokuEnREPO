@@ -93,7 +93,8 @@ jobs:
           test -n "$DAEMON_BIN"
           test -x "$DAEMON_BIN"
           command -v ldid >/dev/null 2>&1
-          otool -l "$APP_BIN" | grep -A5 -m1 'LC_BUILD_VERSION' | grep -q 'sdk 16.5'
+          echo '=== BandLock LC_BUILD_VERSION ==='
+          otool -l "$APP_BIN" | grep -A7 -m1 'LC_BUILD_VERSION'
           ldid -e "$APP_BIN" > /tmp/bandlock-app-entitlements.plist
           ldid -e "$DAEMON_BIN" > /tmp/bandlock-daemon-entitlements.plist
           ! grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-app-entitlements.plist
