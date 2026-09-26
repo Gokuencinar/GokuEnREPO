@@ -1,6 +1,5 @@
 #import "BLTelephonyManager.h"
 #import "BLCommon.h"
-#import <roothide.h>
 #import <sys/socket.h>
 #import <sys/un.h>
 #import <sys/time.h>
@@ -23,7 +22,6 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 @property (nonatomic, assign, readwrite) BOOL hasReadState;
 @property (nonatomic, assign, readwrite) BOOL busy;
 @property (nonatomic, strong) dispatch_queue_t daemonQueue;
-@property (nonatomic, copy) NSString *daemonSocketPath;
 @end
 
 @implementation BLTelephonyManager
@@ -41,8 +39,6 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
     self = [super init];
     if (self) {
         _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.daemon-client", DISPATCH_QUEUE_SERIAL);
-        NSString *resolvedSocketPath = jbroot(@"/tmp/com.gokuencinar.bandlockd.sock");
-        _daemonSocketPath = [resolvedSocketPath.length ? resolvedSocketPath : @"/tmp/com.gokuencinar.bandlockd.sock" copy];
         _supportedBands = @[];
         _activeBands = @[];
         _pendingBands = @[];
@@ -59,7 +55,7 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 }
 
 - (NSString *)socketPath {
-    return self.daemonSocketPath ?: @"/tmp/com.gokuencinar.bandlockd.sock";
+    return @"/tmp/com.gokuencinar.bandlockd.sock";
 }
 
 - (NSDictionary *)daemonUnavailableResult:(NSString *)detail {
