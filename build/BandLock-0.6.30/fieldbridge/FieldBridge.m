@@ -22,18 +22,6 @@ static void BLBridgeLog(NSString *message) {
     close(fd);
 }
 
-static UIViewController *BLVisibleController(UIViewController *controller) {
-    if (!controller) return nil;
-    if (controller.presentedViewController) return BLVisibleController(controller.presentedViewController);
-    if ([controller isKindOfClass:[UINavigationController class]]) {
-        return BLVisibleController(((UINavigationController *)controller).visibleViewController);
-    }
-    if ([controller isKindOfClass:[UITabBarController class]]) {
-        return BLVisibleController(((UITabBarController *)controller).selectedViewController);
-    }
-    return controller;
-}
-
 static UITabBarController *BLFindTabController(UIViewController *controller) {
     if (!controller) return nil;
     if ([controller isKindOfClass:[UITabBarController class]]) return (UITabBarController *)controller;
@@ -47,13 +35,22 @@ static UITabBarController *BLFindTabController(UIViewController *controller) {
 }
 
 static UIWindow *BLMainWindow(void) {
-    for (UIWindow *window in UIApplication.sharedApplication.windows) {
-        if (window.isKeyWindow) return window;
+    UIWindow *fallback = nil;
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        UIWindowScene *windowScene = (UIWindowScene *)scene;
+        for (UIWindow *window in windowScene.windows) {
+            if (!fallback) fallback = window;
+            if (window.isKeyWindow) return window;
+        }
     }
-    for (UIWindow *window in UIApplication.sharedApplication.windows) {
-        if (!window.hidden && window.alpha > 0.01) return window;
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+            if (!window.hidden && window.alpha > 0.01) return window;
+        }
     }
-    return UIApplication.sharedApplication.windows.firstObject;
+    return fallback;
 }
 
 static void BLCollectControls(UIView *view, NSMutableArray<UIControl *> *controls) {
