@@ -55,6 +55,11 @@ jobs:
           grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.13/daemon/Entitlements.plist
           grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.13/daemon/Makefile
           grep -q 'TOOL_NAME = BandLockLauncher' build/BandLock-0.6.13/launcher/Makefile
+          grep -q 'DOMAIN="user/501"' build/BandLock-0.6.13/layout/DEBIAN/postinst
+          grep -q 'launchctl bootstrap "$DOMAIN" "$PLIST"' build/BandLock-0.6.13/layout/DEBIAN/postinst
+          ! grep -q 'kickstart' build/BandLock-0.6.13/layout/DEBIAN/postinst
+          ! grep -q 'launchctl .*system' build/BandLock-0.6.13/layout/DEBIAN/postinst
+          grep -q 'uicache -p /Applications/BandLock.app' build/BandLock-0.6.13/layout/DEBIAN/postinst
           grep -q '^Version: 0.6.13$' build/BandLock-0.6.13/control
 
       - name: Build candidate
