@@ -225,54 +225,53 @@
 - (void)runDiagnosticSelfTest {
     BLBreadcrumbReset();
     BLBreadcrumb("SELFTEST begin");
+    __weak BLTelephonyManager *manager = self.manager;
     __weak typeof(self) weakSelf = self;
-    [self.manager refreshWithCompletion:^(BOOL refreshOK, NSString *message) {
-        __strong typeof(weakSelf) self = weakSelf;
-        if (!self) return;
+    [manager refreshWithCompletion:^(BOOL refreshOK, NSString *message) {
         BLBreadcrumbf("SELFTEST refresh success=%d", refreshOK ? 1 : 0);
         if (!refreshOK) {
             BLBreadcrumb("SELFTEST abort refresh failed");
             return;
         }
 
-        NSArray<NSNumber *> *originalBands = [self.manager.activeBands copy] ?: @[];
+        NSArray<NSNumber *> *originalBands = [manager.activeBands copy] ?: @[];
         BLBreadcrumbf("SELFTEST original bands count=%lu", (unsigned long)originalBands.count);
 
-        [self.manager setNetworkModeLTEOnly:^(BOOL lteOK, NSString *lteMessage) {
+        [manager setNetworkModeLTEOnly:^(BOOL lteOK, NSString *lteMessage) {
             BLBreadcrumbf("SELFTEST lte-only success=%d", lteOK ? 1 : 0);
-            [self.manager setNetworkModeAutomatic:^(BOOL automaticOK, NSString *automaticMessage) {
+            [manager setNetworkModeAutomatic:^(BOOL automaticOK, NSString *automaticMessage) {
                 BLBreadcrumbf("SELFTEST automatic success=%d", automaticOK ? 1 : 0);
 
-                [self.manager setPendingBands:originalBands];
+                [manager setPendingBands:originalBands];
                 BLBreadcrumb("SELFTEST pending original prepared");
-                [self.manager applyPendingBandsWithCompletion:^(BOOL applyOriginalOK, NSString *applyMessage) {
+                [manager applyPendingBandsWithCompletion:^(BOOL applyOriginalOK, NSString *applyMessage) {
                     BLBreadcrumbf("SELFTEST apply original success=%d", applyOriginalOK ? 1 : 0);
 
-                    [self.manager restoreAllSupportedBandsWithCompletion:^(BOOL restoreAllOK, NSString *restoreAllMessage) {
+                    [manager restoreAllSupportedBandsWithCompletion:^(BOOL restoreAllOK, NSString *restoreAllMessage) {
                         BLBreadcrumbf("SELFTEST restore-all success=%d", restoreAllOK ? 1 : 0);
 
-                        [self.manager restorePreviousBandsWithCompletion:^(BOOL restorePreviousOK, NSString *restorePreviousMessage) {
+                        [manager restorePreviousBandsWithCompletion:^(BOOL restorePreviousOK, NSString *restorePreviousMessage) {
                             BLBreadcrumbf("SELFTEST restore-previous success=%d", restorePreviousOK ? 1 : 0);
 
-                            [self.manager setPendingBands:originalBands];
+                            [manager setPendingBands:originalBands];
                             BLBreadcrumb("SELFTEST final original prepared");
-                            [self.manager applyPendingBandsWithCompletion:^(BOOL finalApplyOK, NSString *finalApplyMessage) {
+                            [manager applyPendingBandsWithCompletion:^(BOOL finalApplyOK, NSString *finalApplyMessage) {
                                 BLBreadcrumbf("SELFTEST final apply success=%d", finalApplyOK ? 1 : 0);
 
-                                [self.manager setNetworkModeAutomatic:^(BOOL finalAutomaticOK, NSString *finalAutomaticMessage) {
+                                [manager setNetworkModeAutomatic:^(BOOL finalAutomaticOK, NSString *finalAutomaticMessage) {
                                     BLBreadcrumbf("SELFTEST final automatic success=%d", finalAutomaticOK ? 1 : 0);
 
-                                    [self.manager refreshWithCompletion:^(BOOL verifyOK, NSString *verifyMessage) {
+                                    [manager refreshWithCompletion:^(BOOL verifyOK, NSString *verifyMessage) {
                                         NSSet *expected = [NSSet setWithArray:originalBands ?: @[]];
-                                        NSSet *actual = [NSSet setWithArray:self.manager.activeBands ?: @[]];
+                                        NSSet *actual = [NSSet setWithArray:manager.activeBands ?: @[]];
                                         BOOL restored = verifyOK && [expected isEqualToSet:actual];
                                         BLBreadcrumbf("SELFTEST verify success=%d restored=%d active-count=%lu",
                                                       verifyOK ? 1 : 0,
                                                       restored ? 1 : 0,
-                                                      (unsigned long)self.manager.activeBands.count);
-                                        [self refreshDisplay];
+                                                      (unsigned long)manager.activeBands.count);
+                                        [weakSelf refreshDisplay];
 
-                                        [self.manager openFieldTestWithCompletion:^(BOOL fieldTestOK, NSString *fieldTestMessage) {
+                                        [manager openFieldTestWithCompletion:^(BOOL fieldTestOK, NSString *fieldTestMessage) {
                                             BLBreadcrumbf("SELFTEST field-test success=%d", fieldTestOK ? 1 : 0);
                                             BLBreadcrumb("SELFTEST end");
                                         }];
