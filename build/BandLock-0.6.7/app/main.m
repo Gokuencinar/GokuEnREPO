@@ -44,6 +44,11 @@ static void BLProbeLog(const char *message) {
         [button.topAnchor constraintEqualToAnchor:label.bottomAnchor constant:28],
         [button.heightAnchor constraintGreaterThanOrEqualToConstant:48]
     ]];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        BLProbeLog("auto dispatch fired\n");
+        [self testTapped:nil];
+    });
 }
 
 - (void)testTapped:(UIButton *)sender {
