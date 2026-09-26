@@ -1,0 +1,71 @@
+name: Build BandLock Diagnostic 0.6.10
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'build/BandLock-0.6.10/**'
+      - '.github/workflows/build-bandlock-diag-0610.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup RootHide Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+
+      - name: Validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-0.6.10/app/Resources/Info.plist
+          plutil -lint build/BandLock-0.6.10/app/Entitlements.plist
+          grep -q 'TARGET = iphone:clang:16.5:16.0' build/BandLock-0.6.10/Makefile
+          grep -q 'BandLock_LDFLAGS += -lroothide' build/BandLock-0.6.10/app/Makefile
+          grep -q 'BandLock-0.6.10-probe.log' build/BandLock-0.6.10/app/main.m
+          grep -q 'UIApplicationMain(argc, argv, nil, @"BLMinimalAppDelegate")' build/BandLock-0.6.10/app/main.m
+
+      - name: Build RootHide package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/BandLock-0.6.10
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          test -f packages/com.gokuencinar.bandlock_0.6.10_iphoneos-arm64e.deb
+          APP_BIN="$(find .theos -path '*/Applications/BandLock.app/BandLock' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          echo '=== linked libraries ==='
+          otool -L "$APP_BIN"
+          otool -L "$APP_BIN" | grep -q 'libroothide.dylib'
+          mkdir -p ../../diagnostics
+          cp packages/com.gokuencinar.bandlock_0.6.10_iphoneos-arm64e.deb ../../diagnostics/BandLock-0.6.10-roothide-link.deb
+
+      - name: Publish diagnostic package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diagnostics/BandLock-0.6.10-roothide-link.deb
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish BandLock 0.6.10 roothide-link diagnostic"
+            git push
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-0.6.10-roothide-link-deb
+          path: build/BandLock-0.6.10/packages/*.deb
+          if-no-files-found: error
