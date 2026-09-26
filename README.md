@@ -172,7 +172,7 @@ It adds richer information about the currently connected Wi-Fi network, live sig
 - **BandLock (RootHide) 0.6.34** — `iphoneos-arm64e`
 - **BandLock (Dopamine) 0.6.34** — `iphoneos-arm64`
 - **BetterWiFi RH 0.3.8** — `iphoneos-arm64e`
-- **Nuke Wireless 1.0.25** — `iphoneos-arm64e` (pendiente de publicar el paquete `.deb` compilado)
+- **Nuke Wireless 1.0.25** — `iphoneos-arm64e`
 
 El índice `Packages` y `Packages.gz` se regenera automáticamente cuando cambia un paquete dentro de `debs/`.
 
