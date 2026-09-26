@@ -8,6 +8,8 @@ BandLock 0.6.32 moves the public tweak out of the iOS Settings app and into a de
 - When **Prepare compatible bands** succeeds for a country, BandLock stores only that country's ISO code. Control then exposes **Manage frequencies for <country>**.
 - The country frequency manager only shows the selected country's LTE bands that are also reported as supported by the current iPhone. Switches update the pending selection only; the modem still changes exclusively after an explicit **Apply selection**.
 - Adds a third bottom tab, **Info**, with credits for **Gokuencinar / GokuEn**, installed version, update checking against GokuEnREPO's APT index, in-app release notes, repository link and a frequency glossary.
+- Credits now show the Windows account avatar used by Gokuencinar/GokuEn, bundled as a local circular profile image beside the name.
+- Fixes UTF-8/mojibake in the frequency glossary and the remaining affected country/language UI strings so accents, punctuation and symbols render correctly.
 - Adds an in-app language selector independent from the system language: Spanish, English, French, German, Traditional Chinese, Simplified Chinese / Mandarin and Japanese. Country names follow the selected app locale.
 - Adds a glossary explaining LTE/4G, Bxx, MHz/GHz, FDD, TDD, SDL, APT 700, AWS, PCS, WCS, CBRS, LAA, CDMA, WCDMA/UMTS/HSPA, GSM/EDGE, RAT and NR/5G.
 - Network mode IPC now also carries a semantic `mode_code`, so the UIKit app can translate Automatic/LTE-only independently of the daemon's system locale.

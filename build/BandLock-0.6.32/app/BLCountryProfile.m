@@ -51,5 +51,5 @@ NSString *BLLocalizedCountryName(NSDictionary *country) {
         if (localized.length) return localized;
     }
     NSString *fallback = [country[@"name"] isKindOfClass:[NSString class]] ? country[@"name"] : nil;
-    return fallback.length ? fallback : @"â€”";
+    return fallback.length ? fallback : @"—";
 }

@@ -100,10 +100,41 @@ static NSString * const BLChangelogRawURL = @"https://raw.githubusercontent.com/
     return cell;
 }
 
+- (UIImage *)creditsAvatarImage {
+    UIImage *source = [UIImage imageNamed:@"CreditsAvatar.jpg"];
+    if (!source) return [UIImage systemImageNamed:@"person.crop.circle.fill"];
+
+    CGSize size = CGSizeMake(44.0, 44.0);
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:size];
+    return [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+        CGRect bounds = (CGRect){CGPointZero, size};
+        [[UIBezierPath bezierPathWithOvalInRect:bounds] addClip];
+
+        CGFloat scale = MAX(size.width / source.size.width, size.height / source.size.height);
+        CGSize drawSize = CGSizeMake(source.size.width * scale, source.size.height * scale);
+        CGRect drawRect = CGRectMake((size.width - drawSize.width) * 0.5,
+                                     (size.height - drawSize.height) * 0.5,
+                                     drawSize.width,
+                                     drawSize.height);
+        [source drawInRect:drawRect];
+    }];
+}
+
+- (UITableViewCell *)creditsCell {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+    cell.imageView.image = [self creditsAvatarImage];
+    cell.textLabel.text = @"Gokuencinar · GokuEn";
+    cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+    cell.detailTextLabel.text = BLT(@"Créditos", @"Credits");
+    cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    return cell;
+}
+
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *version = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
     if (indexPath.section == 0 && indexPath.row == 0) return [self valueCell:@"BandLock Global" detail:version symbol:@"antenna.radiowaves.left.and.right" disclosure:NO];
-    if (indexPath.section == 0) return [self valueCell:BLT(@"Créditos", @"Credits") detail:@"Gokuencinar · GokuEn" symbol:@"person.crop.circle" disclosure:NO];
+    if (indexPath.section == 0) return [self creditsCell];
     if (indexPath.section == 1 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];
     if (indexPath.section == 1) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
     if (indexPath.section == 2 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];

@@ -35,6 +35,8 @@ jobs:
           plutil -lint build/BandLock-0.6.32/fieldbridge/BandLockFieldBridge.plist
           plutil -lint build/BandLock-0.6.32/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
           python3 -m json.tool build/BandLock-0.6.32/app/Resources/countries.json >/dev/null
+          test -s build/BandLock-0.6.32/app/Resources/CreditsAvatar.jpg
+          ! grep -R --include='*.m' --include='*.h' -E 'Ã.|Â.|â€¦|â€”|�' build/BandLock-0.6.32/app
           grep -q 'SUBPROJECTS += app daemon launcher fieldbridge' build/BandLock-0.6.32/Makefile
           ! grep -q 'clientprobe' build/BandLock-0.6.32/Makefile
           grep -q 'BandLock_LDFLAGS += -lroothide' build/BandLock-0.6.32/app/Makefile

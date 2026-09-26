@@ -65,10 +65,10 @@
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     if (section == 0) {
-        return BLT(@"AquÃ­ solo cambias la selecciÃ³n pendiente. Pulsa Aplicar en Control para modificar el mÃ³dem.",
+        return BLT(@"Aquí solo cambias la selección pendiente. Pulsa Aplicar en Control para modificar el módem.",
                    @"Changes here only update the pending selection. Tap Apply in Control to change the modem.");
     }
-    if (section == 3 && self.sdlBands.count) return BLT(@"SDL es bajada suplementaria. No conviene usar Ãºnicamente bandas SDL.", @"SDL is supplemental downlink. Avoid selecting only SDL bands.");
+    if (section == 3 && self.sdlBands.count) return BLT(@"SDL es bajada suplementaria. No conviene usar únicamente bandas SDL.", @"SDL is supplemental downlink. Avoid selecting only SDL bands.");
     return nil;
 }
 
@@ -83,8 +83,8 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
         NSArray *titles = @[
-            BLT(@"Seleccionar todas las del paÃ­s", @"Select all country bands"),
-            BLT(@"Usar las activas actuales del paÃ­s", @"Use current active country bands")
+            BLT(@"Seleccionar todas las del país", @"Select all country bands"),
+            BLT(@"Usar las activas actuales del país", @"Use current active country bands")
         ];
         NSArray *symbols = @[@"checkmark.circle", @"antenna.radiowaves.left.and.right"];
         UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
@@ -100,7 +100,7 @@
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.textLabel.text = BLGBandTitle(band);
     NSString *frequency = BLGFrequencyForBand(band);
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ Â· %@", frequency.length ? frequency : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), BLGDuplexForBand(band)];
+    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", frequency.length ? frequency : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), BLGDuplexForBand(band)];
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     UISwitch *toggle = [[UISwitch alloc] init];
     toggle.on = [self.selected containsObject:band];

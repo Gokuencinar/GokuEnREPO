@@ -19,7 +19,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return self.languages.count; }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    return BLT(@"El idioma se aplica inmediatamente y queda guardado para prÃ³ximos inicios de BandLock.",
+    return BLT(@"El idioma se aplica inmediatamente y queda guardado para próximos inicios de BandLock.",
                @"The language is applied immediately and saved for future BandLock launches.");
 }
 
