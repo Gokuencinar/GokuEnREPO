@@ -1,0 +1,24 @@
+#!/bin/sh
+
+LABEL="com.gokuencinar.bandlockd"
+PLIST="/Library/LaunchDaemons/${LABEL}.plist"
+SOCKET="/tmp/${LABEL}.sock"
+OLD_SOCKET="/tmp/bandlockd.sock"
+DOMAIN="user/501"
+
+launchctl bootout "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+rm -f "$SOCKET" >/dev/null 2>&1 || true
+rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
+
+launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || true
+
+if command -v uicache >/dev/null 2>&1; then
+    uicache -p /Applications/BandLock.app >/dev/null 2>&1 || true
+fi
+
+# The Field Test bridge is injected only into MobilePhone. Restart it so the
+# newly installed bridge is loaded on the next launch.
+killall MobilePhone >/dev/null 2>&1 || true
+
+exit 0
