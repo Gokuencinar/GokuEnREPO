@@ -1,0 +1,36 @@
+name: Fix Nuke Wireless package metadata
+
+on:
+  push:
+    branches:
+      - nuke-wireless-draft
+    paths:
+      - .github/workflows/fix-nuke-wireless-metadata.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rewrite package display metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="debs/com.gokuencinar.nukewireless_1.0.25+rh25_iphoneos-arm64e.deb"
+          work="$(mktemp -d)"
+          dpkg-deb --raw-extract "$package" "$work/root"
+          sed -i -e 's/^Author:.*/Author: Gokuencinar/' -e 's/^Name:.*/Name: Nuke Wireless/' "$work/root/DEBIAN/control"
+          dpkg-deb --build "$work/root" "$work/NukeWireless.deb"
+          mv "$work/NukeWireless.deb" "$package"
+      - name: Commit package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debs/com.gokuencinar.nukewireless_1.0.25+rh25_iphoneos-arm64e.deb
+          git commit -m "Set Nuke Wireless package author and name"
+          git push
