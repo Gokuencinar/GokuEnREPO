@@ -1,0 +1,104 @@
+name: Build BandLock Global 0.6.7
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'build/BandLock-0.6.7/**'
+      - '.github/workflows/build-bandlock-global-067.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup RootHide Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+
+      - name: Validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-0.6.7/app/Resources/Info.plist
+          plutil -lint build/BandLock-0.6.7/app/Entitlements.plist
+          plutil -lint build/BandLock-0.6.7/daemon/Entitlements.plist
+          plutil -lint build/BandLock-0.6.7/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          grep -q 'SUBPROJECTS += app daemon' build/BandLock-0.6.7/Makefile
+          grep -q 'APPLICATION_NAME = BandLock' build/BandLock-0.6.7/app/Makefile
+          grep -q 'TARGET = iphone:clang:16.5:16.0' build/BandLock-0.6.7/Makefile
+          grep -q '^\s*main.m$' build/BandLock-0.6.7/app/Makefile
+          ! grep -q 'BLTelephonyManager.m' build/BandLock-0.6.7/app/Makefile
+          grep -q 'BLMinimalAppDelegate' build/BandLock-0.6.7/app/main.m
+          grep -q 'BLMinimalViewController' build/BandLock-0.6.7/app/main.m
+          grep -q 'button tapped' build/BandLock-0.6.7/app/main.m
+          grep -q 'BandLock-0.6.7-probe.log' build/BandLock-0.6.7/app/main.m
+          grep -q 'UIApplicationMain(argc, argv, nil, @"BLMinimalAppDelegate")' build/BandLock-0.6.7/app/main.m
+          grep -q 'bandlock</string>' build/BandLock-0.6.7/app/Resources/Info.plist
+          grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.7/daemon/Makefile
+          ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.7/app/Entitlements.plist
+          grep -q '<string>spi</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
+          grep -q '<string>preferences-write</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
+          grep -q 'com.apple.CoreTelephony.CommCenterHelper.allow' build/BandLock-0.6.7/daemon/Entitlements.plist
+          grep -q 'sleepForTimeInterval:0.8' build/BandLock-0.6.7/daemon/main.m
+          grep -q 'sleepForTimeInterval:1.0' build/BandLock-0.6.7/daemon/main.m
+          grep -q 'queryCoreTelephony' build/BandLock-0.6.7/daemon/BLTelephonyCore.m
+          grep -q 'writeLTEBands:' build/BandLock-0.6.7/daemon/main.m
+          grep -q 'KeepAlive' build/BandLock-0.6.7/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          grep -q '/usr/libexec/BandLockDaemon' build/BandLock-0.6.7/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          grep -q 'com.gokuencinar.bandlock' build/BandLock-0.6.7/control
+
+      - name: Build RootHide package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/BandLock-0.6.7
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          ls -lh packages/*.deb
+          test -f packages/com.gokuencinar.bandlock_0.6.7_iphoneos-arm64e.deb
+          APP_BIN="$(find .theos -path '*/Applications/BandLock.app/BandLock' -type f | head -n 1)"
+          DAEMON_BIN="$(find .theos -path '*/usr/libexec/BandLockDaemon' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          test -n "$DAEMON_BIN"
+          test -x "$DAEMON_BIN"
+          command -v ldid >/dev/null 2>&1
+          echo '=== BandLock LC_BUILD_VERSION ==='
+          otool -l "$APP_BIN" | grep -A7 -m1 'LC_BUILD_VERSION'
+          ldid -e "$APP_BIN" > /tmp/bandlock-app-entitlements.plist
+          ldid -e "$DAEMON_BIN" > /tmp/bandlock-daemon-entitlements.plist
+          ! grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-daemon-entitlements.plist
+          grep -q '<string>spi</string>' /tmp/bandlock-daemon-entitlements.plist
+          grep -q '<string>preferences-write</string>' /tmp/bandlock-daemon-entitlements.plist
+          grep -q 'com.apple.CoreTelephony.CommCenterHelper.allow' /tmp/bandlock-daemon-entitlements.plist
+          mkdir -p ../../diagnostics
+          cp packages/com.gokuencinar.bandlock_0.6.7_iphoneos-arm64e.deb ../../diagnostics/BandLock-0.6.7-minimal.deb
+
+      - name: Publish package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diagnostics/BandLock-0.6.7-minimal.deb
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish BandLock 0.6.7 minimal diagnostic"
+            git push
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-0.6.7-deb
+          path: build/BandLock-0.6.7/packages/*.deb
+          if-no-files-found: error
+
