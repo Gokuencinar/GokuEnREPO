@@ -1,0 +1,116 @@
+name: Build BandLock Candidate 0.6.19
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'build/BandLock-0.6.19/**'
+      - '.github/workflows/build-bandlock-diag-0619.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup RootHide Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+
+      - name: Validate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-0.6.19/app/Resources/Info.plist
+          plutil -lint build/BandLock-0.6.19/app/Entitlements.plist
+          plutil -lint build/BandLock-0.6.19/daemon/Entitlements.plist
+          plutil -lint build/BandLock-0.6.19/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          python3 -m json.tool build/BandLock-0.6.19/app/Resources/countries.json >/dev/null
+          grep -q 'SUBPROJECTS += app daemon launcher' build/BandLock-0.6.19/Makefile
+          ! grep -q 'clientprobe' build/BandLock-0.6.19/Makefile
+          grep -q 'BandLock_LDFLAGS += -lroothide' build/BandLock-0.6.19/app/Makefile
+          grep -q 'BLBreadcrumb.c' build/BandLock-0.6.19/app/Makefile
+          grep -q 'com.apple.private.security.no-container' build/BandLock-0.6.19/app/Entitlements.plist
+          grep -q 'com.apple.private.security.container-required' build/BandLock-0.6.19/app/Entitlements.plist
+          ! grep -R --include='*.m' --include='*.h' -q 'BLProbe' build/BandLock-0.6.19/app
+          ! grep -R --include='*.m' -q 'auto refresh dispatch fired' build/BandLock-0.6.19/app
+          ! grep -R --include='*.m' -q 'dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0' build/BandLock-0.6.19/app
+          ! grep -q 'jbroot(' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q 'CFFIXED_USER_HOME' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q '/.jbroot-' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q 'BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.sock"' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q 'daemonSocketPath' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q 'jbroot(' build/BandLock-0.6.19/daemon/main.m
+          grep -q 'com.gokuencinar.bandlockd.sock' build/BandLock-0.6.19/daemon/main.m
+          grep -q 'SO_NOSIGPIPE' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q 'SO_RCVTIMEO' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q 'signal(SIGPIPE, SIG_IGN)' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          grep -q 'BandLock-client.log' build/BandLock-0.6.19/app/BLBreadcrumb.c
+          grep -q 'BandLock-daemon.log' build/BandLock-0.6.19/daemon/main.m
+          ! grep -q 'CoreTelephonyClient' build/BandLock-0.6.19/app/BLTelephonyManager.m
+          ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.19/app/Entitlements.plist
+          grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.19/daemon/Entitlements.plist
+          grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.19/daemon/Makefile
+          grep -q 'TOOL_NAME = BandLockLauncher' build/BandLock-0.6.19/launcher/Makefile
+          grep -q 'DOMAIN="user/501"' build/BandLock-0.6.19/layout/DEBIAN/postinst
+          grep -q 'launchctl bootstrap "$DOMAIN" "$PLIST"' build/BandLock-0.6.19/layout/DEBIAN/postinst
+          ! grep -q 'kickstart' build/BandLock-0.6.19/layout/DEBIAN/postinst
+          ! grep -q 'launchctl .*system' build/BandLock-0.6.19/layout/DEBIAN/postinst
+          grep -q 'uicache -p /Applications/BandLock.app' build/BandLock-0.6.19/layout/DEBIAN/postinst
+          grep -q 'SOCKET="/tmp/${LABEL}.sock"' build/BandLock-0.6.19/layout/DEBIAN/postinst
+          grep -q 'OLD_SOCKET="/tmp/bandlockd.sock"' build/BandLock-0.6.19/layout/DEBIAN/postinst
+          grep -q '^Version: 0.6.19$' build/BandLock-0.6.19/control
+
+      - name: Build candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/BandLock-0.6.19
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          test -f packages/com.gokuencinar.bandlock_0.6.19_iphoneos-arm64e.deb
+          APP_BIN="$(find .theos -path '*/Applications/BandLock.app/BandLock' -type f | head -n 1)"
+          DAEMON_BIN="$(find .theos -path '*/usr/libexec/BandLockDaemon' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          test -n "$DAEMON_BIN"
+          command -v ldid >/dev/null 2>&1
+          echo '=== App libraries ==='
+          otool -L "$APP_BIN"
+          otool -L "$APP_BIN" | grep -q 'libroothide.dylib'
+          ldid -e "$APP_BIN" > /tmp/bandlock-app-entitlements.plist
+          ldid -e "$DAEMON_BIN" > /tmp/bandlock-daemon-entitlements.plist
+          grep -q 'platform-application' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.private.security.no-sandbox' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.private.security.no-container' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.private.security.container-required' /tmp/bandlock-app-entitlements.plist
+          ! grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-daemon-entitlements.plist
+          mkdir -p ../../diagnostics
+          cp packages/com.gokuencinar.bandlock_0.6.19_iphoneos-arm64e.deb ../../diagnostics/BandLock-0.6.19-candidate.deb
+
+      - name: Publish diagnostic candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diagnostics/BandLock-0.6.19-candidate.deb
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish BandLock 0.6.19 candidate"
+            git pull --rebase origin main
+            git push
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-0.6.19-candidate
+          path: build/BandLock-0.6.19/packages/*.deb
+          if-no-files-found: error
