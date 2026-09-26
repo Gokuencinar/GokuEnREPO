@@ -89,6 +89,7 @@ jobs:
           git add diagnostics/BandLock-0.6.13-candidate.deb
           if ! git diff --cached --quiet; then
             git commit -m "Publish BandLock 0.6.13 candidate"
+            git pull --rebase origin main
             git push
           fi
 
