@@ -223,7 +223,8 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSString *selection = [query[@"ratSelection"] isKindOfClass:[NSString class]] ? query[@"ratSelection"] : @"—";
     NSString *mode = BLT(@"No disponible", @"Unavailable");
     NSString *modeCode = @"unknown";
-    if ([selection rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Automático", @"Automatic"); modeCode = @"automatic"; }
+    if ([selection rangeOfString:@"Unknown" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"No disponible", @"Unavailable"); modeCode = @"unknown"; }
+    else if ([selection rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Automático", @"Automatic"); modeCode = @"automatic"; }
     else if ([selection rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo LTE / 4G", @"LTE / 4G only"); modeCode = @"lte"; }
     else if (![selection isEqualToString:@"—"]) { mode = selection; modeCode = @"other"; }
     id ratRaw = query[@"ratRaw"] == NSNull.null ? nil : query[@"ratRaw"];
