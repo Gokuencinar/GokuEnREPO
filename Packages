@@ -185,12 +185,12 @@ Depends: firmware (>= 16.0), ldid, arpoison, network-cmds, ellekit
 Conflicts: xyz.cypwn.harpy-reloaded
 Replaces: xyz.cypwn.harpy-reloaded
 Filename: debs/com.gokuencinar.nukewireless_1.0.25+rh25_iphoneos-arm64e.deb
-Size: 7691864
-MD5sum: 17dc4c1494c52b2e399f7bf65cb23975
-SHA1: db078af1b759a373e9a3178fc0a70963007741fd
-SHA256: 96fda450a7d05ffcc182201b1f45c72c9de1c143fd1072804d4232525f11f7d6
+Size: 5655656
+MD5sum: f81e6dc64cda3e22d1fc57a03f784118
+SHA1: 2e62c789fb8d8ea356944f92d1449505de2e0ceb
+SHA256: 74fed0ddca1fe7f42503faa4ebf0b6442a986bef099442a16820d7ff676796b5
 Section: Utilities
 Description: Nuke Wireless Wi-Fi tools for iOS 16 (RootHide)
-Author: MidnightChips <midnightchips@gmail.com>
-Name: Harpy Reloaded
+Author: Gokuencinar
+Name: Nuke Wireless
 
