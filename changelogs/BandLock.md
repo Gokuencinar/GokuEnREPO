@@ -2,9 +2,41 @@
 
 Este archivo documenta las versiones de BandLock que están publicadas actualmente en **GokuEnREPO**.
 
-**Descripción:** tweak RootHide para consultar y seleccionar bandas LTE, aplicar perfiles rápidos y controlar el modo de red desde Ajustes.
+**Descripción:** aplicación RootHide para consultar y seleccionar bandas LTE, controlar el modo de red y consultar referencias de bandas LTE por país.
 
 **Compatibilidad:** iOS 16.x con jailbreak RootHide/Dopamine y arquitectura `iphoneos-arm64e`. El paquete actual está compilado con target iOS 16.0.
+
+## 0.6.0 Global App
+
+### Nuevo
+- BandLock pasa de un PreferenceBundle de Ajustes a una **aplicación UIKit independiente** accesible desde la pantalla de inicio.
+- Nueva interfaz con dos pestañas principales: **Control** y **Países**.
+- Catálogo offline de **160 países y territorios**; 156 incluyen bandas LTE de referencia en el snapshot inicial.
+- Buscador de países y nombres localizados según el idioma/región del iPhone.
+- Vista de detalle por país con bandas LTE, frecuencia, FDD/TDD/SDL y marca de compatibilidad con el módem del iPhone.
+- Acción **Preparar bandas compatibles** que calcula `bandas del país ∩ bandas soportadas por el iPhone`.
+- Icono propio de BandLock en SpringBoard.
+- Scripts `uicache` de instalación/desinstalación para registrar correctamente la aplicación.
+
+### Seguridad y comportamiento
+- Elegir un país **nunca aplica cambios automáticamente**: solo prepara una selección pendiente.
+- Antes de escribir, BandLock vuelve a consultar `supportedBands` y cancela la operación si la compatibilidad cambió.
+- Se rechazan selecciones vacías y selecciones formadas únicamente por bandas SDL.
+- Se mantiene el guardado de la selección anterior, lectura posterior, verificación y un único reintento de CommCenter.
+- Abrir la aplicación no modifica el módem.
+
+### Cambiado
+- El paquete Debian sigue siendo `com.gokuencinar.bandlock`, por lo que 0.6.0 actualiza la línea pública 0.5.x.
+- El bundle de la nueva aplicación es `com.gokuencinar.bandlock.app`.
+- Se elimina la dependencia pública de PreferenceLoader y deja de instalarse el PreferenceBundle de Ajustes.
+- La lógica CoreTelephony se separa de la UI en un gestor común para Control y Países.
+
+### Datos de países
+- El snapshot inicial se generó con datos LTE por país disponibles el 26-09-2026.
+- Los datos por país son **orientativos**: los despliegues reales varían por operador, zona, roaming y fecha.
+- El módem sigue siendo la fuente de verdad para saber qué bandas puede seleccionar el dispositivo.
+
+---
 
 ## 0.5.0 Global
 

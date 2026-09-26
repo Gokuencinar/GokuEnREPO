@@ -1,102 +1,120 @@
-# BandLock Global — LTE/4G Band Control for iOS 16 RootHide
+# BandLock Global — LTE/4G Band Control App for iOS 16 RootHide
 
-**BandLock Global** is the public, worldwide edition of BandLock for **iOS 16**, **Dopamine** and **RootHide**. Instead of assuming a country or carrier, it reads the LTE capabilities reported by the iPhone modem and builds the selector from those bands at runtime.
+**BandLock Global** is the public worldwide edition of BandLock for **iOS 16**, **Dopamine** and **RootHide**. Version 0.6.0 is a standalone Home Screen app rather than a Settings PreferenceBundle.
 
-**BandLock Global** es la edición pública e internacional de BandLock para **iOS 16**, **Dopamine** y **RootHide**. En lugar de asumir un país u operador, lee las capacidades LTE que reporta el propio módem del iPhone y genera el selector dinámicamente.
+**BandLock Global** es la edición pública internacional de BandLock para **iOS 16**, **Dopamine** y **RootHide**. Desde la versión 0.6.0 funciona como una app independiente en la pantalla de inicio y ya no como un panel dentro de Ajustes.
 
-> Current public version / Versión pública actual: **0.5.0 Global** · Architecture / Arquitectura: **iphoneos-arm64e**
+> Current public version / Versión pública actual: **0.6.0 Global App** · Architecture / Arquitectura: **iphoneos-arm64e**
 
 ## Español
 
-### Qué hace
+### Interfaz
 
-BandLock Global permite consultar y controlar manualmente las **bandas LTE/4G permitidas** por el módem desde Ajustes. La lista no está limitada a España: muestra todas las bandas LTE que `CoreTelephony` informa como soportadas en ese dispositivo concreto.
+BandLock se divide en dos pestañas:
 
-Cada banda conocida incluye su frecuencia nominal y el tipo de operación de radio correspondiente (**FDD**, **TDD** o **SDL**). El tipo FDD/TDD pertenece a la definición de la propia banda LTE; lo que cambia entre países, operadores, regiones y celdas es qué bandas están desplegadas y disponibles.
+- **Control** — estado del módem, red actual, banda servidora, modo Automático/Solo LTE, selección manual de bandas, aplicar, restaurar y Field Test.
+- **Países** — buscador con 160 países y territorios. Cada país muestra sus bandas LTE de referencia, frecuencia, FDD/TDD/SDL y cuáles de ellas son compatibles con el módem del iPhone.
+
+### Cómo funcionan los perfiles de país
+
+Los perfiles de país son una **referencia**, no una orden automática al módem. Al pulsar **Preparar bandas compatibles**, BandLock calcula:
+
+`bandas LTE del país ∩ bandas LTE soportadas por el iPhone`
+
+El resultado se copia a **Selección pendiente**. Después debes ir a Control, revisarlo y pulsar **Aplicar selección**. Elegir un país nunca cambia el módem automáticamente.
+
+Que una banda figure para un país no garantiza que todos los operadores la utilicen, ni que esté desplegada en tu ubicación. Los despliegues pueden variar por operador, zona, roaming y fecha.
 
 ### Funciones
 
-- Selección manual de todas las bandas LTE que el módem reporta como soportadas.
-- Etiquetas de frecuencia y clasificación **FDD / TDD / SDL**.
-- Grupos dinámicos: FDD, TDD, SDL y otras bandas LTE reportadas.
-- Acciones rápidas: selección activa actual, todas las soportadas, solo FDD y solo TDD.
-- Modo de red **Automático** y **Solo LTE / 4G**.
-- Restauración de la selección anterior.
-- Restauración de todas las bandas LTE soportadas por el módem.
-- Verificación posterior de la escritura mediante **CoreTelephony**.
-- Un reintento automático cuando CommCenter todavía devuelve la configuración anterior.
-- Intento de lectura de la banda LTE de la celda servidora.
-- Acceso directo a **FTMInternal / Field Test Mode**.
+- App UIKit independiente con icono en SpringBoard.
+- Selección de todas las bandas LTE que el módem reporta como soportadas.
+- Metadatos de frecuencia y clasificación **FDD / TDD / SDL**.
+- Selector agrupado por FDD, TDD, SDL y otras bandas.
+- Atajos: selección activa, todas las soportadas, solo FDD y solo TDD.
+- Catálogo offline y buscador de países.
+- Intersección segura entre bandas del país y capacidades reales del iPhone.
+- Modo **Automático** y **Solo LTE / 4G**.
+- Restauración de la selección anterior o de todas las bandas soportadas.
+- Verificación posterior mediante **CoreTelephony** y un reintento si CommCenter todavía devuelve el estado anterior.
+- Relectura de `supportedBands` justo antes de escribir.
+- Bloqueo de selecciones vacías y de selecciones compuestas únicamente por SDL.
+- Lectura experimental de la banda LTE servidora.
+- Acceso a **FTMInternal / Field Test Mode**.
 - Logs de diagnóstico.
-- Sin daemon residente.
-- Sin inyección en SpringBoard.
-- Sin cambios automáticos del módem al arrancar.
+- Sin daemon residente y sin cambios automáticos al abrir la app o al arrancar.
 
-### Diseño global
+### Datos de países
 
-BandLock Global **no usa una base de datos rígida de bandas por país u operador**. Esa aproximación puede quedar obsoleta y producir resultados incorrectos con roaming, OMV, variantes regionales de iPhone o despliegues locales. El módem es la fuente de verdad para decidir qué bandas se pueden seleccionar.
+El snapshot incluido en 0.6.0 contiene **160 países y territorios**, de los cuales **156 tienen bandas LTE de referencia** en la fuente utilizada el 26-09-2026. BandLock conserva el dataset dentro de la app para que la consulta funcione sin conexión.
 
-Que una banda aparezca como soportada por el iPhone **no significa que tu operador la utilice en tu ubicación**. Si restringes demasiado la selección puedes perder cobertura, datos o llamadas. Las bandas SDL son de bajada suplementaria y normalmente no deben seleccionarse como única banda.
-
-### Separación de la edición privada
-
-La antigua edición **0.4.4 orientada a España** usa el identificador `com.local.bandlock` y queda fuera de la línea pública de nuevas versiones. La edición pública Global usa `com.gokuencinar.bandlock`, un PreferenceBundle diferente y archivos de estado/log independientes para evitar colisiones.
+El dataset no sustituye la información oficial de cada operador. El módem del propio iPhone sigue siendo la fuente de verdad para determinar qué bandas se pueden seleccionar en ese dispositivo.
 
 ### Compatibilidad
 
 - iOS 16.x
 - Dopamine / RootHide
 - iPhone arm64e
-- PreferenceLoader
 - Sileo
 - Paquete: `iphoneos-arm64e`
-- Control de bandas: LTE/4G. BandLock 0.5.0 no pretende controlar bandas 5G NR.
+- Paquete Debian: `com.gokuencinar.bandlock`
+- App bundle: `com.gokuencinar.bandlock.app`
+- Control de bandas: LTE/4G; 0.6.0 no declara bloqueo de bandas 5G NR.
 
 ## English
 
-### What it does
+### Interface
 
-BandLock Global lets you inspect and manually control the **allowed LTE/4G band set** directly from Settings. The selector is not restricted to Spain: it is generated from every LTE band that `CoreTelephony` reports as supported by that specific modem.
+BandLock uses two main tabs:
 
-Known bands are labelled with their nominal frequency and radio operation type (**FDD**, **TDD** or **SDL**). FDD/TDD is defined by the LTE operating band itself; what differs across countries, carriers, regions and cells is which standardized bands are actually deployed and available.
+- **Control** — modem status, current network, serving band, Automatic/LTE-only mode, manual band editing, apply/restore actions and Field Test.
+- **Countries** — searchable list of 160 countries and territories. Each country shows reference LTE bands, frequency, FDD/TDD/SDL metadata, and which bands are also supported by the current iPhone modem.
+
+### Country profiles
+
+Country profiles are **reference data**, not automatic modem commands. Tapping **Prepare compatible bands** computes:
+
+`country LTE bands ∩ iPhone modem-supported LTE bands`
+
+The result becomes the **pending selection**. The user must then review it in Control and explicitly tap **Apply selection**. Selecting a country never writes to the modem automatically.
+
+A band being listed for a country does not mean every carrier uses it or that it is deployed at the current location. Deployments vary by carrier, region, roaming and time.
 
 ### Features
 
+- Standalone UIKit app with a Home Screen icon.
 - Manual selection of every LTE band reported as supported by the modem.
-- Frequency labels and **FDD / TDD / SDL** classification.
+- Frequency and **FDD / TDD / SDL** metadata.
 - Dynamic FDD, TDD, SDL and other-LTE groups.
-- Quick actions for current active selection, all supported, FDD only and TDD only.
+- Quick actions for current active, all supported, FDD-only and TDD-only selections.
+- Offline searchable country catalogue.
+- Safe intersection of country bands with actual iPhone modem capabilities.
 - **Automatic** and **LTE / 4G only** network modes.
-- Restore the previous LTE selection.
-- Restore every LTE band supported by the modem.
-- Post-write verification through **CoreTelephony**.
-- One automatic retry when CommCenter still reports the previous configuration.
+- Restore previous selection or every modem-supported LTE band.
+- **CoreTelephony** write verification plus one retry when CommCenter still reports the previous state.
+- Fresh `supportedBands` check immediately before a write.
+- Empty and SDL-only selections are rejected.
 - Experimental serving-cell LTE band reading.
 - Direct **FTMInternal / Field Test Mode** launcher.
 - Diagnostic logs.
-- No resident daemon.
-- No SpringBoard injection.
-- No automatic modem changes at boot.
+- No resident daemon and no automatic modem writes at launch or boot.
 
-### Global design
+### Country data
 
-BandLock Global deliberately **does not use a hard-coded country/carrier band database**. Such databases can become stale and can be wrong for roaming, MVNOs, regional iPhone variants and local deployments. The modem itself is used as the source of truth for which LTE bands can be selected.
+The 0.6.0 offline snapshot contains **160 countries and territories**, with LTE reference bands available for **156** of them in the source snapshot collected on 2026-09-26.
 
-A band being supported by the iPhone **does not mean your carrier deploys it where you are**. Restricting the list too aggressively can cause loss of coverage, data or calls. SDL bands are supplemental downlink and normally should not be selected as the only allowed band.
-
-### Private/public split
-
-The former **Spain-focused 0.4.4** edition uses `com.local.bandlock` and is no longer the public development line. The public Global edition uses `com.gokuencinar.bandlock`, a separate PreferenceBundle, and independent state/log files to prevent collisions.
+The dataset does not replace carrier-specific official information. The iPhone modem remains the source of truth for which LTE bands can actually be selected on the device.
 
 ### Compatibility
 
 - iOS 16.x
 - Dopamine / RootHide
 - arm64e iPhones
-- PreferenceLoader
 - Sileo
 - Package architecture: `iphoneos-arm64e`
-- Band control: LTE/4G. BandLock 0.5.0 does not claim 5G NR band control.
+- Debian package: `com.gokuencinar.bandlock`
+- App bundle: `com.gokuencinar.bandlock.app`
+- LTE/4G band control only; 0.6.0 does not claim 5G NR band locking.
 
 ## Install / Instalación
 
@@ -106,15 +124,17 @@ Add this repository to Sileo / Añade este repositorio a Sileo:
 https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 ```
 
-Then install **BandLock** / Después instala **BandLock**.
+Then install **BandLock**. The app will appear on the Home Screen after installation.
+
+Después instala **BandLock**. La app aparecerá en la pantalla de inicio tras la instalación.
 
 ## Community testing / Pruebas comunitarias
 
-Reports from different iPhone models, carriers and countries are especially useful for the Global edition:
+Compatibility reports from different iPhone models, carriers and countries are useful, especially corrections to country reference data:
 
 **[BandLock Global — community compatibility reports / pruebas de compatibilidad](https://github.com/Gokuencinar/GokuEnREPO/issues/1)**
 
-Please never include IMEI, IMSI, ICCID, phone numbers or other personal identifiers in public reports.
+Please never publish IMEI, IMSI, ICCID, phone numbers or other personal identifiers.
 
 ## Changelog
 
@@ -122,4 +142,4 @@ See / Ver: [BandLock changelog](changelogs/BandLock.md)
 
 ## Search terms
 
-iOS jailbreak tweak · iOS 16 jailbreak · RootHide tweak · Dopamine tweak · LTE band lock · global LTE band selector · LTE FDD · LTE TDD · supplemental downlink · 4G band lock · 4G only · iPhone LTE bands · CoreTelephony · CommCenter · Field Test Mode · FTMInternal · arm64e · Sileo · Theos
+iOS jailbreak app · iOS 16 jailbreak · RootHide app · Dopamine tweak · LTE band lock · global LTE band selector · LTE bands by country · LTE FDD · LTE TDD · supplemental downlink · 4G band lock · 4G only · iPhone LTE bands · CoreTelephony · CommCenter · Field Test Mode · FTMInternal · arm64e · Sileo · Theos

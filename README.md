@@ -24,68 +24,70 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 
 ## Español
 
-**BandLock Global** es la edición pública de BandLock para controlar manualmente bandas LTE/4G desde Ajustes. La lista se genera en tiempo real a partir de las bandas que el propio módem del iPhone reporta como soportadas, sin asumir España, un país concreto ni un operador concreto.
+**BandLock Global 0.6.0** es una aplicación de jailbreak para controlar manualmente las bandas LTE/4G del iPhone con **Dopamine + RootHide**. Desde 0.6.0 aparece como una app independiente en la pantalla de inicio, en lugar de vivir dentro de Ajustes.
 
-Las bandas conocidas se muestran con su frecuencia nominal y clasificación **FDD, TDD o SDL**. BandLock mantiene también los modos **Automático** y **Solo LTE / 4G**, restauración de configuración, acceso a **FTMInternal / Field Test Mode**, verificación posterior de los cambios y logs de diagnóstico.
+La app tiene dos pestañas:
+
+- **Control**: estado del módem, red y banda servidora, Automático/Solo LTE, editor de bandas, aplicar/restaurar y Field Test.
+- **Países**: buscador con 160 países y territorios y sus bandas LTE de referencia. Cada banda muestra FDD/TDD/SDL y si también está soportada por el módem del iPhone.
+
+Elegir un país no cambia el módem automáticamente. **Preparar bandas compatibles** calcula la intersección entre las bandas del país y las bandas soportadas por el iPhone; el resultado queda pendiente hasta que el usuario lo revise y pulse **Aplicar selección**.
 
 ### Funciones principales
 
+- App UIKit independiente con icono en SpringBoard.
 - Selección manual de todas las bandas LTE reportadas como soportadas por el módem.
-- Clasificación **FDD / TDD / SDL** y frecuencia nominal para bandas conocidas.
-- Grupos dinámicos y filtros rápidos FDD/TDD, sin perfiles de país u operador.
+- Frecuencia y clasificación FDD/TDD/SDL para bandas conocidas.
+- Catálogo offline de países y buscador.
 - Modo **Automático** y **Solo LTE / 4G**.
-- Restaurar selección anterior.
-- Restaurar todas las bandas LTE soportadas por el módem.
-- Verificación de escritura mediante CoreTelephony.
-- Reintento automático si CommCenter tarda en consolidar un cambio.
-- Intento de lectura de la banda LTE de la celda servidora.
-- Acceso directo a **FTMInternal-4 / Field Test Mode**.
-- Logs de diagnóstico por SSH.
-- Sin daemon residente.
-- Sin inyección en SpringBoard.
-- Sin cambios automáticos del módem al arrancar.
+- Restaurar selección anterior o todas las bandas soportadas.
+- Verificación CoreTelephony y un reintento de CommCenter.
+- Revalidación de bandas soportadas antes de cada escritura.
+- Bloqueo de listas vacías y selecciones solo-SDL.
+- Acceso a FTMInternal / Field Test Mode y logs.
+- Sin daemon residente y sin escrituras automáticas al abrir o arrancar.
 
 ### Compatibilidad
 
 - iOS 16.x
 - Dopamine / RootHide
 - iPhone arm64e
-- PreferenceLoader
+- Sileo
 - Paquete: `iphoneos-arm64e`
 
 [Changelog de BandLock](changelogs/BandLock.md)
 
 ## English
 
-**BandLock** is a jailbreak tweak designed for manual LTE/4G cellular band control directly from the iOS Settings app.
+**BandLock Global 0.6.0** is a jailbreak application for manual LTE/4G band control on **Dopamine + RootHide**. Starting with 0.6.0 it is a standalone Home Screen app rather than a Settings PreferenceBundle.
 
-The public **Global** edition reads the LTE bands reported as supported by the iPhone modem at runtime and builds the selector from that device-specific set instead of assuming a country or carrier. Known bands are labelled with nominal frequency and **FDD, TDD or SDL** classification.
+The app has two tabs:
 
-BandLock also provides **Automatic** and **LTE / 4G only** radio modes, restore actions, direct **FTMInternal / Field Test Mode** access, post-write verification and diagnostic logging.
+- **Control**: modem status, current network and serving band, Automatic/LTE-only mode, band editor, apply/restore actions and Field Test.
+- **Countries**: searchable catalogue of 160 countries and territories with reference LTE bands. Each band shows FDD/TDD/SDL metadata and whether it is also supported by the current iPhone modem.
+
+Choosing a country never changes the modem automatically. **Prepare compatible bands** computes the intersection between the country profile and the iPhone's modem-supported bands; the result remains pending until the user reviews it and explicitly taps **Apply selection**.
 
 ### Main features
 
-- Manual selection of every modem-reported supported LTE band.
-- **FDD / TDD / SDL** classification and frequency labels for known bands.
-- Dynamic grouping and generic FDD/TDD helpers instead of country/carrier presets.
+- Standalone UIKit app with a SpringBoard icon.
+- Manual selection of every LTE band reported as supported by the modem.
+- Frequency and FDD/TDD/SDL metadata for known bands.
+- Offline searchable country catalogue.
 - **Automatic** and **LTE / 4G only** network modes.
-- Restore previous LTE selection.
-- Restore all LTE bands supported by the modem.
-- CoreTelephony write verification.
-- Automatic retry when CommCenter has not yet committed a change.
-- Experimental serving-cell LTE band reading.
-- Direct **FTMInternal-4 / Field Test Mode** launcher.
-- SSH diagnostic logs.
-- No resident daemon.
-- No SpringBoard injection.
-- No automatic modem changes at startup.
+- Restore previous selection or all supported LTE bands.
+- CoreTelephony verification plus one CommCenter retry.
+- Fresh supported-band validation before each write.
+- Empty and SDL-only selections are rejected.
+- FTMInternal / Field Test Mode access and diagnostic logs.
+- No resident daemon and no automatic writes at app launch or boot.
 
 ### Compatibility
 
 - iOS 16.x
 - Dopamine / RootHide
 - arm64e iPhones
-- PreferenceLoader
+- Sileo
 - Package architecture: `iphoneos-arm64e`
 
 [BandLock changelog](changelogs/BandLock.md)
@@ -158,7 +160,7 @@ It adds richer information about the currently connected Wi-Fi network, live sig
 
 ## Paquetes actuales / Current packages
 
-- **BandLock Global 0.5.0** — `iphoneos-arm64e`
+- **BandLock Global 0.6.0** — `iphoneos-arm64e`
 - **BetterWiFi RH 0.3.8** — `iphoneos-arm64e`
 
 El índice `Packages` y `Packages.gz` se regenera automáticamente cuando cambia un paquete dentro de `debs/`.
