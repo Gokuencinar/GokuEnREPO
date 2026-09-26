@@ -33,7 +33,7 @@ jobs:
           plutil -lint build/BandLock-0.6.7/app/Entitlements.plist
           plutil -lint build/BandLock-0.6.7/daemon/Entitlements.plist
           plutil -lint build/BandLock-0.6.7/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
-          grep -q 'SUBPROJECTS += app daemon' build/BandLock-0.6.7/Makefile
+          grep -q 'SUBPROJECTS += app daemon launcher' build/BandLock-0.6.7/Makefile
           grep -q 'APPLICATION_NAME = BandLock' build/BandLock-0.6.7/app/Makefile
           grep -q 'TARGET = iphone:clang:16.5:16.0' build/BandLock-0.6.7/Makefile
           grep -q '^\s*main.m$' build/BandLock-0.6.7/app/Makefile
@@ -45,6 +45,8 @@ jobs:
           grep -q 'UIApplicationMain(argc, argv, nil, @"BLMinimalAppDelegate")' build/BandLock-0.6.7/app/main.m
           grep -q 'bandlock</string>' build/BandLock-0.6.7/app/Resources/Info.plist
           grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.7/daemon/Makefile
+          grep -q 'TOOL_NAME = BandLockLauncher' build/BandLock-0.6.7/launcher/Makefile
+          grep -q 'SBSLaunchApplicationWithIdentifier' build/BandLock-0.6.7/launcher/main.m
           ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.7/app/Entitlements.plist
           grep -q '<string>spi</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
           grep -q '<string>preferences-write</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
@@ -67,9 +69,12 @@ jobs:
           test -f packages/com.gokuencinar.bandlock_0.6.7_iphoneos-arm64e.deb
           APP_BIN="$(find .theos -path '*/Applications/BandLock.app/BandLock' -type f | head -n 1)"
           DAEMON_BIN="$(find .theos -path '*/usr/libexec/BandLockDaemon' -type f | head -n 1)"
+          LAUNCHER_BIN="$(find .theos -path '*/usr/bin/BandLockLauncher' -type f | head -n 1)"
           test -n "$APP_BIN"
           test -n "$DAEMON_BIN"
+          test -n "$LAUNCHER_BIN"
           test -x "$DAEMON_BIN"
+          test -x "$LAUNCHER_BIN"
           command -v ldid >/dev/null 2>&1
           echo '=== BandLock LC_BUILD_VERSION ==='
           otool -l "$APP_BIN" | grep -A7 -m1 'LC_BUILD_VERSION'
