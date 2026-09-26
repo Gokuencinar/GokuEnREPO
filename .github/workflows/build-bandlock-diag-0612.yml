@@ -42,7 +42,8 @@ jobs:
           ! grep -R --include='*.m' --include='*.h' -q 'BLProbe' build/BandLock-0.6.12/app
           ! grep -R --include='*.m' -q 'auto refresh dispatch fired' build/BandLock-0.6.12/app
           ! grep -R --include='*.m' -q 'dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0' build/BandLock-0.6.12/app
-          grep -q 'jbroot(@"/tmp/com.gokuencinar.bandlockd.sock")' build/BandLock-0.6.12/app/BLTelephonyManager.m
+          ! grep -q 'jbroot(' build/BandLock-0.6.12/app/BLTelephonyManager.m
+          grep -q '/tmp/com.gokuencinar.bandlockd.sock' build/BandLock-0.6.12/app/BLTelephonyManager.m
           grep -q 'SO_NOSIGPIPE' build/BandLock-0.6.12/app/BLTelephonyManager.m
           grep -q 'SO_RCVTIMEO' build/BandLock-0.6.12/app/BLTelephonyManager.m
           ! grep -q 'CoreTelephonyClient' build/BandLock-0.6.12/app/BLTelephonyManager.m
