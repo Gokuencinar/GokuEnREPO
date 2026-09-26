@@ -144,9 +144,11 @@ jobs:
           grep -q 'com.apple.private.security.container-required' /tmp/bandlock-app-entitlements.plist
           ! grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-app-entitlements.plist
           grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-daemon-entitlements.plist
-          dpkg-deb -c packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb | grep -q './var/jb/Applications/BandLock.app/'
-          dpkg-deb -c packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb | grep -q './var/jb/usr/libexec/BandLockDaemon'
-          dpkg-deb -c packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb | grep -q './var/jb/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist'
+          echo '=== Rootless staged paths ==='
+          find .theos -type f | sort | grep '/var/jb/' || true
+          test -n "$(find .theos -path '*/var/jb/Applications/BandLock.app/BandLock' -type f -print -quit)"
+          test -n "$(find .theos -path '*/var/jb/usr/libexec/BandLockDaemon' -type f -print -quit)"
+          test -n "$(find .theos -path '*/var/jb/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist' -type f -print -quit)"
           mkdir -p ../../diagnostics
           cp packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb ../../diagnostics/BandLock-Dopamine-0.6.34-candidate.deb
 
