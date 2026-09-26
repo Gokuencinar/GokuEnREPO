@@ -1,14 +1,35 @@
 #import "BLTelephonyManager.h"
 #import "BLCommon.h"
-#import <roothide.h>
 #import <sys/socket.h>
 #import <sys/un.h>
 #import <sys/time.h>
 #import <unistd.h>
 #import <errno.h>
+#import <stdlib.h>
 #import <string.h>
 
 static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
+static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.sock";
+
+static NSString *BLRootHidePhysicalRootFromEnvironment(void) {
+    const char *keys[] = {"CFFIXED_USER_HOME", "HOME"};
+    NSString *suffix = @"/var/mobile";
+    for (NSUInteger i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
+        const char *rawValue = getenv(keys[i]);
+        if (!rawValue || !*rawValue) continue;
+        NSString *home = [NSString stringWithUTF8String:rawValue];
+        if (!home.length || ![home hasSuffix:suffix]) continue;
+        NSString *root = [home substringToIndex:home.length - suffix.length];
+        if ([root containsString:@"/.jbroot-"]) return root;
+    }
+    return nil;
+}
+
+static NSString *BLDaemonSocketPath(void) {
+    NSString *physicalRoot = BLRootHidePhysicalRootFromEnvironment();
+    if (physicalRoot.length) return [physicalRoot stringByAppendingString:BLDaemonSocketRelativePath];
+    return BLDaemonSocketRelativePath;
+}
 
 @interface BLTelephonyManager ()
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *supportedBands;
@@ -41,8 +62,7 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
     self = [super init];
     if (self) {
         _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.daemon-client", DISPATCH_QUEUE_SERIAL);
-        NSString *resolvedSocketPath = jbroot(@"/tmp/com.gokuencinar.bandlockd.sock");
-        _daemonSocketPath = [resolvedSocketPath.length ? resolvedSocketPath : @"/tmp/com.gokuencinar.bandlockd.sock" copy];
+        _daemonSocketPath = [BLDaemonSocketPath() copy];
         _supportedBands = @[];
         _activeBands = @[];
         _pendingBands = @[];
@@ -59,7 +79,7 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 }
 
 - (NSString *)socketPath {
-    return self.daemonSocketPath ?: @"/tmp/com.gokuencinar.bandlockd.sock";
+    return self.daemonSocketPath ?: BLDaemonSocketRelativePath;
 }
 
 - (NSDictionary *)daemonUnavailableResult:(NSString *)detail {

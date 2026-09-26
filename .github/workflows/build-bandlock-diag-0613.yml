@@ -42,7 +42,10 @@ jobs:
           ! grep -R --include='*.m' --include='*.h' -q 'BLProbe' build/BandLock-0.6.13/app
           ! grep -R --include='*.m' -q 'auto refresh dispatch fired' build/BandLock-0.6.13/app
           ! grep -R --include='*.m' -q 'dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0' build/BandLock-0.6.13/app
-          grep -q 'jbroot(@"/tmp/com.gokuencinar.bandlockd.sock")' build/BandLock-0.6.13/app/BLTelephonyManager.m
+          ! grep -q 'jbroot(' build/BandLock-0.6.13/app/BLTelephonyManager.m
+          grep -q 'CFFIXED_USER_HOME' build/BandLock-0.6.13/app/BLTelephonyManager.m
+          grep -q '/.jbroot-' build/BandLock-0.6.13/app/BLTelephonyManager.m
+          grep -q 'BLDaemonSocketPath' build/BandLock-0.6.13/app/BLTelephonyManager.m
           grep -q 'daemonSocketPath' build/BandLock-0.6.13/app/BLTelephonyManager.m
           grep -q '_daemonSocketPath = ' build/BandLock-0.6.13/app/BLTelephonyManager.m
           grep -q 'SO_NOSIGPIPE' build/BandLock-0.6.13/app/BLTelephonyManager.m
