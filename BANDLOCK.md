@@ -4,13 +4,13 @@
 
 **BandLock Global** es la edición pública internacional de BandLock para **iOS 16**, **Dopamine** y **RootHide**. Desde la versión 0.6.0 funciona como una app independiente en la pantalla de inicio y ya no como un panel dentro de Ajustes.
 
-> Current public version / Versión pública actual: **0.6.2 Global App** · Architecture / Arquitectura: **iphoneos-arm64e**
+> Current public version / Versión pública actual: **0.6.3 Global App** · Architecture / Arquitectura: **iphoneos-arm64e**
 
 ## Español
 
 ### Interfaz
 
-BandLock se divide en dos pestañas. La versión 0.6.2 ejecuta CoreTelephony/CommCenter dentro de un helper separado (`BandLockHelper`), para que un fallo de esas APIs privadas no cierre la app principal:
+BandLock se divide en dos pestañas. La versión 0.6.3 ejecuta CoreTelephony/CommCenter dentro de un LaunchDaemon separado (`BandLockDaemon`) y la app se comunica con él por un socket Unix local. La interfaz ya no crea procesos mediante `posix_spawn`:
 
 - **Control** — estado del módem, red actual, banda servidora, modo Automático/Solo LTE, selección manual de bandas, aplicar, restaurar y Field Test.
 - **Países** — buscador con 160 países y territorios. Cada país muestra sus bandas LTE de referencia, frecuencia, FDD/TDD/SDL y cuáles de ellas son compatibles con el módem del iPhone.
@@ -65,7 +65,7 @@ El dataset no sustituye la información oficial de cada operador. El módem del 
 
 ### Interface
 
-BandLock uses two main tabs. Version 0.6.2 runs CoreTelephony/CommCenter inside a separate helper (`BandLockHelper`), so a private-API failure does not have to terminate the main app UI:
+BandLock uses two main tabs. Version 0.6.3 runs CoreTelephony/CommCenter inside a separate LaunchDaemon (`BandLockDaemon`) and communicates with it through a local Unix socket. The UI no longer creates child processes with `posix_spawn`:
 
 - **Control** — modem status, current network, serving band, Automatic/LTE-only mode, manual band editing, apply/restore actions and Field Test.
 - **Countries** — searchable list of 160 countries and territories. Each country shows reference LTE bands, frequency, FDD/TDD/SDL metadata, and which bands are also supported by the current iPhone modem.

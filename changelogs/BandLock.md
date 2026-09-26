@@ -6,6 +6,30 @@ Este archivo documenta las versiones de BandLock que están publicadas actualmen
 
 **Compatibilidad:** iOS 16.x con jailbreak RootHide/Dopamine y arquitectura `iphoneos-arm64e`. El paquete actual está compilado con target iOS 16.0.
 
+## 0.6.3 Global App
+
+### Cambiado
+- Se elimina por completo el modelo `posix_spawn` de 0.6.2, tras comprobarse que pulsar **Actualizar estado** todavía podía cerrar la app al intentar lanzar el helper desde el proceso UIKit.
+- `BandLockHelper` deja de ir embebido dentro de `BandLock.app`.
+- Se añade **`BandLockDaemon`** como LaunchDaemon independiente instalado en `/usr/libexec/BandLockDaemon`.
+- El daemon se registra mediante `/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist` y se mantiene bajo supervisión de `launchd`.
+- La app y el daemon se comunican mediante un socket Unix local con JSON; la UI no crea procesos.
+- El socket se ubica dentro del jbroot de RootHide bajo `/tmp/com.gokuencinar.bandlockd.sock` y usa permisos `0600`.
+- Se configura `SO_NOSIGPIPE` y timeouts en el cliente para que una caída del daemon no termine el proceso gráfico.
+- CoreTelephony, CommCenter y Field Test siguen estando únicamente en el proceso privilegiado, no en `BandLock.app`.
+
+### Instalación y recuperación
+- `postinst` descarga cualquier instancia anterior del servicio, elimina sockets obsoletos, registra el LaunchDaemon y ejecuta `kickstart`.
+- `postrm` descarga el servicio y elimina el socket.
+- `BandLockDaemon` se ejecuta como `mobile`, mientras que `launchd` se encarga de reiniciarlo si termina inesperadamente.
+
+### Validación
+- GitHub Actions compila y firma por separado la app y el daemon bajo RootHide.
+- El workflow comprueba que los entitlements CommCenter no estén en la app principal y sí en `BandLockDaemon`.
+- El `.deb` final se verificó para confirmar `BandLock.app`, `usr/libexec/BandLockDaemon`, el plist de LaunchDaemon y scripts de mantenimiento ejecutables.
+
+---
+
 ## 0.6.2 Global App
 
 ### Cambiado

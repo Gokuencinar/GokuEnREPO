@@ -16,7 +16,7 @@ BandLock 0.6.3 moves the public tweak out of the iOS Settings app and into a ded
 - Empty selections and SDL-only selections are rejected.
 - Current active bands are saved before a write so they can be restored.
 - CommCenter read-back verification and the single automatic retry from 0.5.0 are retained.
-- CoreTelephony, CommCenter and Field Test private APIs run only inside `BandLockHelper`, a separate executable bundled with the app. A helper crash or permission failure is converted into an error message instead of terminating the UIKit process.
+- CoreTelephony, CommCenter and Field Test private APIs run only inside `BandLockDaemon`, a separate LaunchDaemon supervised by `launchd`. The UIKit app never spawns it directly.
 - Opening the app does not modify modem settings.
 
 ## Country data
@@ -31,8 +31,8 @@ BandLock 0.6.3 moves the public tweak out of the iOS Settings app and into a ded
 - Debian package: `com.gokuencinar.bandlock`
 - App bundle: `com.gokuencinar.bandlock.app`
 - RootHide application installed under `/Applications/BandLock.app` through the package scheme.
-- Privileged helper installed as `/Applications/BandLock.app/BandLockHelper` and signed separately with the CommCenter entitlements.
+- Privileged daemon installed as `/usr/libexec/BandLockDaemon`, with `/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist`, and signed separately with the CommCenter entitlements.
 - No PreferenceLoader dependency and no Settings PreferenceBundle in 0.6.3.
-- The UI app keeps only the platform/no-sandbox permissions needed to launch the isolated helper; CommCenter entitlements are restricted to the helper binary.
+- The UI app keeps only the platform/no-sandbox permissions needed for local IPC; CommCenter entitlements are restricted to the daemon binary.
 
 BandLock 0.6.3 continues to target LTE/4G band control only; it does not claim 5G NR band locking.
