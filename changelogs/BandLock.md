@@ -6,6 +6,25 @@ Este archivo documenta las versiones de BandLock que están publicadas actualmen
 
 **Compatibilidad:** iOS 16.x con jailbreak RootHide/Dopamine y arquitectura `iphoneos-arm64e`. El paquete actual está compilado con target iOS 16.0.
 
+## 0.6.1 Global App
+
+### Corregido
+- **Actualizar estado** ya incluye los entitlements privados de CoreTelephony necesarios para evitar `NSPOSIXErrorDomain Code=13 (Permission denied)` desde la app independiente.
+- Se añaden permisos `com.apple.CommCenter.fine-grained` relevantes (`spi`, `identity`, `phone`, `carrier-settings`, `preferences-write`, `developer-settings`) y acceso a `CommCenterHelper`.
+- La selección pendiente deja de escribirse directamente en `/var/mobile/Library/Preferences`.
+- El estado persistente de la app pasa a `NSUserDefaults`; las capacidades del módem se mantienen únicamente en memoria y se vuelven a leer en cada lanzamiento.
+- **Editar bandas** deja de usar la ruta compartida de persistencia/notificación que provocaba cierres al marcar o desmarcar bandas.
+- **Preparar bandas compatibles** deja de usar esa misma ruta de persistencia y añade protección ante excepciones.
+- El selector manual valida también el índice de la fila antes de modificar la selección.
+- Los errores de preparación/selección se muestran como alerta en vez de cerrar la aplicación cuando son excepciones Objective-C recuperables.
+
+### Validación
+- GitHub Actions compila correctamente la app RootHide 0.6.1.
+- El workflow comprueba con `ldid -e` que el binario firmado contiene `com.apple.CommCenter.fine-grained` y el valor `spi`.
+- El paquete generado contiene únicamente `BandLock.app` y sus recursos, más los scripts de instalación/desinstalación; no reinstala el antiguo PreferenceBundle.
+
+---
+
 ## 0.6.0 Global App
 
 ### Nuevo

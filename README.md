@@ -24,7 +24,7 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 
 ## Español
 
-**BandLock Global 0.6.0** es una aplicación de jailbreak para controlar manualmente las bandas LTE/4G del iPhone con **Dopamine + RootHide**. Desde 0.6.0 aparece como una app independiente en la pantalla de inicio, en lugar de vivir dentro de Ajustes.
+**BandLock Global 0.6.1** es una aplicación de jailbreak para controlar manualmente las bandas LTE/4G del iPhone con **Dopamine + RootHide**. Desde 0.6.0 aparece como una app independiente en la pantalla de inicio, en lugar de vivir dentro de Ajustes. La 0.6.1 corrige los permisos CoreTelephony y los cierres detectados al preparar o editar bandas.
 
 La app tiene dos pestañas:
 
@@ -59,7 +59,7 @@ Elegir un país no cambia el módem automáticamente. **Preparar bandas compatib
 
 ## English
 
-**BandLock Global 0.6.0** is a jailbreak application for manual LTE/4G band control on **Dopamine + RootHide**. Starting with 0.6.0 it is a standalone Home Screen app rather than a Settings PreferenceBundle.
+**BandLock Global 0.6.1** is a jailbreak application for manual LTE/4G band control on **Dopamine + RootHide**. Starting with 0.6.0 it is a standalone Home Screen app rather than a Settings PreferenceBundle. Version 0.6.1 fixes the standalone CoreTelephony permissions and the crashes found while preparing or editing bands.
 
 The app has two tabs:
 
@@ -160,7 +160,7 @@ It adds richer information about the currently connected Wi-Fi network, live sig
 
 ## Paquetes actuales / Current packages
 
-- **BandLock Global 0.6.0** — `iphoneos-arm64e`
+- **BandLock Global 0.6.1** — `iphoneos-arm64e`
 - **BetterWiFi RH 0.3.8** — `iphoneos-arm64e`
 
 El índice `Packages` y `Packages.gz` se regenera automáticamente cuando cambia un paquete dentro de `debs/`.
