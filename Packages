@@ -110,3 +110,19 @@ Description: Standalone BandLock Global app for iOS 16 RootHide with an isolated
 Author: Gokuencinar
 Name: BandLock
 
+Package: com.gokuencinar.bandlock
+Version: 0.6.5
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 616
+Depends: firmware (>= 16.0), firmware (<< 17.0)
+Filename: debs/com.gokuencinar.bandlock_0.6.5_iphoneos-arm64e.deb
+Size: 79832
+MD5sum: a352952452c1f04d99d4a78ed9d1b980
+SHA1: e99242a747c51cbcea3c3baec25e73834406e753
+SHA256: 7f555325c93f3ab752446915271c9f44fc82d35dffd36e5e78fea0e734a8c9fb
+Section: Tweaks
+Description: Standalone BandLock Global app for iOS 16 RootHide with an isolated modem helper, country band reference, FDD/TDD/SDL metadata and write verification
+Author: Gokuencinar
+Name: BandLock
+
