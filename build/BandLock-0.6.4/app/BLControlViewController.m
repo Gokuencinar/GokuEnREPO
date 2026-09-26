@@ -140,32 +140,44 @@
     ]];
 
     self.refreshButton = [self buttonWithTitle:BLT(@"Actualizar estado", @"Refresh status") symbol:@"arrow.clockwise" selector:@selector(refreshTapped:) destructive:NO];
+    UILabel *network = nil;
+    UILabel *serving = nil;
+    UILabel *active = nil;
+    UILabel *result = nil;
     UIView *statusCard = [self cardWithTitle:BLT(@"ESTADO", @"STATUS") content:@[
         self.refreshButton,
-        [self rowWithTitle:BLT(@"Red actual", @"Current network") valueLabel:&_networkValue],
-        [self rowWithTitle:BLT(@"Banda conectada", @"Serving band") valueLabel:&_servingValue],
-        [self rowWithTitle:BLT(@"Bandas permitidas", @"Allowed bands") valueLabel:&_activeValue],
-        [self rowWithTitle:BLT(@"Resultado", @"Result") valueLabel:&_resultValue]
+        [self rowWithTitle:BLT(@"Red actual", @"Current network") valueLabel:&network],
+        [self rowWithTitle:BLT(@"Banda conectada", @"Serving band") valueLabel:&serving],
+        [self rowWithTitle:BLT(@"Bandas permitidas", @"Allowed bands") valueLabel:&active],
+        [self rowWithTitle:BLT(@"Resultado", @"Result") valueLabel:&result]
     ]];
+    self.networkValue = network;
+    self.servingValue = serving;
+    self.activeValue = active;
+    self.resultValue = result;
     [self.stackView addArrangedSubview:statusCard];
 
     UIButton *automatic = [self buttonWithTitle:BLT(@"Modo automático", @"Automatic mode") symbol:@"antenna.radiowaves.left.and.right" selector:@selector(automaticTapped:) destructive:NO];
     UIButton *lteOnly = [self buttonWithTitle:BLT(@"Solo LTE / 4G", @"LTE / 4G only") symbol:@"4g.lte" selector:@selector(lteOnlyTapped:) destructive:NO];
+    UILabel *mode = nil;
     UIView *modeCard = [self cardWithTitle:BLT(@"MODO DE RED", @"NETWORK MODE") content:@[
-        [self rowWithTitle:BLT(@"Configuración", @"Configuration") valueLabel:&_modeValue],
+        [self rowWithTitle:BLT(@"Configuración", @"Configuration") valueLabel:&mode],
         automatic,
         lteOnly
     ]];
+    self.modeValue = mode;
     [self.stackView addArrangedSubview:modeCard];
 
     UIButton *edit = [self buttonWithTitle:BLT(@"Editar bandas", @"Edit bands") symbol:@"slider.horizontal.3" selector:@selector(editBandsTapped:) destructive:NO];
     UIButton *apply = [self buttonWithTitle:BLT(@"Aplicar selección", @"Apply selection") symbol:@"checkmark.circle.fill" selector:@selector(applyTapped:) destructive:NO];
     UIButton *restorePrevious = [self buttonWithTitle:BLT(@"Restaurar selección anterior", @"Restore previous selection") symbol:@"arrow.uturn.backward" selector:@selector(restorePreviousTapped:) destructive:NO];
     UIButton *restoreAll = [self buttonWithTitle:BLT(@"Restaurar todas las soportadas", @"Restore all supported") symbol:@"arrow.counterclockwise.circle" selector:@selector(restoreAllTapped:) destructive:NO];
+    UILabel *pending = nil;
     UIView *bandsCard = [self cardWithTitle:BLT(@"BANDAS LTE", @"LTE BANDS") content:@[
-        [self rowWithTitle:BLT(@"Selección pendiente", @"Pending selection") valueLabel:&_pendingValue],
+        [self rowWithTitle:BLT(@"Selección pendiente", @"Pending selection") valueLabel:&pending],
         edit, apply, restorePrevious, restoreAll
     ]];
+    self.pendingValue = pending;
     [self.stackView addArrangedSubview:bandsCard];
 
     UIButton *field = [self buttonWithTitle:BLT(@"Abrir Field Test", @"Open Field Test") symbol:@"wave.3.right.circle" selector:@selector(fieldTestTapped:) destructive:NO];
