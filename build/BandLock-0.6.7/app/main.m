@@ -79,6 +79,7 @@ static void BLProbeLog(const char *message) {
 @end
 
 int main(int argc, char *argv[]) {
+    BLProbeLog("variant=no-container\n");
     BLProbeLog("enter main\n");
     @autoreleasepool {
         return UIApplicationMain(argc, argv, nil, @"BLMinimalAppDelegate");
