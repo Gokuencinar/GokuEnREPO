@@ -118,7 +118,7 @@ static NSString * const BLChangelogRawURL = @"https://raw.githubusercontent.com/
 }
 
 - (NSString *)publishedBandLockVersionFromPackages:(NSString *)packages {
-    NSString *normalized = [[packages ?: @""] stringByReplacingOccurrencesOfString:@"\r\n" withString:@"\n"];
+    NSString *normalized = [(packages ?: @"") stringByReplacingOccurrencesOfString:@"\r\n" withString:@"\n"];
     NSArray *stanzas = [normalized componentsSeparatedByString:@"\n\n"];
     NSString *best = nil;
     for (NSString *stanza in stanzas) {
