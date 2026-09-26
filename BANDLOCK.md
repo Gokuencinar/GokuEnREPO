@@ -1,19 +1,20 @@
-# BandLock Global — LTE/4G Band Control App for iOS 16 RootHide
+# BandLock Global — LTE/4G Band Control App for iOS 16
 
-**BandLock Global** is the public worldwide edition of BandLock for **iOS 16**, **Dopamine** and **RootHide**. Version 0.6.0 is a standalone Home Screen app rather than a Settings PreferenceBundle.
+**BandLock Global** is the public worldwide edition of BandLock for **iOS 16**. Starting with 0.6.34 it is published as two separate packages: one for **RootHide** and one for **normal Dopamine rootless**.
 
-**BandLock Global** es la edición pública internacional de BandLock para **iOS 16**, **Dopamine** y **RootHide**. Desde la versión 0.6.0 funciona como una app independiente en la pantalla de inicio y ya no como un panel dentro de Ajustes.
+**BandLock Global** es la edición pública internacional de BandLock para **iOS 16**. Desde 0.6.34 se publica como dos paquetes independientes: uno para **RootHide** y otro para **Dopamine rootless normal**.
 
-> Current public version / Versión pública actual: **0.6.3 Global App** · Architecture / Arquitectura: **iphoneos-arm64e**
+> Current public version / Versión pública actual: **0.6.34** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64**
 
 ## Español
 
 ### Interfaz
 
-BandLock se divide en dos pestañas. La versión 0.6.3 ejecuta CoreTelephony/CommCenter dentro de un LaunchDaemon separado (`BandLockDaemon`) y la app se comunica con él por un socket Unix local. La interfaz ya no crea procesos mediante `posix_spawn`:
+BandLock se divide en tres pestañas. CoreTelephony/CommCenter se ejecuta dentro de un LaunchDaemon separado (`BandLockDaemon`) y la app se comunica con él por un socket Unix local. La interfaz no crea procesos mediante `posix_spawn`:
 
 - **Control** — estado del módem, red actual, banda servidora, modo Automático/Solo LTE, selección manual de bandas, aplicar, restaurar y Field Test.
 - **Países** — buscador con 160 países y territorios. Cada país muestra sus bandas LTE de referencia, frecuencia, FDD/TDD/SDL y cuáles de ellas son compatibles con el módem del iPhone.
+- **Info** — créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico y selector de idioma.
 
 ### Cómo funcionan los perfiles de país
 
@@ -33,6 +34,7 @@ Que una banda figure para un país no garantiza que todos los operadores la util
 - Selector agrupado por FDD, TDD, SDL y otras bandas.
 - Atajos: selección activa, todas las soportadas, solo FDD y solo TDD.
 - Catálogo offline y buscador de países.
+- Botón **Gestionar frecuencias de <país>** en Control tras preparar un país; solo modifica la selección pendiente.
 - Intersección segura entre bandas del país y capacidades reales del iPhone.
 - Modo **Automático** y **Solo LTE / 4G**.
 - Restauración de la selección anterior o de todas las bandas soportadas.
@@ -42,7 +44,9 @@ Que una banda figure para un país no garantiza que todos los operadores la util
 - Lectura experimental de la banda LTE servidora.
 - Acceso a **FTMInternal / Field Test Mode**.
 - Logs de diagnóstico.
-- Sin daemon residente y sin cambios automáticos al abrir la app o al arrancar.
+- Interfaz traducible desde la propia app a español, inglés, francés, alemán, chino tradicional, chino simplificado/mandarín y japonés.
+- Créditos con avatar integrado para **Gokuencinar · GokuEn**.
+- Sin cambios automáticos del módem al abrir la app o al arrancar.
 
 ### Datos de países
 
@@ -50,25 +54,26 @@ El snapshot incluido en 0.6.0 contiene **160 países y territorios**, de los cua
 
 El dataset no sustituye la información oficial de cada operador. El módem del propio iPhone sigue siendo la fuente de verdad para determinar qué bandas se pueden seleccionar en ese dispositivo.
 
-### Compatibilidad
+### Compatibilidad y variantes
 
 - iOS 16.x
-- Dopamine / RootHide
-- iPhone arm64e
 - Sileo
-- Paquete: `iphoneos-arm64e`
-- Paquete Debian: `com.gokuencinar.bandlock`
+- **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · validado en iPhone XS con iOS 16.3.1.
+- **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · binarios arm64 + arm64e.
+- Las variantes declaran `Conflicts:` entre sí para impedir una instalación cruzada accidental.
 - App bundle: `com.gokuencinar.bandlock.app`
-- Control de bandas: LTE/4G; 0.6.0 no declara bloqueo de bandas 5G NR.
+- Control de bandas: LTE/4G; BandLock no declara bloqueo de bandas 5G NR.
+- La variante Dopamine ha pasado compilación, firma, validación de entitlements y estructura rootless en CI; la prueba física completa en un dispositivo con Dopamine normal queda pendiente.
 
 ## English
 
 ### Interface
 
-BandLock uses two main tabs. Version 0.6.3 runs CoreTelephony/CommCenter inside a separate LaunchDaemon (`BandLockDaemon`) and communicates with it through a local Unix socket. The UI no longer creates child processes with `posix_spawn`:
+BandLock uses three main tabs. CoreTelephony/CommCenter runs inside a separate LaunchDaemon (`BandLockDaemon`) and communicates with the app through a local Unix socket. The UI does not create child processes with `posix_spawn`:
 
 - **Control** — modem status, current network, serving band, Automatic/LTE-only mode, manual band editing, apply/restore actions and Field Test.
 - **Countries** — searchable list of 160 countries and territories. Each country shows reference LTE bands, frequency, FDD/TDD/SDL metadata, and which bands are also supported by the current iPhone modem.
+- **Info** — credits, update checking, release notes, GokuEnREPO, technical glossary and language selector.
 
 ### Country profiles
 
@@ -88,6 +93,7 @@ A band being listed for a country does not mean every carrier uses it or that it
 - Dynamic FDD, TDD, SDL and other-LTE groups.
 - Quick actions for current active, all supported, FDD-only and TDD-only selections.
 - Offline searchable country catalogue.
+- **Manage frequencies for <country>** in Control after preparing a country; it only changes the pending selection.
 - Safe intersection of country bands with actual iPhone modem capabilities.
 - **Automatic** and **LTE / 4G only** network modes.
 - Restore previous selection or every modem-supported LTE band.
@@ -97,7 +103,9 @@ A band being listed for a country does not mean every carrier uses it or that it
 - Experimental serving-cell LTE band reading.
 - Direct **FTMInternal / Field Test Mode** launcher.
 - Diagnostic logs.
-- No resident daemon and no automatic modem writes at launch or boot.
+- In-app language selection for Spanish, English, French, German, Traditional Chinese, Simplified Chinese/Mandarin and Japanese.
+- Bundled avatar and **Gokuencinar · GokuEn** credits.
+- No automatic modem writes at launch or boot.
 
 ### Country data
 
@@ -105,16 +113,16 @@ The 0.6.0 offline snapshot contains **160 countries and territories**, with LTE 
 
 The dataset does not replace carrier-specific official information. The iPhone modem remains the source of truth for which LTE bands can actually be selected on the device.
 
-### Compatibility
+### Compatibility and variants
 
 - iOS 16.x
-- Dopamine / RootHide
-- arm64e iPhones
 - Sileo
-- Package architecture: `iphoneos-arm64e`
-- Debian package: `com.gokuencinar.bandlock`
+- **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · real-device validated on iPhone XS / iOS 16.3.1.
+- **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · arm64 + arm64e binaries.
+- The variants declare mutual `Conflicts:` to prevent accidental cross-installation.
 - App bundle: `com.gokuencinar.bandlock.app`
-- LTE/4G band control only; 0.6.0 does not claim 5G NR band locking.
+- LTE/4G band control only; BandLock does not claim 5G NR band locking.
+- The Dopamine variant has passed CI compilation, signing, entitlement validation and rootless package-layout checks; complete physical validation on a normal Dopamine device is still pending.
 
 ## Install / Instalación
 
@@ -124,9 +132,9 @@ Add this repository to Sileo / Añade este repositorio a Sileo:
 https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 ```
 
-Then install **BandLock**. The app will appear on the Home Screen after installation.
+Then install **BandLock (RootHide)** or **BandLock (Dopamine)** according to your jailbreak. The app will appear on the Home Screen after installation.
 
-Después instala **BandLock**. La app aparecerá en la pantalla de inicio tras la instalación.
+Después instala **BandLock (RootHide)** o **BandLock (Dopamine)** según tu jailbreak. La app aparecerá en la pantalla de inicio tras la instalación.
 
 ## Community testing / Pruebas comunitarias
 

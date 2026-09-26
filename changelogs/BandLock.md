@@ -2,9 +2,35 @@
 
 Este archivo documenta las versiones de BandLock que están publicadas actualmente en **GokuEnREPO**.
 
-**Descripción:** aplicación RootHide para consultar y seleccionar bandas LTE, controlar el modo de red y consultar referencias de bandas LTE por país.
+**Descripción:** aplicación para consultar y seleccionar bandas LTE, controlar el modo de red y consultar referencias de bandas LTE por país. Desde 0.6.34 se distribuye en variantes separadas para RootHide y Dopamine rootless.
 
-**Compatibilidad:** iOS 16.x con jailbreak RootHide/Dopamine y arquitectura `iphoneos-arm64e`. El paquete actual está compilado con target iOS 16.0.
+**Compatibilidad:** iOS 16.x. RootHide usa `iphoneos-arm64e`; Dopamine rootless usa `iphoneos-arm64` con binarios arm64 + arm64e. Ambos targets parten de iOS 16.0.
+
+## 0.6.34 — RootHide & Dopamine
+
+### Nuevo
+- Se publican **dos paquetes independientes** con la misma interfaz y funciones:
+  - **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`.
+  - **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`.
+- Ambos paquetes declaran `Conflicts:` entre sí para impedir instalar por error la variante de otro entorno.
+- La variante Dopamine usa empaquetado rootless estándar de Theos, rutas `/var/jb`, socket `/tmp/com.gokuencinar.bandlockd.dopamine.sock` y no importa `roothide.h`, no llama `jbroot()` y no enlaza `libroothide`.
+- Se añade **Gestionar frecuencias de <país>** después de preparar un país. El editor queda limitado a `bandas del país ∩ bandas soportadas por el iPhone` y solo modifica la selección pendiente.
+- Nueva pestaña **Info** con créditos, versión, búsqueda de actualizaciones, notas de versión, enlace a GokuEnREPO, glosario de frecuencias y selector de idioma.
+- Créditos con avatar integrado y nombre **Gokuencinar · GokuEn**.
+- Idiomas internos: español, inglés, francés, alemán, chino tradicional, chino simplificado/mandarín y japonés.
+- Glosario para LTE/4G, FDD, TDD, SDL, APT 700, AWS, PCS, WCS, CBRS, LAA, CDMA, UMTS/HSPA, GSM/EDGE, RAT y 5G NR.
+- Field Test mantiene el bridge validado que invoca `DialerController +launchFieldTestIfNeeded:` con `TPPhonePad` como fallback, sin enviar el código como llamada normal.
+
+### Corregido
+- Se sanea la codificación UTF-8 de las cadenas afectadas para evitar caracteres como `Ã`, `Â` o secuencias mojibake en el glosario y otras pantallas.
+- El avatar de créditos se carga por ruta explícita del bundle mediante `imageWithContentsOfFile`.
+- La instalación cierra únicamente BandLock para evitar que una copia antigua permanezca en memoria después de actualizar recursos/UI.
+
+### Validación
+- **RootHide 0.6.34**: compilación/firma CI correcta e instalación real validada en iPhone XS con iOS 16.3.1. `BandLockDaemon` permanece `running`, `runs=1`, sin salidas inesperadas, y la lectura LTE/status funciona.
+- **Dopamine 0.6.34**: compilación completa arm64 + arm64e, firma y entitlements correctos; CI confirma layout rootless `/var/jb` y ausencia de `libroothide`. La validación física completa requiere un dispositivo con Dopamine normal.
+
+---
 
 ## 0.6.3 Global App
 
