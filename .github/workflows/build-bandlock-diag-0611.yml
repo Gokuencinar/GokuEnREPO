@@ -33,8 +33,7 @@ jobs:
           plutil -lint build/BandLock-0.6.11/daemon/Entitlements.plist
           grep -q 'SUBPROJECTS += app daemon launcher clientprobe' build/BandLock-0.6.11/Makefile
           grep -q 'BandLockClientProbe_LDFLAGS += -lroothide' build/BandLock-0.6.11/clientprobe/Makefile
-          ! grep -q 'jbroot(' build/BandLock-0.6.11/clientprobe/main.m
-          grep -q 'const char \*path = "/tmp/com.gokuencinar.bandlockd.sock";' build/BandLock-0.6.11/clientprobe/main.m
+          grep -q 'jbroot(@"/tmp/com.gokuencinar.bandlockd.sock")' build/BandLock-0.6.11/clientprobe/main.m
           plutil -lint build/BandLock-0.6.11/clientprobe/Entitlements.plist
           grep -q 'BandLockClientProbe_CODESIGN_FLAGS = -SEntitlements.plist' build/BandLock-0.6.11/clientprobe/Makefile
           grep -q 'TOOL_NAME = BandLockClientProbe' build/BandLock-0.6.11/clientprobe/Makefile
