@@ -1,0 +1,19 @@
+#!/bin/sh
+
+LABEL="com.gokuencinar.bandlockd"
+PLIST="/Library/LaunchDaemons/${LABEL}.plist"
+SOCKET="/var/run/${LABEL}.sock"
+
+launchctl bootout "system/${LABEL}" >/dev/null 2>&1 || true
+launchctl bootout system "$PLIST" >/dev/null 2>&1 || launchctl unload "$PLIST" >/dev/null 2>&1 || true
+rm -f "$SOCKET" >/dev/null 2>&1 || true
+
+launchctl enable "system/${LABEL}" >/dev/null 2>&1 || true
+launchctl bootstrap system "$PLIST" >/dev/null 2>&1 || launchctl load "$PLIST" >/dev/null 2>&1 || true
+launchctl kickstart -k "system/${LABEL}" >/dev/null 2>&1 || true
+
+if command -v uicache >/dev/null 2>&1; then
+    uicache -a >/dev/null 2>&1 || true
+fi
+
+exit 0
