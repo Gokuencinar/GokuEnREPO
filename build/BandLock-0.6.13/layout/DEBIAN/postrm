@@ -1,0 +1,13 @@
+#!/bin/sh
+
+LABEL="com.gokuencinar.bandlockd"
+SOCKET="/tmp/${LABEL}.sock"
+
+launchctl bootout "system/${LABEL}" >/dev/null 2>&1 || true
+rm -f "$SOCKET" >/dev/null 2>&1 || true
+
+if command -v uicache >/dev/null 2>&1; then
+    uicache -a >/dev/null 2>&1 || true
+fi
+
+exit 0
