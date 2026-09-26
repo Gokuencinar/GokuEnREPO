@@ -30,3 +30,19 @@ Description: Global LTE/4G band control for iOS 16 RootHide using modem-reported
 Author: Gokuencinar
 Name: BandLock
 
+Package: com.gokuencinar.bandlock
+Version: 0.6.0
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 376
+Depends: firmware (>= 16.0), firmware (<< 17.0)
+Filename: debs/com.gokuencinar.bandlock_0.6.0_iphoneos-arm64e.deb
+Size: 54606
+MD5sum: 65ab62c824744467437aee16599ecc75
+SHA1: 1b871466030956d6a67ddc6c54b016fee898ff1c
+SHA256: 01a3de46bacef3a35111a099d4e208cd8ca3a009f439d3635dbcd09868b0b2ed
+Section: Tweaks
+Description: Standalone BandLock Global app for iOS 16 RootHide with modem-driven LTE/4G control, country band reference, FDD/TDD/SDL metadata and write verification
+Author: Gokuencinar
+Name: BandLock
+
