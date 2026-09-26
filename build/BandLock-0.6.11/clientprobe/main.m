@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <roothide.h>
 #import <sys/socket.h>
 #import <sys/un.h>
 #import <sys/time.h>
@@ -26,7 +27,13 @@ static NSDictionary *BLStatusRequest(void) {
     struct sockaddr_un address;
     memset(&address, 0, sizeof(address));
     address.sun_family = AF_UNIX;
-    const char *path = "/tmp/com.gokuencinar.bandlockd.sock";
+    NSString *resolvedPath = jbroot(@"/tmp/com.gokuencinar.bandlockd.sock");
+    const char *path = resolvedPath.fileSystemRepresentation;
+    if (!path) {
+        close(fd);
+        return @{@"success": @NO, @"message": @"jbroot path resolution failed"};
+    }
+    fprintf(stderr, "client-probe resolved %s\n", path);
     strlcpy(address.sun_path, path, sizeof(address.sun_path));
 
     fprintf(stderr, "client-probe connect %s\n", path);
