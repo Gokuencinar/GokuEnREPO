@@ -50,6 +50,9 @@ jobs:
           plutil -lint build/BandLock-0.6.7/launcher/Entitlements.plist
           grep -q 'com.apple.springboard.launchapplications' build/BandLock-0.6.7/launcher/Entitlements.plist
           ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.7/app/Entitlements.plist
+          grep -q 'com.apple.private.security.no-container' build/BandLock-0.6.7/app/Entitlements.plist
+          grep -q 'com.apple.private.security.container-required' build/BandLock-0.6.7/app/Entitlements.plist
+          grep -q 'variant=no-container' build/BandLock-0.6.7/app/main.m
           grep -q '<string>spi</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
           grep -q '<string>preferences-write</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
           grep -q 'com.apple.CoreTelephony.CommCenterHelper.allow' build/BandLock-0.6.7/daemon/Entitlements.plist
@@ -90,7 +93,7 @@ jobs:
           grep -q '<string>preferences-write</string>' /tmp/bandlock-daemon-entitlements.plist
           grep -q 'com.apple.CoreTelephony.CommCenterHelper.allow' /tmp/bandlock-daemon-entitlements.plist
           mkdir -p ../../diagnostics
-          cp packages/com.gokuencinar.bandlock_0.6.7_iphoneos-arm64e.deb ../../diagnostics/BandLock-0.6.7-minimal.deb
+          cp packages/com.gokuencinar.bandlock_0.6.7_iphoneos-arm64e.deb ../../diagnostics/BandLock-0.6.7-no-container.deb
 
       - name: Publish package
         shell: bash
@@ -98,16 +101,16 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diagnostics/BandLock-0.6.7-minimal.deb
+          git add diagnostics/BandLock-0.6.7-no-container.deb
           if ! git diff --cached --quiet; then
-            git commit -m "Publish BandLock 0.6.7 minimal diagnostic"
+            git commit -m "Publish BandLock 0.6.7 no-container diagnostic"
             git push
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BandLock-0.6.7-deb
+          name: BandLock-0.6.7-no-container-deb
           path: build/BandLock-0.6.7/packages/*.deb
           if-no-files-found: error
 
