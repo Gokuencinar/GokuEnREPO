@@ -25,8 +25,8 @@ static NSString * const BLRATAutomatic = @"kCTRegistrationRATSelectionAutomatic"
 static NSString * const BLRATLTE = @"kCTRegistrationRATSelectionLTE";
 
 static NSString *BLSocketPath(void) {
-    NSString *resolved = jbroot(@"/var/run/com.gokuencinar.bandlockd.sock");
-    return resolved.length ? resolved : @"/var/run/com.gokuencinar.bandlockd.sock";
+    NSString *resolved = jbroot(@"/tmp/com.gokuencinar.bandlockd.sock");
+    return resolved.length ? resolved : @"/tmp/com.gokuencinar.bandlockd.sock";
 }
 
 static NSDictionary *BLStatusPayload(BLTelephonyManager *manager, NSDictionary *query) {

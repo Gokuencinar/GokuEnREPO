@@ -56,8 +56,8 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 }
 
 - (NSString *)socketPath {
-    NSString *resolved = jbroot(@"/var/run/com.gokuencinar.bandlockd.sock");
-    return resolved.length ? resolved : @"/var/run/com.gokuencinar.bandlockd.sock";
+    NSString *resolved = jbroot(@"/tmp/com.gokuencinar.bandlockd.sock");
+    return resolved.length ? resolved : @"/tmp/com.gokuencinar.bandlockd.sock";
 }
 
 - (NSDictionary *)daemonUnavailableResult:(NSString *)detail {
