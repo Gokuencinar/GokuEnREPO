@@ -19,7 +19,7 @@ BandLock_FILES = \
 	BLFrequencyGlossaryViewController.m \
 	../shared/BLGBandMetadata.m
 BandLock_FRAMEWORKS = UIKit Foundation
-BandLock_CFLAGS = -fobjc-arc -I../shared
+BandLock_CFLAGS = -fobjc-arc -I../shared -DBL_APP_LOCALIZATION=1
 BandLock_LDFLAGS += -lroothide
 BandLock_RESOURCE_DIRS = Resources
 BandLock_INSTALL_PATH = /Applications

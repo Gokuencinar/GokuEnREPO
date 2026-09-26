@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
-#import "BLLocalization.h"
 
+#if defined(BL_APP_LOCALIZATION)
+#import "BLLocalization.h"
 static inline BOOL BLUsesSpanish(void) {
     return [BLCurrentLanguageCode() isEqualToString:@"es"];
 }
@@ -8,6 +9,16 @@ static inline BOOL BLUsesSpanish(void) {
 static inline NSString *BLT(NSString *es, NSString *en) {
     return BLLocalizedPair(es, en);
 }
+#else
+static inline BOOL BLUsesSpanish(void) {
+    NSString *language = NSLocale.preferredLanguages.firstObject.lowercaseString ?: @"";
+    return [language hasPrefix:@"es"];
+}
+
+static inline NSString *BLT(NSString *es, NSString *en) {
+    return BLUsesSpanish() ? es : en;
+}
+#endif
 
 static inline NSArray<NSNumber *> *BLSortedBands(id bands) {
     if (![bands isKindOfClass:[NSArray class]] && ![bands isKindOfClass:[NSSet class]]) return @[];
