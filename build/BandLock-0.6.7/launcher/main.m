@@ -15,12 +15,22 @@ int main(int argc, const char *argv[]) {
             dlclose(handle);
             return 2;
         }
+        CFStringRef (*errorString)(unsigned int) = dlsym(handle, "SBSApplicationLaunchingErrorString");
         CFStringRef identifier = CFStringCreateWithCString(kCFAllocatorDefault, bundle, kCFStringEncodingUTF8);
         if (!identifier) {
             dlclose(handle);
             return 3;
         }
         int result = launch(identifier, false);
+        if (result != 0 && errorString) {
+            CFStringRef message = errorString((unsigned int)result);
+            if (message) {
+                char buffer[512] = {0};
+                if (CFStringGetCString(message, buffer, sizeof(buffer), kCFStringEncodingUTF8)) {
+                    fprintf(stderr, "launch error=%d (%s)\n", result, buffer);
+                }
+            }
+        }
         CFRelease(identifier);
         dlclose(handle);
         printf("launch result=%d\n", result);

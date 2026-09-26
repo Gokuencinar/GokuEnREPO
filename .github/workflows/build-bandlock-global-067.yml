@@ -47,6 +47,8 @@ jobs:
           grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.7/daemon/Makefile
           grep -q 'TOOL_NAME = BandLockLauncher' build/BandLock-0.6.7/launcher/Makefile
           grep -q 'SBSLaunchApplicationWithIdentifier' build/BandLock-0.6.7/launcher/main.m
+          plutil -lint build/BandLock-0.6.7/launcher/Entitlements.plist
+          grep -q 'com.apple.springboard.launchapplications' build/BandLock-0.6.7/launcher/Entitlements.plist
           ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.7/app/Entitlements.plist
           grep -q '<string>spi</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
           grep -q '<string>preferences-write</string>' build/BandLock-0.6.7/daemon/Entitlements.plist
@@ -75,6 +77,8 @@ jobs:
           test -n "$LAUNCHER_BIN"
           test -x "$DAEMON_BIN"
           test -x "$LAUNCHER_BIN"
+          ldid -e "$LAUNCHER_BIN" > /tmp/bandlock-launcher-entitlements.plist
+          grep -q 'com.apple.springboard.launchapplications' /tmp/bandlock-launcher-entitlements.plist
           command -v ldid >/dev/null 2>&1
           echo '=== BandLock LC_BUILD_VERSION ==='
           otool -l "$APP_BIN" | grep -A7 -m1 'LC_BUILD_VERSION'
