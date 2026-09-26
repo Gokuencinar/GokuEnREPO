@@ -6,6 +6,24 @@ Este archivo documenta las versiones de BandLock que están publicadas actualmen
 
 **Compatibilidad:** iOS 16.x con jailbreak RootHide/Dopamine y arquitectura `iphoneos-arm64e`. El paquete actual está compilado con target iOS 16.0.
 
+## 0.6.2 Global App
+
+### Cambiado
+- Las llamadas privadas de **CoreTelephony**, **CommCenter** y **Field Test** dejan de ejecutarse dentro del proceso UIKit de BandLock.
+- Se añade `BandLockHelper`, un ejecutable independiente incluido dentro de `BandLock.app`.
+- La app principal usa `posix_spawn` y JSON para comunicarse con el helper; si el helper falla, recibe una señal o devuelve una respuesta inválida, la UI puede mostrar el error sin cerrarse.
+- Los entitlements de CommCenter quedan restringidos al helper; el binario principal ya no los contiene.
+- **Editar bandas** ya no ejecuta una lectura del módem de forma implícita cuando falta un snapshot.
+- **Preparar bandas compatibles** ya no ejecuta CoreTelephony automáticamente desde la pantalla de países; pide actualizar el estado explícitamente desde Control.
+- La selección pendiente y los perfiles de país siguen siendo operaciones locales hasta que el usuario pulsa Aplicar.
+
+### Validación
+- GitHub Actions compila por separado `BandLock` y `BandLockHelper` para RootHide.
+- El workflow verifica con `ldid -e` que la app principal **no** contiene `com.apple.CommCenter.fine-grained` y que el helper sí contiene `spi`, `preferences-write` y `com.apple.CoreTelephony.CommCenterHelper.allow`.
+- El `.deb` final contiene ambos ejecutables con permisos `0755`, además de los scripts `postinst/postrm` también ejecutables.
+
+---
+
 ## 0.6.1 Global App
 
 ### Corregido
