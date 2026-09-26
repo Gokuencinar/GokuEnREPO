@@ -76,7 +76,7 @@ jobs:
           APP_BIN="$(find .theos -path '*/Applications/BandLock.app/BandLock' -type f | head -n 1)"
           DAEMON_BIN="$(find .theos -path '*/usr/libexec/BandLockDaemon' -type f | head -n 1)"
           LAUNCHER_BIN="$(find .theos -path '*/usr/bin/BandLockLauncher' -type f | head -n 1)"
-          CLIENT_BIN="$(find .theos -path '*/usr/bin/BandLockClientProbe' -type f | head -n 1)"
+          CLIENT_BIN="$(find .theos -path '*/Applications/BandLock.app/BandLockClientProbe' -type f | head -n 1)"
           test -n "$APP_BIN"
           test -n "$DAEMON_BIN"
           test -n "$LAUNCHER_BIN"

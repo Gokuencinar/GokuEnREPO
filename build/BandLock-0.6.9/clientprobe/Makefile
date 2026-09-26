@@ -4,6 +4,6 @@ TOOL_NAME = BandLockClientProbe
 BandLockClientProbe_FILES = main.m ../app/BLTelephonyManager.m
 BandLockClientProbe_FRAMEWORKS = Foundation
 BandLockClientProbe_CFLAGS = -fobjc-arc -I../app -I../shared
-BandLockClientProbe_INSTALL_PATH = /usr/bin
+BandLockClientProbe_INSTALL_PATH = /Applications/BandLock.app
 
 include $(THEOS_MAKE_PATH)/tool.mk
