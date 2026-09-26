@@ -1,0 +1,10 @@
+Package: com.gokuencinar.bandlock.dopamine
+Name: BandLock (Dopamine)
+Version: 0.6.34
+Architecture: iphoneos-arm64
+Description: Standalone BandLock Global app for iOS 16 Dopamine rootless with an isolated modem helper, country band reference, FDD/TDD/SDL metadata and write verification
+Maintainer: Gokuencinar
+Author: Gokuencinar
+Section: Tweaks
+Depends: firmware (>= 16.0), firmware (<< 17.0), mobilesubstrate
+Conflicts: com.gokuencinar.bandlock

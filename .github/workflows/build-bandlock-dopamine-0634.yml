@@ -1,0 +1,171 @@
+name: Build BandLock Dopamine 0.6.34
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'build/BandLock-0.6.34-Dopamine/**'
+      - '.github/workflows/build-bandlock-dopamine-0634.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+
+      - name: Validate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-0.6.34-Dopamine/app/Resources/Info.plist
+          plutil -lint build/BandLock-0.6.34-Dopamine/app/Entitlements.plist
+          plutil -lint build/BandLock-0.6.34-Dopamine/daemon/Entitlements.plist
+          plutil -lint build/BandLock-0.6.34-Dopamine/fieldbridge/BandLockFieldBridge.plist
+          plutil -lint build/BandLock-0.6.34-Dopamine/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist
+          python3 -m json.tool build/BandLock-0.6.34-Dopamine/app/Resources/countries.json >/dev/null
+          test -s build/BandLock-0.6.34-Dopamine/app/Resources/CreditsAvatar.jpg
+          ! grep -R --include='*.m' --include='*.h' -E 'Ã.|Â.|â€¦|â€”|�' build/BandLock-0.6.34-Dopamine/app
+          grep -q 'pathForResource:@"CreditsAvatar" ofType:@"jpg"' build/BandLock-0.6.34-Dopamine/app/BLInfoViewController.m
+          grep -q 'imageWithContentsOfFile:avatarPath' build/BandLock-0.6.34-Dopamine/app/BLInfoViewController.m
+          grep -q 'killall BandLock' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q 'SUBPROJECTS += app daemon launcher fieldbridge' build/BandLock-0.6.34-Dopamine/Makefile
+          ! grep -q 'clientprobe' build/BandLock-0.6.34-Dopamine/Makefile
+          grep -q '^THEOS_PACKAGE_SCHEME = rootless$' build/BandLock-0.6.34-Dopamine/Makefile
+          grep -q '^ARCHS = arm64 arm64e$' build/BandLock-0.6.34-Dopamine/Makefile
+          ! grep -q 'roothide' build/BandLock-0.6.34-Dopamine/app/Makefile
+          ! grep -q 'roothide' build/BandLock-0.6.34-Dopamine/fieldbridge/Makefile
+          grep -q 'BLBreadcrumb.c' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'BLLocalization.m' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'BL_APP_LOCALIZATION=1' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'BLCountryProfile.m' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'BLCountryBandsViewController.m' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'BLInfoViewController.m' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'BLLanguageViewController.m' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'BLFrequencyGlossaryViewController.m' build/BandLock-0.6.34-Dopamine/app/Makefile
+          grep -q 'CFBundleShortVersionString</key><string>0.6.34</string>' build/BandLock-0.6.34-Dopamine/app/Resources/Info.plist
+          grep -q 'com.apple.private.security.no-container' build/BandLock-0.6.34-Dopamine/app/Entitlements.plist
+          grep -q 'com.apple.private.security.container-required' build/BandLock-0.6.34-Dopamine/app/Entitlements.plist
+          ! grep -R --include='*.m' --include='*.h' -q 'BLProbe' build/BandLock-0.6.34-Dopamine/app
+          ! grep -q 'diagnostic selftest fired' build/BandLock-0.6.34-Dopamine/app/BLControlViewController.m
+          ! grep -q 'runDiagnosticSelfTest' build/BandLock-0.6.34-Dopamine/app/BLControlViewController.m
+          ! grep -q 'RATTEST' build/BandLock-0.6.34-Dopamine/app/BLControlViewController.m
+          ! grep -q 'RESTORETEST' build/BandLock-0.6.34-Dopamine/app/BLControlViewController.m
+          grep -q 'initWithSupported:andActiveBands:' build/BandLock-0.6.34-Dopamine/daemon/BLTelephonyCore.m
+          ! grep -R --include='*.m' -q 'auto refresh dispatch fired' build/BandLock-0.6.34-Dopamine/app
+          ! grep -R --include='*.m' -q 'dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0' build/BandLock-0.6.34-Dopamine/app
+          ! grep -R --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' build/BandLock-0.6.34-Dopamine
+          ! grep -q 'CFFIXED_USER_HOME' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q 'BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.dopamine.sock"' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q 'daemonSocketPath' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q 'com.gokuencinar.bandlockd.dopamine.sock' build/BandLock-0.6.34-Dopamine/daemon/main.m
+          grep -q 'SO_NOSIGPIPE' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q 'SO_RCVTIMEO' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q 'tv_sec = 30' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q 'attempt <= 40' build/BandLock-0.6.34-Dopamine/daemon/main.m
+          grep -q 'apply retry write accepted' build/BandLock-0.6.34-Dopamine/daemon/main.m
+          grep -q 'com.gokuencinar.bandlock.fieldtest' build/BandLock-0.6.34-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'TWEAK_NAME = BandLockFieldBridge' build/BandLock-0.6.34-Dopamine/fieldbridge/Makefile
+          grep -q 'com.apple.mobilephone' build/BandLock-0.6.34-Dopamine/fieldbridge/BandLockFieldBridge.plist
+          grep -q 'com.gokuencinar.bandlock.fieldtest' build/BandLock-0.6.34-Dopamine/fieldbridge/FieldBridge.m
+          grep -q 'launchFieldTestIfNeeded:' build/BandLock-0.6.34-Dopamine/fieldbridge/FieldBridge.m
+          grep -q 'TPPhonePad' build/BandLock-0.6.34-Dopamine/fieldbridge/FieldBridge.m
+          ! grep -q 'sendActionsForControlEvents' build/BandLock-0.6.34-Dopamine/fieldbridge/FieldBridge.m
+          grep -q 'signal(SIGPIPE, SIG_IGN)' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q 'BandLock-client.log' build/BandLock-0.6.34-Dopamine/app/BLBreadcrumb.c
+          grep -q 'BandLock-daemon.log' build/BandLock-0.6.34-Dopamine/daemon/main.m
+          grep -q '@"mode_code"' build/BandLock-0.6.34-Dopamine/daemon/main.m
+          grep -q 'result\[@"mode_code"\]' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          grep -q '@{@"cmd": @"fieldtest"}' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          ! grep -q 'tel://\*3001%2312345%23\*' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          ! grep -q 'CoreTelephonyClient' build/BandLock-0.6.34-Dopamine/app/BLTelephonyManager.m
+          ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.34-Dopamine/app/Entitlements.plist
+          grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.34-Dopamine/daemon/Entitlements.plist
+          grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.34-Dopamine/daemon/Makefile
+          grep -q 'TOOL_NAME = BandLockLauncher' build/BandLock-0.6.34-Dopamine/launcher/Makefile
+          grep -q 'DOMAIN="user/501"' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q 'launchctl bootstrap "$DOMAIN" "$PLIST"' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          ! grep -q 'kickstart' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          ! grep -q 'launchctl .*system' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q 'PLIST="/var/jb/Library/LaunchDaemons/${LABEL}.plist"' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q 'uicache -p /var/jb/Applications/BandLock.app' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q 'SOCKET="/tmp/${LABEL}.sock"' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q 'OLD_SOCKET="/tmp/com.gokuencinar.bandlockd.sock"' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q 'killall MobilePhone' build/BandLock-0.6.34-Dopamine/layout/DEBIAN/postinst
+          grep -q '<string>com.gokuencinar.bandlockd.dopamine</string>' build/BandLock-0.6.34-Dopamine/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist
+          grep -q '<string>/var/jb/usr/libexec/BandLockDaemon</string>' build/BandLock-0.6.34-Dopamine/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist
+          grep -q '^Package: com.gokuencinar.bandlock.dopamine$' build/BandLock-0.6.34-Dopamine/control
+          grep -q '^Architecture: iphoneos-arm64$' build/BandLock-0.6.34-Dopamine/control
+          grep -q '^Conflicts: com.gokuencinar.bandlock$' build/BandLock-0.6.34-Dopamine/control
+          grep -q 'BLPackageIdentifier = @"com.gokuencinar.bandlock.dopamine"' build/BandLock-0.6.34-Dopamine/app/BLInfoViewController.m
+          grep -q 'BLSetSelectedCountry(self.country)' build/BandLock-0.6.34-Dopamine/app/BLCountryDetailViewController.m
+          grep -q 'Manage frequencies for %@' build/BandLock-0.6.34-Dopamine/app/BLControlViewController.m
+          grep -q 'BandLockSelectedCountryISO' build/BandLock-0.6.34-Dopamine/app/BLCountryProfile.m
+          grep -q 'BandLockLanguage' build/BandLock-0.6.34-Dopamine/app/BLLocalization.m
+          grep -q 'zh-Hant' build/BandLock-0.6.34-Dopamine/app/BLLocalization.m
+          grep -q 'zh-Hans' build/BandLock-0.6.34-Dopamine/app/BLLocalization.m
+          grep -q 'Gokuencinar · GokuEn' build/BandLock-0.6.34-Dopamine/app/BLInfoViewController.m
+          grep -q 'raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/Packages' build/BandLock-0.6.34-Dopamine/app/BLInfoViewController.m
+          grep -q 'More information about frequencies' build/BandLock-0.6.34-Dopamine/app/BLInfoViewController.m
+          ! grep -q 'BandLock Global 0.6.30' build/BandLock-0.6.34-Dopamine/app/BLControlViewController.m
+          grep -q '^Version: 0.6.34$' build/BandLock-0.6.34-Dopamine/control
+
+      - name: Build candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/BandLock-0.6.34-Dopamine
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          test -f packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb
+          APP_BIN="$(find .theos -path '*/BandLock.app/BandLock' -type f | head -n 1)"
+          DAEMON_BIN="$(find .theos -name 'BandLockDaemon' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          test -n "$DAEMON_BIN"
+          command -v ldid >/dev/null 2>&1
+          echo '=== App libraries ==='
+          otool -L "$APP_BIN"
+          ! otool -L "$APP_BIN" | grep -q 'libroothide.dylib'
+          ldid -e "$APP_BIN" > /tmp/bandlock-app-entitlements.plist
+          ldid -e "$DAEMON_BIN" > /tmp/bandlock-daemon-entitlements.plist
+          grep -q 'platform-application' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.private.security.no-sandbox' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.private.security.no-container' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.private.security.container-required' /tmp/bandlock-app-entitlements.plist
+          ! grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-app-entitlements.plist
+          grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-daemon-entitlements.plist
+          dpkg-deb -c packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb | grep -q './var/jb/Applications/BandLock.app/'
+          dpkg-deb -c packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb | grep -q './var/jb/usr/libexec/BandLockDaemon'
+          dpkg-deb -c packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb | grep -q './var/jb/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist'
+          mkdir -p ../../diagnostics
+          cp packages/com.gokuencinar.bandlock.dopamine_0.6.34_iphoneos-arm64.deb ../../diagnostics/BandLock-Dopamine-0.6.34-candidate.deb
+
+      - name: Publish release candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diagnostics/BandLock-Dopamine-0.6.34-candidate.deb
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish BandLock Dopamine 0.6.34 candidate"
+            git pull --rebase origin main
+            git push
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Dopamine-0.6.34-candidate
+          path: build/BandLock-0.6.34-Dopamine/packages/*.deb
+          if-no-files-found: error
