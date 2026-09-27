@@ -248,3 +248,25 @@ Description: Nuke Wireless Wi-Fi tools for iOS 16 (RootHide)
 Author: Gokuencinar
 Name: Nuke Wireless
 
+Package: com.gokuencinar.nukewireless
+Version: 1.0.29+rh29
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Pre-Depends: rootless-compat (>= 0.9)
+Depends: firmware (>= 16.0), ldid, arpoison, network-cmds, ellekit
+Conflicts: xyz.cypwn.harpy-reloaded
+Replaces: xyz.cypwn.harpy-reloaded
+Filename: debs/com.gokuencinar.nukewireless_1.0.29+rh29_iphoneos-arm64e.deb
+Size: 5715208
+MD5sum: dd172cbcc29ea3a60e7baad23fa9d094
+SHA1: 972e7adc68f54edf2f0fd0b506857626c92af6ad
+SHA256: e5cb4427a840979d9e17fca6f482ecfaea10d6511f3a15ff5bac55cf1b92deb9
+Section: Utilities
+Homepage: https://github.com/Gokuencinar/GokuEnREPO
+Description: Local Wi-Fi device discovery and IPv4 ARP-spoofing controls with aliases, bulk actions, network details and seven UI languages.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/nuke-wireless.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/nuke-wireless/icon.png
+Name: Nuke Wireless
+Sileodepiction: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/depictions/nuke-wireless.json
+
