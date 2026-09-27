@@ -1,0 +1,84 @@
+name: Publish Nuke Wireless 1.0.29
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-nuke-wireless-1029.yml
+      - .github/nuke-build/NukeWirelessPaths_ios.dylib
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
+      - name: Rebuild Nuke Wireless package
+        shell: bash
+        run: |
+          set -euo pipefail
+          old="debs/com.gokuencinar.nukewireless_1.0.28+rh28_iphoneos-arm64e.deb"
+          new="debs/com.gokuencinar.nukewireless_1.0.29+rh29_iphoneos-arm64e.deb"
+          work="$(mktemp -d)"
+
+          dpkg-deb --raw-extract "$old" "$work/root"
+          install -m 0755 ".github/nuke-build/NukeWirelessPaths_ios.dylib" +            "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
+
+          ROOT_DIR="$work/root" python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import plistlib
+
+          root = Path(os.environ["ROOT_DIR"])
+          control_path = root / "DEBIAN/control"
+          lines = []
+          skip = {
+              "Version", "Description", "Homepage", "Icon",
+              "Depiction", "SileoDepiction",
+          }
+          for line in control_path.read_text().splitlines():
+              key = line.split(":", 1)[0] if ":" in line else ""
+              if key in skip:
+                  continue
+              lines.append(line)
+          lines.extend([
+              "Version: 1.0.29+rh29",
+              "Description: Local Wi-Fi device discovery and IPv4 ARP-spoofing controls with aliases, bulk actions, network details and seven UI languages.",
+              "Homepage: https://github.com/Gokuencinar/GokuEnREPO",
+              "Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/nuke-wireless/icon.png",
+              "Depiction: https://gokuencinar.github.io/GokuEnREPO/nuke-wireless.html",
+              "SileoDepiction: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/depictions/nuke-wireless.json",
+          ])
+          control_path.write_text("\n".join(lines) + "\n")
+
+          path = root / "Applications/HarpyReloaded.app/Info.plist"
+          data = plistlib.loads(path.read_bytes())
+          data["CFBundleShortVersionString"] = "1.0.29"
+          data["CFBundleVersion"] = "29"
+          data["CFBundleDisplayName"] = "Nuke Wireless"
+          data["CFBundleName"] = "Nuke Wireless"
+          path.write_bytes(plistlib.dumps(data, fmt=plistlib.FMT_BINARY))
+          PY
+
+          dpkg-deb --build "$work/root" "$new"
+          dpkg-deb -f "$new" Package Version Architecture Name Homepage Icon Depiction SileoDepiction
+          dpkg-scanpackages -m debs /dev/null > Packages
+          gzip -9 -c Packages > Packages.gz
+          sed -i 's/Nuke Wireless 1\.0\.28/Nuke Wireless 1.0.29/' README.md
+
+      - name: Commit package and repository index
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debs/com.gokuencinar.nukewireless_1.0.29+rh29_iphoneos-arm64e.deb Packages Packages.gz README.md
+          git commit -m "Publish Nuke Wireless 1.0.29"
+          git push
