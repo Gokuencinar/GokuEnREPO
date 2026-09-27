@@ -56,9 +56,16 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
     return self;
 }
 
+- (void)loadView {
+    UIView *root = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 160)];
+    root.backgroundColor = UIColor.clearColor;
+    root.clipsToBounds = YES;
+    self.view = root;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.clipsToBounds = YES;
+    NSLog(@"[BandLockCC] viewDidLoad");
 
     NSArray<NSString *> *titles = @[@"Auto", @"4G", @"5G", @"3G"];
     NSMutableArray<UIButton *> *buttons = [NSMutableArray arrayWithCapacity:4];
@@ -66,50 +73,50 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
     for (NSInteger index = 0; index < 4; index++) {
         UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
         button.tag = index;
-        button.translatesAutoresizingMaskIntoConstraints = NO;
-        button.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+        button.autoresizingMask = UIViewAutoresizingNone;
+        button.titleLabel.font = [UIFont systemFontOfSize:17.0 weight:UIFontWeightBold];
+        button.titleLabel.adjustsFontSizeToFitWidth = YES;
+        button.titleLabel.minimumScaleFactor = 0.75;
         button.layer.cornerRadius = 14.0;
+        button.layer.cornerCurve = kCACornerCurveContinuous;
+        button.layer.borderWidth = 0.5;
+        button.layer.borderColor = [UIColor.whiteColor colorWithAlphaComponent:0.16].CGColor;
         button.clipsToBounds = YES;
+        button.tintColor = UIColor.whiteColor;
         [button setTitle:titles[index] forState:UIControlStateNormal];
+        [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
         [button addTarget:self action:@selector(modeTapped:) forControlEvents:UIControlEventTouchUpInside];
         [self.view addSubview:button];
         [buttons addObject:button];
     }
+
     self.modeButtons = buttons;
-
-    UIButton *autoButton = buttons[0];
-    UIButton *lteButton = buttons[1];
-    UIButton *fiveGButton = buttons[2];
-    UIButton *threeGButton = buttons[3];
-
-    UILayoutGuide *guide = self.view.layoutMarginsGuide;
-    self.view.layoutMargins = UIEdgeInsetsMake(7, 7, 7, 7);
-    CGFloat gap = 7.0;
-
-    [NSLayoutConstraint activateConstraints:@[
-        [autoButton.leadingAnchor constraintEqualToAnchor:guide.leadingAnchor],
-        [autoButton.topAnchor constraintEqualToAnchor:guide.topAnchor],
-        [lteButton.trailingAnchor constraintEqualToAnchor:guide.trailingAnchor],
-        [lteButton.topAnchor constraintEqualToAnchor:guide.topAnchor],
-        [threeGButton.leadingAnchor constraintEqualToAnchor:guide.leadingAnchor],
-        [threeGButton.bottomAnchor constraintEqualToAnchor:guide.bottomAnchor],
-        [fiveGButton.trailingAnchor constraintEqualToAnchor:guide.trailingAnchor],
-        [fiveGButton.bottomAnchor constraintEqualToAnchor:guide.bottomAnchor],
-
-        [autoButton.trailingAnchor constraintEqualToAnchor:lteButton.leadingAnchor constant:-gap],
-        [threeGButton.trailingAnchor constraintEqualToAnchor:fiveGButton.leadingAnchor constant:-gap],
-        [autoButton.bottomAnchor constraintEqualToAnchor:threeGButton.topAnchor constant:-gap],
-        [lteButton.bottomAnchor constraintEqualToAnchor:fiveGButton.topAnchor constant:-gap],
-
-        [autoButton.widthAnchor constraintEqualToAnchor:lteButton.widthAnchor],
-        [autoButton.widthAnchor constraintEqualToAnchor:threeGButton.widthAnchor],
-        [autoButton.widthAnchor constraintEqualToAnchor:fiveGButton.widthAnchor],
-        [autoButton.heightAnchor constraintEqualToAnchor:lteButton.heightAnchor],
-        [autoButton.heightAnchor constraintEqualToAnchor:threeGButton.heightAnchor],
-        [autoButton.heightAnchor constraintEqualToAnchor:fiveGButton.heightAnchor]
-    ]];
-
     [self updateButtonAppearance];
+    [self.view setNeedsLayout];
+    [self refreshFromDaemon];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+
+    CGRect bounds = self.view.bounds;
+    CGFloat width = CGRectGetWidth(bounds);
+    CGFloat height = CGRectGetHeight(bounds);
+    if (width < 20.0 || height < 20.0 || self.modeButtons.count != 4) return;
+
+    CGFloat gap = 7.0;
+    CGFloat inset = 7.0;
+    CGFloat cellWidth = floor((width - (inset * 2.0) - gap) / 2.0);
+    CGFloat cellHeight = floor((height - (inset * 2.0) - gap) / 2.0);
+
+    self.modeButtons[0].frame = CGRectMake(inset, inset, cellWidth, cellHeight);
+    self.modeButtons[1].frame = CGRectMake(inset + cellWidth + gap, inset, cellWidth, cellHeight);
+    self.modeButtons[3].frame = CGRectMake(inset, inset + cellHeight + gap, cellWidth, cellHeight);
+    self.modeButtons[2].frame = CGRectMake(inset + cellWidth + gap, inset + cellHeight + gap, cellWidth, cellHeight);
+}
+
+- (void)controlCenterWillPresent {
+    NSLog(@"[BandLockCC] controlCenterWillPresent bounds=%@", NSStringFromCGRect(self.view.bounds));
     [self refreshFromDaemon];
 }
 
