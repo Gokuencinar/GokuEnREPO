@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.46",
+          "title": "1.0.47",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- Restores the original 1.0.44 Wi-Fi scan/update flow, including the normal **Block all** title-state update path\n- Keeps the visible Wi-Fi panel localization as a separate visual pass after the normal dashboard update\n- Does not change **request_wifi_scan**, timeout handling, bulk confirmation or pull-to-refresh callbacks\n- Keeps the stable tab-transition path and clean version scheme"
+          "markdown": "- Fixes stuck Wi-Fi scans by always calling the scanner's native **start** method; the underlying MMLANScanner safely stops any previous queued scan before starting a new one\n- Removes the external **isScanning** gate that could leave the UI waiting until the 45-second timeout\n- Gives the Wi-Fi panel controls stable private tags so localization no longer depends on subview ordering\n- Keeps the stable tab-transition path and clean version scheme"
         }
       ]
     }
