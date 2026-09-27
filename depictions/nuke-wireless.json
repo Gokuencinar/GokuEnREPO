@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.45",
+          "title": "1.0.46",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- Refreshes the existing Wi-Fi panel using temporary local references only, so **Block all / Unblock all**, **Names** and the diagnostic text use the selected language\n- Does not store panel subviews globally and does not reintroduce the crash-prone re-binding logic\n- Keeps the stable tab-transition path from 1.0.43 and the delayed Info/tab language refresh from 1.0.44\n- Keeps localized visible device-action controls"
+          "markdown": "- Restores the original 1.0.44 Wi-Fi scan/update flow, including the normal **Block all** title-state update path\n- Keeps the visible Wi-Fi panel localization as a separate visual pass after the normal dashboard update\n- Does not change **request_wifi_scan**, timeout handling, bulk confirmation or pull-to-refresh callbacks\n- Keeps the stable tab-transition path and clean version scheme"
         }
       ]
     }
