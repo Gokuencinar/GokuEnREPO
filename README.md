@@ -58,16 +58,9 @@ RootHide-compatible Wi-Fi enhancement tweak that expands the information and dia
 
 ➡️ **[BetterWiFi RH details](BETTERWIFI-RH.md)** · **[Changelog](changelogs/BetterWiFi-RH.md)**
 
-### 💥 Nuke Wireless — Network Tools (⚠️IN DEVELOPMENT)
+### Nuke Wireless — In Development
 
-Wi-Fi network management toolkit for RootHide.
-
-- Discover devices connected to the local Wi-Fi network.
-- Assign aliases to known devices.
-- Inspect network information.
-- Manage confirmed ARP blocking controls.
-
-➡️ **[Nuke Wireless details](NUKE-WIRELESS.md)**
+Nuke Wireless is currently in development. Public package releases are unavailable.
 
 ## Current packages
 
@@ -77,7 +70,6 @@ Wi-Fi network management toolkit for RootHide.
 | BandLock (Dopamine) | 1.0 | `iphoneos-arm64` |
 | BandLock (Rootful) | 1.0 | `iphoneos-arm` |
 | BetterWiFi RH | 0.3.8 | `iphoneos-arm64e` |
-| Nuke Wireless | 1.0.47 | `iphoneos-arm64e` |
 
 The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `debs/` changes.
 

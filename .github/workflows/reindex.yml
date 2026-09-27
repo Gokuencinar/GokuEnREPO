@@ -5,7 +5,6 @@ on:
     paths:
       - 'debs/**'
       - '.github/workflows/reindex.yml'
-      - '.github/scripts/filter-nuke-catalog.py'
   workflow_dispatch:
 
 permissions:
@@ -31,7 +30,6 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             dpkg-scanpackages -m debs /dev/null > Packages
-            python3 .github/scripts/filter-nuke-catalog.py Packages
             gzip -9 -c Packages > Packages.gz
             git add Packages Packages.gz
             if git diff --cached --quiet; then
