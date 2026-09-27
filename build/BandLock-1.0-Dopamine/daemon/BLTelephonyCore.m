@@ -267,14 +267,15 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSArray *activeNR = BLNRBandsFromDictionary(active);
     NSString *selection = [query[@"ratSelection"] isKindOfClass:[NSString class]] ? query[@"ratSelection"] : @"—";
     NSString *preferred = [query[@"ratPreferred"] isKindOfClass:[NSString class]] ? query[@"ratPreferred"] : @"—";
+    BOOL supports5G = [query[@"supports5G"] boolValue] || supportedNR.count > 0;
     NSString *mode = BLT(@"No disponible", @"Unavailable");
     NSString *modeCode = @"unknown";
     if ([selection rangeOfString:@"Unknown" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"No disponible", @"Unavailable"); modeCode = @"unknown"; }
-    else if ([selection rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound && [preferred rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G Auto"; modeCode = @"5g-auto"; }
+    else if ([selection rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound && supports5G && [preferred rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G Auto"; modeCode = @"5g-auto"; }
     else if ([selection rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Automático", @"Automatic"); modeCode = @"automatic"; }
-    else if ([selection rangeOfString:@"NRStandAlone" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G Only (SA)"; modeCode = @"5g-only"; }
-    else if ([selection rangeOfString:@"NRNonStandAlone" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On (NSA)"; modeCode = @"5g-on"; }
-    else if ([selection rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On"; modeCode = @"5g-on"; }
+    else if (supports5G && [selection rangeOfString:@"NRStandAlone" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G Only (SA)"; modeCode = @"5g-only"; }
+    else if (supports5G && [selection rangeOfString:@"NRNonStandAlone" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On (NSA)"; modeCode = @"5g-on"; }
+    else if (supports5G && [selection rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On"; modeCode = @"5g-on"; }
     else if ([selection rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo LTE / 4G", @"LTE / 4G only"); modeCode = @"lte"; }
     else if ([selection rangeOfString:@"UMTS" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo 3G", @"3G only"); modeCode = @"3g"; }
     else if (![selection isEqualToString:@"—"]) { mode = selection; modeCode = @"other"; }
@@ -284,7 +285,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
              @"active": activeLTE,
              @"supported_nr": supportedNR,
              @"active_nr": activeNR,
-             @"supports_5g": @([query[@"supports5G"] boolValue] || supportedNR.count > 0 || [selection rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound || [preferred rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound),
+             @"supports_5g": @(supports5G),
              @"rat": BLHumanRAT(ratRaw) ?: @"—",
              @"serving": BLServingBandFromCellInfo(cellInfo) ?: @"—",
              @"mode": mode,
