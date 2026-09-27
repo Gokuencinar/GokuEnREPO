@@ -40,6 +40,8 @@ jobs:
           grep -q 'hasRefreshedStatus' build/BandLock-1.0-RootHide/app/BLControlViewController.m
           grep -q 'currentLanguageName' build/BandLock-1.0-RootHide/app/BLControlViewController.m
           grep -q 'BandLockPendingNRBands' build/BandLock-1.0-RootHide/app/BLTelephonyManager.m
+          grep -q 'kCTRegistrationRATSelectionUMTS' build/BandLock-1.0-RootHide/daemon/main.m
+          grep -q 'BLCCMode3G' build/BandLock-1.0-Dopamine/ccmodule/Module.m
       - name: Build RootHide
         run: |
           cd build/BandLock-1.0-RootHide
@@ -75,6 +77,8 @@ jobs:
           grep -q 'hasRefreshedStatus' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'currentLanguageName' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'BandLockPendingNRBands' build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          grep -q 'kCTRegistrationRATSelectionUMTS' build/BandLock-1.0-Dopamine/daemon/main.m
+          grep -q 'BLCCMode3G' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           ! grep -R --exclude-dir='ccmodule' --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' build/BandLock-1.0-Dopamine
       - name: Build Dopamine
         run: |
