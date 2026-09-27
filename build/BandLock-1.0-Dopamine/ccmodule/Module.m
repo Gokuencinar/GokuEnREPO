@@ -1,6 +1,10 @@
 #import "Module.h"
-#import <ControlCenterUIKit/ControlCenterUI-Structs.h>
 #import <Foundation/Foundation.h>
+
+typedef struct CCUILayoutSize {
+    unsigned long long width;
+    unsigned long long height;
+} CCUILayoutSize;
 #import <sys/socket.h>
 #import <sys/un.h>
 #import <sys/time.h>
