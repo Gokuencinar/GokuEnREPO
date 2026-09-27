@@ -1,0 +1,104 @@
+name: Build and Publish BandLock 0.6.35
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'build/BandLock-0.6.35-RootHide/**'
+      - 'build/BandLock-0.6.35-Dopamine/**'
+      - '.github/workflows/build-bandlock-0635.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-roothide:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup RootHide Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate RootHide
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-0.6.35-RootHide/app/Resources/Info.plist
+          grep -q '^Version: 0.6.35$' build/BandLock-0.6.35-RootHide/control
+          grep -q 'https://buymeacoffee.com/gokuen' build/BandLock-0.6.35-RootHide/app/BLInfoViewController.m
+          grep -q 'Versión actual' build/BandLock-0.6.35-RootHide/app/BLInfoViewController.m
+      - name: Build RootHide
+        run: |
+          cd build/BandLock-0.6.35-RootHide
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          test -f packages/com.gokuencinar.bandlock_0.6.35_iphoneos-arm64e.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-RootHide-0.6.35
+          path: build/BandLock-0.6.35-RootHide/packages/com.gokuencinar.bandlock_0.6.35_iphoneos-arm64e.deb
+
+  build-dopamine:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate Dopamine
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-0.6.35-Dopamine/app/Resources/Info.plist
+          grep -q '^Version: 0.6.35$' build/BandLock-0.6.35-Dopamine/control
+          grep -q '^Architecture: iphoneos-arm64$' build/BandLock-0.6.35-Dopamine/control
+          grep -q 'https://buymeacoffee.com/gokuen' build/BandLock-0.6.35-Dopamine/app/BLInfoViewController.m
+          ! grep -R --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' build/BandLock-0.6.35-Dopamine
+      - name: Build Dopamine
+        run: |
+          cd build/BandLock-0.6.35-Dopamine
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          test -f packages/com.gokuencinar.bandlock.dopamine_0.6.35_iphoneos-arm64.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Dopamine-0.6.35
+          path: build/BandLock-0.6.35-Dopamine/packages/com.gokuencinar.bandlock.dopamine_0.6.35_iphoneos-arm64.deb
+
+  publish:
+    needs: [build-roothide, build-dopamine]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-RootHide-0.6.35
+          path: /tmp/root
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Dopamine-0.6.35
+          path: /tmp/dop
+      - run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+      - name: Publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin main
+          cp /tmp/root/com.gokuencinar.bandlock_0.6.35_iphoneos-arm64e.deb debs/
+          cp /tmp/dop/com.gokuencinar.bandlock.dopamine_0.6.35_iphoneos-arm64.deb debs/
+          dpkg-scanpackages -m debs /dev/null > Packages
+          gzip -9 -c Packages > Packages.gz
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debs/com.gokuencinar.bandlock_0.6.35_iphoneos-arm64e.deb debs/com.gokuencinar.bandlock.dopamine_0.6.35_iphoneos-arm64.deb Packages Packages.gz
+          git commit -m "Publish BandLock 0.6.35"
+          git push

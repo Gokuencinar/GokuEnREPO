@@ -56,8 +56,8 @@ Wi-Fi network management toolkit for RootHide.
 
 | Package | Version | Architecture |
 | --- | --- | --- |
-| BandLock (RootHide) | 0.6.34 | `iphoneos-arm64e` |
-| BandLock (Dopamine) | 0.6.34 | `iphoneos-arm64` |
+| BandLock (RootHide) | 0.6.35 | `iphoneos-arm64e` |
+| BandLock (Dopamine) | 0.6.35 | `iphoneos-arm64` |
 | BetterWiFi RH | 0.3.8 | `iphoneos-arm64e` |
 | Nuke Wireless | 1.0.32 | `iphoneos-arm64e` |
 

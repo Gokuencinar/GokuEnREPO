@@ -1,0 +1,1540 @@
+{
+    "version":  1,
+    "last_updated":  "2026-09-26",
+    "source":  {
+                   "name":  "World Population Review — LTE Bands by Country 2026",
+                   "url":  "https://worldpopulationreview.com/country-rankings/lte-bands-by-country",
+                   "note":  "Reference data only. LTE deployments vary by carrier, region, roaming and time."
+               },
+    "countries":  [
+                      {
+                          "name":  "Japan",
+                          "iso2":  "JP",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        8,
+                                        11,
+                                        18,
+                                        19,
+                                        21,
+                                        26,
+                                        28,
+                                        41,
+                                        42
+                                    ]
+                      },
+                      {
+                          "name":  "South Korea",
+                          "iso2":  "KR",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        7,
+                                        8
+                                    ]
+                      },
+                      {
+                          "name":  "United States",
+                          "iso2":  "US",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        5,
+                                        12,
+                                        13,
+                                        14,
+                                        17,
+                                        25,
+                                        26,
+                                        29,
+                                        30,
+                                        41,
+                                        46,
+                                        48,
+                                        66,
+                                        71
+                                    ]
+                      },
+                      {
+                          "name":  "Netherlands",
+                          "iso2":  "NL",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Denmark",
+                          "iso2":  "DK",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Switzerland",
+                          "iso2":  "CH",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20,
+                                        28,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Taiwan",
+                          "iso2":  "TW",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Belgium",
+                          "iso2":  "BE",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Singapore",
+                          "iso2":  "SG",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        8,
+                                        38,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Norway",
+                          "iso2":  "NO",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Hong Kong",
+                          "iso2":  "HK",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        8,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Lithuania",
+                          "iso2":  "LT",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        28,
+                                        38,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "Estonia",
+                          "iso2":  "EE",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Germany",
+                          "iso2":  "DE",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        28,
+                                        32,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Finland",
+                          "iso2":  "FI",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Cyprus",
+                          "iso2":  "CY",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Canada",
+                          "iso2":  "CA",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        5,
+                                        7,
+                                        12,
+                                        13,
+                                        17,
+                                        25,
+                                        26,
+                                        29,
+                                        38,
+                                        46,
+                                        66,
+                                        71
+                                    ]
+                      },
+                      {
+                          "name":  "Czechia",
+                          "iso2":  "CZ",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Qatar",
+                          "iso2":  "QA",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "United Arab Emirates",
+                          "iso2":  "AE",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "United Kingdom",
+                          "iso2":  "GB",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        28,
+                                        32,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Italy",
+                          "iso2":  "IT",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        28,
+                                        32,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Sweden",
+                          "iso2":  "SE",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        28,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Hungary",
+                          "iso2":  "HU",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20,
+                                        28,
+                                        42
+                                    ]
+                      },
+                      {
+                          "name":  "Puerto Rico",
+                          "iso2":  "PR",
+                          "bands":  [
+                                        4,
+                                        13,
+                                        17,
+                                        25,
+                                        66,
+                                        71
+                                    ]
+                      },
+                      {
+                          "name":  "Bahrain",
+                          "iso2":  "BH",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        20,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "France",
+                          "iso2":  "FR",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Poland",
+                          "iso2":  "PL",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        34,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Slovakia",
+                          "iso2":  "SK",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Austria",
+                          "iso2":  "AT",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        28,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Australia",
+                          "iso2":  "AU",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        7,
+                                        8,
+                                        26,
+                                        28,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Latvia",
+                          "iso2":  "LV",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Slovenia",
+                          "iso2":  "SI",
+                          "bands":  [
+                                        8,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Portugal",
+                          "iso2":  "PT",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Kyrgyzstan",
+                          "iso2":  "KG",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Greece",
+                          "iso2":  "GR",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Romania",
+                          "iso2":  "RO",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Bulgaria",
+                          "iso2":  "BG",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "North Macedonia",
+                          "iso2":  "MK",
+                          "bands":  [
+
+                                    ]
+                      },
+                      {
+                          "name":  "Iceland",
+                          "iso2":  "IS",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Croatia",
+                          "iso2":  "HR",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Spain",
+                          "iso2":  "ES",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        28,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Serbia",
+                          "iso2":  "RS",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Georgia",
+                          "iso2":  "GE",
+                          "bands":  [
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Thailand",
+                          "iso2":  "TH",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        8,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "South Africa",
+                          "iso2":  "ZA",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        38,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Luxembourg",
+                          "iso2":  "LU",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "China",
+                          "iso2":  "CN",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        8,
+                                        34,
+                                        39,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "Cambodia",
+                          "iso2":  "KH",
+                          "bands":  [
+                                        3,
+                                        5
+                                    ]
+                      },
+                      {
+                          "name":  "Israel",
+                          "iso2":  "IL",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        7,
+                                        28,
+                                        32
+                                    ]
+                      },
+                      {
+                          "name":  "Malaysia",
+                          "iso2":  "MY",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "New Zealand",
+                          "iso2":  "NZ",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        28,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Vietnam",
+                          "iso2":  "VN",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "India",
+                          "iso2":  "IN",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        8,
+                                        28,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "Philippines",
+                          "iso2":  "PH",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        7,
+                                        28,
+                                        34,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "Morocco",
+                          "iso2":  "MA",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Albania",
+                          "iso2":  "AL",
+                          "bands":  [
+                                        3,
+                                        7
+                                    ]
+                      },
+                      {
+                          "name":  "Turkey",
+                          "iso2":  "TR",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        38
+                                    ]
+                      },
+                      {
+                          "name":  "Lebanon",
+                          "iso2":  "LB",
+                          "bands":  [
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Saudi Arabia",
+                          "iso2":  "SA",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        8,
+                                        20,
+                                        38,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "Russia",
+                          "iso2":  "RU",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        34,
+                                        38,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "Dominican Republic",
+                          "iso2":  "DO",
+                          "bands":  [
+                                        2,
+                                        3,
+                                        4
+                                    ]
+                      },
+                      {
+                          "name":  "Sri Lanka",
+                          "iso2":  "LK",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        7,
+                                        8,
+                                        40,
+                                        41
+                                    ]
+                      },
+                      {
+                          "name":  "Indonesia",
+                          "iso2":  "ID",
+                          "bands":  [
+                                        3,
+                                        5,
+                                        8,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Myanmar",
+                          "iso2":  "MM",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        8
+                                    ]
+                      },
+                      {
+                          "name":  "Oman",
+                          "iso2":  "OM",
+                          "bands":  [
+                                        3,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Ireland",
+                          "iso2":  "IE",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        20,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Guatemala",
+                          "iso2":  "GT",
+                          "bands":  [
+                                        2,
+                                        5,
+                                        7,
+                                        8,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Pakistan",
+                          "iso2":  "PK",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5
+                                    ]
+                      },
+                      {
+                          "name":  "Azerbaijan",
+                          "iso2":  "AZ",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Argentina",
+                          "iso2":  "AR",
+                          "bands":  [
+                                        1,
+                                        2,
+                                        4,
+                                        7,
+                                        26,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Egypt",
+                          "iso2":  "EG",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Mexico",
+                          "iso2":  "MX",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        7,
+                                        28,
+                                        38,
+                                        66
+                                    ]
+                      },
+                      {
+                          "name":  "Panama",
+                          "iso2":  "PA",
+                          "bands":  [
+                                        2,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Peru",
+                          "iso2":  "PE",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        7,
+                                        8,
+                                        28,
+                                        38,
+                                        40,
+                                        66
+                                    ]
+                      },
+                      {
+                          "name":  "Kuwait",
+                          "iso2":  "KW",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "El Salvador",
+                          "iso2":  "SV",
+                          "bands":  [
+                                        2,
+                                        5,
+                                        8
+                                    ]
+                      },
+                      {
+                          "name":  "Kazakhstan",
+                          "iso2":  "KZ",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        20,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Jordan",
+                          "iso2":  "JO",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Chile",
+                          "iso2":  "CL",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        5,
+                                        7,
+                                        28,
+                                        38,
+                                        66
+                                    ]
+                      },
+                      {
+                          "name":  "Tunisia",
+                          "iso2":  "TN",
+                          "bands":  [
+
+                                    ]
+                      },
+                      {
+                          "name":  "Uruguay",
+                          "iso2":  "UY",
+                          "bands":  [
+                                        2,
+                                        4
+                                    ]
+                      },
+                      {
+                          "name":  "Uzbekistan",
+                          "iso2":  "UZ",
+                          "bands":  [
+                                        7
+                                    ]
+                      },
+                      {
+                          "name":  "Honduras",
+                          "iso2":  "HN",
+                          "bands":  [
+                                        4,
+                                        5
+                                    ]
+                      },
+                      {
+                          "name":  "Costa Rica",
+                          "iso2":  "CR",
+                          "bands":  [
+                                        3,
+                                        7
+                                    ]
+                      },
+                      {
+                          "name":  "Moldova",
+                          "iso2":  "MD",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Paraguay",
+                          "iso2":  "PY",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Brazil",
+                          "iso2":  "BR",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        5,
+                                        7,
+                                        28,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Jamaica",
+                          "iso2":  "JM",
+                          "bands":  [
+                                        5
+                                    ]
+                      },
+                      {
+                          "name":  "Ukraine",
+                          "iso2":  "UA",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20,
+                                        38,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Mongolia",
+                          "iso2":  "MN",
+                          "bands":  [
+
+                                    ]
+                      },
+                      {
+                          "name":  "Bangladesh",
+                          "iso2":  "BD",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        8
+                                    ]
+                      },
+                      {
+                          "name":  "Kenya",
+                          "iso2":  "KE",
+                          "bands":  [
+                                        3,
+                                        20,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Zambia",
+                          "iso2":  "ZM",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Nicaragua",
+                          "iso2":  "NI",
+                          "bands":  [
+                                        4
+                                    ]
+                      },
+                      {
+                          "name":  "Iraq",
+                          "iso2":  "IQ",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Colombia",
+                          "iso2":  "CO",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        5,
+                                        7,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Nigeria",
+                          "iso2":  "NG",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Nepal",
+                          "iso2":  "NP",
+                          "bands":  [
+                                        3,
+                                        8,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Algeria",
+                          "iso2":  "DZ",
+                          "bands":  [
+                                        1,
+                                        2,
+                                        3,
+                                        7,
+                                        8,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Bolivia",
+                          "iso2":  "BO",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        12,
+                                        13,
+                                        17,
+                                        28,
+                                        44
+                                    ]
+                      },
+                      {
+                          "name":  "Ecuador",
+                          "iso2":  "EC",
+                          "bands":  [
+                                        2,
+                                        4
+                                    ]
+                      },
+                      {
+                          "name":  "Ghana",
+                          "iso2":  "GH",
+                          "bands":  [
+                                        1,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Ivory Coast",
+                          "iso2":  "CI",
+                          "bands":  [
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Senegal",
+                          "iso2":  "SN",
+                          "bands":  [
+
+                                    ]
+                      },
+                      {
+                          "name":  "Belarus",
+                          "iso2":  "BY",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Ethiopia",
+                          "iso2":  "ET",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Iran",
+                          "iso2":  "IR",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        42
+                                    ]
+                      },
+                      {
+                          "name":  "Tanzania",
+                          "iso2":  "TZ",
+                          "bands":  [
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Sudan",
+                          "iso2":  "SD",
+                          "bands":  [
+                                        1
+                                    ]
+                      },
+                      {
+                          "name":  "Uganda",
+                          "iso2":  "UG",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Afghanistan",
+                          "iso2":  "AF",
+                          "bands":  [
+                                        1,
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Angola",
+                          "iso2":  "AO",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Madagascar",
+                          "iso2":  "MG",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Venezuela",
+                          "iso2":  "VE",
+                          "bands":  [
+                                        3,
+                                        4
+                                    ]
+                      },
+                      {
+                          "name":  "Mali",
+                          "iso2":  "ML",
+                          "bands":  [
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Zimbabwe",
+                          "iso2":  "ZW",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Guinea",
+                          "iso2":  "GN",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Burundi",
+                          "iso2":  "BI",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Tajikistan",
+                          "iso2":  "TJ",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Papua New Guinea",
+                          "iso2":  "PG",
+                          "bands":  [
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Cuba",
+                          "iso2":  "CU",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Togo",
+                          "iso2":  "TG",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20,
+                                        66
+                                    ]
+                      },
+                      {
+                          "name":  "Laos",
+                          "iso2":  "LA",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Turkmenistan",
+                          "iso2":  "TM",
+                          "bands":  [
+                                        7
+                                    ]
+                      },
+                      {
+                          "name":  "Namibia",
+                          "iso2":  "NA",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Armenia",
+                          "iso2":  "AM",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        8,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Lesotho",
+                          "iso2":  "LS",
+                          "bands":  [
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Trinidad and Tobago",
+                          "iso2":  "TT",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        7,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Mauritius",
+                          "iso2":  "MU",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Fiji",
+                          "iso2":  "FJ",
+                          "bands":  [
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Bhutan",
+                          "iso2":  "BT",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Macau",
+                          "iso2":  "MO",
+                          "bands":  [
+                                        3,
+                                        8,
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "Montenegro",
+                          "iso2":  "ME",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        7,
+                                        8,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Malta",
+                          "iso2":  "MT",
+                          "bands":  [
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Maldives",
+                          "iso2":  "MV",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        28
+                                    ]
+                      },
+                      {
+                          "name":  "Brunei",
+                          "iso2":  "BN",
+                          "bands":  [
+                                        1,
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Belize",
+                          "iso2":  "BZ",
+                          "bands":  [
+                                        2,
+                                        5,
+                                        13,
+                                        17
+                                    ]
+                      },
+                      {
+                          "name":  "Bahamas",
+                          "iso2":  "BS",
+                          "bands":  [
+                                        4,
+                                        13,
+                                        17
+                                    ]
+                      },
+                      {
+                          "name":  "Vanuatu",
+                          "iso2":  "VU",
+                          "bands":  [
+                                        40
+                                    ]
+                      },
+                      {
+                          "name":  "French Polynesia",
+                          "iso2":  "PF",
+                          "bands":  [
+                                        7,
+                                        10,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Guam",
+                          "iso2":  "GU",
+                          "bands":  [
+                                        2,
+                                        4,
+                                        12,
+                                        17
+                                    ]
+                      },
+                      {
+                          "name":  "Kiribati",
+                          "iso2":  "KI",
+                          "bands":  [
+                                        12
+                                    ]
+                      },
+                      {
+                          "name":  "Seychelles",
+                          "iso2":  "SC",
+                          "bands":  [
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Aruba",
+                          "iso2":  "AW",
+                          "bands":  [
+                                        3
+                                    ]
+                      },
+                      {
+                          "name":  "Jersey",
+                          "iso2":  "JE",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Isle of Man",
+                          "iso2":  "IM",
+                          "bands":  [
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Andorra",
+                          "iso2":  "AD",
+                          "bands":  [
+                                        3,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "United States Virgin Islands",
+                          "iso2":  "VI",
+                          "bands":  [
+                                        4
+                                    ]
+                      },
+                      {
+                          "name":  "Cayman Islands",
+                          "iso2":  "KY",
+                          "bands":  [
+                                        3,
+                                        17
+                                    ]
+                      },
+                      {
+                          "name":  "Dominica",
+                          "iso2":  "DM",
+                          "bands":  [
+                                        4,
+                                        17
+                                    ]
+                      },
+                      {
+                          "name":  "Guernsey",
+                          "iso2":  "GG",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Bermuda",
+                          "iso2":  "BM",
+                          "bands":  [
+                                        12,
+                                        13,
+                                        17
+                                    ]
+                      },
+                      {
+                          "name":  "Greenland",
+                          "iso2":  "GL",
+                          "bands":  [
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Turks and Caicos Islands",
+                          "iso2":  "TC",
+                          "bands":  [
+                                        17
+                                    ]
+                      },
+                      {
+                          "name":  "Northern Mariana Islands",
+                          "iso2":  "MP",
+                          "bands":  [
+                                        12
+                                    ]
+                      },
+                      {
+                          "name":  "Gibraltar",
+                          "iso2":  "GI",
+                          "bands":  [
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Liechtenstein",
+                          "iso2":  "LI",
+                          "bands":  [
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "Monaco",
+                          "iso2":  "MC",
+                          "bands":  [
+                                        7,
+                                        20
+                                    ]
+                      },
+                      {
+                          "name":  "San Marino",
+                          "iso2":  "SM",
+                          "bands":  [
+                                        3,
+                                        7,
+                                        20
+                                    ]
+                      }
+                  ]
+}

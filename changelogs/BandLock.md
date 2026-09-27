@@ -6,6 +6,23 @@ Este archivo documenta las versiones de BandLock que están publicadas actualmen
 
 **Compatibilidad:** iOS 16.x. RootHide usa `iphoneos-arm64e`; Dopamine rootless usa `iphoneos-arm64` con binarios arm64 + arm64e. Ambos targets parten de iOS 16.0.
 
+## 0.6.35 — RootHide & Dopamine
+
+### Nuevo
+- La pestaña **Info** muestra una fila independiente **Versión actual / Current version**, leída dinámicamente desde `CFBundleShortVersionString`.
+- Nueva fila **Buy Me a Coffee** en Info para apoyar el desarrollo: `https://buymeacoffee.com/gokuen`.
+- Los paquetes incluyen enlaces públicos a la documentación, depiction web e icono de BandLock en GokuEnREPO.
+
+### Cambiado
+- La variante (RootHide o Dopamine) y la versión se muestran por separado para hacer la pantalla Info más clara.
+- Se conserva sin cambios la arquitectura de daemon, el control LTE/4G, perfiles por país, Field Test, idiomas y verificación de escritura de 0.6.34.
+
+### Publicación
+- **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`.
+- **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`.
+
+---
+
 ## 0.6.34 — RootHide & Dopamine
 
 ### Nuevo

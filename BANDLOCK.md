@@ -4,7 +4,7 @@
 
 **BandLock Global** es la edición pública internacional de BandLock para **iOS 16**. Desde 0.6.34 se publica como dos paquetes independientes: uno para **RootHide** y otro para **Dopamine rootless normal**.
 
-> Current public version / Versión pública actual: **0.6.34** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64**
+> Current public version / Versión pública actual: **0.6.35** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64**
 
 ## Español
 
@@ -14,7 +14,7 @@ BandLock se divide en tres pestañas. CoreTelephony/CommCenter se ejecuta dentro
 
 - **Control** — estado del módem, red actual, banda servidora, modo Automático/Solo LTE, selección manual de bandas, aplicar, restaurar y Field Test.
 - **Países** — buscador con 160 países y territorios. Cada país muestra sus bandas LTE de referencia, frecuencia, FDD/TDD/SDL y cuáles de ellas son compatibles con el módem del iPhone.
-- **Info** — créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico y selector de idioma.
+- **Info** — versión actual, créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico, selector de idioma y **Buy Me a Coffee**.
 
 ### Cómo funcionan los perfiles de país
 
@@ -73,7 +73,7 @@ BandLock uses three main tabs. CoreTelephony/CommCenter runs inside a separate L
 
 - **Control** — modem status, current network, serving band, Automatic/LTE-only mode, manual band editing, apply/restore actions and Field Test.
 - **Countries** — searchable list of 160 countries and territories. Each country shows reference LTE bands, frequency, FDD/TDD/SDL metadata, and which bands are also supported by the current iPhone modem.
-- **Info** — credits, update checking, release notes, GokuEnREPO, technical glossary and language selector.
+- **Info** — current version, credits, update checking, release notes, GokuEnREPO, technical glossary, language selector and **Buy Me a Coffee**.
 
 ### Country profiles
 
@@ -143,6 +143,10 @@ Compatibility reports from different iPhone models, carriers and countries are u
 **[BandLock Global — community compatibility reports / pruebas de compatibilidad](https://github.com/Gokuencinar/GokuEnREPO/issues/1)**
 
 Please never publish IMEI, IMSI, ICCID, phone numbers or other personal identifiers.
+
+## Support / Apoyo
+
+☕ [Buy Me a Coffee](https://buymeacoffee.com/gokuen)
 
 ## Changelog
 
