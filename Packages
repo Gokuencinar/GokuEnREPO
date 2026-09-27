@@ -277,18 +277,18 @@ Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandl
 Name: BandLock (Rootful)
 
 Package: com.gokuencinar.nukewireless
-Version: 1.0.44
+Version: 1.0.45
 Architecture: iphoneos-arm64e
 Maintainer: Gokuencinar
 Pre-Depends: rootless-compat (>= 0.9)
 Depends: firmware (>= 16.0), ldid, arpoison, network-cmds, ellekit
 Conflicts: xyz.cypwn.harpy-reloaded
 Replaces: xyz.cypwn.harpy-reloaded
-Filename: debs/com.gokuencinar.nukewireless_1.0.44_iphoneos-arm64e.deb
-Size: 5719552
-MD5sum: 3d7e8518d0a2eb7199d3cbab9a3dce06
-SHA1: 0fe080efaa93ae4f2c893f2e6ff772d12d020f25
-SHA256: 730d461fc0917824663d3fe1069d67aed9b6f645644b67d2604de739194ac39c
+Filename: debs/com.gokuencinar.nukewireless_1.0.45_iphoneos-arm64e.deb
+Size: 5719730
+MD5sum: ffedc420c159a898ecc738ed4898cac7
+SHA1: 1991b9115c91d993f04a1f9d3de71a52492fef74
+SHA256: 28728ef73e36f73dfc429402482f409fb6f624e9acdaa716d5674f0afa0d0af3
 Section: Utilities
 Homepage: https://github.com/Gokuencinar/GokuEnREPO
 Description: Local Wi-Fi device discovery and IPv4 ARP-spoofing controls with aliases, bulk actions, network details and seven UI languages.
