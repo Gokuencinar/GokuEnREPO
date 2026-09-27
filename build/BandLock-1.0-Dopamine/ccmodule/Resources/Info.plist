@@ -2,44 +2,54 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
+    <key>CFBundleName</key>
+    <string>BandLock Network</string>
     <key>CFBundleDisplayName</key>
     <string>BandLock Network</string>
     <key>CFBundleExecutable</key>
     <string>BandLockCCModule</string>
     <key>CFBundleIdentifier</key>
     <string>com.gokuencinar.bandlock.ccmodule</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>BandLock Network</string>
     <key>CFBundlePackageType</key>
     <string>BNDL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.4</string>
+    <string>1.1.5</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>MinimumOSVersion</key>
     <string>16.0</string>
-    <key>NSPrincipalClass</key>
-    <string>BLCCModule</string>
-<key>ModuleSize</key>
-    <dict>
-        <key>columns</key>
-        <string>1</string>
-        <key>rows</key>
-        <string>1</string>
-    </dict>
-    <key>CFBundleIconFile</key>
-    <string>SettingsIcon.png</string>
-    <key>CFBundleSupportedPlatforms</key>
-    <array>
-        <string>iPhoneOS</string>
-    </array>
     <key>UIDeviceFamily</key>
     <array>
         <integer>1</integer>
     </array>
+    <key>NSPrincipalClass</key>
+    <string>BLCCModule</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>iPhoneOS</string>
+    </array>
+    <key>CCSGetModuleSizeAtRuntime</key>
+    <false/>
+    <key>CCSModuleSize</key>
+    <dict>
+        <key>Portrait</key>
+        <dict>
+            <key>Height</key>
+            <integer>1</integer>
+            <key>Width</key>
+            <integer>1</integer>
+        </dict>
+        <key>Landscape</key>
+        <dict>
+            <key>Height</key>
+            <integer>1</integer>
+            <key>Width</key>
+            <integer>1</integer>
+        </dict>
+    </dict>
 </dict>
 </plist>
