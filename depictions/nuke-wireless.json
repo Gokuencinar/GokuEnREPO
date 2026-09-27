@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.44",
+          "title": "1.0.45",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- Applies language changes automatically after the picker finishes closing, so Info and the bottom tab titles refresh without needing to switch tabs\n- Keeps the stable Wi-Fi transition path from 1.0.43 untouched\n- Localizes visible **Block device**, **Unblock device**, **Rename device**, **Clear nickname** and **Dismiss** controls only inside the controller that just appeared\n- Avoids global UIKit hooks and panel subview re-binding"
+          "markdown": "- Refreshes the existing Wi-Fi panel using temporary local references only, so **Block all / Unblock all**, **Names** and the diagnostic text use the selected language\n- Does not store panel subviews globally and does not reintroduce the crash-prone re-binding logic\n- Keeps the stable tab-transition path from 1.0.43 and the delayed Info/tab language refresh from 1.0.44\n- Keeps localized visible device-action controls"
         }
       ]
     }
