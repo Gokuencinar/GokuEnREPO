@@ -6,6 +6,8 @@
 
 > Current public version / Versión pública actual: **1.1** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
 
+> Development / Desarrollo: **1.2 beta 1** broadens the deployment target to iOS 15 and adds guarded runtime compatibility through iOS 18. It remains private until device validation is complete.
+
 ## Español
 
 ### Interfaz
@@ -60,7 +62,9 @@ El dataset no sustituye la información oficial de cada operador. El módem del 
 
 ### Compatibilidad y variantes
 
-- iOS 16.x
+- **RootHide:** iOS 15.0–17.0. The package remains `iphoneos-arm64e` as required by RootHide, while its binaries contain both arm64 and arm64e slices for older iOS 15 hardware.
+- **Dopamine rootless:** iOS 15.0–18.x where the installed Dopamine version supports the device/firmware combination.
+- **Rootful:** iOS 15.x–16.x on supported classic/rootful jailbreaks.
 - Sileo
 - **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · validado en iPhone XS con iOS 16.3.1.
 - **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · binarios arm64 + arm64e.
@@ -124,7 +128,9 @@ The dataset does not replace carrier-specific official information. The iPhone m
 
 ### Compatibility and variants
 
-- iOS 16.x
+- **RootHide:** iOS 15.0–17.0. The package remains `iphoneos-arm64e` as required by RootHide, while its binaries contain both arm64 and arm64e slices for older iOS 15 hardware.
+- **Dopamine rootless:** iOS 15.0–18.x where the installed Dopamine version supports the device/firmware combination.
+- **Rootful:** iOS 15.x–16.x on supported classic/rootful jailbreaks.
 - Sileo
 - **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · real-device validated on iPhone XS / iOS 16.3.1.
 - **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · arm64 + arm64e binaries.

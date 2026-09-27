@@ -10,6 +10,23 @@ This changelog documents the public BandLock releases currently distributed thro
 
 ---
 
+## 1.2 beta 1 — iOS 15–18 compatibility testing
+
+### Changed
+- Lowered the deployment target and app/module minimum OS to **iOS 15.0**.
+- RootHide binaries now include **arm64 + arm64e** while retaining RootHide's `iphoneos-arm64e` package architecture.
+- Dopamine packaging now permits iOS 15–18, while RootHide is bounded to iOS 15–17.0 and rootful to iOS 15–16.
+- CoreTelephony symbols used by the Control Center module are now resolved dynamically with `dlopen`/`dlsym`, preventing a missing private symbol from stopping SpringBoard from loading the module.
+- Added a daemon fallback for RAT switching when the direct Control Center CoreTelephony path is unavailable.
+- CCSupport is now recommended rather than mandatory so the standalone app/daemon can still be installed on firmware where third-party Control Center registration is unavailable or not yet validated.
+
+### Compatibility validation
+- RootHide, Dopamine and rootful builds compile successfully with deployment target 15.0 and without API-availability warnings.
+- iOS 18 runtime headers still expose the CoreTelephony band/RAT selectors, `CCUIToggleModule` refresh APIs and `TPPhonePad +launchFieldTestIfNeeded:` used by BandLock.
+- Physical device testing outside the existing iOS 16.3 RootHide device is still required before promoting 1.2 to a public release.
+
+---
+
 ## 1.1 — Control Center network selector
 
 ### Added

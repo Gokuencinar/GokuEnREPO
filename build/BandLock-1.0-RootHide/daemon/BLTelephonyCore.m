@@ -621,7 +621,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 - (void)writeLogAction:(NSString *)action detail:(NSString *)detail {
     NSFileManager *fm = NSFileManager.defaultManager;
     [fm createDirectoryAtPath:BLLogDirectory withIntermediateDirectories:YES attributes:nil error:nil];
-    NSString *text = [NSString stringWithFormat:@"BandLock-Version: 1.0\nTimestamp: %@\nAction: %@\nRAT: %@\nServing-Band: %@\nSupported-LTE: %@\nActive-LTE: %@\nPending-LTE: %@\nSupported-NR: %@\nActive-NR: %@\nPending-NR: %@\nDetail: %@\n",
+    NSString *text = [NSString stringWithFormat:@"BandLock-Version: 1.2-beta1\nTimestamp: %@\nAction: %@\nRAT: %@\nServing-Band: %@\nSupported-LTE: %@\nActive-LTE: %@\nPending-LTE: %@\nSupported-NR: %@\nActive-NR: %@\nPending-NR: %@\nDetail: %@\n",
                       NSDate.date, action ?: @"—", self.radioAccessTechnology ?: @"—", self.servingBand ?: @"—", BLBandList(self.supportedBands), BLBandList(self.activeBands), BLBandList(self.pendingBands), BLNRBandList(self.supportedNRBands), BLNRBandList(self.activeNRBands), BLNRBandList(self.pendingNRBands), detail ?: @"—"];
     [text writeToFile:BLLastLogPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
 }
