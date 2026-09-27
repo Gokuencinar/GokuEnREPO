@@ -163,12 +163,12 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
         NSString *modeCode = [result[@"mode_code"] isKindOfClass:NSString.class] ? result[@"mode_code"] : nil;
         BOOL supports5G = [result[@"supports_5g"] boolValue];
         NSString *message = [result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"No se pudo cambiar el modo de red.";
+        if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
 
         dispatch_async(dispatch_get_main_queue(), ^{
             self.requestInFlight = NO;
 
             if (success && modeCode.length) {
-                if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
                 self.currentModeCode = modeCode;
                 self.supports5G = supports5G;
                 [super refreshState];
