@@ -41,7 +41,6 @@ jobs:
           cd build/BandLock-1.0-RootHide
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           test -f packages/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb
-          dpkg-deb -f packages/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb Package Version Architecture
       - uses: actions/upload-artifact@v4
         with:
           name: BandLock-RootHide-1.0
@@ -77,7 +76,6 @@ jobs:
           cd build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           test -f packages/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb
-          dpkg-deb -f packages/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb Package Version Architecture
       - uses: actions/upload-artifact@v4
         with:
           name: BandLock-Dopamine-1.0
