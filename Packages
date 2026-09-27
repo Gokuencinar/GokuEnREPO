@@ -314,3 +314,25 @@ Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/nuke-
 Name: Nuke Wireless
 Sileodepiction: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/depictions/nuke-wireless.json
 
+Package: com.gokuencinar.nukewireless
+Version: 1.0.32+rh32
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Pre-Depends: rootless-compat (>= 0.9)
+Depends: firmware (>= 16.0), ldid, arpoison, network-cmds, ellekit
+Conflicts: xyz.cypwn.harpy-reloaded
+Replaces: xyz.cypwn.harpy-reloaded
+Filename: debs/com.gokuencinar.nukewireless_1.0.32+rh32_iphoneos-arm64e.deb
+Size: 5718104
+MD5sum: b57d99b1e6bb598b7d4ba870139aa1e1
+SHA1: 5f51c0fdafb27cc05d0a6d91956d83ea112ac743
+SHA256: 178cbab36093bb53db8eba5308f147f0f3b4e59171006af93eb882c165691f0e
+Section: Utilities
+Homepage: https://github.com/Gokuencinar/GokuEnREPO
+Description: Local Wi-Fi device discovery and IPv4 ARP-spoofing controls with aliases, bulk actions, network details and seven UI languages.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/nuke-wireless.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/nuke-wireless/icon.png
+Name: Nuke Wireless
+Sileodepiction: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/depictions/nuke-wireless.json
+
