@@ -236,7 +236,7 @@
     self.activeNRValue.text = BLNRBandList(self.manager.activeNRBands);
     self.pendingValue.text = BLBandList(self.manager.pendingBands);
     self.pendingNRValue.text = BLNRBandList(self.manager.pendingNRBands);
-    self.resultValue.text = self.manager.detailText ?: @"—";
+    self.resultValue.text = self.manager.hasRefreshedStatus ? (self.manager.detailText ?: @"") : @"";
     self.modeValue.text = self.manager.networkMode ?: @"—";
     self.activeNRRow.hidden = !self.manager.supports5G;
     self.nrBandsCard.hidden = !self.manager.supports5G || !self.manager.supportedNRBands.count;

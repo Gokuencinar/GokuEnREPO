@@ -19,6 +19,7 @@ typedef void (^BLActionCompletion)(BOOL success, NSString *message);
 @property (nonatomic, copy, readonly) NSString *statusText;
 @property (nonatomic, copy, readonly) NSString *detailText;
 @property (nonatomic, assign, readonly) BOOL hasReadState;
+@property (nonatomic, assign, readonly) BOOL hasRefreshedStatus;
 @property (nonatomic, assign, readonly) BOOL busy;
 
 + (instancetype)sharedManager;

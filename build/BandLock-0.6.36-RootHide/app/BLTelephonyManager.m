@@ -55,6 +55,7 @@ static NSString *BLDaemonSocketPath(void) {
 @property (nonatomic, copy, readwrite) NSString *statusText;
 @property (nonatomic, copy, readwrite) NSString *detailText;
 @property (nonatomic, assign, readwrite) BOOL hasReadState;
+@property (nonatomic, assign, readwrite) BOOL hasRefreshedStatus;
 @property (nonatomic, assign, readwrite) BOOL busy;
 @property (nonatomic, assign) BOOL hasExplicitPendingBands;
 @property (nonatomic, assign) BOOL hasExplicitPendingNRBands;
@@ -103,6 +104,7 @@ static NSString *BLDaemonSocketPath(void) {
         _statusText = BLT(@"Pulsa Actualizar", @"Tap Refresh");
         _detailText = BLT(@"BandLock usa un daemon separado para CoreTelephony. La app principal no ejecuta procesos ni APIs privadas del módem.", @"BandLock uses a separate daemon for CoreTelephony. The main app does not spawn processes or execute modem private APIs.");
         _hasReadState = NO;
+        _hasRefreshedStatus = NO;
         _busy = NO;
         [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(languageDidChange:) name:BLLanguageDidChangeNotification object:nil];
         BLBreadcrumb("manager init end");
@@ -408,6 +410,7 @@ static NSString *BLDaemonSocketPath(void) {
     [self sendRequest:@{@"cmd": @"status"} completion:^(NSDictionary *result) {
         BLBreadcrumb("refresh result block enter");
         if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:NO];
+        self.hasRefreshedStatus = YES;
         [self finishResult:result successMessage:BLT(@"Estado del módem actualizado.", @"Modem state updated.") completion:completion];
         BLBreadcrumb("refresh result block end");
     }];
