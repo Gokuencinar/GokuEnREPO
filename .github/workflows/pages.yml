@@ -10,6 +10,8 @@ on:
       - "betterwifi-rh.html"
       - "sitemap.xml"
       - "robots.txt"
+      - "add/**"
+      - "assets/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
