@@ -1,4 +1,4 @@
-﻿{
+{
   "minVersion": "0.4",
   "class": "DepictionTabView",
   "tintColor": "#ff453a",
@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.38",
+          "title": "1.0.39",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- Prevents inherited English tab titles from ever being assigned to the tab bar or navigation title\n- Keeps **Punto de acceso / Hotspot** and the other localized names stable while switching tabs quickly\n- Adds Access Wi-Fi Information and MobileWiFi manager entitlements\n- Adds SystemConfiguration and MobileWiFi fallbacks for SSID/BSSID when CNCopyCurrentNetworkInfo returns no data"
+          "markdown": "- Updates the bottom **Wi-Fi / Hotspot / Info** titles immediately when the language changes\n- Refreshes **Block all / Unblock all** and **Names** using the newly selected language\n- Refreshes the Wi-Fi diagnostic text, active-process count and pull-to-refresh hint immediately\n- Keeps the stable tab-navigation lifecycle introduced in 1.0.36; no tab or panel recreation is used for localization"
         }
       ]
     }
