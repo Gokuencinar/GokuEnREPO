@@ -1,6 +1,6 @@
 Package: com.gokuencinar.bandlock.rootful
 Name: BandLock (Rootful)
-Version: 1.1.2
+Version: 1.1.3
 Architecture: iphoneos-arm
 Description: Standalone BandLock Global app for iOS 16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Maintainer: Gokuencinar
