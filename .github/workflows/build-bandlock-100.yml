@@ -91,7 +91,14 @@ jobs:
           grep -q 'currentLanguageName' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'BandLockPendingNRBands' build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
           grep -q 'kCTRegistrationRATSelectionUMTS' build/BandLock-1.0-Dopamine/daemon/main.m
-          grep -q 'BLCCMode3G' build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'BLCCModule : CCUIToggleModule' build/BandLock-1.0-Dopamine/ccmodule/Module.h
+          grep -q 'bl_cycleToNextMode' build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'reconfigureView' build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'CCSGetModuleSizeAtRuntime' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<key>CCSModuleSize</key>' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<false/>' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q '<key>ModuleSize</key>' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q 'CCUIMenuModuleViewController\|UIAlertController' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           ! grep -R --exclude-dir='ccmodule' --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' build/BandLock-1.0-Dopamine
       - name: Build Dopamine
         run: |
