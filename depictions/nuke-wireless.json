@@ -73,7 +73,7 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.30",
+          "title": "1.0.31",
           "text": "Current"
         },
         {
