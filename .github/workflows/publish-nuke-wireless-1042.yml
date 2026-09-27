@@ -1,0 +1,69 @@
+name: Publish Nuke Wireless 1.0.42
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-nuke-wireless-1042.yml
+      - .github/nuke-build/NukeWirelessPaths_ios.dylib
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
+      - name: Rebuild Nuke Wireless package
+        shell: bash
+        run: |
+          set -euo pipefail
+          old="debs/com.gokuencinar.nukewireless_1.0.41_iphoneos-arm64e.deb"
+          new="debs/com.gokuencinar.nukewireless_1.0.42_iphoneos-arm64e.deb"
+          work="$(mktemp -d)"
+          dpkg-deb --raw-extract "$old" "$work/root"
+          install -m 0755 ".github/nuke-build/NukeWirelessPaths_ios.dylib" "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
+          ROOT_DIR="$work/root" python3 - <<'PY'
+          import os, plistlib
+          from pathlib import Path
+
+          root = Path(os.environ["ROOT_DIR"])
+          control = root / "DEBIAN/control"
+          lines = []
+          for line in control.read_text().splitlines():
+              key = line.split(":", 1)[0] if ":" in line else ""
+              if key in {"Version", "Description"}:
+                  continue
+              lines.append(line)
+          lines += [
+              "Version: 1.0.42",
+              "Description: Local Wi-Fi device discovery and IPv4 ARP-spoofing controls with aliases, bulk actions, network details and seven UI languages.",
+          ]
+          control.write_text("\n".join(lines) + "\n")
+
+          plist_path = root / "Applications/HarpyReloaded.app/Info.plist"
+          data = plistlib.loads(plist_path.read_bytes())
+          data["CFBundleShortVersionString"] = "1.0.42"
+          data["CFBundleVersion"] = "42"
+          plist_path.write_bytes(plistlib.dumps(data, fmt=plistlib.FMT_BINARY))
+          PY
+          dpkg-deb --build "$work/root" "$new"
+          dpkg-scanpackages -m debs /dev/null > Packages
+          python3 .github/scripts/filter-nuke-catalog.py Packages
+          gzip -9 -c Packages > Packages.gz
+
+      - name: Commit package and repository index
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debs/com.gokuencinar.nukewireless_1.0.42_iphoneos-arm64e.deb Packages Packages.gz
+          git commit -m "Publish Nuke Wireless 1.0.42"
+          git push

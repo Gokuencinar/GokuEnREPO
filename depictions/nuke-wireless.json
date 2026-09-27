@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.41",
+          "title": "1.0.42",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- Prevents the language selector from touching the hidden Wi-Fi panel while Info is active, avoiding the crash after choosing a language\n- Keeps the Wi-Fi panel localization fix when returning to Wi-Fi\n- Keeps localized **Block device**, **Unblock device**, **Rename device**, **Clear nickname** and **Dismiss** actions\n- Starts the clean public version scheme without the old **+rh** suffix"
+          "markdown": "- The language selector now only saves the chosen language and does not mutate any visible view while the alert is dismissing\n- Tab titles, Info and the Wi-Fi panel refresh through the stable view lifecycle when switching tabs\n- Device actions are localized at the rendered title/text layer to cover the inherited SwiftUI action sheet\n- Keeps the clean public version scheme without the old **+rh** suffix"
         }
       ]
     }
