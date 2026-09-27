@@ -4,7 +4,7 @@
 
 **BandLock Global** es la edición pública internacional de BandLock para **iOS 16**. Desde 1.0 se publica en tres variantes de jailbreak: **RootHide**, **Dopamine rootless** y **rootful clásico**.
 
-> Current public version / Versión pública actual: **1.0** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
+> Current public version / Versión pública actual: **1.1** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
 
 ## Español
 
@@ -29,6 +29,7 @@ Que una banda figure para un país no garantiza que todos los operadores la util
 ### Funciones
 
 - App UIKit independiente con icono en SpringBoard.
+- Módulo 1×1 para Control Center con selector rápido de **Auto / 3G / 4G / 5G**. El estado visual se actualiza al instante y los cambios Auto/3G/4G usan la ruta directa de CoreTelephony para no quedar bloqueados durante las transiciones por 3G.
 - Selección de todas las bandas LTE que el módem reporta como soportadas.
 - Selección independiente de bandas 5G NR que el módem reporte como configurables.
 - Metadatos de frecuencia y clasificación **FDD / TDD / SDL**.
@@ -92,6 +93,7 @@ A band being listed for a country does not mean every carrier uses it or that it
 ### Features
 
 - Standalone UIKit app with a Home Screen icon.
+- 1×1 Control Center module with a quick **Auto / 3G / 4G / 5G** picker. Visual state updates immediately, and Auto/3G/4G use the direct CoreTelephony RAT path so 3G transitions do not block subsequent selections.
 - Manual selection of every LTE band reported as supported by the modem.
 - Independent 5G NR selection for bands reported as configurable by the modem.
 - Frequency and **FDD / TDD / SDL** metadata.

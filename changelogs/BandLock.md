@@ -3,10 +3,34 @@
 This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
 > **About BandLock**  
-> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.0 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.1 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
 
 > **Compatibility**  
 > iOS 16.x. RootHide uses `iphoneos-arm64e`; Dopamine rootless uses `iphoneos-arm64`; Rootful uses `iphoneos-arm` with arm64 binaries and classic filesystem paths.
+
+---
+
+## 1.1 — Control Center network selector
+
+### Added
+- Added a compact **1×1 Control Center module** for quick radio-mode changes.
+- Added an action-sheet selector for **Automatic, 3G / UMTS, 4G / LTE and 5G**. 5G is disabled on devices/lines that do not report 5G support.
+- Added immediate visual-state refresh so the Control Center tile reflects the selected mode without closing and reopening Control Center.
+
+### Changed
+- Control Center Auto/3G/4G changes now use the direct CoreTelephony RAT-selection path instead of waiting for the app daemon's synchronous subscription-context lookup and read-back cycle.
+- Status verification is deferred after a Control Center change so modem handovers, especially through 3G, do not block later selections.
+- Rapid mode changes are accepted without waiting for the previous 3G transition to settle.
+- Package installation no longer performs an automatic SpringBoard reload, avoiding interrupted Sileo installs.
+
+### Validation
+- RootHide 1.1 was physically validated on an iPhone XS running iOS 16.3.x, including repeated **Auto → 4G → 3G → Auto/4G** transitions and immediate Control Center colour updates.
+- RootHide, Dopamine and Rootful packages compile successfully in GitHub Actions.
+
+### Packages
+- **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`
+- **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
+- **BandLock (Rootful)** — `com.gokuencinar.bandlock.rootful` — `iphoneos-arm`
 
 ---
 
