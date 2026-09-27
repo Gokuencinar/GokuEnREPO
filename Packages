@@ -176,3 +176,21 @@ Description: Standalone BandLock Global app for iOS 16 Dopamine rootless with an
 Author: Gokuencinar
 Name: BandLock (Dopamine)
 
+Package: com.gokuencinar.nukewireless
+Version: 1.0.25+rh25
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Pre-Depends: rootless-compat (>= 0.9)
+Depends: firmware (>= 16.0), ldid, arpoison, network-cmds, ellekit
+Conflicts: xyz.cypwn.harpy-reloaded
+Replaces: xyz.cypwn.harpy-reloaded
+Filename: debs/com.gokuencinar.nukewireless_1.0.25+rh25_iphoneos-arm64e.deb
+Size: 5717060
+MD5sum: 1e168c241b8b77e5d6c8c52b04624899
+SHA1: 7796e01cb40bff40f700bd58dc2be8d8a6afb3c2
+SHA256: f4b5282bf8aec2eef2a35f84f644aa3bb6e4a16230b7c7cd2789fea6da65cdbc
+Section: Utilities
+Description: Nuke Wireless Wi-Fi tools for iOS 16 (RootHide)
+Author: Gokuencinar
+Name: Nuke Wireless
+

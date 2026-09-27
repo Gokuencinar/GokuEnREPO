@@ -8,6 +8,7 @@ Public APT repository for **Sileo**, focused on tweaks for **iOS 16**, **Dopamin
 
 - **[BandLock — LTE/4G Band Lock](BANDLOCK.md)** — descripción completa en español e inglés, funciones, compatibilidad e instalación.
 - **[BetterWiFi RH — Wi-Fi Tools](BETTERWIFI-RH.md)** — descripción completa en español e inglés, funciones, compatibilidad e instalación.
+- **[Nuke Wireless — Wi-Fi Tools](NUKE-WIRELESS.md)** — dispositivos de la red Wi-Fi, alias y controles de bloqueo ARP para RootHide.
 
 Estas páginas están pensadas también como enlaces directos para compartir cada tweak con la comunidad.
 These pages are also intended as direct shareable links for each tweak.
@@ -171,6 +172,7 @@ It adds richer information about the currently connected Wi-Fi network, live sig
 - **BandLock (RootHide) 0.6.34** — `iphoneos-arm64e`
 - **BandLock (Dopamine) 0.6.34** — `iphoneos-arm64`
 - **BetterWiFi RH 0.3.8** — `iphoneos-arm64e`
+- **Nuke Wireless 1.0.25** — `iphoneos-arm64e`
 
 El índice `Packages` y `Packages.gz` se regenera automáticamente cuando cambia un paquete dentro de `debs/`.
 
@@ -184,10 +186,10 @@ The `Packages` and `Packages.gz` indexes are automatically regenerated when a pa
 
 ## GitHub Topics recomendados / Recommended GitHub Topics
 
-`jailbreak`, `ios-jailbreak`, `jailbreak-tweak`, `ios-tweak`, `theos`, `roothide`, `dopamine`, `sileo`, `apt-repository`, `ios16`, `iphone`, `arm64e`, `coretelephony`, `lte`, `band-locking`, `field-test`, `wifi`, `wifi-tools`, `network-monitoring`, `betterwifi`
+`jailbreak`, `ios-jailbreak`, `jailbreak-tweak`, `ios-tweak`, `theos`, `roothide`, `dopamine`, `sileo`, `apt-repository`, `ios16`, `iphone`, `arm64e`, `coretelephony`, `lte`, `band-locking`, `field-test`, `wifi`, `wifi-tools`, `network-monitoring`, `betterwifi`, `nuke-wireless`, `arp-blocking`
 
 ---
 
 ## GitHub Pages
 
-El workflow de Pages está preparado. Si GitHub Pages está habilitado, `index.html` ofrece una portada bilingüe con metadatos SEO para ambos tweaks.
+El workflow de Pages está preparado. Si GitHub Pages está habilitado, `index.html` ofrece una portada bilingüe con metadatos SEO para todos los tweaks.
