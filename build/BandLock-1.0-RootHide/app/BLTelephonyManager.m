@@ -365,6 +365,7 @@ static NSString *BLDaemonSocketPath(void) {
     self.networkModeCode = modeCode ?: @"other";
     if ([modeCode isEqualToString:@"automatic"]) self.networkMode = BLT(@"Automático", @"Automatic");
     else if ([modeCode isEqualToString:@"lte"]) self.networkMode = BLT(@"Solo LTE / 4G", @"LTE / 4G only");
+    else if ([modeCode isEqualToString:@"3g"]) self.networkMode = BLT(@"Solo 3G", @"3G only");
     else if ([modeCode isEqualToString:@"5g-auto"]) self.networkMode = @"5G Auto";
     else if ([modeCode isEqualToString:@"5g-on"]) self.networkMode = @"5G On";
     else if ([modeCode isEqualToString:@"5g-only"]) self.networkMode = @"5G Only (SA)";
