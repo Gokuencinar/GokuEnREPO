@@ -18,6 +18,8 @@
 
 @interface BLCCModule ()
 @property (nonatomic, copy) NSString *currentModeCode;
+@property (nonatomic, copy) NSString *confirmedModeCode;
+@property (nonatomic, copy) NSString *pendingModeCode;
 @property (nonatomic, assign) BOOL supports5G;
 @property (nonatomic, assign) BOOL requestInFlight;
 @property (nonatomic, assign) NSUInteger stateEpoch;
@@ -31,6 +33,8 @@
     self = [super init];
     if (self) {
         _currentModeCode = @"automatic";
+        _confirmedModeCode = @"automatic";
+        _pendingModeCode = nil;
         _supports5G = NO;
         _requestInFlight = NO;
         _stateEpoch = 0;
@@ -108,7 +112,7 @@
 
 - (void)refreshState {
     [super refreshState];
-    if (!self.daemonQueue || self.requestInFlight) return;
+    if (!self.daemonQueue || self.requestInFlight || self.pendingModeCode.length) return;
     [self bl_refreshFromDaemon];
 }
 
@@ -221,22 +225,36 @@
 }
 
 - (void)bl_applyMode:(NSString *)requestedMode {
-    if (self.requestInFlight || !requestedMode.length) return;
+    if (!requestedMode.length) return;
     if ([requestedMode isEqualToString:@"5g-on"] && !self.supports5G) return;
 
     dispatch_queue_t queue = self.daemonQueue;
     if (!queue) return;
 
-    NSString *previousMode = self.currentModeCode ?: @"automatic";
-    self.requestInFlight = YES;
     self.stateEpoch += 1;
-    NSUInteger epoch = self.stateEpoch;
 
-    // Optimistic UI: show the user's choice immediately. While the daemon is
-    // applying it, refreshState is intentionally prevented from repainting a
-    // stale previous RAT over this selection.
+    // Always reflect the latest user choice immediately, even if the daemon is
+    // still finishing a previous RAT switch.
     self.currentModeCode = requestedMode;
     [self bl_syncVisualSelection];
+
+    if (self.requestInFlight) {
+        // Coalesce rapid taps: keep only the newest requested RAT. The current
+        // daemon transaction is allowed to finish, then this value is applied.
+        self.pendingModeCode = requestedMode;
+        return;
+    }
+
+    [self bl_startModeRequest:requestedMode];
+}
+
+- (void)bl_startModeRequest:(NSString *)requestedMode {
+    if (!requestedMode.length || self.requestInFlight) return;
+
+    dispatch_queue_t queue = self.daemonQueue;
+    if (!queue) return;
+
+    self.requestInFlight = YES;
 
     dispatch_async(queue, ^{
         NSDictionary *result =
@@ -245,26 +263,46 @@
         BOOL supports5G = [result[@"supports_5g"] boolValue];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (epoch != self.stateEpoch) return;
-
             self.requestInFlight = NO;
+
+            NSString *normalizedMode = requestedMode;
+            if (!supports5G && [normalizedMode hasPrefix:@"5g-"]) {
+                normalizedMode = @"automatic";
+            }
+
             if (success) {
                 self.supports5G = supports5G;
-                if (!supports5G && [requestedMode hasPrefix:@"5g-"]) {
-                    self.currentModeCode = @"automatic";
+                self.confirmedModeCode = normalizedMode;
+            }
+
+            NSString *nextMode = self.pendingModeCode;
+            self.pendingModeCode = nil;
+
+            if (nextMode.length) {
+                // If the final tap already matches what just succeeded, no
+                // second modem transaction is necessary.
+                if (success && [nextMode isEqualToString:normalizedMode]) {
+                    self.currentModeCode = normalizedMode;
+                    [self bl_syncVisualSelection];
                 } else {
-                    self.currentModeCode = requestedMode;
+                    [self bl_startModeRequest:nextMode];
                 }
+                return;
+            }
+
+            if (success) {
+                self.currentModeCode = normalizedMode;
                 [self bl_syncVisualSelection];
 
+                NSUInteger epoch = self.stateEpoch;
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.65 * NSEC_PER_SEC)),
                                dispatch_get_main_queue(), ^{
-                    if (epoch == self.stateEpoch && !self.requestInFlight) {
+                    if (epoch == self.stateEpoch && !self.requestInFlight && !self.pendingModeCode.length) {
                         [self bl_refreshFromDaemon];
                     }
                 });
             } else {
-                self.currentModeCode = previousMode;
+                self.currentModeCode = self.confirmedModeCode ?: @"automatic";
                 [self bl_syncVisualSelection];
                 [self bl_refreshFromDaemon];
             }
@@ -274,7 +312,7 @@
 
 - (void)bl_refreshFromDaemon {
     dispatch_queue_t queue = self.daemonQueue;
-    if (!queue || self.requestInFlight) return;
+    if (!queue || self.requestInFlight || self.pendingModeCode.length) return;
     NSUInteger epoch = self.stateEpoch;
 
     dispatch_async(queue, ^{
@@ -287,8 +325,9 @@
         if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (epoch != self.stateEpoch || self.requestInFlight) return;
+            if (epoch != self.stateEpoch || self.requestInFlight || self.pendingModeCode.length) return;
             self.currentModeCode = modeCode;
+            self.confirmedModeCode = modeCode;
             self.supports5G = supports5G;
             [self bl_syncVisualSelection];
         });
