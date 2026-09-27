@@ -112,6 +112,26 @@ Author: Gokuencinar
 Name: BandLock (RootHide)
 
 Package: com.gokuencinar.bandlock
+Version: 0.6.35
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 1288
+Depends: firmware (>= 16.0), firmware (<< 17.0)
+Conflicts: com.gokuencinar.bandlock.dopamine
+Filename: debs/com.gokuencinar.bandlock_0.6.35_iphoneos-arm64e.deb
+Size: 184104
+MD5sum: 876c241049540d15f2829832aff34cb4
+SHA1: 0b36168bfef8b170146ccda8342b6148001418fa
+SHA256: aaa8aa944bf3f6db88fbfbefb61d000ddbe7b93f8bfcb1d9a25c6d23afc1d16c
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
+Description: Standalone BandLock Global app for iOS 16 RootHide with isolated LTE/4G modem control, country band reference, Field Test, multilingual UI and write verification
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
+Name: BandLock (RootHide)
+
+Package: com.gokuencinar.bandlock
 Version: 0.6.4
 Architecture: iphoneos-arm64e
 Maintainer: Gokuencinar
@@ -174,6 +194,26 @@ SHA256: 9fe727c14a762ffa901190c591334c318c511adeb6b29a43704523707a6ffaf1
 Section: Tweaks
 Description: Standalone BandLock Global app for iOS 16 Dopamine rootless with an isolated modem helper, country band reference, FDD/TDD/SDL metadata and write verification
 Author: Gokuencinar
+Name: BandLock (Dopamine)
+
+Package: com.gokuencinar.bandlock.dopamine
+Version: 0.6.35
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Installed-Size: 1288
+Depends: firmware (>= 16.0), firmware (<< 17.0), mobilesubstrate
+Conflicts: com.gokuencinar.bandlock
+Filename: debs/com.gokuencinar.bandlock.dopamine_0.6.35_iphoneos-arm64.deb
+Size: 183380
+MD5sum: 631f996ba038403bf67c19642cb5841a
+SHA1: 5c03fe16a25a44068dada4069581f39a99b6493d
+SHA256: 1bb4e39723b8e398f021e11d2d022e11521858ff0119953f44e89ff0a1ba83e9
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
+Description: Standalone BandLock Global app for iOS 16 Dopamine rootless with isolated LTE/4G modem control, country band reference, Field Test, multilingual UI and write verification
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Dopamine)
 
 Package: com.gokuencinar.nukewireless
