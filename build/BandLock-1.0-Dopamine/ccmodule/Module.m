@@ -188,16 +188,22 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         if (window) break;
     }
 
-    // Keep a legacy fallback for iOS 15 and for Control Center host layouts
-    // where no foreground UIWindowScene exposes a key window yet.
+    // On iOS 15+ Control Center can briefly expose its window through a scene
+    // that is not yet foreground-active. Make a second scene-only pass instead
+    // of using UIApplication.windows (deprecated starting in iOS 15).
     if (!window) {
-        for (UIWindow *candidate in [UIApplication sharedApplication].windows) {
-            if (candidate.isKeyWindow) {
-                window = candidate;
-                break;
+        for (UIScene *scene in scenes) {
+            if (![scene isKindOfClass:UIWindowScene.class]) continue;
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            for (UIWindow *candidate in windowScene.windows) {
+                if (candidate.isKeyWindow) {
+                    window = candidate;
+                    break;
+                }
             }
+            if (!window) window = windowScene.windows.firstObject;
+            if (window) break;
         }
-        if (!window) window = [UIApplication sharedApplication].windows.firstObject;
     }
 
     UIViewController *controller = window.rootViewController;
