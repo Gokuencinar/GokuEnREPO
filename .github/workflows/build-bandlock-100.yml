@@ -1,4 +1,4 @@
-name: Build and Publish BandLock 1.1.2
+name: Build and Publish BandLock 1.1.3
 
 on:
   push:
@@ -33,8 +33,8 @@ jobs:
         run: |
           set -euo pipefail
           plutil -lint build/BandLock-1.0-RootHide/app/Resources/Info.plist
-          grep -q '^Version: 1.1.2$' build/BandLock-1.0-RootHide/control
-          grep -q '<string>1.1.2</string>' build/BandLock-1.0-RootHide/app/Resources/Info.plist
+          grep -q '^Version: 1.1.3$' build/BandLock-1.0-RootHide/control
+          grep -q '<string>1.1.3</string>' build/BandLock-1.0-RootHide/app/Resources/Info.plist
           python3 -m json.tool build/BandLock-1.0-RootHide/app/Resources/countries.json >/dev/null
           grep -q '5G Auto / 5G On / 5G Only' build/BandLock-1.0-RootHide/app/BLControlViewController.m
           grep -q 'hasRefreshedStatus' build/BandLock-1.0-RootHide/app/BLControlViewController.m
@@ -44,6 +44,8 @@ jobs:
           grep -q 'BLCCMode3G' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q '<key>ModuleSize</key>' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
           grep -q 'BLCCModule : CCUIToggleModule' build/BandLock-1.0-Dopamine/ccmodule/Module.h
+          grep -q 'if (!self.daemonQueue) return;' build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'antenna.radiowaves.left.and.right' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           ! grep -q 'CCSGetModuleSizeAtRuntime' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
           grep -q 'BOOL supports5G = \[query\[@"supports5G"\] boolValue\] || supportedNR.count > 0;' build/BandLock-1.0-RootHide/daemon/BLTelephonyCore.m
           test -f build/BandLock-1.0-Dopamine/ccmodule/Resources/SettingsIcon@3x.png
@@ -53,14 +55,14 @@ jobs:
         run: |
           cd build/BandLock-1.0-RootHide
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
-          test -f packages/com.gokuencinar.bandlock_1.1.2_iphoneos-arm64e.deb
+          test -f packages/com.gokuencinar.bandlock_1.1.3_iphoneos-arm64e.deb
           find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
           find .theos/_ -type f -name 'SettingsIcon@3x.png' | grep -q SettingsIcon
           find .theos/_ -type f -name 'SettingsIcon@3x.png' | grep -q SettingsIcon
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-RootHide-1.1.2
-          path: build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.1.2_iphoneos-arm64e.deb
+          name: BandLock-RootHide-1.1.3
+          path: build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.1.3_iphoneos-arm64e.deb
 
   build-dopamine:
     runs-on: macos-15
@@ -78,9 +80,9 @@ jobs:
         run: |
           set -euo pipefail
           plutil -lint build/BandLock-1.0-Dopamine/app/Resources/Info.plist
-          grep -q '^Version: 1.1.2$' build/BandLock-1.0-Dopamine/control
+          grep -q '^Version: 1.1.3$' build/BandLock-1.0-Dopamine/control
           grep -q '^Architecture: iphoneos-arm64$' build/BandLock-1.0-Dopamine/control
-          grep -q '<string>1.1.2</string>' build/BandLock-1.0-Dopamine/app/Resources/Info.plist
+          grep -q '<string>1.1.3</string>' build/BandLock-1.0-Dopamine/app/Resources/Info.plist
           python3 -m json.tool build/BandLock-1.0-Dopamine/app/Resources/countries.json >/dev/null
           grep -q '5G Auto / 5G On / 5G Only' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'hasRefreshedStatus' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
@@ -93,12 +95,12 @@ jobs:
         run: |
           cd build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          test -f packages/com.gokuencinar.bandlock.dopamine_1.1.2_iphoneos-arm64.deb
+          test -f packages/com.gokuencinar.bandlock.dopamine_1.1.3_iphoneos-arm64.deb
           find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.1.2
-          path: build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.1.2_iphoneos-arm64.deb
+          name: BandLock-Dopamine-1.1.3
+          path: build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.1.3_iphoneos-arm64.deb
 
   publish:
     if: github.ref == 'refs/heads/main'
@@ -110,14 +112,14 @@ jobs:
           ref: main
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-RootHide-1.1.2
+          name: BandLock-RootHide-1.1.3
           path: /tmp/root
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Dopamine-1.1.2
+          name: BandLock-Dopamine-1.1.3
           path: /tmp/dop
       - run: sudo apt-get update && sudo apt-get install -y dpkg-dev
-      - name: Publish BandLock 1.1.2 to APT repository
+      - name: Publish BandLock 1.1.3 to APT repository
         shell: bash
         run: |
           set -euo pipefail
@@ -127,16 +129,16 @@ jobs:
             echo "Publish attempt ${attempt}/5"
             git fetch origin main
             git reset --hard origin/main
-            cp /tmp/root/com.gokuencinar.bandlock_1.1.2_iphoneos-arm64e.deb debs/
-            cp /tmp/dop/com.gokuencinar.bandlock.dopamine_1.1.2_iphoneos-arm64.deb debs/
+            cp /tmp/root/com.gokuencinar.bandlock_1.1.3_iphoneos-arm64e.deb debs/
+            cp /tmp/dop/com.gokuencinar.bandlock.dopamine_1.1.3_iphoneos-arm64.deb debs/
             dpkg-scanpackages -m debs /dev/null > Packages
             gzip -9 -c Packages > Packages.gz
-            git add debs/com.gokuencinar.bandlock_1.1.2_iphoneos-arm64e.deb debs/com.gokuencinar.bandlock.dopamine_1.1.2_iphoneos-arm64.deb Packages Packages.gz
-            git commit -m "Publish BandLock 1.1.2"
+            git add debs/com.gokuencinar.bandlock_1.1.3_iphoneos-arm64e.deb debs/com.gokuencinar.bandlock.dopamine_1.1.3_iphoneos-arm64.deb Packages Packages.gz
+            git commit -m "Publish BandLock 1.1.3"
             if git push origin HEAD:main; then
               exit 0
             fi
             sleep 2
           done
-          echo "Failed to publish BandLock 1.1.2 after 5 attempts" >&2
+          echo "Failed to publish BandLock 1.1.3 after 5 attempts" >&2
           exit 1
