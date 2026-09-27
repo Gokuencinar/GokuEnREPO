@@ -257,18 +257,18 @@ Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandl
 Name: BandLock (Dopamine)
 
 Package: com.gokuencinar.nukewireless
-Version: 1.0.41
+Version: 1.0.42
 Architecture: iphoneos-arm64e
 Maintainer: Gokuencinar
 Pre-Depends: rootless-compat (>= 0.9)
 Depends: firmware (>= 16.0), ldid, arpoison, network-cmds, ellekit
 Conflicts: xyz.cypwn.harpy-reloaded
 Replaces: xyz.cypwn.harpy-reloaded
-Filename: debs/com.gokuencinar.nukewireless_1.0.41_iphoneos-arm64e.deb
-Size: 5719410
-MD5sum: 65fdd52dc67bd738a301e292e8707504
-SHA1: a59c3bc839df77140f5db44ab153ba595f9b25dc
-SHA256: 0a41ae90244b2e1185c4dd9cb162ce33ed68bf13742822e82093f73ac9c5994f
+Filename: debs/com.gokuencinar.nukewireless_1.0.42_iphoneos-arm64e.deb
+Size: 5719618
+MD5sum: b1da399a6b2d8e9d457cd2a6e9424c05
+SHA1: a0c0a603fe92be91181dd83b7cdf6a2f708611a1
+SHA256: b14955ae2c11a452aef2392786f12afb66c3529652134f5be7682f0746184fc2
 Section: Utilities
 Homepage: https://github.com/Gokuencinar/GokuEnREPO
 Description: Local Wi-Fi device discovery and IPv4 ARP-spoofing controls with aliases, bulk actions, network details and seven UI languages.
