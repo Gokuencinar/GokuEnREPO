@@ -62,6 +62,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add +            debs/com.gokuencinar.nukewireless_1.0.26+rh26_iphoneos-arm64e.deb +            Packages Packages.gz README.md
+          git add debs/com.gokuencinar.nukewireless_1.0.26+rh26_iphoneos-arm64e.deb Packages Packages.gz README.md
           git commit -m "Publish Nuke Wireless 1.0.26"
           git push
