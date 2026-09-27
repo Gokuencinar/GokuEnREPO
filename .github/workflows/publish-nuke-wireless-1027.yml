@@ -1,0 +1,64 @@
+name: Publish Nuke Wireless 1.0.27
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-nuke-wireless-1027.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
+      - name: Rebuild Nuke Wireless package
+        shell: bash
+        run: |
+          set -euo pipefail
+          old="debs/com.gokuencinar.nukewireless_1.0.26+rh26_iphoneos-arm64e.deb"
+          new="debs/com.gokuencinar.nukewireless_1.0.27+rh27_iphoneos-arm64e.deb"
+          dylib_url="https://raw.githubusercontent.com/Gokuencinar/Harpy-RELOADED/6761b4f294b66265a0adffd8dcf15e0a1446e18a/prebuilt/NukeWirelessPaths_ios.dylib"
+          work="$(mktemp -d)"
+
+          dpkg-deb --raw-extract "$old" "$work/root"
+          curl --fail --location "$dylib_url" --output "$work/NukeWirelessPaths_ios.dylib"
+          install -m 0755 "$work/NukeWirelessPaths_ios.dylib" "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
+          sed -i 's/^Version: .*/Version: 1.0.27+rh27/' "$work/root/DEBIAN/control"
+
+          ROOT_DIR="$work/root" python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import plistlib
+
+          path = Path(os.environ["ROOT_DIR"]) / "Applications/HarpyReloaded.app/Info.plist"
+          data = plistlib.loads(path.read_bytes())
+          data["CFBundleShortVersionString"] = "1.0.27"
+          data["CFBundleVersion"] = "27"
+          data["CFBundleDisplayName"] = "Nuke Wireless"
+          data["CFBundleName"] = "Nuke Wireless"
+          path.write_bytes(plistlib.dumps(data, fmt=plistlib.FMT_BINARY))
+          PY
+
+          dpkg-deb --build "$work/root" "$new"
+          dpkg-deb -f "$new" Package Version Architecture Name
+          dpkg-scanpackages -m debs /dev/null > Packages
+          gzip -9 -c Packages > Packages.gz
+          sed -i 's/Nuke Wireless 1\.0\.26/Nuke Wireless 1.0.27/' README.md
+
+      - name: Commit package and repository index
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debs/com.gokuencinar.nukewireless_1.0.27+rh27_iphoneos-arm64e.deb Packages Packages.gz README.md
+          git commit -m "Publish Nuke Wireless 1.0.27"
+          git push
