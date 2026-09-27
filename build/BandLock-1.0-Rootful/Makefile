@@ -1,5 +1,5 @@
 ARCHS = arm64
-TARGET = iphone:clang:16.5:16.0
+TARGET = iphone:clang:16.5:15.0
 export ARCHS
 export TARGET
 

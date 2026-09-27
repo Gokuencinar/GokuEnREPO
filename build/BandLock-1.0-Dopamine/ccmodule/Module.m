@@ -7,16 +7,29 @@
 #import <sys/time.h>
 #import <unistd.h>
 #import <string.h>
+#import <dlfcn.h>
 
 typedef void *BLCTServerConnectionRef;
-extern BLCTServerConnectionRef _CTServerConnectionCreate(CFAllocatorRef allocator, void (*callback)(void), void *context);
-extern void *_CTServerConnectionSetRATSelection(BLCTServerConnectionRef connection, CFStringRef selection, void *unknown);
-extern CFStringRef kCTRegistrationRATSelection1;
-extern CFStringRef kCTRegistrationRATSelection6;
-extern CFStringRef kCTRegistrationRATSelection7;
-extern CFStringRef kCTRegistrationRATSelection11;
+typedef BLCTServerConnectionRef (*BLCTServerConnectionCreateFn)(CFAllocatorRef allocator, void (*callback)(void), void *context);
+typedef void *(*BLCTServerConnectionSetRATSelectionFn)(BLCTServerConnectionRef connection, CFStringRef selection, void *unknown);
 
 static void BLCTServerConnectionCallback(void) {}
+
+static void *BLCoreTelephonyHandle(void) {
+    static void *handle = NULL;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        handle = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony", RTLD_LAZY | RTLD_LOCAL);
+    });
+    return handle;
+}
+
+static CFStringRef BLRATSelectionConstant(const char *symbolName) {
+    void *handle = BLCoreTelephonyHandle();
+    if (!handle || !symbolName) return NULL;
+    CFStringRef *symbol = (CFStringRef *)dlsym(handle, symbolName);
+    return symbol ? *symbol : NULL;
+}
 
 #if BL_VARIANT_ROOTHIDE
 #import <roothide.h>
@@ -175,6 +188,18 @@ static void BLCTServerConnectionCallback(void) {}
         if (window) break;
     }
 
+    // Keep a legacy fallback for iOS 15 and for Control Center host layouts
+    // where no foreground UIWindowScene exposes a key window yet.
+    if (!window) {
+        for (UIWindow *candidate in [UIApplication sharedApplication].windows) {
+            if (candidate.isKeyWindow) {
+                window = candidate;
+                break;
+            }
+        }
+        if (!window) window = [UIApplication sharedApplication].windows.firstObject;
+    }
+
     UIViewController *controller = window.rootViewController;
     while (controller.presentedViewController && !controller.presentedViewController.isBeingDismissed) {
         controller = controller.presentedViewController;
@@ -251,8 +276,7 @@ static void BLCTServerConnectionCallback(void) {}
     [self bl_syncVisualSelection];
 
     if (![self bl_setRATDirect:requestedMode]) {
-        self.currentModeCode = self.confirmedModeCode ?: @"automatic";
-        [self bl_syncVisualSelection];
+        [self bl_applyModeThroughDaemon:requestedMode epoch:epoch];
         return;
     }
 
@@ -270,19 +294,60 @@ static void BLCTServerConnectionCallback(void) {}
 }
 
 - (BOOL)bl_setRATDirect:(NSString *)mode {
+    void *handle = BLCoreTelephonyHandle();
+    if (!handle) return NO;
+
+    BLCTServerConnectionCreateFn createConnection =
+        (BLCTServerConnectionCreateFn)dlsym(handle, "_CTServerConnectionCreate");
+    BLCTServerConnectionSetRATSelectionFn setSelection =
+        (BLCTServerConnectionSetRATSelectionFn)dlsym(handle, "_CTServerConnectionSetRATSelection");
+    if (!createConnection || !setSelection) return NO;
+
     CFStringRef selection = NULL;
-    if ([mode isEqualToString:@"automatic"]) selection = kCTRegistrationRATSelection7;
-    else if ([mode isEqualToString:@"3g"]) selection = kCTRegistrationRATSelection1;
-    else if ([mode isEqualToString:@"lte"]) selection = kCTRegistrationRATSelection6;
-    else if ([mode isEqualToString:@"5g-on"]) selection = kCTRegistrationRATSelection11;
+    if ([mode isEqualToString:@"automatic"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection7");
+    else if ([mode isEqualToString:@"3g"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection1");
+    else if ([mode isEqualToString:@"lte"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection6");
+    else if ([mode isEqualToString:@"5g-on"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection11");
     if (!selection) return NO;
 
     BLCTServerConnectionRef connection =
-        _CTServerConnectionCreate(kCFAllocatorDefault, BLCTServerConnectionCallback, NULL);
+        createConnection(kCFAllocatorDefault, BLCTServerConnectionCallback, NULL);
     if (!connection) return NO;
 
-    _CTServerConnectionSetRATSelection(connection, selection, NULL);
+    setSelection(connection, selection, NULL);
     return YES;
+}
+
+- (void)bl_applyModeThroughDaemon:(NSString *)requestedMode epoch:(NSUInteger)epoch {
+    dispatch_queue_t queue = self.daemonQueue;
+    if (!queue || !requestedMode.length) return;
+
+    dispatch_async(queue, ^{
+        NSDictionary *result =
+            [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": requestedMode}];
+        BOOL success = [result[@"success"] boolValue];
+        NSString *modeCode = [result[@"mode_code"] isKindOfClass:NSString.class] ? result[@"mode_code"] : nil;
+        id supports5GValue = result[@"supports_5g"];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (epoch != self.stateEpoch) return;
+
+            if (!success) {
+                self.currentModeCode = self.confirmedModeCode ?: @"automatic";
+                [self bl_syncVisualSelection];
+                return;
+            }
+
+            if ([supports5GValue respondsToSelector:@selector(boolValue)]) {
+                self.supports5G = [supports5GValue boolValue];
+            }
+            NSString *confirmed = modeCode.length ? modeCode : requestedMode;
+            if (!self.supports5G && [confirmed hasPrefix:@"5g-"]) confirmed = @"automatic";
+            self.currentModeCode = confirmed;
+            self.confirmedModeCode = confirmed;
+            [self bl_syncVisualSelection];
+        });
+    });
 }
 
 - (void)bl_refreshFromDaemon {

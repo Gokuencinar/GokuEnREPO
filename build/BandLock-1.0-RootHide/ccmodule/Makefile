@@ -3,7 +3,7 @@ include $(THEOS)/makefiles/common.mk
 BUNDLE_NAME = BandLockCCModule
 BandLockCCModule_BUNDLE_EXTENSION = bundle
 BandLockCCModule_FILES = ../../BandLock-1.0-Dopamine/ccmodule/Module.m
-BandLockCCModule_FRAMEWORKS = UIKit Foundation QuartzCore CoreTelephony
+BandLockCCModule_FRAMEWORKS = UIKit Foundation QuartzCore
 BandLockCCModule_PRIVATE_FRAMEWORKS = ControlCenterUIKit
 BandLockCCModule_CFLAGS = -fobjc-arc -DBL_VARIANT_ROOTHIDE=1
 BandLockCCModule_LDFLAGS += -lroothide
