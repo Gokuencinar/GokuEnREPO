@@ -47,8 +47,8 @@ jobs:
           ! grep -q 'CCSGetModuleSizeAtRuntime' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
           grep -q 'BOOL supports5G = \[query\[@"supports5G"\] boolValue\] || supportedNR.count > 0;' build/BandLock-1.0-RootHide/daemon/BLTelephonyCore.m
           test -f build/BandLock-1.0-Dopamine/ccmodule/Resources/SettingsIcon@3x.png
-          ! grep -q 'sbreload\|killall SpringBoard' build/BandLock-1.0-RootHide/layout/DEBIAN/postinst
-          ! grep -q 'sbreload\|killall SpringBoard' build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
+          ! grep -q 'sbreload\|killall' build/BandLock-1.0-RootHide/layout/DEBIAN/postinst
+          ! grep -q 'sbreload\|killall' build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
       - name: Build RootHide
         run: |
           cd build/BandLock-1.0-RootHide
