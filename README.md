@@ -39,6 +39,7 @@ Standalone jailbreak app for manually controlling LTE/4G and supported 5G NR mod
 
 - **RootHide build:** `com.gokuencinar.bandlock` — `iphoneos-arm64e`
 - **Dopamine rootless build:** `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
+- **Rootful build:** `com.gokuencinar.bandlock.rootful` — `iphoneos-arm`
 - Country profiles never modify the modem automatically; compatible bands are prepared for review before applying.
 - Languages: English, Spanish, French, German, Traditional Chinese, Simplified Chinese/Mandarin and Japanese.
 
@@ -74,6 +75,7 @@ Wi-Fi network management toolkit for RootHide.
 | --- | --- | --- |
 | BandLock (RootHide) | 1.0 | `iphoneos-arm64e` |
 | BandLock (Dopamine) | 1.0 | `iphoneos-arm64` |
+| BandLock (Rootful) | 1.0 | `iphoneos-arm` |
 | BetterWiFi RH | 0.3.8 | `iphoneos-arm64e` |
 | Nuke Wireless | 1.0.42 | `iphoneos-arm64e` |
 
@@ -81,7 +83,7 @@ The `Packages` and `Packages.gz` indexes are automatically regenerated when a pa
 
 ## Compatibility
 
-**iOS 16.x · Dopamine · RootHide · arm64e · Sileo / Cydia / Zebra / Installer 5**
+**iOS 16.x · RootHide · Dopamine rootless · Rootful · Sileo / Cydia / Zebra / Installer 5**
 
 ## ❤️ Support development
 

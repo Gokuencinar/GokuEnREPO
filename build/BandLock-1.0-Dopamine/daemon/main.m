@@ -55,7 +55,11 @@ static NSString * const BLRATNR = @"kCTRegistrationRATSelectionNR";
 static NSString * const BLRATNRSA = @"kCTRegistrationRATSelectionNRStandAlone";
 
 static NSString *BLSocketPath(void) {
+#if BL_VARIANT_ROOTFUL
+    return @"/tmp/com.gokuencinar.bandlockd.rootful.sock";
+#else
     return @"/tmp/com.gokuencinar.bandlockd.dopamine.sock";
+#endif
 }
 
 static NSDictionary *BLStatusPayload(BLTelephonyManager *manager, NSDictionary *query) {

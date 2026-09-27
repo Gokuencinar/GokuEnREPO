@@ -7,7 +7,7 @@ BandLockDaemon_FILES = \
 	BLTelephonyCore.m \
 	../shared/BLGBandMetadata.m
 BandLockDaemon_FRAMEWORKS = Foundation UIKit
-BandLockDaemon_CFLAGS = -fobjc-arc -I. -I../app -I../shared
+BandLockDaemon_CFLAGS = -fobjc-arc -I. -I../app -I../shared $(BANDLOCK_VARIANT_CFLAGS)
 BandLockDaemon_INSTALL_PATH = /usr/libexec
 BandLockDaemon_CODESIGN_FLAGS = -SEntitlements.plist
 

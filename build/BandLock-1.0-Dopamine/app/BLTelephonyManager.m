@@ -16,7 +16,11 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 static NSString * const BLPreviousNRBandsDefaultsKey = @"BandLockPreviousNRBands";
 static NSString * const BLPendingBandsDefaultsKey = @"BandLockPendingBands";
 static NSString * const BLPendingNRBandsDefaultsKey = @"BandLockPendingNRBands";
+#if BL_VARIANT_ROOTFUL
+static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.rootful.sock";
+#else
 static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.dopamine.sock";
+#endif
 
 static NSString *BLDaemonSocketPath(void) {
     return BLDaemonSocketRelativePath;

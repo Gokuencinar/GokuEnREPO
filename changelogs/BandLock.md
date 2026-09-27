@@ -3,14 +3,14 @@
 This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
 > **About BandLock**  
-> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. Starting with **0.6.34**, BandLock is distributed as separate builds for **RootHide** and **Dopamine rootless**.
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.0 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
 
 > **Compatibility**  
-> iOS 16.x. The RootHide build uses `iphoneos-arm64e`. The Dopamine rootless build uses `iphoneos-arm64` packaging with arm64 + arm64e binaries. Both targets start at iOS 16.0.
+> iOS 16.x. RootHide uses `iphoneos-arm64e`; Dopamine rootless uses `iphoneos-arm64`; Rootful uses `iphoneos-arm` with arm64 binaries and classic filesystem paths.
 
 ---
 
-## 1.0 — RootHide & Dopamine
+## 1.0 — RootHide, Dopamine & Rootful
 
 ### Added
 - Added **5G Auto / 5G On / 5G Only** network-mode controls. The selector is visible immediately when BandLock opens; **5G Only** requests NR Standalone (SA).
@@ -29,13 +29,14 @@ This changelog documents the public BandLock releases currently distributed thro
 - Version promoted from the 0.6.x development line to **1.0** for the public release.
 
 ### Validation
-- RootHide and Dopamine packages compile successfully in GitHub Actions.
+- RootHide, Dopamine and Rootful packages compile successfully in GitHub Actions.
 - RootHide 1.0 regression-tested on an iPhone XS: installation, app launch and `BandLockDaemon` operation verified.
 - 5G mode and NR-band writes depend on private CoreTelephony behavior and require compatible 5G hardware/carrier support; community validation across iPhone generations is encouraged.
 
 ### Packages
 - **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`
 - **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
+- **BandLock (Rootful)** — `com.gokuencinar.bandlock.rootful` — `iphoneos-arm`
 
 ---
 

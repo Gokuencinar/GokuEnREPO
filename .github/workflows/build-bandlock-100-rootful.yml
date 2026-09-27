@@ -1,0 +1,125 @@
+name: Build BandLock 1.0 Rootful
+
+on:
+  push:
+    branches: [ bandlock-1.0-rootful, main ]
+    paths:
+      - 'build/BandLock-1.0-Rootful/**'
+      - 'build/BandLock-1.0-Dopamine/**'
+      - '.github/workflows/build-bandlock-100-rootful.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-rootful:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate rootful source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^Version: 1.0$' build/BandLock-1.0-Rootful/control
+          grep -q '^Architecture: iphoneos-arm$' build/BandLock-1.0-Rootful/control
+          grep -q '^Package: com.gokuencinar.bandlock.rootful$' build/BandLock-1.0-Rootful/control
+          grep -q 'BL_VARIANT_ROOTFUL=1' build/BandLock-1.0-Rootful/Makefile
+          ! grep -q 'THEOS_PACKAGE_SCHEME' build/BandLock-1.0-Rootful/Makefile
+          grep -q '/usr/libexec/BandLockDaemon' build/BandLock-1.0-Rootful/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.rootful.plist
+          grep -q 'com.gokuencinar.bandlockd.rootful.sock' build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          grep -q 'com.gokuencinar.bandlockd.rootful.sock' build/BandLock-1.0-Dopamine/daemon/main.m
+          ! grep -R -q '/var/jb' build/BandLock-1.0-Rootful
+          ! grep -R -q 'roothide.h\|libroothide\|jbroot(' build/BandLock-1.0-Rootful
+          chmod 755 build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
+          chmod 755 build/BandLock-1.0-Rootful/layout/DEBIAN/postrm
+      - name: Build rootful package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/BandLock-1.0-Rootful
+          make clean package FINALPACKAGE=1
+          test -f packages/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Rootful-1.0-test
+          path: build/BandLock-1.0-Rootful/packages/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb
+
+  validate-package:
+    needs: build-rootful
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Rootful-1.0-test
+          path: /tmp/bandlock
+      - name: Inspect rootful Debian
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev binutils
+          deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb
+          test "$(dpkg-deb -f "$deb" Package)" = "com.gokuencinar.bandlock.rootful"
+          test "$(dpkg-deb -f "$deb" Version)" = "1.0"
+          test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm"
+          dpkg-deb -c "$deb" > /tmp/bandlock-rootful-contents.txt
+          grep -q 'Applications/BandLock.app/BandLock' /tmp/bandlock-rootful-contents.txt
+          grep -q 'usr/libexec/BandLockDaemon' /tmp/bandlock-rootful-contents.txt
+          grep -q 'usr/bin/BandLockLauncher' /tmp/bandlock-rootful-contents.txt
+          grep -q 'Library/LaunchDaemons/com.gokuencinar.bandlockd.rootful.plist' /tmp/bandlock-rootful-contents.txt
+          grep -q 'Library/MobileSubstrate/DynamicLibraries/BandLockFieldBridge.dylib' /tmp/bandlock-rootful-contents.txt
+          rm -rf /tmp/rootful-extract
+          mkdir -p /tmp/rootful-extract
+          dpkg-deb -x "$deb" /tmp/rootful-extract
+          ! grep -R -a -q '/var/jb' /tmp/rootful-extract
+          ! grep -R -a -q 'libroothide\|\.jbroot-' /tmp/rootful-extract
+
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: [build-rootful, validate-package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Rootful-1.0-test
+          path: /tmp/bandlock
+      - name: Install APT tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+      - name: Publish BandLock Rootful 1.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb
+          test "$(dpkg-deb -f "$deb" Package)" = "com.gokuencinar.bandlock.rootful"
+          test "$(dpkg-deb -f "$deb" Version)" = "1.0"
+          test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            echo "Publish attempt ${attempt}/5"
+            git fetch origin main
+            git reset --hard origin/main
+            cp "$deb" debs/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb
+            dpkg-scanpackages -m debs /dev/null > Packages
+            gzip -9 -c Packages > Packages.gz
+            git add debs/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb Packages Packages.gz
+            git commit -m "Publish BandLock Rootful 1.0"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Failed to publish BandLock Rootful 1.0 after 5 attempts" >&2
+          exit 1
