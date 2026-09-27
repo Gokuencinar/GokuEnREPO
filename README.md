@@ -58,7 +58,7 @@ RootHide-compatible Wi-Fi enhancement tweak that expands the information and dia
 
 ➡️ **[BetterWiFi RH details](BETTERWIFI-RH.md)** · **[Changelog](changelogs/BetterWiFi-RH.md)**
 
-### 💥 Nuke Wireless — Network Tools
+### 💥 Nuke Wireless — Network Tools (⚠️IN DEVELOPMENT)
 
 Wi-Fi network management toolkit for RootHide.
 
