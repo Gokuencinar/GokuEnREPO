@@ -1,4 +1,4 @@
-name: Build and Publish BandLock 1.1.1.1
+name: Build and Publish BandLock 1.1.1
 
 on:
   push:
@@ -116,7 +116,7 @@ jobs:
           name: BandLock-Dopamine-1.1.1
           path: /tmp/dop
       - run: sudo apt-get update && sudo apt-get install -y dpkg-dev
-      - name: Publish BandLock 1.1.1.1 to APT repository
+      - name: Publish BandLock 1.1.1 to APT repository
         shell: bash
         run: |
           set -euo pipefail
@@ -131,7 +131,7 @@ jobs:
             dpkg-scanpackages -m debs /dev/null > Packages
             gzip -9 -c Packages > Packages.gz
             git add debs/com.gokuencinar.bandlock_1.1.1_iphoneos-arm64e.deb debs/com.gokuencinar.bandlock.dopamine_1.1.1_iphoneos-arm64.deb Packages Packages.gz
-            git commit -m "Publish BandLock 1.1.1.1"
+            git commit -m "Publish BandLock 1.1.1"
             if git push origin HEAD:main; then
               exit 0
             fi
