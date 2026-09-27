@@ -82,6 +82,14 @@
     return NO;
 }
 
+- (void)bl_syncVisualSelection {
+    // CCUIToggleModule caches the selected appearance while Control Center is
+    // open. Keep that cache in sync with our optimistic/confirmed mode so the
+    // tile changes colour immediately instead of only after reopening CC.
+    [super setSelected:[self isSelected]];
+    [super reconfigureView];
+}
+
 - (void)setSelected:(BOOL)selected {
     (void)selected;
     [self bl_presentModePicker];
@@ -217,7 +225,7 @@
     // applying it, refreshState is intentionally prevented from repainting a
     // stale previous RAT over this selection.
     self.currentModeCode = requestedMode;
-    [self reconfigureView];
+    [self bl_syncVisualSelection];
 
     dispatch_async(queue, ^{
         NSDictionary *result =
@@ -236,7 +244,7 @@
                 } else {
                     self.currentModeCode = requestedMode;
                 }
-                [self reconfigureView];
+                [self bl_syncVisualSelection];
 
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.65 * NSEC_PER_SEC)),
                                dispatch_get_main_queue(), ^{
@@ -246,7 +254,7 @@
                 });
             } else {
                 self.currentModeCode = previousMode;
-                [self reconfigureView];
+                [self bl_syncVisualSelection];
                 [self bl_refreshFromDaemon];
             }
         });
@@ -271,7 +279,7 @@
             if (epoch != self.stateEpoch || self.requestInFlight) return;
             self.currentModeCode = modeCode;
             self.supports5G = supports5G;
-            [self reconfigureView];
+            [self bl_syncVisualSelection];
         });
     });
 }
