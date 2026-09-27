@@ -194,3 +194,21 @@ Description: Nuke Wireless Wi-Fi tools for iOS 16 (RootHide)
 Author: Gokuencinar
 Name: Nuke Wireless
 
+Package: com.gokuencinar.nukewireless
+Version: 1.0.26+rh26
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Pre-Depends: rootless-compat (>= 0.9)
+Depends: firmware (>= 16.0), ldid, arpoison, network-cmds, ellekit
+Conflicts: xyz.cypwn.harpy-reloaded
+Replaces: xyz.cypwn.harpy-reloaded
+Filename: debs/com.gokuencinar.nukewireless_1.0.26+rh26_iphoneos-arm64e.deb
+Size: 5710604
+MD5sum: 6e2e804f3b0d6c26588ccd02e2fb69f5
+SHA1: 5a69929c4c0e2394841c3d12cc83b406b9860ead
+SHA256: 96c02b606197055970e731c1227322279cc3fa3c4e3aea83f5954dc00109dd1f
+Section: Utilities
+Description: Nuke Wireless Wi-Fi tools for iOS 16 (RootHide)
+Author: Gokuencinar
+Name: Nuke Wireless
+
