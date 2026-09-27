@@ -14,6 +14,8 @@
 
 static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 static NSString * const BLPreviousNRBandsDefaultsKey = @"BandLockPreviousNRBands";
+static NSString * const BLPendingBandsDefaultsKey = @"BandLockPendingBands";
+static NSString * const BLPendingNRBandsDefaultsKey = @"BandLockPendingNRBands";
 static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.sock";
 
 static NSString *BLRootHidePhysicalRootFromEnvironment(void) {
@@ -54,6 +56,8 @@ static NSString *BLDaemonSocketPath(void) {
 @property (nonatomic, copy, readwrite) NSString *detailText;
 @property (nonatomic, assign, readwrite) BOOL hasReadState;
 @property (nonatomic, assign, readwrite) BOOL busy;
+@property (nonatomic, assign) BOOL hasExplicitPendingBands;
+@property (nonatomic, assign) BOOL hasExplicitPendingNRBands;
 @property (nonatomic, strong) dispatch_queue_t daemonQueue;
 @property (nonatomic, copy) NSString *daemonSocketPath;
 @end
@@ -81,11 +85,15 @@ static NSString *BLDaemonSocketPath(void) {
                       _daemonSocketPath.fileSystemRepresentation ?: "(null)");
         _supportedBands = @[];
         _activeBands = @[];
-        _pendingBands = @[];
+        id savedPendingBands = [NSUserDefaults.standardUserDefaults objectForKey:BLPendingBandsDefaultsKey];
+        _pendingBands = [savedPendingBands isKindOfClass:[NSArray class]] ? BLSortedBands(savedPendingBands) : @[];
+        _hasExplicitPendingBands = [savedPendingBands isKindOfClass:[NSArray class]];
         _previousBands = BLSortedBands([NSUserDefaults.standardUserDefaults arrayForKey:BLPreviousBandsDefaultsKey]);
         _supportedNRBands = @[];
         _activeNRBands = @[];
-        _pendingNRBands = @[];
+        id savedPendingNRBands = [NSUserDefaults.standardUserDefaults objectForKey:BLPendingNRBandsDefaultsKey];
+        _pendingNRBands = [savedPendingNRBands isKindOfClass:[NSArray class]] ? BLSortedBands(savedPendingNRBands) : @[];
+        _hasExplicitPendingNRBands = [savedPendingNRBands isKindOfClass:[NSArray class]];
         _previousNRBands = BLSortedBands([NSUserDefaults.standardUserDefaults arrayForKey:BLPreviousNRBandsDefaultsKey]);
         _supports5G = NO;
         _radioAccessTechnology = @"—";
@@ -363,8 +371,17 @@ static NSString *BLDaemonSocketPath(void) {
     BLBreadcrumb("consume mode assigned");
     self.hasReadState = YES;
     BLBreadcrumb("consume hasReadState assigned");
-    if (resetPending || !_pendingBands.count) _pendingBands = [self.activeBands copy];
-    if (resetPending || !_pendingNRBands.count) _pendingNRBands = [self.activeNRBands copy];
+    if (resetPending) {
+        _pendingBands = [self.activeBands copy];
+        _pendingNRBands = [self.activeNRBands copy];
+        self.hasExplicitPendingBands = NO;
+        self.hasExplicitPendingNRBands = NO;
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingBandsDefaultsKey];
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingNRBandsDefaultsKey];
+    } else {
+        if (!self.hasExplicitPendingBands) _pendingBands = [self.activeBands copy];
+        if (!self.hasExplicitPendingNRBands) _pendingNRBands = [self.activeNRBands copy];
+    }
     BLBreadcrumb("consume pending assigned");
     BLBreadcrumb("consume status end");
 }
@@ -390,7 +407,7 @@ static NSString *BLDaemonSocketPath(void) {
     self.statusText = BLT(@"Consultando daemon…", @"Querying daemon…");
     [self sendRequest:@{@"cmd": @"status"} completion:^(NSDictionary *result) {
         BLBreadcrumb("refresh result block enter");
-        if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:YES];
+        if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:NO];
         [self finishResult:result successMessage:BLT(@"Estado del módem actualizado.", @"Modem state updated.") completion:completion];
         BLBreadcrumb("refresh result block end");
     }];
@@ -399,12 +416,16 @@ static NSString *BLDaemonSocketPath(void) {
 
 - (void)setPendingBands:(NSArray<NSNumber *> *)bands {
     _pendingBands = [BLSortedBands(bands) copy];
+    self.hasExplicitPendingBands = YES;
+    [NSUserDefaults.standardUserDefaults setObject:_pendingBands forKey:BLPendingBandsDefaultsKey];
     self.statusText = BLT(@"Selección preparada", @"Selection prepared");
     self.detailText = BLBandList(_pendingBands);
 }
 
 - (void)setPendingNRBands:(NSArray<NSNumber *> *)bands {
     _pendingNRBands = [BLSortedBands(bands) copy];
+    self.hasExplicitPendingNRBands = YES;
+    [NSUserDefaults.standardUserDefaults setObject:_pendingNRBands forKey:BLPendingNRBandsDefaultsKey];
     self.statusText = BLT(@"Selección 5G preparada", @"5G selection prepared");
     self.detailText = BLNRBandList(_pendingNRBands);
 }
@@ -439,7 +460,10 @@ static NSString *BLDaemonSocketPath(void) {
                 self.previousBands = previous;
                 [NSUserDefaults.standardUserDefaults setObject:previous forKey:BLPreviousBandsDefaultsKey];
             }
-            [self consumeStatusResult:result resetPending:YES];
+            [self consumeStatusResult:result resetPending:NO];
+            _pendingBands = [self.activeBands copy];
+            self.hasExplicitPendingBands = NO;
+            [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingBandsDefaultsKey];
         }
         [self finishResult:result successMessage:BLT(@"Selección LTE aplicada.", @"LTE selection applied.") completion:completion];
     }];
@@ -464,7 +488,10 @@ static NSString *BLDaemonSocketPath(void) {
                 self.previousNRBands = previous;
                 [NSUserDefaults.standardUserDefaults setObject:previous forKey:BLPreviousNRBandsDefaultsKey];
             }
-            [self consumeStatusResult:result resetPending:YES];
+            [self consumeStatusResult:result resetPending:NO];
+            _pendingNRBands = [self.activeNRBands copy];
+            self.hasExplicitPendingNRBands = NO;
+            [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingNRBandsDefaultsKey];
         }
         [self finishResult:result successMessage:BLT(@"Selección 5G NR aplicada.", @"5G NR selection applied.") completion:completion];
     }];
