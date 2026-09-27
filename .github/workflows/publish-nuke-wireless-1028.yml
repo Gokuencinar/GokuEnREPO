@@ -25,12 +25,10 @@ jobs:
           set -euo pipefail
           old="debs/com.gokuencinar.nukewireless_1.0.27+rh27_iphoneos-arm64e.deb"
           new="debs/com.gokuencinar.nukewireless_1.0.28+rh28_iphoneos-arm64e.deb"
-          dylib_url="https://raw.githubusercontent.com/Gokuencinar/Harpy-RELOADED/dd7af9de12d31d49041e029bf8995f814eee58e7/prebuilt/NukeWirelessPaths_ios.dylib"
           work="$(mktemp -d)"
 
           dpkg-deb --raw-extract "$old" "$work/root"
-          curl --fail --location "$dylib_url" --output "$work/NukeWirelessPaths_ios.dylib"
-          install -m 0755 "$work/NukeWirelessPaths_ios.dylib" "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
+          install -m 0755 ".github/nuke-build/NukeWirelessPaths_ios.dylib" "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
           sed -i 's/^Version: .*/Version: 1.0.28+rh28/' "$work/root/DEBIAN/control"
 
           ROOT_DIR="$work/root" python3 - <<'PY'
