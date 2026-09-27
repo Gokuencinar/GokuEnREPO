@@ -29,7 +29,7 @@ jobs:
           work="$(mktemp -d)"
 
           dpkg-deb --raw-extract "$old" "$work/root"
-          install -m 0755 ".github/nuke-build/NukeWirelessPaths_ios.dylib" +            "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
+          install -m 0755 ".github/nuke-build/NukeWirelessPaths_ios.dylib" "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
 
           ROOT_DIR="$work/root" python3 - <<'PY'
           import os
