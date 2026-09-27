@@ -4,5 +4,5 @@ THEOS_PACKAGE_SCHEME = roothide
 
 include $(THEOS)/makefiles/common.mk
 
-SUBPROJECTS += app daemon launcher fieldbridge
+SUBPROJECTS += app daemon launcher fieldbridge ccmodule
 include $(THEOS_MAKE_PATH)/aggregate.mk
