@@ -20,7 +20,9 @@
 @property (nonatomic, copy) NSString *currentModeCode;
 @property (nonatomic, assign) BOOL supports5G;
 @property (nonatomic, assign) BOOL requestInFlight;
+@property (nonatomic, assign) NSUInteger stateEpoch;
 @property (nonatomic, strong) dispatch_queue_t daemonQueue;
+@property (nonatomic, strong) UIAlertController *modePicker;
 @end
 
 @implementation BLCCModule
@@ -31,6 +33,7 @@
         _currentModeCode = @"automatic";
         _supports5G = NO;
         _requestInFlight = NO;
+        _stateEpoch = 0;
         _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.ccmodule", DISPATCH_QUEUE_SERIAL);
         [self bl_refreshFromDaemon];
     }
@@ -81,13 +84,12 @@
 
 - (void)setSelected:(BOOL)selected {
     (void)selected;
-    if (self.requestInFlight) return;
-    [self bl_cycleToNextMode];
+    [self bl_presentModePicker];
 }
 
 - (void)refreshState {
     [super refreshState];
-    if (!self.daemonQueue) return;
+    if (!self.daemonQueue || self.requestInFlight) return;
     [self bl_refreshFromDaemon];
 }
 
@@ -102,41 +104,138 @@
 #endif
 }
 
-- (NSArray<NSString *> *)bl_modeSequence {
-    if (self.supports5G) {
-        return @[@"automatic", @"lte", @"5g-on", @"3g"];
-    }
-    return @[@"automatic", @"lte", @"3g"];
+- (NSString *)bl_titleForMode:(NSString *)mode {
+    if ([mode isEqualToString:@"automatic"]) return @"Auto";
+    if ([mode isEqualToString:@"3g"]) return @"3G / UMTS";
+    if ([mode isEqualToString:@"lte"]) return @"4G / LTE";
+    if ([mode isEqualToString:@"5g-on"]) return @"5G";
+    return mode ?: @"";
 }
 
-- (void)bl_cycleToNextMode {
-    NSArray<NSString *> *sequence = [self bl_modeSequence];
-    NSUInteger index = [sequence indexOfObject:self.currentModeCode ?: @"automatic"];
-    if (index == NSNotFound) index = 0;
-    NSString *nextMode = sequence[(index + 1) % sequence.count];
+- (BOOL)bl_modeIsCurrent:(NSString *)mode {
+    if ([mode isEqualToString:@"5g-on"]) {
+        return self.supports5G && [self.currentModeCode hasPrefix:@"5g-"];
+    }
+    return [self.currentModeCode isEqualToString:mode];
+}
 
-    self.requestInFlight = YES;
-    dispatch_queue_t queue = self.daemonQueue;
-    if (!queue) {
-        self.requestInFlight = NO;
-        return;
+- (UIViewController *)bl_topViewController {
+    UIWindow *window = [UIApplication sharedApplication].keyWindow;
+    if (!window) {
+        for (UIWindow *candidate in [UIApplication sharedApplication].windows) {
+            if (candidate.isKeyWindow) {
+                window = candidate;
+                break;
+            }
+        }
     }
 
+    UIViewController *controller = window.rootViewController;
+    while (controller.presentedViewController && !controller.presentedViewController.isBeingDismissed) {
+        controller = controller.presentedViewController;
+    }
+    return controller;
+}
+
+- (void)bl_presentModePicker {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (self.modePicker.presentingViewController) return;
+
+        UIViewController *presenter = [self bl_topViewController];
+        if (!presenter) return;
+
+        UIAlertController *picker =
+            [UIAlertController alertControllerWithTitle:@"BandLock Network"
+                                                message:@"Selecciona el modo de red"
+                                         preferredStyle:UIAlertControllerStyleActionSheet];
+
+        NSArray<NSString *> *modes = @[@"automatic", @"3g", @"lte", @"5g-on"];
+        for (NSString *mode in modes) {
+            NSString *title = [self bl_titleForMode:mode];
+            if ([self bl_modeIsCurrent:mode]) {
+                title = [@"✓ " stringByAppendingString:title];
+            }
+
+            UIAlertAction *action =
+                [UIAlertAction actionWithTitle:title
+                                         style:UIAlertActionStyleDefault
+                                       handler:^(__unused UIAlertAction *selectedAction) {
+                    self.modePicker = nil;
+                    [self bl_applyMode:mode];
+                }];
+
+            if ([mode isEqualToString:@"5g-on"] && !self.supports5G) {
+                action.enabled = NO;
+            }
+            [picker addAction:action];
+        }
+
+        [picker addAction:[UIAlertAction actionWithTitle:@"Cancelar"
+                                                   style:UIAlertActionStyleCancel
+                                                 handler:^(__unused UIAlertAction *action) {
+            self.modePicker = nil;
+        }]];
+
+        UIPopoverPresentationController *popover = picker.popoverPresentationController;
+        if (popover) {
+            popover.sourceView = presenter.view;
+            popover.sourceRect = CGRectMake(CGRectGetMidX(presenter.view.bounds),
+                                            CGRectGetMidY(presenter.view.bounds),
+                                            1.0, 1.0);
+            popover.permittedArrowDirections = 0;
+        }
+
+        self.modePicker = picker;
+        [presenter presentViewController:picker animated:YES completion:nil];
+    });
+}
+
+- (void)bl_applyMode:(NSString *)requestedMode {
+    if (self.requestInFlight || !requestedMode.length) return;
+    if ([requestedMode isEqualToString:@"5g-on"] && !self.supports5G) return;
+
+    dispatch_queue_t queue = self.daemonQueue;
+    if (!queue) return;
+
+    NSString *previousMode = self.currentModeCode ?: @"automatic";
+    self.requestInFlight = YES;
+    self.stateEpoch += 1;
+    NSUInteger epoch = self.stateEpoch;
+
+    // Optimistic UI: show the user's choice immediately. While the daemon is
+    // applying it, refreshState is intentionally prevented from repainting a
+    // stale previous RAT over this selection.
+    self.currentModeCode = requestedMode;
+    [self reconfigureView];
+
     dispatch_async(queue, ^{
-        NSDictionary *result = [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": nextMode}];
+        NSDictionary *result =
+            [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": requestedMode}];
         BOOL success = [result[@"success"] boolValue];
-        NSString *modeCode = [result[@"mode_code"] isKindOfClass:NSString.class] ? result[@"mode_code"] : nil;
         BOOL supports5G = [result[@"supports_5g"] boolValue];
 
-        if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
-
         dispatch_async(dispatch_get_main_queue(), ^{
+            if (epoch != self.stateEpoch) return;
+
             self.requestInFlight = NO;
-            if (success && modeCode.length) {
-                self.currentModeCode = modeCode;
+            if (success) {
                 self.supports5G = supports5G;
+                if (!supports5G && [requestedMode hasPrefix:@"5g-"]) {
+                    self.currentModeCode = @"automatic";
+                } else {
+                    self.currentModeCode = requestedMode;
+                }
                 [self reconfigureView];
+
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.65 * NSEC_PER_SEC)),
+                               dispatch_get_main_queue(), ^{
+                    if (epoch == self.stateEpoch && !self.requestInFlight) {
+                        [self bl_refreshFromDaemon];
+                    }
+                });
             } else {
+                self.currentModeCode = previousMode;
+                [self reconfigureView];
                 [self bl_refreshFromDaemon];
             }
         });
@@ -145,7 +244,8 @@
 
 - (void)bl_refreshFromDaemon {
     dispatch_queue_t queue = self.daemonQueue;
-    if (!queue) return;
+    if (!queue || self.requestInFlight) return;
+    NSUInteger epoch = self.stateEpoch;
 
     dispatch_async(queue, ^{
         NSDictionary *result = [self bl_sendRequestSynchronously:@{@"cmd": @"status"}];
@@ -157,6 +257,7 @@
         if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
 
         dispatch_async(dispatch_get_main_queue(), ^{
+            if (epoch != self.stateEpoch || self.requestInFlight) return;
             self.currentModeCode = modeCode;
             self.supports5G = supports5G;
             [self reconfigureView];
