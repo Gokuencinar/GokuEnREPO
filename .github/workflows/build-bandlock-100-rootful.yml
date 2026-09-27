@@ -47,7 +47,7 @@ jobs:
           ! grep -q 'CCSGetModuleSizeAtRuntime' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
           grep -q 'BOOL supports5G = \[query\[@"supports5G"\] boolValue\] || supportedNR.count > 0;' build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
           test -f build/BandLock-1.0-Dopamine/ccmodule/Resources/SettingsIcon@3x.png
-          ! grep -q 'sbreload\|killall' build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
+          ! grep -q 'sbreload\|killall\|uicache' build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
           ! grep -R -q '/var/jb' build/BandLock-1.0-Rootful
           ! grep -R -q 'roothide.h\|libroothide\|jbroot(' build/BandLock-1.0-Rootful
           chmod 755 build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
