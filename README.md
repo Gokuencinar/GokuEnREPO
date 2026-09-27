@@ -8,10 +8,10 @@ Repository URL:
 
 `https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/`
 
-[![Add to Sileo](https://img.shields.io/badge/Add%20to-Sileo-5A67D8?style=for-the-badge)](sileo://source/https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/)
-[![Add to Cydia](https://img.shields.io/badge/Add%20to-Cydia-8B6F47?style=for-the-badge)](cydia://url/https://cydia.saurik.com/api/share#?source=https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/)
-[![Add to Zebra](https://img.shields.io/badge/Add%20to-Zebra-222222?style=for-the-badge)](zbra://sources/add/https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/)
-[![Add to Installer 5](https://img.shields.io/badge/Add%20to-Installer%205-29A8FF?style=for-the-badge)](installer://add/https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/)
+<a href="sileo://source/https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/"><img src="https://getsileo.app/img/icon.png" width="56" alt="Sileo"><br><strong>Add to Sileo</strong></a>&nbsp;&nbsp;&nbsp;
+<a href="cydia://url/https://cydia.saurik.com/api/share#?source=https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/"><img src="https://icon-library.com/images/cydia-icon/cydia-icon-13.jpg" width="56" alt="Cydia"><br><strong>Add to Cydia</strong></a>&nbsp;&nbsp;&nbsp;
+<a href="zbra://sources/add/https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/"><img src="https://getzbra.com/assets/zeeb.svg" width="56" alt="Zebra"><br><strong>Add to Zebra</strong></a>&nbsp;&nbsp;&nbsp;
+<a href="installer://add/https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/"><img src="https://apptapp.me/InstallerLanding/v2/img/icon.png" width="56" alt="Installer 5"><br><strong>Add to Installer 5</strong></a>
 
 > If your browser does not open the package manager automatically, copy the repository URL above and add it manually as a source.
 
