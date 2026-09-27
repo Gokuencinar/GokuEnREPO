@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.40",
+          "title": "1.0.41",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- Rebinds the controls of the already-visible Wi-Fi panel so its status text, **Block all / Unblock all** and **Names** can refresh in place\n- Localizes **Block device**, **Unblock device**, **Rename device**, **Clear nickname** and **Dismiss** in all seven supported languages\n- Keeps the stable tab-navigation lifecycle introduced in 1.0.36; no tab or panel recreation is used for localization"
+          "markdown": "- Prevents the language selector from touching the hidden Wi-Fi panel while Info is active, avoiding the crash after choosing a language\n- Keeps the Wi-Fi panel localization fix when returning to Wi-Fi\n- Keeps localized **Block device**, **Unblock device**, **Rename device**, **Clear nickname** and **Dismiss** actions\n- Starts the clean public version scheme without the old **+rh** suffix"
         }
       ]
     }
