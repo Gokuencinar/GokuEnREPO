@@ -16,25 +16,9 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 static NSString * const BLPreviousNRBandsDefaultsKey = @"BandLockPreviousNRBands";
 static NSString * const BLPendingBandsDefaultsKey = @"BandLockPendingBands";
 static NSString * const BLPendingNRBandsDefaultsKey = @"BandLockPendingNRBands";
-static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.sock";
-
-static NSString *BLRootHidePhysicalRootFromEnvironment(void) {
-    const char *keys[] = {"CFFIXED_USER_HOME", "HOME"};
-    NSString *suffix = @"/var/mobile";
-    for (NSUInteger i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
-        const char *rawValue = getenv(keys[i]);
-        if (!rawValue || !*rawValue) continue;
-        NSString *home = [NSString stringWithUTF8String:rawValue];
-        if (!home.length || ![home hasSuffix:suffix]) continue;
-        NSString *root = [home substringToIndex:home.length - suffix.length];
-        if ([root containsString:@"/.jbroot-"]) return root;
-    }
-    return nil;
-}
+static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.dopamine.sock";
 
 static NSString *BLDaemonSocketPath(void) {
-    NSString *physicalRoot = BLRootHidePhysicalRootFromEnvironment();
-    if (physicalRoot.length) return [physicalRoot stringByAppendingString:BLDaemonSocketRelativePath];
     return BLDaemonSocketRelativePath;
 }
 
@@ -141,11 +125,6 @@ static NSString *BLDaemonSocketPath(void) {
 
 - (NSDictionary *)sendRequestSynchronously:(NSDictionary *)request {
     BLBreadcrumb("sync request enter");
-    const char *fixedHome = getenv("CFFIXED_USER_HOME");
-    const char *home = getenv("HOME");
-    BLBreadcrumbf("env CFFIXED_USER_HOME=%s HOME=%s",
-                  fixedHome && *fixedHome ? fixedHome : "(unset)",
-                  home && *home ? home : "(unset)");
     NSError *jsonError = nil;
     BLBreadcrumb("json serialize begin");
     NSData *body = [NSJSONSerialization dataWithJSONObject:request ?: @{} options:0 error:&jsonError];
