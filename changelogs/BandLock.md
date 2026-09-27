@@ -1,248 +1,318 @@
-# Changelog — BandLock
+# BandLock Changelog
 
-Este archivo documenta las versiones de BandLock que están publicadas actualmente en **GokuEnREPO**.
+This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
-**Descripción:** aplicación para consultar y seleccionar bandas LTE, controlar el modo de red y consultar referencias de bandas LTE por país. Desde 0.6.34 se distribuye en variantes separadas para RootHide y Dopamine rootless.
+> **About BandLock**  
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G bands, controlling radio access mode, and viewing LTE band references by country. Starting with **0.6.34**, BandLock is distributed as separate builds for **RootHide** and **Dopamine rootless**.
 
-**Compatibilidad:** iOS 16.x. RootHide usa `iphoneos-arm64e`; Dopamine rootless usa `iphoneos-arm64` con binarios arm64 + arm64e. Ambos targets parten de iOS 16.0.
+> **Compatibility**  
+> iOS 16.x. The RootHide build uses `iphoneos-arm64e`. The Dopamine rootless build uses `iphoneos-arm64` packaging with arm64 + arm64e binaries. Both targets start at iOS 16.0.
+
+---
 
 ## 0.6.35 — RootHide & Dopamine
 
-### Nuevo
-- La pestaña **Info** muestra una fila independiente **Versión actual / Current version**, leída dinámicamente desde `CFBundleShortVersionString`.
-- Nueva fila **Buy Me a Coffee** en Info para apoyar el desarrollo: `https://buymeacoffee.com/gokuen`.
-- Los paquetes incluyen enlaces públicos a la documentación, depiction web e icono de BandLock en GokuEnREPO.
+### Added
+- The **Info** tab now shows a dedicated **Current Version** row, read dynamically from `CFBundleShortVersionString`.
+- Added a **Buy Me a Coffee** row to the Info tab for supporting development:  
+  https://buymeacoffee.com/gokuen
+- Package metadata now includes public links to documentation, the web depiction, and the BandLock icon hosted in GokuEnREPO.
 
-### Cambiado
-- La variante (RootHide o Dopamine) y la versión se muestran por separado para hacer la pantalla Info más clara.
-- Se conserva sin cambios la arquitectura de daemon, el control LTE/4G, perfiles por país, Field Test, idiomas y verificación de escritura de 0.6.34.
+### Changed
+- The installed variant (**RootHide** or **Dopamine**) and the app version are now displayed separately for a clearer Info screen.
+- The daemon architecture, LTE/4G controls, country profiles, Field Test integration, localization system, and write verification logic remain unchanged from 0.6.34.
 
-### Publicación
-- **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`.
-- **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`.
+### Packages
+- **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`
+- **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
 
 ---
 
 ## 0.6.34 — RootHide & Dopamine
 
-### Nuevo
-- Se publican **dos paquetes independientes** con la misma interfaz y funciones:
-  - **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`.
-  - **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`.
-- Ambos paquetes declaran `Conflicts:` entre sí para impedir instalar por error la variante de otro entorno.
-- La variante Dopamine usa empaquetado rootless estándar de Theos, rutas `/var/jb`, socket `/tmp/com.gokuencinar.bandlockd.dopamine.sock` y no importa `roothide.h`, no llama `jbroot()` y no enlaza `libroothide`.
-- Se añade **Gestionar frecuencias de <país>** después de preparar un país. El editor queda limitado a `bandas del país ∩ bandas soportadas por el iPhone` y solo modifica la selección pendiente.
-- Nueva pestaña **Info** con créditos, versión, búsqueda de actualizaciones, notas de versión, enlace a GokuEnREPO, glosario de frecuencias y selector de idioma.
-- Créditos con avatar integrado y nombre **Gokuencinar · GokuEn**.
-- Idiomas internos: español, inglés, francés, alemán, chino tradicional, chino simplificado/mandarín y japonés.
-- Glosario para LTE/4G, FDD, TDD, SDL, APT 700, AWS, PCS, WCS, CBRS, LAA, CDMA, UMTS/HSPA, GSM/EDGE, RAT y 5G NR.
-- Field Test mantiene el bridge validado que invoca `DialerController +launchFieldTestIfNeeded:` con `TPPhonePad` como fallback, sin enviar el código como llamada normal.
+### Added
+- BandLock is now distributed as **two independent packages** with the same interface and feature set:
+  - **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`
+  - **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
+- Both packages declare conflicts with each other to prevent installing the wrong jailbreak variant.
+- The Dopamine build now uses standard Theos rootless packaging, `/var/jb` paths, and the socket `/tmp/com.gokuencinar.bandlockd.dopamine.sock`.
+- The Dopamine build no longer imports `roothide.h`, calls `jbroot()`, or links against `libroothide`.
+- Added **Manage frequencies for <country>** after preparing a country profile. The editor is restricted to:
+  `country bands ∩ iPhone-supported bands`
+  and only updates the pending selection.
+- Added a new **Info** tab with:
+  - Credits
+  - Installed version
+  - Update checking
+  - Release notes
+  - GokuEnREPO link
+  - Frequency glossary
+  - In-app language selector
+- Added integrated credits with avatar and the name **Gokuencinar · GokuEn**.
+- Added built-in languages:
+  - Spanish
+  - English
+  - French
+  - German
+  - Traditional Chinese
+  - Simplified Chinese / Mandarin
+  - Japanese
+- Added a glossary covering LTE/4G, FDD, TDD, SDL, APT 700, AWS, PCS, WCS, CBRS, LAA, CDMA, UMTS/HSPA, GSM/EDGE, RAT, and 5G NR.
+- Field Test keeps the validated bridge based on `DialerController +launchFieldTestIfNeeded:`, with `TPPhonePad` as a fallback, without placing the service code as a normal phone call.
 
-### Corregido
-- Se sanea la codificación UTF-8 de las cadenas afectadas para evitar caracteres como `Ã`, `Â` o secuencias mojibake en el glosario y otras pantallas.
-- El avatar de créditos se carga por ruta explícita del bundle mediante `imageWithContentsOfFile`.
-- La instalación cierra únicamente BandLock para evitar que una copia antigua permanezca en memoria después de actualizar recursos/UI.
+### Fixed
+- Cleaned up affected UTF-8 strings to prevent mojibake such as `Ã`, `Â`, and similar encoding artifacts in the glossary and other screens.
+- The credits avatar now loads from an explicit bundle path using `imageWithContentsOfFile`.
+- Installation now closes only BandLock, preventing an outdated in-memory app instance from surviving an update to bundled resources or UI.
 
-### Validación
-- **RootHide 0.6.34**: compilación/firma CI correcta e instalación real validada en iPhone XS con iOS 16.3.1. `BandLockDaemon` permanece `running`, `runs=1`, sin salidas inesperadas, y la lectura LTE/status funciona.
-- **Dopamine 0.6.34**: compilación completa arm64 + arm64e, firma y entitlements correctos; CI confirma layout rootless `/var/jb` y ausencia de `libroothide`. La validación física completa requiere un dispositivo con Dopamine normal.
-
----
-
-## 0.6.3 Global App
-
-### Cambiado
-- Se elimina por completo el modelo `posix_spawn` de 0.6.2, tras comprobarse que pulsar **Actualizar estado** todavía podía cerrar la app al intentar lanzar el helper desde el proceso UIKit.
-- `BandLockHelper` deja de ir embebido dentro de `BandLock.app`.
-- Se añade **`BandLockDaemon`** como LaunchDaemon independiente instalado en `/usr/libexec/BandLockDaemon`.
-- El daemon se registra mediante `/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist` y se mantiene bajo supervisión de `launchd`.
-- La app y el daemon se comunican mediante un socket Unix local con JSON; la UI no crea procesos.
-- El socket se ubica dentro del jbroot de RootHide bajo `/tmp/com.gokuencinar.bandlockd.sock` y usa permisos `0600`.
-- Se configura `SO_NOSIGPIPE` y timeouts en el cliente para que una caída del daemon no termine el proceso gráfico.
-- CoreTelephony, CommCenter y Field Test siguen estando únicamente en el proceso privilegiado, no en `BandLock.app`.
-
-### Instalación y recuperación
-- `postinst` descarga cualquier instancia anterior del servicio, elimina sockets obsoletos, registra el LaunchDaemon y ejecuta `kickstart`.
-- `postrm` descarga el servicio y elimina el socket.
-- `BandLockDaemon` se ejecuta como `mobile`, mientras que `launchd` se encarga de reiniciarlo si termina inesperadamente.
-
-### Validación
-- GitHub Actions compila y firma por separado la app y el daemon bajo RootHide.
-- El workflow comprueba que los entitlements CommCenter no estén en la app principal y sí en `BandLockDaemon`.
-- El `.deb` final se verificó para confirmar `BandLock.app`, `usr/libexec/BandLockDaemon`, el plist de LaunchDaemon y scripts de mantenimiento ejecutables.
-
----
-
-## 0.6.2 Global App
-
-### Cambiado
-- Las llamadas privadas de **CoreTelephony**, **CommCenter** y **Field Test** dejan de ejecutarse dentro del proceso UIKit de BandLock.
-- Se añade `BandLockHelper`, un ejecutable independiente incluido dentro de `BandLock.app`.
-- La app principal usa `posix_spawn` y JSON para comunicarse con el helper; si el helper falla, recibe una señal o devuelve una respuesta inválida, la UI puede mostrar el error sin cerrarse.
-- Los entitlements de CommCenter quedan restringidos al helper; el binario principal ya no los contiene.
-- **Editar bandas** ya no ejecuta una lectura del módem de forma implícita cuando falta un snapshot.
-- **Preparar bandas compatibles** ya no ejecuta CoreTelephony automáticamente desde la pantalla de países; pide actualizar el estado explícitamente desde Control.
-- La selección pendiente y los perfiles de país siguen siendo operaciones locales hasta que el usuario pulsa Aplicar.
-
-### Validación
-- GitHub Actions compila por separado `BandLock` y `BandLockHelper` para RootHide.
-- El workflow verifica con `ldid -e` que la app principal **no** contiene `com.apple.CommCenter.fine-grained` y que el helper sí contiene `spi`, `preferences-write` y `com.apple.CoreTelephony.CommCenterHelper.allow`.
-- El `.deb` final contiene ambos ejecutables con permisos `0755`, además de los scripts `postinst/postrm` también ejecutables.
+### Validation
+- **RootHide 0.6.34**
+  - CI build and signing completed successfully.
+  - Physical installation validated on an iPhone XS running iOS 16.3.1.
+  - `BandLockDaemon` remained running with `runs=1`, without unexpected exits.
+  - LTE/status reads were confirmed working.
+- **Dopamine 0.6.34**
+  - Full arm64 + arm64e build completed successfully.
+  - Signing and entitlements validated.
+  - CI confirmed rootless `/var/jb` layout and absence of `libroothide`.
+  - Full physical validation still requires a device running standard Dopamine.
 
 ---
 
-## 0.6.1 Global App
+## 0.6.3 — Global App
 
-### Corregido
-- **Actualizar estado** ya incluye los entitlements privados de CoreTelephony necesarios para evitar `NSPOSIXErrorDomain Code=13 (Permission denied)` desde la app independiente.
-- Se añaden permisos `com.apple.CommCenter.fine-grained` relevantes (`spi`, `identity`, `phone`, `carrier-settings`, `preferences-write`, `developer-settings`) y acceso a `CommCenterHelper`.
-- La selección pendiente deja de escribirse directamente en `/var/mobile/Library/Preferences`.
-- El estado persistente de la app pasa a `NSUserDefaults`; las capacidades del módem se mantienen únicamente en memoria y se vuelven a leer en cada lanzamiento.
-- **Editar bandas** deja de usar la ruta compartida de persistencia/notificación que provocaba cierres al marcar o desmarcar bandas.
-- **Preparar bandas compatibles** deja de usar esa misma ruta de persistencia y añade protección ante excepciones.
-- El selector manual valida también el índice de la fila antes de modificar la selección.
-- Los errores de preparación/selección se muestran como alerta en vez de cerrar la aplicación cuando son excepciones Objective-C recuperables.
+### Changed
+- Completely removed the `posix_spawn` architecture introduced in 0.6.2 after confirming that tapping **Refresh Status** could still terminate the app while launching a helper from the UIKit process.
+- Removed the embedded `BandLockHelper` from `BandLock.app`.
+- Added **`BandLockDaemon`** as a standalone LaunchDaemon installed at:
+  `/usr/libexec/BandLockDaemon`
+- Registered the daemon through:
+  `/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist`
+- The daemon is supervised by `launchd`.
+- The app and daemon now communicate through a local Unix socket using JSON.
+- The UI no longer creates helper processes.
+- The RootHide socket is located inside jbroot at:
+  `/tmp/com.gokuencinar.bandlockd.sock`
+  with `0600` permissions.
+- Added `SO_NOSIGPIPE` and client-side timeouts so a daemon failure does not terminate the graphical app.
+- CoreTelephony, CommCenter, and Field Test operations remain isolated inside the privileged process rather than `BandLock.app`.
 
-### Validación
-- GitHub Actions compila correctamente la app RootHide 0.6.1.
-- El workflow comprueba con `ldid -e` que el binario firmado contiene `com.apple.CommCenter.fine-grained` y el valor `spi`.
-- El paquete generado contiene únicamente `BandLock.app` y sus recursos, más los scripts de instalación/desinstalación; no reinstala el antiguo PreferenceBundle.
+### Installation & Recovery
+- `postinst` unloads any previous service instance, removes stale sockets, registers the LaunchDaemon, and performs a `kickstart`.
+- `postrm` unloads the service and removes the socket.
+- `BandLockDaemon` runs as `mobile`, while `launchd` is responsible for restarting it after unexpected termination.
 
----
-
-## 0.6.0 Global App
-
-### Nuevo
-- BandLock pasa de un PreferenceBundle de Ajustes a una **aplicación UIKit independiente** accesible desde la pantalla de inicio.
-- Nueva interfaz con dos pestañas principales: **Control** y **Países**.
-- Catálogo offline de **160 países y territorios**; 156 incluyen bandas LTE de referencia en el snapshot inicial.
-- Buscador de países y nombres localizados según el idioma/región del iPhone.
-- Vista de detalle por país con bandas LTE, frecuencia, FDD/TDD/SDL y marca de compatibilidad con el módem del iPhone.
-- Acción **Preparar bandas compatibles** que calcula `bandas del país ∩ bandas soportadas por el iPhone`.
-- Icono propio de BandLock en SpringBoard.
-- Scripts `uicache` de instalación/desinstalación para registrar correctamente la aplicación.
-
-### Seguridad y comportamiento
-- Elegir un país **nunca aplica cambios automáticamente**: solo prepara una selección pendiente.
-- Antes de escribir, BandLock vuelve a consultar `supportedBands` y cancela la operación si la compatibilidad cambió.
-- Se rechazan selecciones vacías y selecciones formadas únicamente por bandas SDL.
-- Se mantiene el guardado de la selección anterior, lectura posterior, verificación y un único reintento de CommCenter.
-- Abrir la aplicación no modifica el módem.
-
-### Cambiado
-- El paquete Debian sigue siendo `com.gokuencinar.bandlock`, por lo que 0.6.0 actualiza la línea pública 0.5.x.
-- El bundle de la nueva aplicación es `com.gokuencinar.bandlock.app`.
-- Se elimina la dependencia pública de PreferenceLoader y deja de instalarse el PreferenceBundle de Ajustes.
-- La lógica CoreTelephony se separa de la UI en un gestor común para Control y Países.
-
-### Datos de países
-- El snapshot inicial se generó con datos LTE por país disponibles el 26-09-2026.
-- Los datos por país son **orientativos**: los despliegues reales varían por operador, zona, roaming y fecha.
-- El módem sigue siendo la fuente de verdad para saber qué bandas puede seleccionar el dispositivo.
+### Validation
+- GitHub Actions builds and signs the app and daemon separately for RootHide.
+- CI verifies that CommCenter entitlements are absent from the main app and present only in `BandLockDaemon`.
+- The final `.deb` was inspected to confirm:
+  - `BandLock.app`
+  - `usr/libexec/BandLockDaemon`
+  - LaunchDaemon plist
+  - Executable maintenance scripts
 
 ---
 
-## 0.5.0 Global
+## 0.6.2 — Global App
 
-### Nuevo
-- Primera edición pública de carácter global.
-- El selector usa todas las bandas LTE que `CTBandInfo.supportedBands` reporta para el módem del dispositivo, sin una allow-list de España.
-- Metadatos de frecuencia y clasificación FDD, TDD y SDL para bandas LTE conocidas.
-- Agrupación dinámica por FDD, TDD, SDL y otras bandas LTE reportadas.
-- Acciones rápidas para selección activa actual, todas las soportadas, solo FDD y solo TDD.
-- Identidad de paquete pública independiente: `com.gokuencinar.bandlock`.
-- PreferenceBundle, archivo de estado y carpeta de logs independientes de la edición privada española.
+### Changed
+- Private **CoreTelephony**, **CommCenter**, and **Field Test** calls no longer run inside the BandLock UIKit process.
+- Added `BandLockHelper`, a standalone executable bundled inside `BandLock.app`.
+- The main app uses `posix_spawn` and JSON to communicate with the helper.
+- If the helper fails, receives a signal, or returns invalid data, the UI can report the error instead of terminating.
+- CommCenter entitlements are now restricted to the helper; the main app binary no longer contains them.
+- **Edit Bands** no longer triggers an implicit modem read when no snapshot is available.
+- **Prepare Compatible Bands** no longer performs automatic CoreTelephony calls from the Countries screen; the user must explicitly refresh status from Control.
+- Pending selections and country profiles remain local until the user taps **Apply**.
 
-### Cambiado
-- Se eliminan de la edición pública los perfiles Orange España, Todas las de España, Cobertura española y B3+B7.
-- La interfaz de selección deja de filtrar a B28/B20/B8/B3/B1/B7/B38.
-- El módem pasa a ser la fuente de verdad para determinar qué bandas LTE se pueden seleccionar.
-- Se mantiene la verificación diferida y el reintento único de CommCenter introducidos en 0.4.4.
+### Validation
+- GitHub Actions builds `BandLock` and `BandLockHelper` separately for RootHide.
+- CI verifies with `ldid -e` that the main app does **not** contain `com.apple.CommCenter.fine-grained`, while the helper contains:
+  - `spi`
+  - `preferences-write`
+  - `com.apple.CoreTelephony.CommCenterHelper.allow`
+- The final `.deb` contains both executables with `0755` permissions, plus executable `postinst` and `postrm` scripts.
 
-### Nota
-- Que una banda aparezca como soportada por el módem no garantiza que el operador la tenga desplegada en la ubicación actual.
-- La versión 0.5.0 controla LTE/4G; no declara soporte de bloqueo de bandas 5G NR.
-- La rama pública de desarrollo pasa a 0.5.0 Global. La 0.4.4 orientada a España se conserva como edición privada del autor.
+---
+
+## 0.6.1 — Global App
+
+### Fixed
+- **Refresh Status** now includes the required private CoreTelephony entitlements to prevent `NSPOSIXErrorDomain Code=13 (Permission denied)` from the standalone app.
+- Added relevant `com.apple.CommCenter.fine-grained` permissions:
+  - `spi`
+  - `identity`
+  - `phone`
+  - `carrier-settings`
+  - `preferences-write`
+  - `developer-settings`
+- Added access to `CommCenterHelper`.
+- Pending selections are no longer written directly to `/var/mobile/Library/Preferences`.
+- Persistent app state now uses `NSUserDefaults`.
+- Modem capabilities remain in memory only and are re-read on every launch.
+- **Edit Bands** no longer uses the shared persistence/notification path that could crash when toggling bands.
+- **Prepare Compatible Bands** no longer uses that path either and now includes Objective-C exception protection.
+- The manual selector now validates the row index before mutating the selection.
+- Recoverable preparation/selection exceptions are now displayed as alerts instead of terminating the app.
+
+### Validation
+- GitHub Actions successfully builds the RootHide 0.6.1 app.
+- CI verifies with `ldid -e` that the signed binary contains `com.apple.CommCenter.fine-grained` and the `spi` value.
+- The generated package contains only `BandLock.app`, its resources, and install/uninstall scripts. The old Settings PreferenceBundle is no longer reinstalled.
+
+---
+
+## 0.6.0 — Global App
+
+### Added
+- BandLock moved from a Settings PreferenceBundle to a **standalone UIKit application** available from the Home Screen.
+- Added two main tabs:
+  - **Control**
+  - **Countries**
+- Added an offline catalogue of **160 countries and territories**. The initial snapshot includes LTE reference bands for 156 of them.
+- Added country search and localized country names based on the iPhone language/region.
+- Added a country detail view with:
+  - LTE bands
+  - Frequency
+  - FDD/TDD/SDL classification
+  - Compatibility indicator for the current iPhone modem
+- Added **Prepare Compatible Bands**, which computes:
+  `country bands ∩ iPhone-supported bands`
+- Added a custom BandLock SpringBoard icon.
+- Added `uicache` install/uninstall scripts so the app is registered correctly.
+
+### Safety & Behavior
+- Choosing a country **never applies changes automatically**; it only prepares a pending selection.
+- Before any write, BandLock re-queries `supportedBands` and cancels the operation if modem compatibility has changed.
+- Empty selections and SDL-only selections are rejected.
+- Previous-selection storage, read-back verification, and the single CommCenter retry remain in place.
+- Opening BandLock does not modify the modem.
+
+### Changed
+- The Debian package remains `com.gokuencinar.bandlock`, so 0.6.0 upgrades the public 0.5.x line.
+- The standalone application bundle identifier is:
+  `com.gokuencinar.bandlock.app`
+- Removed the public PreferenceLoader dependency.
+- The Settings PreferenceBundle is no longer installed.
+- CoreTelephony logic is now separated from the UI in a common manager shared by Control and Countries.
+
+### Country Data
+- The initial country snapshot was generated from LTE deployment data available on **2026-09-26**.
+- Country band data is **informational**: real deployments vary by carrier, location, roaming conditions, and date.
+- The modem remains the source of truth for which bands the device can actually select.
+
+---
+
+## 0.5.0 — Global
+
+### Added
+- First public global release.
+- The selector now uses every LTE band reported by `CTBandInfo.supportedBands` for the device modem, without a Spain-only allow-list.
+- Added frequency metadata and FDD/TDD/SDL classification for known LTE bands.
+- Added dynamic grouping for FDD, TDD, SDL, and other LTE bands reported by the modem.
+- Added quick actions for:
+  - Current active selection
+  - All supported bands
+  - FDD only
+  - TDD only
+- Introduced the independent public package identity:
+  `com.gokuencinar.bandlock`
+- Added dedicated PreferenceBundle, state storage, and log paths separate from the private Spain-focused edition.
+
+### Changed
+- Removed the Spain-specific public presets:
+  - Orange Spain
+  - All Spain Bands
+  - Spain Coverage
+  - B3 + B7
+- The selector no longer filters to B28/B20/B8/B3/B1/B7/B38.
+- The modem is now the source of truth for determining which LTE bands can be selected.
+- Retained the delayed verification and single CommCenter retry introduced in 0.4.4.
+
+### Notes
+- A modem reporting support for a band does not guarantee that the current carrier deploys that band at the current location.
+- Version 0.5.0 controls LTE/4G only and does not claim 5G NR band-locking support.
+- Public development moved to the **0.5.0 Global** line. The Spain-focused 0.4.4 build remains a private author edition.
 
 ---
 
 ## 0.4.4
 
-### Nuevo
-- Verificación diferida de los cambios de bandas LTE.
-- Reintento automático único cuando CommCenter todavía devuelve la configuración anterior después de una escritura.
+### Added
+- Delayed verification after LTE band changes.
+- One automatic retry when CommCenter still reports the previous configuration after a write.
 
-### Cambiado
-- Aplicar selección LTE espera aproximadamente 0,8 s antes de comprobar el resultado.
-- Si la primera lectura no coincide, BandLock vuelve a escribir la selección y verifica de nuevo aproximadamente 1 s después.
-- La comprobación del resultado usa ahora el conjunto LTE completo del módem, no solo las bandas visibles en el filtro de España.
-- Restaurar modo automático puede verificar correctamente bandas que no aparecen en el selector español.
-- La selección pendiente se conserva cuando la primera escritura no se consolida inmediatamente.
+### Changed
+- Applying an LTE selection now waits approximately 0.8 seconds before verifying the result.
+- If the first read does not match, BandLock writes the selection again and verifies once more after approximately 1 second.
+- Verification now uses the modem's full LTE band set instead of only bands visible in the Spain filter.
+- **Restore Automatic Mode** can now correctly verify bands hidden by the Spain-focused selector.
+- The pending selection is preserved when the first write does not settle immediately.
 
-### Corregido
-- El caso en el que era necesario pulsar dos veces Aplicar selección LTE.
-- El caso en el que era necesario pulsar dos veces Restaurar modo automático.
-- La selección manual ya no se sustituye inmediatamente por una lectura antigua del módem.
+### Fixed
+- Fixed cases where **Apply LTE Selection** had to be tapped twice.
+- Fixed cases where **Restore Automatic Mode** had to be tapped twice.
+- Manual selections are no longer immediately replaced by stale modem state.
 
 ---
 
 ## 0.4.3
 
-### Nuevo
-- Controles directos para el modo de red:
-  - Automático
-  - Solo LTE / 4G
-- Indicador ✓ en el modo RAT activo.
+### Added
+- Direct radio access mode controls:
+  - **Automatic**
+  - **LTE / 4G Only**
+- Added a ✓ indicator to the active RAT mode.
 
-### Cambiado
-- Se eliminó el selector genérico de Preferences usado en 0.4.2.
-- El cambio RAT se ejecuta directamente desde botones nativos.
-- Solo LTE / 4G mantiene una confirmación previa antes de modificar la configuración del módem.
+### Changed
+- Removed the generic Preferences selector introduced in 0.4.2.
+- RAT changes are now triggered directly from native buttons.
+- **LTE / 4G Only** still requires confirmation before modifying modem configuration.
 
-### Corregido
-- Crash de Preferencias al tocar Tecnología preferida en 0.4.2.
+### Fixed
+- Fixed the Preferences crash when opening **Preferred Technology** in 0.4.2.
 
 ---
 
 ## 0.4.2
 
-### Nuevo
-- Intento de convertir Tecnología preferida en una lista navegable con:
-  - Automático
-  - Solo LTE / 4G
+### Added
+- First attempt at turning **Preferred Technology** into a navigable list with:
+  - Automatic
+  - LTE / 4G Only
 
-### Cambiado
-- La UI pasó del PSListItemCell no interactivo de 0.4.1 a un selector basado en PSLinkListCell / PSListItemsController.
+### Changed
+- The UI moved from the non-interactive `PSListItemCell` used in 0.4.1 to a selector based on `PSLinkListCell` / `PSListItemsController`.
 
-### Nota
-- En iOS 16.3 / RootHide esta implementación resultó inestable y provocaba un crash al abrir el selector. Se reemplazó completamente en 0.4.3.
+### Notes
+- On iOS 16.3 / RootHide this implementation was unstable and crashed when opening the selector. It was replaced entirely in 0.4.3.
 
 ---
 
 ## 0.4.1
 
-### Nuevo
-- Control de tecnología de acceso RAT además del bloqueo de bandas.
-- Modo Automático.
-- Modo Solo LTE / 4G.
-- Lectura de la configuración RAT mediante getRatSelection:completion:.
-- Escritura RAT mediante setRatSelection:selection:preferred:completion:.
-- Registro de RAT-Selection y RAT-Preferred en los logs.
+### Added
+- Added RAT control alongside LTE band locking.
+- Added **Automatic** mode.
+- Added **LTE / 4G Only** mode.
+- Added RAT configuration reads through `getRatSelection:completion:`.
+- Added RAT writes through `setRatSelection:selection:preferred:completion:`.
+- Added `RAT-Selection` and `RAT-Preferred` to logs.
 
-### Cambiado
-- BandLock puede evitar el fallback a 3G/EDGE cuando se solicita Solo LTE / 4G.
-- Después de modificar el RAT se vuelve a consultar CoreTelephony para mostrar lo que realmente reporta el sistema.
+### Changed
+- BandLock can now prevent fallback to 3G/EDGE when **LTE / 4G Only** is requested.
+- After changing RAT mode, BandLock re-queries CoreTelephony to display the state actually reported by the system.
 
-### Nota
-- La primera UI del selector mostraba el valor actual pero no abría correctamente una pantalla de selección. La interacción se revisó en 0.4.2 y finalmente quedó corregida en 0.4.3.
+### Notes
+- The first selector UI displayed the current value but did not correctly open a selection screen. Interaction was revised in 0.4.2 and fully fixed in 0.4.3.
 
 ---
 
 ## 0.4.0
 
-### Nuevo
-- Pantalla independiente Seleccionar bandas.
-- Selector centrado en las bandas LTE utilizadas en España y soportadas por el dispositivo:
+### Added
+- Added a dedicated **Select Bands** screen.
+- Added a selector focused on LTE bands commonly used in Spain and supported by the device:
   - B28 · 700 MHz
   - B20 · 800 MHz
   - B8 · 900 MHz
@@ -250,130 +320,140 @@ Este archivo documenta las versiones de BandLock que están publicadas actualmen
   - B1 · 2100 MHz
   - B7 · 2600 MHz FDD
   - B38 · 2600 MHz TDD
-- Agrupación visual por Cobertura, Uso general y Capacidad.
-- Perfiles rápidos:
-  - Orange España
-  - Todas las de España
-  - Cobertura
+- Added visual grouping for:
+  - Coverage
+  - General Use
+  - Capacity
+- Added quick profiles:
+  - Orange Spain
+  - All Spain Bands
+  - Coverage
   - B3 + B7
-- Persistencia de la selección pendiente al volver a la pantalla principal.
+- Added persistence for the pending selection when returning to the main screen.
 
-### Cambiado
-- Rediseño importante de la UI.
-- La pantalla principal se simplificó para mostrar estado y acciones.
-- La selección manual dejó de mezclarse con el panel principal.
-- Restaurar modo automático conserva la capacidad de reactivar todas las bandas LTE que soporte el módem, incluidas las ocultas por el filtro español.
+### Changed
+- Major UI redesign.
+- Simplified the main screen to focus on status and actions.
+- Manual band selection was moved out of the main panel.
+- **Restore Automatic Mode** retains the ability to re-enable every LTE band supported by the modem, including bands hidden by the Spain-focused filter.
 
 ---
 
 ## 0.3.9
 
-### Nuevo
-- UI centrada en España y Orange.
-- Cabecera visual de BandLock.
-- Secciones separadas para estado, perfiles, bandas y acciones.
-- Presets Orange España, Cobertura, Capacidad y B3 + B7.
-- Acceso a FTMInternal-4.
+### Added
+- Spain- and Orange-focused UI.
+- Added a BandLock visual header.
+- Added separate sections for status, profiles, bands, and actions.
+- Added presets:
+  - Orange Spain
+  - Coverage
+  - Capacity
+  - B3 + B7
+- Added access to `FTMInternal-4`.
 
-### Cambiado
-- La interfaz dejó de mostrar la mayoría de bandas internacionales/no prioritarias para España.
-- Se priorizaron B28/B20/B8/B3/B1/B7.
-- El botón de Field Test dejó de intentar abrir com.apple.fieldtest y pasó a lanzar com.apple.FTMInternal.
-- El lanzamiento de Field Test intenta primero FrontBoardServices y usa LaunchServices como fallback.
+### Changed
+- The UI stopped showing most international or non-priority bands for Spain.
+- Prioritized B28/B20/B8/B3/B1/B7.
+- The Field Test button stopped attempting to open `com.apple.fieldtest` and now launches `com.apple.FTMInternal`.
+- Field Test launch attempts FrontBoardServices first and falls back to LaunchServices.
 
 ---
 
 ## 0.3.8
 
-### Nuevo
-- Frecuencia nominal junto al nombre de cada banda LTE.
-- Preset inicial Orange España.
-- Botones Seleccionar todas y Deseleccionar todas.
-- Guardado de la selección LTE anterior.
-- Acción Restaurar selección anterior.
-- Primer intento de mostrar la banda de la celda servidora mediante CoreTelephony.
-- Primer botón para abrir Field Test Mode.
+### Added
+- Added nominal frequency next to each LTE band name.
+- Added the initial **Orange Spain** preset.
+- Added **Select All** and **Deselect All** buttons.
+- Added previous LTE selection storage.
+- Added **Restore Previous Selection**.
+- Added the first attempt at showing the serving-cell band through CoreTelephony.
+- Added the first Field Test Mode button.
 
-### Cambiado
-- La UI empezó a distinguir mejor entre bandas soportadas, bandas permitidas y banda servidora.
-- Los logs mantienen los datos de SIM/contexto sensibles fuera del registro.
+### Changed
+- The UI now distinguishes more clearly between supported bands, allowed bands, and the serving band.
+- Logs continue to exclude sensitive SIM/subscription context data.
 
-### Nota
-- El primer launcher de Field Test usaba com.apple.fieldtest; se corrigió a com.apple.FTMInternal en 0.3.9.
+### Notes
+- The first Field Test launcher used `com.apple.fieldtest`; this was corrected to `com.apple.FTMInternal` in 0.3.9.
 
 ---
 
 ## 0.3.7
 
-### Nuevo
-- Primera versión de BandLock capaz de **escribir** el conjunto de bandas LTE permitidas.
-- Interruptores generados a partir de las bandas LTE soportadas por el módem.
-- Aplicación mediante setActiveBandInfo:bands:error:.
-- Verificación posterior mediante una nueva lectura de getBandInfo:error:.
-- Acción Restaurar todas las LTE.
-- Confirmación antes de aplicar una selección.
-- Rechazo de selecciones LTE vacías.
+### Added
+- First BandLock release capable of **writing** the allowed LTE band set.
+- Added switches generated from LTE bands supported by the modem.
+- Added writes through `setActiveBandInfo:bands:error:`.
+- Added post-write verification through a new `getBandInfo:error:` read.
+- Added **Restore All LTE Bands**.
+- Added confirmation before applying a selection.
+- Added rejection of empty LTE selections.
 
-### Cambiado
-- Se modifica únicamente kCTRegistrationRadioAccessTechnologyLTE.
-- GSM, UTRAN, TDSCDMA y otros RAT se conservan sin cambios.
-- Los logs dejaron de guardar la descripción completa del contexto de suscripción.
+### Changed
+- Only `kCTRegistrationRadioAccessTechnologyLTE` is modified.
+- GSM, UTRAN, TDSCDMA, and other RATs remain unchanged.
+- Logs no longer store the full subscription-context description.
 
-### Validado
-- Se confirmó una escritura real y lectura posterior de configuraciones como B3 + B7.
+### Validation
+- Confirmed a real write and read-back of configurations such as **B3 + B7**.
 
 ---
 
 ## 0.3.6
 
-### Nuevo
-- Sistema de logs en /var/mobile/Library/Logs/BandLock/.
-- Archivo BandLock-last.txt para facilitar el diagnóstico por SSH.
-- Botón Eliminar todos los registros con confirmación.
-- Registro de resultados de las consultas CoreTelephony.
+### Added
+- Added logging under:
+  `/var/mobile/Library/Logs/BandLock/`
+- Added `BandLock-last.txt` for easier SSH diagnostics.
+- Added **Delete All Logs** with confirmation.
+- Added logging of CoreTelephony query results.
 
-### Cambiado
-- Se mantuvo la operación completamente de solo lectura.
-- El borrado se limita a la carpeta de logs de BandLock.
+### Changed
+- Operation remained completely read-only.
+- Log deletion is restricted to the BandLock log directory.
 
-### Seguridad
-- Esta versión no llama a setters de bandas del módem.
+### Safety
+- This version does not call modem band setters.
 
 ---
 
 ## 0.3.5
 
-### Nuevo
-- Primer inspector funcional de bandas celulares en modo de solo lectura.
-- Consulta manual de CoreTelephony.
-- Lectura de bandas soportadas y activas mediante getBandInfo:error:.
+### Added
+- First functional read-only cellular band inspector.
+- Added manual CoreTelephony queries.
+- Added supported and active band reads through `getBandInfo:error:`.
 
-### Cambiado
-- BandLock pasó de ser una prueba de controlador/UI a consultar información real del módem.
-- La consulta solo se ejecuta por acción del usuario.
+### Changed
+- BandLock moved from a controller/UI prototype to querying real modem information.
+- Queries only run after explicit user action.
 
-### Seguridad
-- No realiza escrituras de bandas.
+### Safety
+- No band writes are performed.
 
 ---
 
 ## 0.3.4
 
-### Nuevo
-- Primera versión de BandLock conservada en el repositorio APT.
-- PreferenceBundle directo y estable para RootHide.
-- Controlador de Preferencias funcional dentro de Ajustes.
-- Base de UI utilizada por las versiones posteriores.
+### Added
+- First BandLock version retained in the public APT repository.
+- Added a direct, stable RootHide PreferenceBundle.
+- Added a functional Preferences controller inside Settings.
+- Established the UI foundation used by later releases.
 
-### Cambiado
-- Se abandonó la arquitectura de carga secundaria/lazy que había dado problemas en prototipos anteriores.
+### Changed
+- Abandoned the secondary/lazy loading architecture used in earlier prototypes because it had caused instability.
 
 ---
 
-## Criterios de diseño mantenidos
+## Design Principles
 
-- Sin daemon residente.
-- Sin inyección en SpringBoard.
-- Sin escritura automática de bandas al iniciar.
-- Los cambios de radio requieren una acción manual del usuario.
-- Las lecturas posteriores del módem se usan para diferenciar una solicitud de un cambio realmente aplicado.
+The following principles are maintained across the current BandLock design:
+
+- No SpringBoard injection.
+- No automatic LTE-band writes at launch.
+- Radio configuration changes always require explicit user action.
+- Modem read-back is used to distinguish a requested change from a change that was actually applied.
+- Privileged radio operations are isolated from the main UI process in current releases.
