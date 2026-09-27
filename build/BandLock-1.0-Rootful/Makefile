@@ -13,5 +13,6 @@ SUBPROJECTS += \
 	../BandLock-1.0-Dopamine/app \
 	../BandLock-1.0-Dopamine/daemon \
 	../BandLock-1.0-Dopamine/launcher \
-	../BandLock-1.0-Dopamine/fieldbridge
+	../BandLock-1.0-Dopamine/fieldbridge \
+	../BandLock-1.0-Dopamine/ccmodule
 include $(THEOS_MAKE_PATH)/aggregate.mk
