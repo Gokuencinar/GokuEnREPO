@@ -1,12 +1,11 @@
-# BandLock Global — LTE/4G + 5G NR Band Control App for iOS 16
+# BandLock Global — LTE/4G + 5G NR Band Control App for iOS 15–18
 
-**BandLock Global** is the public worldwide edition of BandLock for **iOS 16**. Starting with 1.0 it is published in three jailbreak variants: **RootHide**, **Dopamine rootless**, and **classic rootful**.
+**BandLock Global** is the public worldwide edition of BandLock for **iOS 15–18**. Starting with 1.0 it is published in three jailbreak variants: **RootHide**, **Dopamine rootless**, and **classic rootful**.
 
-**BandLock Global** es la edición pública internacional de BandLock para **iOS 16**. Desde 1.0 se publica en tres variantes de jailbreak: **RootHide**, **Dopamine rootless** y **rootful clásico**.
+**BandLock Global** es la edición pública internacional de BandLock para **iOS 15–18**. Desde 1.0 se publica en tres variantes de jailbreak: **RootHide**, **Dopamine rootless** y **rootful clásico**.
 
-> Current public version / Versión pública actual: **1.1** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
+> Current public version / Versión pública actual: **1.2** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
 
-> Development / Desarrollo: **1.2 beta 1** broadens the deployment target to iOS 15 and adds guarded runtime compatibility through iOS 18. It remains private until device validation is complete.
 
 ## Español
 
@@ -62,8 +61,8 @@ El dataset no sustituye la información oficial de cada operador. El módem del 
 
 ### Compatibilidad y variantes
 
-- **RootHide:** iOS 15.0–17.0. The package remains `iphoneos-arm64e` as required by RootHide, while its binaries contain both arm64 and arm64e slices for older iOS 15 hardware.
-- **Dopamine rootless:** iOS 15.0–18.x where the installed Dopamine version supports the device/firmware combination.
+- **RootHide:** iOS 15.0–17.0. iOS 17 support is **experimental**. The package remains `iphoneos-arm64e` as required by RootHide, while its binaries contain both arm64 and arm64e slices for older iOS 15 hardware.
+- **Dopamine rootless:** iOS 15.0–18.x where the installed Dopamine version supports the device/firmware combination. iOS 17 and iOS 18 support are **experimental** and rely on community testing.
 - **Rootful:** iOS 15.x–16.x on supported classic/rootful jailbreaks.
 - Sileo
 - **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · validado en iPhone XS con iOS 16.3.1.
@@ -128,8 +127,8 @@ The dataset does not replace carrier-specific official information. The iPhone m
 
 ### Compatibility and variants
 
-- **RootHide:** iOS 15.0–17.0. The package remains `iphoneos-arm64e` as required by RootHide, while its binaries contain both arm64 and arm64e slices for older iOS 15 hardware.
-- **Dopamine rootless:** iOS 15.0–18.x where the installed Dopamine version supports the device/firmware combination.
+- **RootHide:** iOS 15.0–17.0. iOS 17 support is **experimental**. The package remains `iphoneos-arm64e` as required by RootHide, while its binaries contain both arm64 and arm64e slices for older iOS 15 hardware.
+- **Dopamine rootless:** iOS 15.0–18.x where the installed Dopamine version supports the device/firmware combination. iOS 17 and iOS 18 support are **experimental** and rely on community testing.
 - **Rootful:** iOS 15.x–16.x on supported classic/rootful jailbreaks.
 - Sileo
 - **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · real-device validated on iPhone XS / iOS 16.3.1.

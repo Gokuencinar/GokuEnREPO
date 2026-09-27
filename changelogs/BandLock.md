@@ -3,14 +3,14 @@
 This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
 > **About BandLock**  
-> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.1 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.2 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
 
 > **Compatibility**  
-> iOS 16.x. RootHide uses `iphoneos-arm64e`; Dopamine rootless uses `iphoneos-arm64`; Rootful uses `iphoneos-arm` with arm64 binaries and classic filesystem paths.
+> iOS 15–18 depending on jailbreak variant. **iOS 17 and iOS 18 support is experimental** and depends on community testing. RootHide uses `iphoneos-arm64e`; Dopamine rootless uses `iphoneos-arm64`; Rootful uses `iphoneos-arm` with arm64 binaries and classic filesystem paths.
 
 ---
 
-## 1.2 beta 1 — iOS 15–18 compatibility testing
+## 1.2 — iOS 15–18 compatibility
 
 ### Changed
 - Lowered the deployment target and app/module minimum OS to **iOS 15.0**.
@@ -23,7 +23,8 @@ This changelog documents the public BandLock releases currently distributed thro
 ### Compatibility validation
 - RootHide, Dopamine and rootful builds compile successfully with deployment target 15.0 and without API-availability warnings.
 - iOS 18 runtime headers still expose the CoreTelephony band/RAT selectors, `CCUIToggleModule` refresh APIs and `TPPhonePad +launchFieldTestIfNeeded:` used by BandLock.
-- Physical device testing outside the existing iOS 16.3 RootHide device is still required before promoting 1.2 to a public release.
+- RootHide 1.2 has been physically validated on an iPhone XS running iOS 16.3.x.
+- **iOS 17 and iOS 18 remain experimental**. Dopamine/rootful and additional device/firmware combinations rely on community validation and compatibility reports.
 
 ---
 
