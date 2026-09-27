@@ -83,11 +83,22 @@
 }
 
 - (void)bl_syncVisualSelection {
-    // CCUIToggleModule caches the selected appearance while Control Center is
-    // open. Keep that cache in sync with our optimistic/confirmed mode so the
-    // tile changes colour immediately instead of only after reopening CC.
-    [super setSelected:[self isSelected]];
+    // Ask CCUIToggleModule to re-read our overridden -isSelected. Calling the
+    // base setter is not sufficient on iOS 16 while the module is already
+    // visible: the host can keep the old highlighted appearance cached.
+    [super refreshState];
     [super reconfigureView];
+
+    // UIAlertController dismisses after its action handler returns. A repaint
+    // issued during that transition can be dropped by the Control Center host,
+    // so repeat it once the sheet has finished leaving the hierarchy.
+    NSUInteger epoch = self.stateEpoch;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.40 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        if (epoch != self.stateEpoch) return;
+        [super refreshState];
+        [super reconfigureView];
+    });
 }
 
 - (void)setSelected:(BOOL)selected {
