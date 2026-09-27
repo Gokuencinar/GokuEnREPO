@@ -1,4 +1,4 @@
-name: Build BandLock 1.1 Rootful
+name: Build BandLock 1.1.1 Rootful
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q '^Version: 1.1$' build/BandLock-1.0-Rootful/control
+          grep -q '^Version: 1.1.1$' build/BandLock-1.0-Rootful/control
           grep -q '^Architecture: iphoneos-arm$' build/BandLock-1.0-Rootful/control
           grep -q '^Package: com.gokuencinar.bandlock.rootful$' build/BandLock-1.0-Rootful/control
           grep -q 'BL_VARIANT_ROOTFUL=1' build/BandLock-1.0-Rootful/Makefile
@@ -46,6 +46,7 @@ jobs:
           grep -q 'return (CCUILayoutSize){1, 1};' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'BOOL supports5G = \[query\[@"supports5G"\] boolValue\] || supportedNR.count > 0;' build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
           test -f build/BandLock-1.0-Dopamine/ccmodule/Resources/SettingsIcon@3x.png
+          ! grep -q 'sbreload\|killall SpringBoard' build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
           ! grep -R -q '/var/jb' build/BandLock-1.0-Rootful
           ! grep -R -q 'roothide.h\|libroothide\|jbroot(' build/BandLock-1.0-Rootful
           chmod 755 build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
@@ -56,12 +57,12 @@ jobs:
           set -euo pipefail
           cd build/BandLock-1.0-Rootful
           make clean package FINALPACKAGE=1
-          test -f packages/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb
+          test -f packages/com.gokuencinar.bandlock.rootful_1.1.1_iphoneos-arm.deb
           find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Rootful-1.1-test
-          path: build/BandLock-1.0-Rootful/packages/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb
+          name: BandLock-Rootful-1.1.1-test
+          path: build/BandLock-1.0-Rootful/packages/com.gokuencinar.bandlock.rootful_1.1.1_iphoneos-arm.deb
 
   validate-package:
     needs: build-rootful
@@ -69,7 +70,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Rootful-1.1-test
+          name: BandLock-Rootful-1.1.1-test
           path: /tmp/bandlock
       - name: Inspect rootful Debian
         shell: bash
@@ -77,7 +78,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y dpkg-dev binutils
-          deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb
+          deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.1.1_iphoneos-arm.deb
           test "$(dpkg-deb -f "$deb" Package)" = "com.gokuencinar.bandlock.rootful"
           test "$(dpkg-deb -f "$deb" Version)" = "1.1"
           test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm"
@@ -107,15 +108,15 @@ jobs:
           ref: main
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Rootful-1.1-test
+          name: BandLock-Rootful-1.1.1-test
           path: /tmp/bandlock
       - name: Install APT tools
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev
-      - name: Publish BandLock Rootful 1.1
+      - name: Publish BandLock Rootful 1.1.1
         shell: bash
         run: |
           set -euo pipefail
-          deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb
+          deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.1.1_iphoneos-arm.deb
           test "$(dpkg-deb -f "$deb" Package)" = "com.gokuencinar.bandlock.rootful"
           test "$(dpkg-deb -f "$deb" Version)" = "1.1"
           test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm"
@@ -125,11 +126,11 @@ jobs:
             echo "Publish attempt ${attempt}/5"
             git fetch origin main
             git reset --hard origin/main
-            cp "$deb" debs/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb
+            cp "$deb" debs/com.gokuencinar.bandlock.rootful_1.1.1_iphoneos-arm.deb
             dpkg-scanpackages -m debs /dev/null > Packages
             gzip -9 -c Packages > Packages.gz
-            git add debs/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb Packages Packages.gz
-            git commit -m "Publish BandLock Rootful 1.1"
+            git add debs/com.gokuencinar.bandlock.rootful_1.1.1_iphoneos-arm.deb Packages Packages.gz
+            git commit -m "Publish BandLock Rootful 1.1.1"
             if git push origin HEAD:main; then
               exit 0
             fi
