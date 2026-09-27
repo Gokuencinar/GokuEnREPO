@@ -29,17 +29,34 @@
 
 @implementation BLControlViewController
 
+- (NSString *)currentLanguageName {
+    NSString *code = BLCurrentLanguageCode();
+    NSDictionary<NSString *, NSString *> *shortNames = @{
+        @"es": @"Español",
+        @"en": @"English",
+        @"fr": @"Français",
+        @"de": @"Deutsch",
+        @"zh-Hant": @"繁體中文",
+        @"zh-Hans": @"简体中文",
+        @"ja": @"日本語"
+    };
+    return shortNames[code] ?: code ?: @"";
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.manager = BLTelephonyManager.sharedManager;
     self.title = @"BandLock";
     self.navigationController.navigationBar.prefersLargeTitles = YES;
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"globe"]
-                                                                              style:UIBarButtonItemStylePlain
-                                                                             target:self
-                                                                             action:@selector(languageTapped:)];
-    self.navigationItem.rightBarButtonItem.accessibilityLabel = BLT(@"Cambiar idioma", @"Change language");
+    UIButton *languageButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [languageButton setImage:[UIImage systemImageNamed:@"globe"] forState:UIControlStateNormal];
+    [languageButton setTitle:[NSString stringWithFormat:@"  %@", [self currentLanguageName]] forState:UIControlStateNormal];
+    languageButton.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    languageButton.accessibilityLabel = BLT(@"Cambiar idioma", @"Change language");
+    [languageButton addTarget:self action:@selector(languageTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [languageButton sizeToFit];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:languageButton];
     self.view.backgroundColor = UIColor.systemGroupedBackgroundColor;
     [self buildUI];
     [self refreshDisplay];
