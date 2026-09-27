@@ -9,5 +9,5 @@ Section: Tweaks
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
-Depends: firmware (>= 16.0), firmware (<< 17.0), mobilesubstrate
+Depends: firmware (>= 16.0), firmware (<< 17.0), mobilesubstrate, com.opa334.ccsupport
 Conflicts: com.gokuencinar.bandlock, com.gokuencinar.bandlock.rootful
