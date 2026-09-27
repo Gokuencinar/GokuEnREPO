@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.39",
+          "title": "1.0.40",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- Updates the bottom **Wi-Fi / Hotspot / Info** titles immediately when the language changes\n- Refreshes **Block all / Unblock all** and **Names** using the newly selected language\n- Refreshes the Wi-Fi diagnostic text, active-process count and pull-to-refresh hint immediately\n- Keeps the stable tab-navigation lifecycle introduced in 1.0.36; no tab or panel recreation is used for localization"
+          "markdown": "- Rebinds the controls of the already-visible Wi-Fi panel so its status text, **Block all / Unblock all** and **Names** can refresh in place\n- Localizes **Block device**, **Unblock device**, **Rename device**, **Clear nickname** and **Dismiss** in all seven supported languages\n- Keeps the stable tab-navigation lifecycle introduced in 1.0.36; no tab or panel recreation is used for localization"
         }
       ]
     }
