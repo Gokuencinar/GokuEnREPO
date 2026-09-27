@@ -2,7 +2,7 @@ name: Build BandLock 1.0 Rootful
 
 on:
   push:
-    branches: [ bandlock-1.0-rootful, main ]
+    branches: [ bandlock-1.0-rootful, bandlock-1.1-control-center, main ]
     paths:
       - 'build/BandLock-1.0-Rootful/**'
       - 'build/BandLock-1.0-Dopamine/**'
@@ -47,6 +47,7 @@ jobs:
           cd build/BandLock-1.0-Rootful
           make clean package FINALPACKAGE=1
           test -f packages/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb
+          find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
       - uses: actions/upload-artifact@v4
         with:
           name: BandLock-Rootful-1.0-test
@@ -76,11 +77,13 @@ jobs:
           grep -q 'usr/bin/BandLockLauncher' /tmp/bandlock-rootful-contents.txt
           grep -q 'Library/LaunchDaemons/com.gokuencinar.bandlockd.rootful.plist' /tmp/bandlock-rootful-contents.txt
           grep -q 'Library/MobileSubstrate/DynamicLibraries/BandLockFieldBridge.dylib' /tmp/bandlock-rootful-contents.txt
+          grep -q 'Library/ControlCenter/Bundles/BandLockCCModule.bundle/BandLockCCModule' /tmp/bandlock-rootful-contents.txt
           rm -rf /tmp/rootful-extract
           mkdir -p /tmp/rootful-extract
           dpkg-deb -x "$deb" /tmp/rootful-extract
           ! grep -R -a -q '/var/jb' /tmp/rootful-extract
           ! grep -R -a -q 'libroothide\|\.jbroot-' /tmp/rootful-extract
+          grep -a -q 'com.gokuencinar.bandlockd.rootful.sock' /tmp/rootful-extract/Library/ControlCenter/Bundles/BandLockCCModule.bundle/BandLockCCModule
 
 
   publish:
