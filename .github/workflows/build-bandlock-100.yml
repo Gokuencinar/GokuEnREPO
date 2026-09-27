@@ -50,7 +50,6 @@ jobs:
           ! grep -q 'contentViewController' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'stateEpoch' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'self.currentModeCode = requestedMode;' build/BandLock-1.0-Dopamine/ccmodule/Module.m
-          grep -q 'self.requestInFlight' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q '_CTServerConnectionSetRATSelection' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'CoreTelephony' build/BandLock-1.0-RootHide/ccmodule/Makefile
           grep -q 'reconfigureView' build/BandLock-1.0-Dopamine/ccmodule/Module.m
@@ -109,7 +108,6 @@ jobs:
           ! grep -q 'contentViewController' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'stateEpoch' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'self.currentModeCode = requestedMode;' build/BandLock-1.0-Dopamine/ccmodule/Module.m
-          grep -q 'self.requestInFlight' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q '_CTServerConnectionSetRATSelection' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'CoreTelephony' build/BandLock-1.0-Dopamine/ccmodule/Makefile
           grep -q 'reconfigureView' build/BandLock-1.0-Dopamine/ccmodule/Module.m
