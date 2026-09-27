@@ -196,7 +196,7 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
 }
 
 - (BOOL)isButtonSelected:(BLCCMode)mode {
-    if (mode == BLCCModeAutomatic) return [self.currentModeCode isEqualToString:@"automatic"] || [self.currentModeCode isEqualToString:@"5g-auto"];
+    if (mode == BLCCModeAutomatic) return [self.currentModeCode isEqualToString:@"automatic"];
     if (mode == BLCCModeLTE) return [self.currentModeCode isEqualToString:@"lte"];
     if (mode == BLCCMode5G) return [self.currentModeCode hasPrefix:@"5g-"];
     if (mode == BLCCMode3G) return [self.currentModeCode isEqualToString:@"3g"];
