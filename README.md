@@ -8,10 +8,26 @@ Repository URL:
 
 `https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/`
 
-<a href="https://gokuencinar.github.io/GokuEnREPO/add/sileo.html"><img src="https://getsileo.app/img/icon.png" width="56" alt="Sileo"><br><strong>Add to Sileo</strong></a>&nbsp;&nbsp;&nbsp;
-<a href="https://gokuencinar.github.io/GokuEnREPO/add/cydia.html"><img src="https://raw.githubusercontent.com/cydia-repo/cydia/master/CydiaIcon.png" width="56" alt="Cydia"><br><strong>Add to Cydia</strong></a>&nbsp;&nbsp;&nbsp;
-<a href="https://gokuencinar.github.io/GokuEnREPO/add/zebra.html"><img src="https://getzbra.com/assets/zeeb.svg" width="56" alt="Zebra"><br><strong>Add to Zebra</strong></a>&nbsp;&nbsp;&nbsp;
-<a href="https://gokuencinar.github.io/GokuEnREPO/add/installer.html"><img src="https://api.ios-repo-updates.com/1.0/image/?u=https%3A%2F%2Fsynnygr.dev%2FAppTapp%2Finstaller_icon.png" width="56" alt="Installer 5"><br><strong>Add to Installer 5</strong></a>
+<table>
+<tr>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/sileo.html"><img src="https://getsileo.app/img/icon.png" width="56" height="56" alt="Sileo"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/sileo.html">Add to Sileo</a></strong>
+</td>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/cydia.html"><img src="assets/package-managers/cydia.svg" width="56" height="56" alt="Cydia"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/cydia.html">Add to Cydia</a></strong>
+</td>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/zebra.html"><img src="https://getzbra.com/assets/zeeb.svg" width="56" height="56" alt="Zebra"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/zebra.html">Add to Zebra</a></strong>
+</td>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/installer.html"><img src="assets/package-managers/installer.svg" width="56" height="56" alt="Installer 5"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/installer.html">Add to Installer 5</a></strong>
+</td>
+</tr>
+</table>
 
 > If your browser does not open the package manager automatically, copy the repository URL above and add it manually as a source.
 
