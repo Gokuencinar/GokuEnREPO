@@ -1,0 +1,12 @@
+#!/bin/sh
+
+LABEL="com.gokuencinar.bandlockd"
+SOCKET="/tmp/bandlockd.sock"
+OLD_SOCKET="/tmp/${LABEL}.sock"
+DOMAIN="user/501"
+
+launchctl bootout "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+rm -f "$SOCKET" >/dev/null 2>&1 || true
+rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
+
+exit 0
