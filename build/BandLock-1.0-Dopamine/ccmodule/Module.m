@@ -258,12 +258,15 @@
 
     dispatch_async(queue, ^{
         NSDictionary *result =
-            [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": requestedMode}];
+            [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": requestedMode, @"fast": @YES}];
         BOOL success = [result[@"success"] boolValue];
-        BOOL supports5G = [result[@"supports_5g"] boolValue];
+        id supports5GValue = result[@"supports_5g"];
 
         dispatch_async(dispatch_get_main_queue(), ^{
             self.requestInFlight = NO;
+
+            BOOL hasSupports5G = [supports5GValue respondsToSelector:@selector(boolValue)];
+            BOOL supports5G = hasSupports5G ? [supports5GValue boolValue] : self.supports5G;
 
             NSString *normalizedMode = requestedMode;
             if (!supports5G && [normalizedMode hasPrefix:@"5g-"]) {
@@ -271,7 +274,7 @@
             }
 
             if (success) {
-                self.supports5G = supports5G;
+                if (hasSupports5G) self.supports5G = supports5G;
                 self.confirmedModeCode = normalizedMode;
             }
 

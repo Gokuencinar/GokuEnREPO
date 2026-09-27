@@ -376,6 +376,42 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     return YES;
 }
 
+- (BOOL)setRatSelectionFast:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText {
+    Class clientClass = NSClassFromString(@"CoreTelephonyClient");
+    if (!clientClass) { if (errorText) *errorText = @"CoreTelephonyClient unavailable"; return NO; }
+
+    id client = [[clientClass alloc] init];
+    if (!client) { if (errorText) *errorText = @"Could not create CoreTelephonyClient"; return NO; }
+
+    NSError *contextError = nil;
+    id context = nil;
+    SEL currentSelector = NSSelectorFromString(@"getCurrentDataSubscriptionContextSync:");
+    if ([client respondsToSelector:currentSelector]) context = BLMsgErr(client, currentSelector, &contextError);
+    if (!context) {
+        contextError = nil;
+        SEL preferredSelector = NSSelectorFromString(@"getPreferredDataSubscriptionContextSync:");
+        if ([client respondsToSelector:preferredSelector]) context = BLMsgErr(client, preferredSelector, &contextError);
+    }
+    if (!context) {
+        if (errorText) *errorText = contextError ? contextError.description : @"No active data subscription context";
+        return NO;
+    }
+
+    SEL setter = NSSelectorFromString(@"setRatSelection:selection:preferred:completion:");
+    if (![client respondsToSelector:setter]) { if (errorText) *errorText = @"setRatSelection unavailable"; return NO; }
+
+    // Keep the objects alive until CoreTelephony finishes its asynchronous
+    // callback, but do not make the Control Center wait for that callback.
+    id clientForCompletion = client;
+    id contextForCompletion = context;
+    BLMsgSetRatSelection(client, setter, context, selection, preferred, ^(NSError *error) {
+        (void)clientForCompletion;
+        (void)contextForCompletion;
+        (void)error;
+    });
+    return YES;
+}
+
 - (void)setNetworkModeSelection:(NSString *)selection preferred:(NSString *)preferred completion:(BLActionCompletion)completion {
     if (self.busy) { if (completion) completion(NO, BLT(@"Hay una operación en curso.", @"An operation is already running.")); return; }
     self.busy = YES;
