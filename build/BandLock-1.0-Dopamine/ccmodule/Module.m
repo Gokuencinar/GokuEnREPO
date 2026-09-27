@@ -1,26 +1,25 @@
 #import "Module.h"
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import <QuartzCore/QuartzCore.h>
 #import <sys/socket.h>
 #import <sys/un.h>
 #import <sys/time.h>
 #import <unistd.h>
-#import <signal.h>
 #import <string.h>
 
 #if BL_VARIANT_ROOTHIDE
 #import <roothide.h>
 #endif
 
-typedef NS_ENUM(NSInteger, BLCCMode) {
-    BLCCModeAutomatic = 0,
-    BLCCModeLTE,
-    BLCCMode5G,
-    BLCCMode3G
-};
+@interface CCUIToggleModule (BLReconfigure)
+- (void)reconfigureView;
+@end
 
-@interface BLCCMenuViewController ()
+@interface BLCCModule ()
 @property (nonatomic, copy) NSString *currentModeCode;
 @property (nonatomic, assign) BOOL supports5G;
+@property (nonatomic, assign) BOOL requestInFlight;
 @property (nonatomic, strong) dispatch_queue_t daemonQueue;
 @end
 
@@ -29,59 +28,67 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _contentViewController = [BLCCMenuViewController new];
-    }
-    return self;
-}
-
-@end
-
-@implementation BLCCMenuViewController
-
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        signal(SIGPIPE, SIG_IGN);
-        _currentModeCode = @"unknown";
+        _currentModeCode = @"automatic";
         _supports5G = NO;
-        _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.ccmodule.menu", DISPATCH_QUEUE_SERIAL);
+        _requestInFlight = NO;
+        _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.ccmodule", DISPATCH_QUEUE_SERIAL);
+        [self bl_refreshFromDaemon];
     }
     return self;
 }
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
+- (UIImage *)iconGlyph {
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 70, 70)];
+    label.textColor = UIColor.blackColor;
+    label.backgroundColor = UIColor.clearColor;
+    label.adjustsFontSizeToFitWidth = YES;
+    label.minimumScaleFactor = 0.7;
+    label.clipsToBounds = YES;
+    label.textAlignment = NSTextAlignmentCenter;
+    label.numberOfLines = 2;
 
-    self.title = @"BandLock Network";
-    self.subtitle = @"Modo de red";
-    self.hideGlyphInHeader = NO;
-    self.useTallLayout = NO;
-    self.useTrailingCheckmarkLayout = YES;
-    self.useTrailingInset = YES;
-    self.visibleMenuItems = 4.0;
-    self.minimumMenuItems = 4;
+    NSString *text = @"Auto";
+    if ([self.currentModeCode isEqualToString:@"lte"]) text = @"4G";
+    else if ([self.currentModeCode isEqualToString:@"3g"]) text = @"3G";
+    else if (self.supports5G && [self.currentModeCode hasPrefix:@"5g-"]) text = @"5G";
+    else if (![self.currentModeCode isEqualToString:@"automatic"]) text = @"?";
 
-    UIImageSymbolConfiguration *config =
-        [UIImageSymbolConfiguration configurationWithPointSize:24.0 weight:UIImageSymbolWeightSemibold];
-    UIImage *glyph =
-        [[UIImage systemImageNamed:@"antenna.radiowaves.left.and.right"] imageByApplyingSymbolConfiguration:config];
-    [self setGlyphImage:glyph];
+    label.font = [UIFont systemFontOfSize:[text isEqualToString:@"Auto"] ? 13.0 : 16.0
+                                  weight:UIFontWeightSemibold];
+    label.text = text;
 
-    [self bl_rebuildMenuItems];
+    UIGraphicsBeginImageContextWithOptions(label.bounds.size, NO, 0.0);
+    [label.layer renderInContext:UIGraphicsGetCurrentContext()];
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
+- (UIImage *)selectedIconGlyph {
+    return [self iconGlyph];
+}
+
+- (UIColor *)selectedColor {
+    return UIColor.systemBlueColor;
+}
+
+- (BOOL)isSelected {
+    if ([self.currentModeCode isEqualToString:@"lte"]) return YES;
+    if ([self.currentModeCode isEqualToString:@"3g"]) return YES;
+    if (self.supports5G && [self.currentModeCode hasPrefix:@"5g-"]) return YES;
+    return NO;
+}
+
+- (void)setSelected:(BOOL)selected {
+    (void)selected;
+    if (self.requestInFlight) return;
+    [self bl_cycleToNextMode];
+}
+
+- (void)refreshState {
+    [super refreshState];
+    if (!self.daemonQueue) return;
     [self bl_refreshFromDaemon];
-}
-
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-    [self bl_refreshFromDaemon];
-}
-
-- (BOOL)shouldBeginTransitionToExpandedContentModule {
-    return YES;
-}
-
-- (BOOL)_canShowWhileLocked {
-    return YES;
 }
 
 - (NSString *)bl_socketPath {
@@ -95,67 +102,28 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
 #endif
 }
 
-- (NSString *)bl_daemonModeForMode:(BLCCMode)mode {
-    switch (mode) {
-        case BLCCModeLTE: return @"lte";
-        case BLCCMode5G: return @"5g-on";
-        case BLCCMode3G: return @"3g";
-        case BLCCModeAutomatic:
-        default: return @"automatic";
+- (NSArray<NSString *> *)bl_modeSequence {
+    if (self.supports5G) {
+        return @[@"automatic", @"lte", @"5g-on", @"3g"];
     }
+    return @[@"automatic", @"lte", @"3g"];
 }
 
-- (BOOL)bl_modeSelected:(BLCCMode)mode {
-    switch (mode) {
-        case BLCCModeAutomatic:
-            return [self.currentModeCode isEqualToString:@"automatic"];
-        case BLCCModeLTE:
-            return [self.currentModeCode isEqualToString:@"lte"];
-        case BLCCMode5G:
-            return self.supports5G && [self.currentModeCode hasPrefix:@"5g-"];
-        case BLCCMode3G:
-            return [self.currentModeCode isEqualToString:@"3g"];
-    }
-    return NO;
-}
+- (void)bl_cycleToNextMode {
+    NSArray<NSString *> *sequence = [self bl_modeSequence];
+    NSUInteger index = [sequence indexOfObject:self.currentModeCode ?: @"automatic"];
+    if (index == NSNotFound) index = 0;
+    NSString *nextMode = sequence[(index + 1) % sequence.count];
 
-- (void)bl_rebuildMenuItems {
-    __weak typeof(self) weakSelf = self;
-
-    CCUIMenuModuleItem *(^itemForMode)(BLCCMode, NSString *, NSString *) =
-    ^CCUIMenuModuleItem *(BLCCMode mode, NSString *title, NSString *identifier) {
-        CCUIMenuModuleItem *item =
-            [[CCUIMenuModuleItem alloc] initWithTitle:title identifier:identifier handler:^{
-                __strong typeof(weakSelf) self = weakSelf;
-                if (!self || self.busy) return;
-                [self bl_applyMode:mode];
-            }];
-        item.selected = [weakSelf bl_modeSelected:mode];
-        return item;
-    };
-
-    CCUIMenuModuleItem *automatic = itemForMode(BLCCModeAutomatic, @"Automático", @"automatic");
-    CCUIMenuModuleItem *lte = itemForMode(BLCCModeLTE, @"4G / LTE", @"lte");
-    NSString *fiveGTitle = self.supports5G ? @"5G" : @"5G (no disponible)";
-    CCUIMenuModuleItem *fiveG = itemForMode(BLCCMode5G, fiveGTitle, @"5g-on");
-    CCUIMenuModuleItem *threeG = itemForMode(BLCCMode3G, @"3G / UMTS", @"3g");
-
-    if (!self.supports5G) {
-        fiveG.subtitle = @"Este iPhone o línea no reporta soporte 5G";
+    self.requestInFlight = YES;
+    dispatch_queue_t queue = self.daemonQueue;
+    if (!queue) {
+        self.requestInFlight = NO;
+        return;
     }
 
-    [self setMenuItems:@[automatic, lte, fiveG, threeG]];
-}
-
-- (void)bl_applyMode:(BLCCMode)mode {
-    if (self.busy) return;
-    if (mode == BLCCMode5G && !self.supports5G) return;
-
-    self.busy = YES;
-    NSString *requested = [self bl_daemonModeForMode:mode];
-
-    dispatch_async(self.daemonQueue, ^{
-        NSDictionary *result = [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": requested}];
+    dispatch_async(queue, ^{
+        NSDictionary *result = [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": nextMode}];
         BOOL success = [result[@"success"] boolValue];
         NSString *modeCode = [result[@"mode_code"] isKindOfClass:NSString.class] ? result[@"mode_code"] : nil;
         BOOL supports5G = [result[@"supports_5g"] boolValue];
@@ -163,11 +131,11 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
         if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            self.busy = NO;
+            self.requestInFlight = NO;
             if (success && modeCode.length) {
                 self.currentModeCode = modeCode;
                 self.supports5G = supports5G;
-                [self bl_rebuildMenuItems];
+                [self reconfigureView];
             } else {
                 [self bl_refreshFromDaemon];
             }
@@ -191,7 +159,7 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
         dispatch_async(dispatch_get_main_queue(), ^{
             self.currentModeCode = modeCode;
             self.supports5G = supports5G;
-            [self bl_rebuildMenuItems];
+            [self reconfigureView];
         });
     });
 }
@@ -208,8 +176,7 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
 
     int one = 1;
     (void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one));
-
-    struct timeval timeout = {.tv_sec = 4, .tv_usec = 0};
+    struct timeval timeout = {.tv_sec = 1, .tv_usec = 500000};
     (void)setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     (void)setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 
