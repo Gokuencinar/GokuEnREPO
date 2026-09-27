@@ -23,4 +23,12 @@ fi
 killall BandLock >/dev/null 2>&1 || true
 killall MobilePhone >/dev/null 2>&1 || true
 
+# Control Center modules are loaded by SpringBoard. Restart it so a newly
+# installed/updated BandLock module and its Settings icon are picked up.
+if command -v sbreload >/dev/null 2>&1; then
+    sbreload >/dev/null 2>&1 || true
+else
+    killall SpringBoard >/dev/null 2>&1 || true
+fi
+
 exit 0
