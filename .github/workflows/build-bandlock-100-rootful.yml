@@ -45,6 +45,7 @@ jobs:
           grep -q 'bl_presentModePicker' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'UIAlertControllerStyleActionSheet' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q '\.keyWindow' build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'UIWindowScene' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'rootViewController' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           ! grep -q 'contentViewController' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'stateEpoch' build/BandLock-1.0-Dopamine/ccmodule/Module.m
