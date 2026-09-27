@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           old="debs/com.gokuencinar.nukewireless_1.0.27+rh27_iphoneos-arm64e.deb"
           new="debs/com.gokuencinar.nukewireless_1.0.28+rh28_iphoneos-arm64e.deb"
-          dylib_url="https://raw.githubusercontent.com/Gokuencinar/Harpy-RELOADED/dd7af9d/prebuilt/NukeWirelessPaths_ios.dylib"
+          dylib_url="https://raw.githubusercontent.com/Gokuencinar/Harpy-RELOADED/dd7af9de12d31d49041e029bf8995f814eee58e7/prebuilt/NukeWirelessPaths_ios.dylib"
           work="$(mktemp -d)"
 
           dpkg-deb --raw-extract "$old" "$work/root"
