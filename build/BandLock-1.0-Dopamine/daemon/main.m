@@ -40,7 +40,6 @@ static void BLDaemonLog(const char *message) {
 - (NSDictionary *)queryCoreTelephony;
 - (NSDictionary *)snapshotFromQuery:(NSDictionary *)query;
 - (BOOL)setRatSelectionSync:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText;
-- (BOOL)setRatSelectionFast:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText;
 - (BOOL)writeLTEBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
 - (NSArray<NSNumber *> *)activeLTEFromQuery:(NSDictionary *)query;
 - (BOOL)writeNRBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
@@ -156,7 +155,6 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
 
         if ([command isEqualToString:@"rat"]) {
             NSString *mode = [request[@"mode"] isKindOfClass:[NSString class]] ? request[@"mode"] : @"";
-            BOOL fast = [request[@"fast"] boolValue];
             BOOL requests5G = [mode hasPrefix:@"5g-"];
             if (requests5G) {
                 NSDictionary *capabilityQuery = [manager queryCoreTelephony];
@@ -174,17 +172,8 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             else if ([mode isEqualToString:@"5g-on"]) { selection = BLRATNR; preferred = BLNRRAT; }
             else if ([mode isEqualToString:@"5g-only"]) { selection = BLRATNRSA; preferred = BLNRRAT; }
             NSString *errorText = nil;
-            BOOL accepted = fast
-                ? [manager setRatSelectionFast:selection preferred:preferred errorText:&errorText]
-                : [manager setRatSelectionSync:selection preferred:preferred errorText:&errorText];
-            if (!accepted) {
+            if (![manager setRatSelectionSync:selection preferred:preferred errorText:&errorText]) {
                 return @{@"success": @NO, @"message": errorText ?: @"RAT write failed"};
-            }
-            if (fast) {
-                return @{@"success": @YES,
-                         @"accepted": @YES,
-                         @"mode_code": mode.length ? mode : @"automatic",
-                         @"message": @"RAT change accepted"};
             }
             [NSThread sleepForTimeInterval:0.35];
             NSMutableDictionary *payload = [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];

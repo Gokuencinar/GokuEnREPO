@@ -8,6 +8,16 @@
 #import <unistd.h>
 #import <string.h>
 
+typedef void *BLCTServerConnectionRef;
+extern BLCTServerConnectionRef _CTServerConnectionCreate(CFAllocatorRef allocator, void (*callback)(void), void *context);
+extern void *_CTServerConnectionSetRATSelection(BLCTServerConnectionRef connection, CFStringRef selection, void *unknown);
+extern CFStringRef kCTRegistrationRATSelection1;
+extern CFStringRef kCTRegistrationRATSelection6;
+extern CFStringRef kCTRegistrationRATSelection7;
+extern CFStringRef kCTRegistrationRATSelection11;
+
+static void BLCTServerConnectionCallback(void) {}
+
 #if BL_VARIANT_ROOTHIDE
 #import <roothide.h>
 #endif
@@ -19,10 +29,10 @@
 @interface BLCCModule ()
 @property (nonatomic, copy) NSString *currentModeCode;
 @property (nonatomic, copy) NSString *confirmedModeCode;
-@property (nonatomic, copy) NSString *pendingModeCode;
 @property (nonatomic, assign) BOOL supports5G;
-@property (nonatomic, assign) BOOL requestInFlight;
 @property (nonatomic, assign) NSUInteger stateEpoch;
+@property (nonatomic, assign) NSTimeInterval statusRefreshNotBefore;
+@property (nonatomic, assign) BOOL statusRefreshInFlight;
 @property (nonatomic, strong) dispatch_queue_t daemonQueue;
 @property (nonatomic, strong) UIAlertController *modePicker;
 @end
@@ -34,10 +44,10 @@
     if (self) {
         _currentModeCode = @"automatic";
         _confirmedModeCode = @"automatic";
-        _pendingModeCode = nil;
         _supports5G = NO;
-        _requestInFlight = NO;
         _stateEpoch = 0;
+        _statusRefreshNotBefore = 0;
+        _statusRefreshInFlight = NO;
         _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.ccmodule", DISPATCH_QUEUE_SERIAL);
         [self bl_refreshFromDaemon];
     }
@@ -112,7 +122,8 @@
 
 - (void)refreshState {
     [super refreshState];
-    if (!self.daemonQueue || self.requestInFlight || self.pendingModeCode.length) return;
+    if (!self.daemonQueue || self.statusRefreshInFlight) return;
+    if (CFAbsoluteTimeGetCurrent() < self.statusRefreshNotBefore) return;
     [self bl_refreshFromDaemon];
 }
 
@@ -228,107 +239,77 @@
     if (!requestedMode.length) return;
     if ([requestedMode isEqualToString:@"5g-on"] && !self.supports5G) return;
 
-    dispatch_queue_t queue = self.daemonQueue;
-    if (!queue) return;
-
     self.stateEpoch += 1;
+    NSUInteger epoch = self.stateEpoch;
 
-    // Always reflect the latest user choice immediately, even if the daemon is
-    // still finishing a previous RAT switch.
+    // The Control Center path deliberately bypasses CoreTelephonyClient's
+    // synchronous subscription-context lookup. That lookup can stall while the
+    // modem is moving through 3G. _CTServerConnectionSetRATSelection is the
+    // direct path used by stable CC network toggles and does not need that data
+    // context to be available first.
     self.currentModeCode = requestedMode;
     [self bl_syncVisualSelection];
 
-    if (self.requestInFlight) {
-        // Coalesce rapid taps: keep only the newest requested RAT. The current
-        // daemon transaction is allowed to finish, then this value is applied.
-        self.pendingModeCode = requestedMode;
+    if (![self bl_setRATDirect:requestedMode]) {
+        self.currentModeCode = self.confirmedModeCode ?: @"automatic";
+        [self bl_syncVisualSelection];
         return;
     }
 
-    [self bl_startModeRequest:requestedMode];
+    self.confirmedModeCode = requestedMode;
+
+    // During a 3G handover the modem may temporarily report the previous RAT
+    // or block status queries. Do not let that stale read repaint the tile or
+    // occupy the serial status queue. Verification resumes after a grace
+    // period; direct user selections remain available throughout it.
+    self.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent() + 4.0;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4.0 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        if (epoch == self.stateEpoch) [self bl_refreshFromDaemon];
+    });
 }
 
-- (void)bl_startModeRequest:(NSString *)requestedMode {
-    if (!requestedMode.length || self.requestInFlight) return;
+- (BOOL)bl_setRATDirect:(NSString *)mode {
+    CFStringRef selection = NULL;
+    if ([mode isEqualToString:@"automatic"]) selection = kCTRegistrationRATSelection7;
+    else if ([mode isEqualToString:@"3g"]) selection = kCTRegistrationRATSelection1;
+    else if ([mode isEqualToString:@"lte"]) selection = kCTRegistrationRATSelection6;
+    else if ([mode isEqualToString:@"5g-on"]) selection = kCTRegistrationRATSelection11;
+    if (!selection) return NO;
 
-    dispatch_queue_t queue = self.daemonQueue;
-    if (!queue) return;
+    BLCTServerConnectionRef connection =
+        _CTServerConnectionCreate(kCFAllocatorDefault, BLCTServerConnectionCallback, NULL);
+    if (!connection) return NO;
 
-    self.requestInFlight = YES;
-
-    dispatch_async(queue, ^{
-        NSDictionary *result =
-            [self bl_sendRequestSynchronously:@{@"cmd": @"rat", @"mode": requestedMode, @"fast": @YES}];
-        BOOL success = [result[@"success"] boolValue];
-        id supports5GValue = result[@"supports_5g"];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.requestInFlight = NO;
-
-            BOOL hasSupports5G = [supports5GValue respondsToSelector:@selector(boolValue)];
-            BOOL supports5G = hasSupports5G ? [supports5GValue boolValue] : self.supports5G;
-
-            NSString *normalizedMode = requestedMode;
-            if (!supports5G && [normalizedMode hasPrefix:@"5g-"]) {
-                normalizedMode = @"automatic";
-            }
-
-            if (success) {
-                if (hasSupports5G) self.supports5G = supports5G;
-                self.confirmedModeCode = normalizedMode;
-            }
-
-            NSString *nextMode = self.pendingModeCode;
-            self.pendingModeCode = nil;
-
-            if (nextMode.length) {
-                // If the final tap already matches what just succeeded, no
-                // second modem transaction is necessary.
-                if (success && [nextMode isEqualToString:normalizedMode]) {
-                    self.currentModeCode = normalizedMode;
-                    [self bl_syncVisualSelection];
-                } else {
-                    [self bl_startModeRequest:nextMode];
-                }
-                return;
-            }
-
-            if (success) {
-                self.currentModeCode = normalizedMode;
-                [self bl_syncVisualSelection];
-
-                NSUInteger epoch = self.stateEpoch;
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.65 * NSEC_PER_SEC)),
-                               dispatch_get_main_queue(), ^{
-                    if (epoch == self.stateEpoch && !self.requestInFlight && !self.pendingModeCode.length) {
-                        [self bl_refreshFromDaemon];
-                    }
-                });
-            } else {
-                self.currentModeCode = self.confirmedModeCode ?: @"automatic";
-                [self bl_syncVisualSelection];
-                [self bl_refreshFromDaemon];
-            }
-        });
-    });
+    _CTServerConnectionSetRATSelection(connection, selection, NULL);
+    return YES;
 }
 
 - (void)bl_refreshFromDaemon {
     dispatch_queue_t queue = self.daemonQueue;
-    if (!queue || self.requestInFlight || self.pendingModeCode.length) return;
+    if (!queue || self.statusRefreshInFlight) return;
+    if (CFAbsoluteTimeGetCurrent() < self.statusRefreshNotBefore) return;
     NSUInteger epoch = self.stateEpoch;
+    self.statusRefreshInFlight = YES;
 
     dispatch_async(queue, ^{
         NSDictionary *result = [self bl_sendRequestSynchronously:@{@"cmd": @"status"}];
-        if (![result[@"success"] boolValue]) return;
+        if (![result[@"success"] boolValue]) {
+            dispatch_async(dispatch_get_main_queue(), ^{ self.statusRefreshInFlight = NO; });
+            return;
+        }
 
         NSString *modeCode = [result[@"mode_code"] isKindOfClass:NSString.class] ? result[@"mode_code"] : nil;
         BOOL supports5G = [result[@"supports_5g"] boolValue];
-        if (!modeCode.length) return;
+        if (!modeCode.length) {
+            dispatch_async(dispatch_get_main_queue(), ^{ self.statusRefreshInFlight = NO; });
+            return;
+        }
         if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (epoch != self.stateEpoch || self.requestInFlight || self.pendingModeCode.length) return;
+            self.statusRefreshInFlight = NO;
+            if (epoch != self.stateEpoch) return;
             self.currentModeCode = modeCode;
             self.confirmedModeCode = modeCode;
             self.supports5G = supports5G;
