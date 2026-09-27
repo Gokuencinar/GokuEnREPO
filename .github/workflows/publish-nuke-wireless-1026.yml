@@ -30,7 +30,7 @@ jobs:
 
           dpkg-deb --raw-extract "$old" "$work/root"
           curl --fail --location "$dylib_url" --output "$work/NukeWirelessPaths_ios.dylib"
-          install -m 0755 "$work/NukeWirelessPaths_ios.dylib" +            "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
+          install -m 0755 "$work/NukeWirelessPaths_ios.dylib" "$work/root/usr/lib/TweakInject/NukeWirelessPaths.dylib"
 
           sed -i 's/^Version: .*/Version: 1.0.26+rh26/' "$work/root/DEBIAN/control"
 
