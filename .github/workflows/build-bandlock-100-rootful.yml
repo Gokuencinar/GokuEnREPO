@@ -40,6 +40,8 @@ jobs:
           grep -q '/usr/libexec/BandLockDaemon' build/BandLock-1.0-Rootful/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.rootful.plist
           grep -q 'com.gokuencinar.bandlockd.rootful.sock' build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
           grep -q 'com.gokuencinar.bandlockd.rootful.sock' build/BandLock-1.0-Dopamine/daemon/main.m
+          grep -q 'kCTRegistrationRATSelectionUMTS' build/BandLock-1.0-Dopamine/daemon/main.m
+          grep -q 'BLCCMode3G' build/BandLock-1.0-Dopamine/ccmodule/Module.m
           ! grep -R -q '/var/jb' build/BandLock-1.0-Rootful
           ! grep -R -q 'roothide.h\|libroothide\|jbroot(' build/BandLock-1.0-Rootful
           chmod 755 build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
