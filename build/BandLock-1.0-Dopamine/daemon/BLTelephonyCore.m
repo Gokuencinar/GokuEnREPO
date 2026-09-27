@@ -7,8 +7,10 @@
 
 static NSString * const BLLTERAT = @"kCTRegistrationRadioAccessTechnologyLTE";
 static NSString * const BLNRRAT = @"kCTRegistrationRadioAccessTechnologyNR";
+static NSString * const BLUTRANRAT = @"kCTRegistrationRadioAccessTechnologyUTRAN";
 static NSString * const BLRATAutomatic = @"kCTRegistrationRATSelectionAutomatic";
 static NSString * const BLRATLTE = @"kCTRegistrationRATSelectionLTE";
+static NSString * const BLRATUMTS = @"kCTRegistrationRATSelectionUMTS";
 static NSString * const BLRATNR = @"kCTRegistrationRATSelectionNR";
 static NSString * const BLRATNRSA = @"kCTRegistrationRATSelectionNRStandAlone";
 static NSString * const BLLogDirectory = @"/var/mobile/Library/Logs/BandLockGlobal";
@@ -274,6 +276,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     else if ([selection rangeOfString:@"NRNonStandAlone" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On (NSA)"; modeCode = @"5g-on"; }
     else if ([selection rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On"; modeCode = @"5g-on"; }
     else if ([selection rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo LTE / 4G", @"LTE / 4G only"); modeCode = @"lte"; }
+    else if ([selection rangeOfString:@"UMTS" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo 3G", @"3G only"); modeCode = @"3g"; }
     else if (![selection isEqualToString:@"—"]) { mode = selection; modeCode = @"other"; }
     id ratRaw = query[@"ratRaw"] == NSNull.null ? nil : query[@"ratRaw"];
     id cellInfo = query[@"cellInfo"] == NSNull.null ? nil : query[@"cellInfo"];
