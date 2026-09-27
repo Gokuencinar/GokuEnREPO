@@ -102,13 +102,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git pull --ff-only origin main
-          cp /tmp/root/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb debs/
-          cp /tmp/dop/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb debs/
-          dpkg-scanpackages -m debs /dev/null > Packages
-          gzip -9 -c Packages > Packages.gz
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add debs/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb debs/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb Packages Packages.gz
-          git commit -m "Publish BandLock 1.0"
-          git push
+          for attempt in 1 2 3 4 5; do
+            echo "Publish attempt ${attempt}/5"
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/root/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb debs/
+            cp /tmp/dop/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb debs/
+            dpkg-scanpackages -m debs /dev/null > Packages
+            gzip -9 -c Packages > Packages.gz
+            git add debs/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb debs/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb Packages Packages.gz
+            git commit -m "Publish BandLock 1.0"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Failed to publish BandLock 1.0 after 5 attempts" >&2
+          exit 1
