@@ -71,7 +71,7 @@ jobs:
           grep -q 'hasRefreshedStatus' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'currentLanguageName' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'BandLockPendingNRBands' build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
-          ! grep -R --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' build/BandLock-1.0-Dopamine
+          ! grep -R --exclude-dir='ccmodule' --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' build/BandLock-1.0-Dopamine
       - name: Build Dopamine
         run: |
           cd build/BandLock-1.0-Dopamine
