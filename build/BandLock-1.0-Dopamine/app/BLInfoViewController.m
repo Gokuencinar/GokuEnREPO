@@ -7,7 +7,13 @@ static NSString * const BLRepositoryURL = @"https://github.com/Gokuencinar/GokuE
 static NSString * const BLBuyMeACoffeeURL = @"https://buymeacoffee.com/gokuen";
 static NSString * const BLPackagesURL = @"https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/Packages";
 static NSString * const BLChangelogRawURL = @"https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/changelogs/BandLock.md";
+#if BL_VARIANT_ROOTFUL
+static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock.rootful";
+static NSString * const BLVariantName = @"Rootful";
+#else
 static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock.dopamine";
+static NSString * const BLVariantName = @"Dopamine";
+#endif
 
 @interface BLReleaseNotesViewController : UIViewController
 @property (nonatomic, strong) UITextView *textView;
@@ -128,7 +134,7 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock.dopamin
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *version = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
-    if (indexPath.section == 0 && indexPath.row == 0) return [self valueCell:@"BandLock Global" detail:@"Dopamine" symbol:@"antenna.radiowaves.left.and.right" disclosure:NO];
+    if (indexPath.section == 0 && indexPath.row == 0) return [self valueCell:@"BandLock Global" detail:BLVariantName symbol:@"antenna.radiowaves.left.and.right" disclosure:NO];
     if (indexPath.section == 0 && indexPath.row == 1) return [self valueCell:BLT(@"Versión actual", @"Current version") detail:version symbol:@"number.circle" disclosure:NO];
     if (indexPath.section == 0) return [self creditsCell];
     if (indexPath.section == 1 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];

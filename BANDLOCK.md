@@ -1,10 +1,10 @@
 # BandLock Global — LTE/4G + 5G NR Band Control App for iOS 16
 
-**BandLock Global** is the public worldwide edition of BandLock for **iOS 16**. Starting with 0.6.34 it is published as two separate packages: one for **RootHide** and one for **normal Dopamine rootless**.
+**BandLock Global** is the public worldwide edition of BandLock for **iOS 16**. Starting with 1.0 it is published in three jailbreak variants: **RootHide**, **Dopamine rootless**, and **classic rootful**.
 
-**BandLock Global** es la edición pública internacional de BandLock para **iOS 16**. Desde 0.6.34 se publica como dos paquetes independientes: uno para **RootHide** y otro para **Dopamine rootless normal**.
+**BandLock Global** es la edición pública internacional de BandLock para **iOS 16**. Desde 1.0 se publica en tres variantes de jailbreak: **RootHide**, **Dopamine rootless** y **rootful clásico**.
 
-> Current public version / Versión pública actual: **1.0** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64**
+> Current public version / Versión pública actual: **1.0** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
 
 ## Español
 
@@ -63,6 +63,7 @@ El dataset no sustituye la información oficial de cada operador. El módem del 
 - Sileo
 - **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · validado en iPhone XS con iOS 16.3.1.
 - **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · binarios arm64 + arm64e.
+- **Rootful**: `com.gokuencinar.bandlock.rootful` · `iphoneos-arm` · binarios arm64, rutas clásicas `/Applications`, `/usr/libexec` y `/Library/LaunchDaemons`.
 - Las variantes declaran `Conflicts:` entre sí para impedir una instalación cruzada accidental.
 - App bundle: `com.gokuencinar.bandlock.app`
 - Control de bandas: LTE/4G y rutas de selección 5G NR cuando el módem las reporta como configurables. Los cambios NR dependen del hardware, operador y comportamiento privado de CoreTelephony.
@@ -125,7 +126,8 @@ The dataset does not replace carrier-specific official information. The iPhone m
 - Sileo
 - **RootHide**: `com.gokuencinar.bandlock` · `iphoneos-arm64e` · real-device validated on iPhone XS / iOS 16.3.1.
 - **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · arm64 + arm64e binaries.
-- The variants declare mutual `Conflicts:` to prevent accidental cross-installation.
+- **Rootful**: `com.gokuencinar.bandlock.rootful` · `iphoneos-arm` · arm64 binaries with classic `/Applications`, `/usr/libexec`, and `/Library/LaunchDaemons` paths.
+- The three variants declare mutual `Conflicts:` to prevent accidental cross-installation.
 - App bundle: `com.gokuencinar.bandlock.app`
 - LTE/4G plus 5G NR selection paths where the modem reports configurable NR bands. NR behavior depends on hardware, carrier and private CoreTelephony behavior.
 - The Dopamine variant has passed CI compilation, signing, entitlement validation and rootless package-layout checks; complete physical validation on a normal Dopamine device is still pending.
@@ -138,9 +140,9 @@ Add this repository to Sileo / Añade este repositorio a Sileo:
 https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 ```
 
-Then install **BandLock (RootHide)** or **BandLock (Dopamine)** according to your jailbreak. The app will appear on the Home Screen after installation.
+Then install **BandLock (RootHide)**, **BandLock (Dopamine)**, or **BandLock (Rootful)** according to your jailbreak. The app will appear on the Home Screen after installation.
 
-Después instala **BandLock (RootHide)** o **BandLock (Dopamine)** según tu jailbreak. La app aparecerá en la pantalla de inicio tras la instalación.
+Después instala **BandLock (RootHide)**, **BandLock (Dopamine)** o **BandLock (Rootful)** según tu jailbreak. La app aparecerá en la pantalla de inicio tras la instalación.
 
 ## Community testing / Pruebas comunitarias
 

@@ -10,4 +10,4 @@ Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Depends: firmware (>= 16.0), firmware (<< 17.0)
-Conflicts: com.gokuencinar.bandlock.dopamine
+Conflicts: com.gokuencinar.bandlock.dopamine, com.gokuencinar.bandlock.rootful
