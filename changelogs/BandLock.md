@@ -3,10 +3,39 @@
 This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
 > **About BandLock**  
-> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G bands, controlling radio access mode, and viewing LTE band references by country. Starting with **0.6.34**, BandLock is distributed as separate builds for **RootHide** and **Dopamine rootless**.
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. Starting with **0.6.34**, BandLock is distributed as separate builds for **RootHide** and **Dopamine rootless**.
 
 > **Compatibility**  
 > iOS 16.x. The RootHide build uses `iphoneos-arm64e`. The Dopamine rootless build uses `iphoneos-arm64` packaging with arm64 + arm64e binaries. Both targets start at iOS 16.0.
+
+---
+
+## 1.0 — RootHide & Dopamine
+
+### Added
+- Added **5G Auto / 5G On / 5G Only** network-mode controls. The selector is visible immediately when BandLock opens; **5G Only** requests NR Standalone (SA).
+- Added independent 5G NR supported, active and pending band state using `nXX` notation.
+- Added a dedicated 5G NR band editor, apply/restore actions, read-back verification and preservation of LTE/other RAT entries when changing NR bands.
+- Extended the offline 160-country catalogue with 5G NR reference data. The bundled snapshot contains explicit NR data for 99 countries/territories and includes Spain n1/n3/n28/n78/n258.
+- Added 5G NR frequency/duplex metadata for the NR bands present in the country dataset.
+- Added persistence for pending LTE and NR selections so a refresh or app restart does not silently discard a prepared selection.
+- Moved the language selector to the top-right of the **BandLock** screen and display the currently selected language beside the globe icon.
+
+### Changed
+- **Refresh status** no longer resets prepared LTE/NR selections.
+- Applying LTE clears only the LTE pending state; applying NR clears only the NR pending state.
+- The **Result** row starts empty and is populated only after the user explicitly taps **Refresh status**.
+- Country preparation and management now handle LTE and NR intersections independently and never auto-apply modem changes.
+- Version promoted from the 0.6.x development line to **1.0** for the public release.
+
+### Validation
+- RootHide and Dopamine packages compile successfully in GitHub Actions.
+- RootHide 1.0 regression-tested on an iPhone XS: installation, app launch and `BandLockDaemon` operation verified.
+- 5G mode and NR-band writes depend on private CoreTelephony behavior and require compatible 5G hardware/carrier support; community validation across iPhone generations is encouraged.
+
+### Packages
+- **BandLock (RootHide)** — `com.gokuencinar.bandlock` — `iphoneos-arm64e`
+- **BandLock (Dopamine)** — `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
 
 ---
 

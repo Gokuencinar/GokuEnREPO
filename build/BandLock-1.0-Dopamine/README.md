@@ -1,10 +1,10 @@
-# BandLock 0.6.36 Global App — RootHide
+# BandLock 1.0 Global App — Dopamine rootless
 
-This is the **RootHide** build of BandLock 0.6.36. It keeps the validated RootHide IPC/socket behavior and upgrades the existing `com.gokuencinar.bandlock` package.
+This is the **Dopamine rootless** build of BandLock 1.0. It uses normal rootless `/var/jb` packaging and direct shared `/tmp` IPC; it does not link or call RootHide/libroothide.
 
-### 0.6.36 5G modes and NR band control
+### 1.0 5G modes and NR band control
 
-- Adds **5G Auto / 5G On / 5G Only** to Control on devices/lines that report 5G support. 5G Only requests NR Standalone (SA) and warns that service can be lost where SA is unavailable.
+- Adds **5G Auto / 5G On / 5G Only** to Control and keeps the selector visible from app launch. 5G Only requests NR Standalone (SA) and warns that service can be lost where SA is unavailable.
 - Reads 5G NR supported and active bands from `CTBandInfo`, keeps an independent pending NR selection, and applies NR changes with modem read-back verification while preserving LTE and unknown RAT entries.
 - Adds a dedicated 5G NR band editor using `nXX` notation, frequency/duplex metadata and restore actions.
 - Extends the 160-country offline catalogue with `nr_bands`; countries with explicit current 5G data show reference nXX bands and their intersection with the actual iPhone modem.
@@ -28,13 +28,13 @@ This is the **RootHide** build of BandLock 0.6.36. It keeps the validated RootHi
 - Adds a glossary explaining LTE/4G, Bxx, MHz/GHz, FDD, TDD, SDL, APT 700, AWS, PCS, WCS, CBRS, LAA, CDMA, WCDMA/UMTS/HSPA, GSM/EDGE, RAT and NR/5G.
 - Network mode IPC now also carries a semantic `mode_code`, so the UIKit app can translate Automatic/LTE-only independently of the daemon's system locale.
 - No diagnostic self-test or automatic modem mutation runs when the app opens.
-- The UIKit client does not call `jbroot()` when a button is pressed. It derives the physical `.jbroot-*` root once from RootHide's `CFFIXED_USER_HOME`/`HOME` environment, caches the full `/tmp/com.gokuencinar.bandlockd.sock` path and reuses it for IPC.
-- The daemon continues to resolve and bind the same socket with RootHide's `jbroot()` API. This keeps the client aligned with the signed standalone probe that successfully queried the modem on the target iPhone.
-- The UIKit app links `libroothide`, while CommCenter/CoreTelephony entitlements remain restricted to `BandLockDaemon`.
+- The UIKit client and daemon communicate through the shared rootless socket `/tmp/com.gokuencinar.bandlockd.dopamine.sock`; no RootHide path translation is used.
+- The Dopamine build does not import `roothide.h`, call `jbroot()` or link `libroothide`.
+- CommCenter/CoreTelephony entitlements remain restricted to `BandLockDaemon` exactly as in the validated RootHide architecture.
 - A raw C breadcrumb logger writes `/var/mobile/Documents/BandLock-client.log` with `open/write/fsync` around every refresh stage: socket creation, connect, write, read, JSON parsing, main-queue dispatch and UI completion.
 - `SIGPIPE` is ignored process-wide and Objective-C exceptions in the background IPC and main completion paths are caught and recorded so recoverable client failures do not terminate the app.
 - Refresh now disables immediately once an IPC request is marked busy, preventing a second tap from entering the synchronous busy path during an in-flight request.
-- Package scripts remove the short `/tmp/bandlockd.sock` path left by the unvalidated 0.6.14 experiment before restoring the verified long socket name.
+- Package scripts clean stale RootHide/Dopamine BandLock socket names before starting the Dopamine daemon.
 
 ## Interface
 
@@ -61,13 +61,13 @@ This is the **RootHide** build of BandLock 0.6.36. It keeps the validated RootHi
 - Country data is reference information only and can vary by carrier, region, roaming agreement and time.
 - The app always intersects country LTE/NR bands with the corresponding bands reported by the actual iPhone before preparing selections.
 
-## RootHide packaging
+## Dopamine rootless packaging
 
-- Debian package: `com.gokuencinar.bandlock`
+- Debian package: `com.gokuencinar.bandlock.dopamine`
 - App bundle: `com.gokuencinar.bandlock.app`
-- RootHide application installed under `/Applications/BandLock.app` through the package scheme.
-- Privileged daemon installed as `/usr/libexec/BandLockDaemon`, with `/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist`, and signed separately with the CommCenter entitlements.
-- No PreferenceLoader dependency and no Settings PreferenceBundle in 0.6.14.
+- Rootless application installed under `/var/jb/Applications/BandLock.app` by the Theos rootless package scheme.
+- Privileged daemon installed as `/var/jb/usr/libexec/BandLockDaemon`, with `/var/jb/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist`, and signed separately with the CommCenter entitlements.
+- The package depends on `mobilesubstrate`/ElleKit compatibility so the Field Test bridge can inject into MobilePhone.
 - The UI app keeps only the platform/no-sandbox permissions needed for local IPC; CommCenter entitlements are restricted to the daemon binary.
 
-BandLock 0.6.36 adds runtime-gated 5G NR mode and band control. These private CoreTelephony paths still require validation on each iOS/modem generation; unsupported devices keep the 5G controls hidden.
+BandLock 1.0 adds 5G NR mode and band-control paths while keeping the 5G mode selector visible on all supported iOS 16 devices. Actual 5G/NR writes still depend on modem, carrier and device support and should be validated on each hardware generation.

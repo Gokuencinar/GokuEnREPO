@@ -1,10 +1,10 @@
-# BandLock Global — LTE/4G Band Control App for iOS 16
+# BandLock Global — LTE/4G + 5G NR Band Control App for iOS 16
 
 **BandLock Global** is the public worldwide edition of BandLock for **iOS 16**. Starting with 0.6.34 it is published as two separate packages: one for **RootHide** and one for **normal Dopamine rootless**.
 
 **BandLock Global** es la edición pública internacional de BandLock para **iOS 16**. Desde 0.6.34 se publica como dos paquetes independientes: uno para **RootHide** y otro para **Dopamine rootless normal**.
 
-> Current public version / Versión pública actual: **0.6.35** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64**
+> Current public version / Versión pública actual: **1.0** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64**
 
 ## Español
 
@@ -12,15 +12,15 @@
 
 BandLock se divide en tres pestañas. CoreTelephony/CommCenter se ejecuta dentro de un LaunchDaemon separado (`BandLockDaemon`) y la app se comunica con él por un socket Unix local. La interfaz no crea procesos mediante `posix_spawn`:
 
-- **Control** — estado del módem, red actual, banda servidora, modo Automático/Solo LTE, selección manual de bandas, aplicar, restaurar y Field Test.
-- **Países** — buscador con 160 países y territorios. Cada país muestra sus bandas LTE de referencia, frecuencia, FDD/TDD/SDL y cuáles de ellas son compatibles con el módem del iPhone.
-- **Info** — versión actual, créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico, selector de idioma y **Buy Me a Coffee**.
+- **Control** — estado del módem, red actual, banda servidora, modos Automático/Solo LTE/5G Auto/5G On/5G Only, selección independiente LTE y 5G NR, aplicar/restaurar y Field Test. El selector de idioma aparece arriba a la derecha junto al idioma actual.
+- **Países** — buscador con 160 países y territorios. Cada país muestra bandas LTE y 5G NR de referencia y su intersección con lo que reporta el módem del iPhone.
+- **Info** — versión actual, créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico y **Buy Me a Coffee**.
 
 ### Cómo funcionan los perfiles de país
 
 Los perfiles de país son una **referencia**, no una orden automática al módem. Al pulsar **Preparar bandas compatibles**, BandLock calcula:
 
-`bandas LTE del país ∩ bandas LTE soportadas por el iPhone`
+`bandas LTE/NR del país ∩ bandas LTE/NR soportadas por el iPhone`
 
 El resultado se copia a **Selección pendiente**. Después debes ir a Control, revisarlo y pulsar **Aplicar selección**. Elegir un país nunca cambia el módem automáticamente.
 
@@ -30,13 +30,16 @@ Que una banda figure para un país no garantiza que todos los operadores la util
 
 - App UIKit independiente con icono en SpringBoard.
 - Selección de todas las bandas LTE que el módem reporta como soportadas.
+- Selección independiente de bandas 5G NR que el módem reporte como configurables.
 - Metadatos de frecuencia y clasificación **FDD / TDD / SDL**.
 - Selector agrupado por FDD, TDD, SDL y otras bandas.
 - Atajos: selección activa, todas las soportadas, solo FDD y solo TDD.
 - Catálogo offline y buscador de países.
 - Botón **Gestionar frecuencias de <país>** en Control tras preparar un país; solo modifica la selección pendiente.
 - Intersección segura entre bandas del país y capacidades reales del iPhone.
-- Modo **Automático** y **Solo LTE / 4G**.
+- Modos **Automático**, **Solo LTE / 4G**, **5G Auto**, **5G On** y **5G Only (SA)**.
+- Las selecciones pendientes LTE y NR se conservan al actualizar estado y entre reinicios de la app.
+- La fila **Resultado** permanece vacía hasta pulsar explícitamente **Actualizar estado**.
 - Restauración de la selección anterior o de todas las bandas soportadas.
 - Verificación posterior mediante **CoreTelephony** y un reintento si CommCenter todavía devuelve el estado anterior.
 - Relectura de `supportedBands` justo antes de escribir.
@@ -50,7 +53,7 @@ Que una banda figure para un país no garantiza que todos los operadores la util
 
 ### Datos de países
 
-El snapshot incluido en 0.6.0 contiene **160 países y territorios**, de los cuales **156 tienen bandas LTE de referencia** en la fuente utilizada el 26-09-2026. BandLock conserva el dataset dentro de la app para que la consulta funcione sin conexión.
+El snapshot incluido contiene **160 países y territorios**; **156** tienen bandas LTE de referencia y **99** tienen datos 5G NR explícitos en el snapshot del 27-09-2026. BandLock conserva el dataset dentro de la app para que la consulta funcione sin conexión.
 
 El dataset no sustituye la información oficial de cada operador. El módem del propio iPhone sigue siendo la fuente de verdad para determinar qué bandas se pueden seleccionar en ese dispositivo.
 
@@ -62,7 +65,7 @@ El dataset no sustituye la información oficial de cada operador. El módem del 
 - **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · binarios arm64 + arm64e.
 - Las variantes declaran `Conflicts:` entre sí para impedir una instalación cruzada accidental.
 - App bundle: `com.gokuencinar.bandlock.app`
-- Control de bandas: LTE/4G; BandLock no declara bloqueo de bandas 5G NR.
+- Control de bandas: LTE/4G y rutas de selección 5G NR cuando el módem las reporta como configurables. Los cambios NR dependen del hardware, operador y comportamiento privado de CoreTelephony.
 - La variante Dopamine ha pasado compilación, firma, validación de entitlements y estructura rootless en CI; la prueba física completa en un dispositivo con Dopamine normal queda pendiente.
 
 ## English
@@ -71,15 +74,15 @@ El dataset no sustituye la información oficial de cada operador. El módem del 
 
 BandLock uses three main tabs. CoreTelephony/CommCenter runs inside a separate LaunchDaemon (`BandLockDaemon`) and communicates with the app through a local Unix socket. The UI does not create child processes with `posix_spawn`:
 
-- **Control** — modem status, current network, serving band, Automatic/LTE-only mode, manual band editing, apply/restore actions and Field Test.
-- **Countries** — searchable list of 160 countries and territories. Each country shows reference LTE bands, frequency, FDD/TDD/SDL metadata, and which bands are also supported by the current iPhone modem.
-- **Info** — current version, credits, update checking, release notes, GokuEnREPO, technical glossary, language selector and **Buy Me a Coffee**.
+- **Control** — modem status, current network, serving band, Automatic/LTE-only/5G Auto/5G On/5G Only modes, independent LTE and 5G NR selections, apply/restore actions and Field Test. The language selector is shown at the top right beside the current language.
+- **Countries** — searchable list of 160 countries and territories with LTE and 5G NR reference bands and modem-supported intersections.
+- **Info** — current version, credits, update checking, release notes, GokuEnREPO, technical glossary and **Buy Me a Coffee**.
 
 ### Country profiles
 
 Country profiles are **reference data**, not automatic modem commands. Tapping **Prepare compatible bands** computes:
 
-`country LTE bands ∩ iPhone modem-supported LTE bands`
+`country LTE/NR bands ∩ iPhone modem-supported LTE/NR bands`
 
 The result becomes the **pending selection**. The user must then review it in Control and explicitly tap **Apply selection**. Selecting a country never writes to the modem automatically.
 
@@ -89,13 +92,16 @@ A band being listed for a country does not mean every carrier uses it or that it
 
 - Standalone UIKit app with a Home Screen icon.
 - Manual selection of every LTE band reported as supported by the modem.
+- Independent 5G NR selection for bands reported as configurable by the modem.
 - Frequency and **FDD / TDD / SDL** metadata.
 - Dynamic FDD, TDD, SDL and other-LTE groups.
 - Quick actions for current active, all supported, FDD-only and TDD-only selections.
 - Offline searchable country catalogue.
 - **Manage frequencies for <country>** in Control after preparing a country; it only changes the pending selection.
 - Safe intersection of country bands with actual iPhone modem capabilities.
-- **Automatic** and **LTE / 4G only** network modes.
+- **Automatic**, **LTE / 4G only**, **5G Auto**, **5G On** and **5G Only (SA)** network modes.
+- Pending LTE/NR selections survive status refreshes and app restarts.
+- The **Result** row stays empty until **Refresh status** is explicitly tapped.
 - Restore previous selection or every modem-supported LTE band.
 - **CoreTelephony** write verification plus one retry when CommCenter still reports the previous state.
 - Fresh `supportedBands` check immediately before a write.
@@ -109,7 +115,7 @@ A band being listed for a country does not mean every carrier uses it or that it
 
 ### Country data
 
-The 0.6.0 offline snapshot contains **160 countries and territories**, with LTE reference bands available for **156** of them in the source snapshot collected on 2026-09-26.
+The bundled offline snapshot contains **160 countries and territories**; **156** include LTE reference bands and **99** include explicit 5G NR data in the snapshot dated 2026-09-27.
 
 The dataset does not replace carrier-specific official information. The iPhone modem remains the source of truth for which LTE bands can actually be selected on the device.
 
@@ -121,7 +127,7 @@ The dataset does not replace carrier-specific official information. The iPhone m
 - **Dopamine rootless**: `com.gokuencinar.bandlock.dopamine` · `iphoneos-arm64` · arm64 + arm64e binaries.
 - The variants declare mutual `Conflicts:` to prevent accidental cross-installation.
 - App bundle: `com.gokuencinar.bandlock.app`
-- LTE/4G band control only; BandLock does not claim 5G NR band locking.
+- LTE/4G plus 5G NR selection paths where the modem reports configurable NR bands. NR behavior depends on hardware, carrier and private CoreTelephony behavior.
 - The Dopamine variant has passed CI compilation, signing, entitlement validation and rootless package-layout checks; complete physical validation on a normal Dopamine device is still pending.
 
 ## Install / Instalación

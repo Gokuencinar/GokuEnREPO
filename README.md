@@ -33,9 +33,9 @@ Repository URL:
 
 ## 📦 Available tweaks
 
-### 📡 BandLock Global — LTE/4G Band Lock
+### 📡 BandLock Global — LTE/4G + 5G NR Band Control
 
-Standalone jailbreak app for manually controlling the LTE/4G bands used by your iPhone. It includes modem/network status, LTE-only mode, manual band selection, Field Test access and an offline catalogue covering 160 countries and territories.
+Standalone jailbreak app for manually controlling LTE/4G and supported 5G NR modem selections on iOS 16. It includes network modes, independent LTE/NR pending selections, Field Test access and an offline catalogue covering 160 countries and territories.
 
 - **RootHide build:** `com.gokuencinar.bandlock` — `iphoneos-arm64e`
 - **Dopamine rootless build:** `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
@@ -72,8 +72,8 @@ Wi-Fi network management toolkit for RootHide.
 
 | Package | Version | Architecture |
 | --- | --- | --- |
-| BandLock (RootHide) | 0.6.35 | `iphoneos-arm64e` |
-| BandLock (Dopamine) | 0.6.35 | `iphoneos-arm64` |
+| BandLock (RootHide) | 1.0 | `iphoneos-arm64e` |
+| BandLock (Dopamine) | 1.0 | `iphoneos-arm64` |
 | BetterWiFi RH | 0.3.8 | `iphoneos-arm64e` |
 | Nuke Wireless | 1.0.39 | `iphoneos-arm64e` |
 

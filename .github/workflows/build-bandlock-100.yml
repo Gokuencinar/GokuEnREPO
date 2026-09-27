@@ -1,0 +1,116 @@
+name: Build and Publish BandLock 1.0
+
+on:
+  push:
+    branches: [ bandlock-0.6.36-5g, main ]
+    paths:
+      - 'build/BandLock-1.0-RootHide/**'
+      - 'build/BandLock-1.0-Dopamine/**'
+      - '.github/workflows/build-bandlock-100.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-roothide:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup RootHide Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate RootHide source
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-1.0-RootHide/app/Resources/Info.plist
+          grep -q '^Version: 1.0$' build/BandLock-1.0-RootHide/control
+          grep -q '<string>1.0</string>' build/BandLock-1.0-RootHide/app/Resources/Info.plist
+          python3 -m json.tool build/BandLock-1.0-RootHide/app/Resources/countries.json >/dev/null
+          grep -q '5G Auto / 5G On / 5G Only' build/BandLock-1.0-RootHide/app/BLControlViewController.m
+          grep -q 'hasRefreshedStatus' build/BandLock-1.0-RootHide/app/BLControlViewController.m
+          grep -q 'currentLanguageName' build/BandLock-1.0-RootHide/app/BLControlViewController.m
+          grep -q 'BandLockPendingNRBands' build/BandLock-1.0-RootHide/app/BLTelephonyManager.m
+      - name: Build RootHide
+        run: |
+          cd build/BandLock-1.0-RootHide
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          test -f packages/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb
+          dpkg-deb -f packages/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb Package Version Architecture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-RootHide-1.0
+          path: build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb
+
+  build-dopamine:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate Dopamine source
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint build/BandLock-1.0-Dopamine/app/Resources/Info.plist
+          grep -q '^Version: 1.0$' build/BandLock-1.0-Dopamine/control
+          grep -q '^Architecture: iphoneos-arm64$' build/BandLock-1.0-Dopamine/control
+          grep -q '<string>1.0</string>' build/BandLock-1.0-Dopamine/app/Resources/Info.plist
+          python3 -m json.tool build/BandLock-1.0-Dopamine/app/Resources/countries.json >/dev/null
+          grep -q '5G Auto / 5G On / 5G Only' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
+          grep -q 'hasRefreshedStatus' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
+          grep -q 'currentLanguageName' build/BandLock-1.0-Dopamine/app/BLControlViewController.m
+          grep -q 'BandLockPendingNRBands' build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          ! grep -R --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' build/BandLock-1.0-Dopamine
+      - name: Build Dopamine
+        run: |
+          cd build/BandLock-1.0-Dopamine
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          test -f packages/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb
+          dpkg-deb -f packages/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb Package Version Architecture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.0
+          path: build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: [build-roothide, build-dopamine]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-RootHide-1.0
+          path: /tmp/root
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.0
+          path: /tmp/dop
+      - run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+      - name: Publish BandLock 1.0 to APT repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin main
+          cp /tmp/root/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb debs/
+          cp /tmp/dop/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb debs/
+          dpkg-scanpackages -m debs /dev/null > Packages
+          gzip -9 -c Packages > Packages.gz
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debs/com.gokuencinar.bandlock_1.0_iphoneos-arm64e.deb debs/com.gokuencinar.bandlock.dopamine_1.0_iphoneos-arm64.deb Packages Packages.gz
+          git commit -m "Publish BandLock 1.0"
+          git push
