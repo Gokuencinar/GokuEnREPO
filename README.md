@@ -77,7 +77,7 @@ Wi-Fi network management toolkit for RootHide.
 | BandLock (Dopamine) | 1.0 | `iphoneos-arm64` |
 | BandLock (Rootful) | 1.0 | `iphoneos-arm` |
 | BetterWiFi RH | 0.3.8 | `iphoneos-arm64e` |
-| Nuke Wireless | 1.0.42 | `iphoneos-arm64e` |
+| Nuke Wireless | 1.0.43 | `iphoneos-arm64e` |
 
 The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `debs/` changes.
 

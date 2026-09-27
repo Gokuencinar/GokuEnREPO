@@ -73,13 +73,13 @@
       "views": [
         {
           "class": "DepictionTableTextView",
-          "title": "1.0.42",
+          "title": "1.0.43",
           "text": "Current"
         },
         {
           "class": "DepictionMarkdownView",
           "useSpacing": false,
-          "markdown": "- The language selector now only saves the chosen language and does not mutate any visible view while the alert is dismissing\n- Tab titles, Info and the Wi-Fi panel refresh through the stable view lifecycle when switching tabs\n- Device actions are localized at the rendered title/text layer to cover the inherited SwiftUI action sheet\n- Keeps the clean public version scheme without the old **+rh** suffix"
+          "markdown": "- Restores the Wi-Fi tab transition path to the last live-device stable implementation from 1.0.36\n- Removes the panel subview re-binding added after that version\n- Removes the global UIKit title/text hooks introduced while experimenting with inherited action localization\n- Keeps the language preference and clean public version scheme without **+rh**"
         }
       ]
     }
