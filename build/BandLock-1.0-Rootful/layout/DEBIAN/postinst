@@ -16,13 +16,7 @@ if ! launchctl bootstrap system "$PLIST" >/dev/null 2>&1; then
 fi
 launchctl kickstart -k "system/${LABEL}" >/dev/null 2>&1 || true
 
-if command -v uicache >/dev/null 2>&1; then
-    uicache -p /Applications/BandLock.app >/dev/null 2>&1 || true
-fi
 
 
-# Do not restart SpringBoard from inside dpkg/postinst. Package managers such
-# as Sileo can be terminated before dpkg commits the transaction, leaving dpkg
-# in an interrupted state. The user can respring after installation if needed.
-
+# Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.\n
 exit 0
