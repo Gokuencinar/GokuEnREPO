@@ -24,12 +24,8 @@ killall BandLock >/dev/null 2>&1 || true
 # newly installed bridge is loaded on the next launch.
 killall MobilePhone >/dev/null 2>&1 || true
 
-# Control Center modules are loaded by SpringBoard. Restart it so a newly
-# installed/updated BandLock module and its Settings icon are picked up.
-if command -v sbreload >/dev/null 2>&1; then
-    sbreload >/dev/null 2>&1 || true
-else
-    killall SpringBoard >/dev/null 2>&1 || true
-fi
+# Do not restart SpringBoard from inside dpkg/postinst. Package managers such
+# as Sileo can be terminated before dpkg commits the transaction, leaving dpkg
+# in an interrupted state. The user can respring after installation if needed.
 
 exit 0
