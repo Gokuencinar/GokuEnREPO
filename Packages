@@ -256,6 +256,26 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Dopamine)
 
+Package: com.gokuencinar.bandlock.rootful
+Version: 1.0
+Architecture: iphoneos-arm
+Maintainer: Gokuencinar
+Installed-Size: 704
+Depends: firmware (>= 16.0), firmware (<< 17.0), mobilesubstrate
+Conflicts: com.gokuencinar.bandlock, com.gokuencinar.bandlock.dopamine
+Filename: debs/com.gokuencinar.bandlock.rootful_1.0_iphoneos-arm.deb
+Size: 159968
+MD5sum: 2116173860eb724e5e9002382d350546
+SHA1: 6214bba4a7229b0488a91d3623abcfb82d08c789
+SHA256: 7d199d10299300be94cd43f8e5c95ab4e423cb5416ab04392290e021303c5195
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
+Description: Standalone BandLock Global app for iOS 16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
+Name: BandLock (Rootful)
+
 Package: com.gokuencinar.nukewireless
 Version: 1.0.25+rh25
 Architecture: iphoneos-arm64e
