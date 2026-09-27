@@ -1,0 +1,87 @@
+{
+  "minVersion": "0.4",
+  "class": "DepictionTabView",
+  "tintColor": "#ff453a",
+  "tabs": [
+    {
+      "class": "DepictionStackView",
+      "tabname": "Details",
+      "views": [
+        {
+          "class": "DepictionHeaderView",
+          "title": "Nuke Wireless",
+          "useBoldText": true,
+          "useBottomMargin": false,
+          "alignment": 0
+        },
+        {
+          "class": "DepictionMarkdownView",
+          "useSpacing": true,
+          "markdown": "**NETWORK KILLER for iOS 16 · RootHide**\n\nNuke Wireless discovers devices on your local Wi-Fi network and lets you control IPv4 connectivity using ARP spoofing. It is designed for networks and devices you administer."
+        },
+        {
+          "class": "DepictionSubheaderView",
+          "title": "What Nuke Wireless can do",
+          "useBoldText": true,
+          "useBottomMargin": false
+        },
+        {
+          "class": "DepictionMarkdownView",
+          "useSpacing": true,
+          "markdown": "- Discover devices on the connected Wi-Fi network\n- Show IP, MAC address and available device name\n- Save custom aliases by MAC address\n- Block or unblock individual devices\n- Bulk block with confirmation\n- Refresh the network device list\n- Show block-process status\n- Show SSID, BSSID, IPv4, subnet mask, gateway, MAC, IPv6 and DNS\n- In-app language selector: Spanish, English, French, German, Simplified Chinese, Traditional Chinese and Japanese\n- Dedicated **Punto de acceso / Hotspot** tab localization\n- Built-in explanation of how ARP spoofing works\n- Direct link to GokuEnREPO"
+        },
+        {
+          "class": "DepictionSubheaderView",
+          "title": "How blocking works",
+          "useBoldText": true,
+          "useBottomMargin": false
+        },
+        {
+          "class": "DepictionMarkdownView",
+          "useSpacing": true,
+          "markdown": "When a device is blocked, Nuke Wireless sends crafted ARP replies so the target associates the router IP with an incorrect MAC address. The process stays active to maintain that association, preventing normal IPv4 communication with the gateway.\n\nWhen unblocked, the process stops and correct ARP information is sent to help restore the real device ↔ router association. This is **not** Wi-Fi deauthentication and does not disconnect the client from the access point. IPv6 traffic may remain available when the network uses it."
+        },
+        {
+          "class": "DepictionSeparatorView"
+        },
+        {
+          "class": "DepictionTableTextView",
+          "title": "Compatibility",
+          "text": "iOS 16.x · Dopamine 2 + RootHide · arm64e"
+        },
+        {
+          "class": "DepictionTableTextView",
+          "title": "Package",
+          "text": "com.gokuencinar.nukewireless"
+        },
+        {
+          "class": "DepictionTableTextView",
+          "title": "Developer",
+          "text": "Gokuencinar · GokuEn"
+        },
+        {
+          "class": "DepictionTableButtonView",
+          "text": "Open GokuEnREPO",
+          "action": "https://github.com/Gokuencinar/GokuEnREPO",
+          "openExternal": true
+        }
+      ]
+    },
+    {
+      "class": "DepictionStackView",
+      "tabname": "Changelog",
+      "views": [
+        {
+          "class": "DepictionTableTextView",
+          "title": "1.0.29",
+          "text": "Current"
+        },
+        {
+          "class": "DepictionMarkdownView",
+          "useSpacing": false,
+          "markdown": "- Changed the Wi-Fi card to **Nuke Wireless NETWORK KILLER**\n- Added a repository button in Info\n- Renamed Settings to **Punto de acceso / Hotspot** with localized equivalents\n- Localized the upper title too\n- Applied tab localization before presentation to remove the brief English flicker\n- Added a rich Sileo depiction"
+        }
+      ]
+    }
+  ]
+}

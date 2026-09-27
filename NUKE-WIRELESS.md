@@ -1,6 +1,6 @@
-# Nuke Wireless — Wi-Fi Tools for iOS 16
+# Nuke Wireless — NETWORK KILLER for iOS 16
 
-**Nuke Wireless** es una app para **Dopamine RootHide** que muestra los dispositivos de la red Wi-Fi y permite bloquearlos o desbloquearlos mediante ARP.
+**Nuke Wireless** es una app para **Dopamine RootHide** que descubre los dispositivos de la red Wi-Fi local y permite controlar su conectividad IPv4 mediante ARP spoofing.
 
 ## Español
 
@@ -13,10 +13,13 @@
 - Acción para bloquear varios equipos, con confirmación.
 - Selector de idioma: Español, English, Français, Deutsch, 简体中文, 繁體中文 y 日本語.
 - Interfaz visible con la marca **Nuke Wireless**, incluido el encabezado Wi-Fi rediseñado.
-- Tarjeta Wi-Fi con el texto **Nuke Wireless /NETWORK KILLER** y sin el rótulo heredado superpuesto.
+- Tarjeta Wi-Fi con el texto **Nuke Wireless NETWORK KILLER** y sin el rótulo heredado superpuesto.
+- La pestaña **Ajustes** pasa a llamarse **Punto de acceso** en español, **Hotspot** en inglés y equivalentes localizados en los demás idiomas; el título superior usa la misma traducción.
+- La localización se aplica antes de mostrar cada pestaña para evitar el breve destello de títulos en inglés al cambiar rápidamente.
 - Aviso cuando la interfaz Wi-Fi tiene IPv6; el bloqueo ARP solo cubre IPv4.
 - Pestaña Info propia, sin el fondo heredado de Harpy RH, con SSID, BSSID, IPv4, máscara, router, MAC, IPv6 y DNS de la conexión actual.
 - La pestaña Info explica de forma clara cómo funciona el bloqueo mediante ARP spoofing, cómo se restaura la asociación al desbloquear y por qué el mecanismo afecta principalmente a IPv4.
+- Botón directo a **GokuEnREPO** desde Info.
 - Créditos **Gokuencinar · GokuEn** y avatar en la pestaña Info.
 
 El bloqueo ARP no es desautenticación Wi-Fi. Úsalo únicamente en redes y con dispositivos que administras.
@@ -31,7 +34,7 @@ El bloqueo ARP no es desautenticación Wi-Fi. Úsalo únicamente en redes y con 
 
 ## English
 
-**Nuke Wireless** is a **Dopamine RootHide** app that lists devices on the connected Wi-Fi network and lets you block or unblock them with ARP.
+**Nuke Wireless** is a **Dopamine RootHide** app that discovers devices on the local Wi-Fi network and lets you control IPv4 connectivity using ARP spoofing.
 
 ### Features
 
@@ -42,10 +45,13 @@ El bloqueo ARP no es desautenticación Wi-Fi. Úsalo únicamente en redes y con 
 - Bulk blocking with a confirmation step.
 - Language selector: Español, English, Français, Deutsch, 简体中文, 繁體中文 and 日本語.
 - Visible UI branded as **Nuke Wireless**, including the redesigned Wi-Fi header.
-- Wi-Fi card labeled **Nuke Wireless /NETWORK KILLER**, with the legacy title hidden to avoid overlap.
+- Wi-Fi card labeled **Nuke Wireless NETWORK KILLER**, with the legacy title hidden to avoid overlap.
+- The former **Settings** tab is localized as **Punto de acceso** in Spanish, **Hotspot** in English and equivalent names in the other supported languages; its upper title is localized too.
+- Localization is applied before each tab is displayed to remove the brief English-title flash when switching quickly.
 - IPv6 warning; ARP blocking covers IPv4 only.
 - Custom Info tab without the legacy Harpy RH background, showing SSID, BSSID, IPv4, subnet mask, router, MAC, IPv6 and DNS for the current connection.
 - The Info tab clearly explains how ARP spoofing blocking works, how normal ARP information is restored when unblocking, and why this mechanism primarily affects IPv4.
+- Direct **GokuEnREPO** button in Info.
 - Info tab credits **Gokuencinar · GokuEn** with the author’s avatar.
 
 ARP blocking is not Wi-Fi deauthentication. Use it only on networks and devices you administer.
