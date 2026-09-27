@@ -120,14 +120,25 @@
 }
 
 - (UIViewController *)bl_topViewController {
-    UIWindow *window = [UIApplication sharedApplication].keyWindow;
-    if (!window) {
-        for (UIWindow *candidate in [UIApplication sharedApplication].windows) {
+    UIWindow *window = nil;
+    NSSet<UIScene *> *scenes = [UIApplication sharedApplication].connectedScenes;
+
+    for (UIScene *scene in scenes) {
+        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+        if (scene.activationState != UISceneActivationStateForegroundActive) continue;
+
+        UIWindowScene *windowScene = (UIWindowScene *)scene;
+        for (UIWindow *candidate in windowScene.windows) {
             if (candidate.isKeyWindow) {
                 window = candidate;
                 break;
             }
         }
+
+        if (!window) {
+            window = windowScene.windows.firstObject;
+        }
+        if (window) break;
     }
 
     UIViewController *controller = window.rootViewController;
