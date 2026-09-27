@@ -1,5 +1,4 @@
 #import "BLInfoViewController.h"
-#import "BLLanguageViewController.h"
 #import "BLFrequencyGlossaryViewController.h"
 #import "BLLocalization.h"
 #import "BLCommon.h"
@@ -68,13 +67,12 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 5; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 4; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (section == 0) return 3;
     if (section == 1) return 2;
     if (section == 2) return 2;
-    if (section == 3) return 1;
     return 1;
 }
 
@@ -82,15 +80,7 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
     if (section == 0) return BLT(@"Acerca de", @"About");
     if (section == 1) return BLT(@"Actualizaciones", @"Updates");
     if (section == 2) return BLT(@"Recursos", @"Resources");
-    if (section == 3) return BLT(@"Apoyar desarrollo", @"Support development");
-    return BLT(@"Idioma", @"Language");
-}
-
-- (NSString *)currentLanguageName {
-    for (NSDictionary *language in BLLanguageOptions()) {
-        if ([language[@"code"] isEqualToString:BLCurrentLanguageCode()]) return language[@"name"];
-    }
-    return BLCurrentLanguageCode();
+    return BLT(@"Apoyar desarrollo", @"Support development");
 }
 
 - (UITableViewCell *)valueCell:(NSString *)title detail:(NSString *)detail symbol:(NSString *)symbol disclosure:(BOOL)disclosure {
@@ -145,8 +135,7 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
     if (indexPath.section == 1) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
     if (indexPath.section == 2 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];
     if (indexPath.section == 2) return [self valueCell:BLT(@"Más información sobre las frecuencias", @"More information about frequencies") detail:nil symbol:@"info.circle" disclosure:YES];
-    if (indexPath.section == 3) return [self valueCell:@"Buy Me a Coffee" detail:nil symbol:@"heart.circle.fill" disclosure:YES];
-    return [self valueCell:BLT(@"Cambiar idioma", @"Change language") detail:[self currentLanguageName] symbol:@"globe" disclosure:YES];
+    return [self valueCell:@"Buy Me a Coffee" detail:nil symbol:@"heart.circle.fill" disclosure:YES];
 }
 
 - (void)showMessage:(NSString *)message {
@@ -229,9 +218,6 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
         return;
     }
     if (indexPath.section == 3) { [self openBuyMeACoffee]; return; }
-    if (indexPath.section == 4) {
-        [self.navigationController pushViewController:[[BLLanguageViewController alloc] initWithStyle:UITableViewStyleInsetGrouped] animated:YES];
-    }
 }
 
 @end

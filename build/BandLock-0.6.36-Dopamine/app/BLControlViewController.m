@@ -2,6 +2,7 @@
 #import "BLTelephonyManager.h"
 #import "BLBandPickerViewController.h"
 #import "BLNRBandPickerViewController.h"
+#import "BLLanguageViewController.h"
 #import "BLCountryBandsViewController.h"
 #import "BLCountryProfile.h"
 #import "BLCommon.h"
@@ -34,6 +35,11 @@
     self.title = @"BandLock";
     self.navigationController.navigationBar.prefersLargeTitles = YES;
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"globe"]
+                                                                              style:UIBarButtonItemStylePlain
+                                                                             target:self
+                                                                             action:@selector(languageTapped:)];
+    self.navigationItem.rightBarButtonItem.accessibilityLabel = BLT(@"Cambiar idioma", @"Change language");
     self.view.backgroundColor = UIColor.systemGroupedBackgroundColor;
     [self buildUI];
     [self refreshDisplay];
@@ -172,7 +178,6 @@
     UIButton *automatic = [self buttonWithTitle:BLT(@"Modo automático", @"Automatic mode") symbol:@"antenna.radiowaves.left.and.right" selector:@selector(automaticTapped:) destructive:NO];
     UIButton *lteOnly = [self buttonWithTitle:BLT(@"Solo LTE / 4G", @"LTE / 4G only") symbol:@"4g.lte" selector:@selector(lteOnlyTapped:) destructive:NO];
     self.fiveGModeButton = [self buttonWithTitle:@"5G Auto / 5G On / 5G Only" symbol:@"5g" selector:@selector(fiveGModeTapped:) destructive:NO];
-    self.fiveGModeButton.hidden = YES;
     UILabel *mode = nil;
     UIView *modeCard = [self cardWithTitle:BLT(@"MODO DE RED", @"NETWORK MODE") content:@[
         [self rowWithTitle:BLT(@"Configuración", @"Configuration") valueLabel:&mode],
@@ -233,7 +238,6 @@
     self.pendingNRValue.text = BLNRBandList(self.manager.pendingNRBands);
     self.resultValue.text = self.manager.detailText ?: @"—";
     self.modeValue.text = self.manager.networkMode ?: @"—";
-    self.fiveGModeButton.hidden = !self.manager.supports5G;
     self.activeNRRow.hidden = !self.manager.supports5G;
     self.nrBandsCard.hidden = !self.manager.supports5G || !self.manager.supportedNRBands.count;
     NSDictionary *selectedCountry = BLSelectedCountryRecord();
@@ -322,11 +326,11 @@
     [self presentViewController:alert animated:YES completion:nil];
 }
 
+- (void)languageTapped:(UIBarButtonItem *)sender {
+    [self.navigationController pushViewController:[[BLLanguageViewController alloc] initWithStyle:UITableViewStyleInsetGrouped] animated:YES];
+}
+
 - (void)fiveGModeTapped:(UIButton *)sender {
-    if (!self.manager.supports5G) {
-        [self showAlert:BLT(@"Este iPhone o la línea activa no reportan soporte 5G disponible.", @"This iPhone or the active line does not report available 5G support.")];
-        return;
-    }
     UIAlertController *sheet = [UIAlertController alertControllerWithTitle:@"5G"
                                                                     message:BLT(@"Selecciona cómo debe priorizarse 5G. 5G Only solicita NR Standalone (SA).", @"Choose how 5G should be prioritized. 5G Only requests NR Standalone (SA).")
                                                              preferredStyle:UIAlertControllerStyleActionSheet];
