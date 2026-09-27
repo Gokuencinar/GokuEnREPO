@@ -42,12 +42,16 @@ jobs:
           grep -q 'BandLockPendingNRBands' build/BandLock-1.0-RootHide/app/BLTelephonyManager.m
           grep -q 'kCTRegistrationRATSelectionUMTS' build/BandLock-1.0-RootHide/daemon/main.m
           grep -q 'BLCCMode3G' build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q '<key>ModuleSize</key>' build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          test -f build/BandLock-1.0-Dopamine/ccmodule/Resources/SettingsIcon@3x.png
       - name: Build RootHide
         run: |
           cd build/BandLock-1.0-RootHide
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           test -f packages/com.gokuencinar.bandlock_1.1_iphoneos-arm64e.deb
           find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
+          find .theos/_ -type f -name 'SettingsIcon@3x.png' | grep -q SettingsIcon
+          find .theos/_ -type f -name 'SettingsIcon@3x.png' | grep -q SettingsIcon
       - uses: actions/upload-artifact@v4
         with:
           name: BandLock-RootHide-1.1
