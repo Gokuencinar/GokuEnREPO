@@ -73,7 +73,7 @@ jobs:
           sudo apt-get install -y dpkg-dev binutils
           deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb
           test "$(dpkg-deb -f "$deb" Package)" = "com.gokuencinar.bandlock.rootful"
-          test "$(dpkg-deb -f "$deb" Version)" = "1.0"
+          test "$(dpkg-deb -f "$deb" Version)" = "1.1"
           test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm"
           dpkg-deb -c "$deb" > /tmp/bandlock-rootful-contents.txt
           grep -q 'Applications/BandLock.app/BandLock' /tmp/bandlock-rootful-contents.txt
@@ -110,7 +110,7 @@ jobs:
           set -euo pipefail
           deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.1_iphoneos-arm.deb
           test "$(dpkg-deb -f "$deb" Package)" = "com.gokuencinar.bandlock.rootful"
-          test "$(dpkg-deb -f "$deb" Version)" = "1.0"
+          test "$(dpkg-deb -f "$deb" Version)" = "1.1"
           test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -128,5 +128,5 @@ jobs:
             fi
             sleep 2
           done
-          echo "Failed to publish BandLock Rootful 1.0 after 5 attempts" >&2
+          echo "Failed to publish BandLock Rootful 1.1 after 5 attempts" >&2
           exit 1
