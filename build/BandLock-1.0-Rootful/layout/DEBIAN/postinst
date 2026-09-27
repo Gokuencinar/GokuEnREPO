@@ -20,8 +20,6 @@ if command -v uicache >/dev/null 2>&1; then
     uicache -p /Applications/BandLock.app >/dev/null 2>&1 || true
 fi
 
-killall BandLock >/dev/null 2>&1 || true
-killall MobilePhone >/dev/null 2>&1 || true
 
 # Do not restart SpringBoard from inside dpkg/postinst. Package managers such
 # as Sileo can be terminated before dpkg commits the transaction, leaving dpkg
