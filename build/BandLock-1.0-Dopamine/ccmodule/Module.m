@@ -42,8 +42,8 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
 }
 
 - (UIImage *)iconGlyph {
-    UIImage *image = [UIImage imageNamed:@"Icon" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil];
-    if (!image) image = [UIImage systemImageNamed:@"antenna.radiowaves.left.and.right"];
+    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:24.0 weight:UIImageSymbolWeightSemibold];
+    UIImage *image = [[UIImage systemImageNamed:@"antenna.radiowaves.left.and.right"] imageByApplyingSymbolConfiguration:config];
     return [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }
 
@@ -70,6 +70,7 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
 
 - (void)refreshState {
     [super refreshState];
+    if (!self.daemonQueue) return;
     [self bl_refreshFromDaemon];
 }
 
@@ -193,7 +194,9 @@ typedef NS_ENUM(NSInteger, BLCCMode) {
 }
 
 - (void)bl_refreshFromDaemon {
-    dispatch_async(self.daemonQueue, ^{
+    dispatch_queue_t queue = self.daemonQueue;
+    if (!queue) return;
+    dispatch_async(queue, ^{
         NSDictionary *result = [self bl_sendRequestSynchronously:@{@"cmd": @"status"}];
         if (![result[@"success"] boolValue]) return;
 
