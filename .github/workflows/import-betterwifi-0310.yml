@@ -1,4 +1,4 @@
-name: Import BetterWiFi RH 0.3.10
+name: Publish BetterWiFi RH 0.3.10
 
 on:
   push:
@@ -10,86 +10,33 @@ permissions:
   contents: write
 
 jobs:
-  import:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download and verify package
+      - name: Publish package
         shell: bash
         run: |
           set -euo pipefail
-          ARTIFACT_URL='https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-e05c-8210-aab1-8054ac701592/raw?se=2026-09-28T11%3A33%3A10Z&sp=r&sv=2026-02-06&sr=b&scid=93a62696-8ecb-595b-b533-494bf962707d&skoid=a63e6f05-dc2f-4fa5-b0e3-b1cb9c0893bb&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-28T07%3A06%3A50Z&ske=2026-09-29T07%3A06%3A50Z&sks=b&skv=2026-02-06&sig=treXeT7/Qfso7nZlvN0%2BDlyOhZTXxF1sl4IJahLPJjs%3D'
-          curl -fL "$ARTIFACT_URL" -o /tmp/bwrh0310.zip
-          unzip -q /tmp/bwrh0310.zip -d /tmp/bwrh0310
-          deb="$(find /tmp/bwrh0310 -name '*.deb' -type f | head -1)"
+          curl -fL 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-9ef4-81f4-a25a-c38213fbbd42/raw?se=2026-09-28T11%3A35%3A17Z&sp=r&sv=2026-02-06&sr=b&scid=fed73bee-9015-5c7a-82e3-eb76bd36bcfb&skoid=a63e6f05-dc2f-4fa5-b0e3-b1cb9c0893bb&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-28T09%3A24%3A56Z&ske=2026-09-29T09%3A24%3A56Z&sks=b&skv=2026-02-06&sig=3Ql/382DyavPg4rFApUwqvh4TjhoWLbWWSUObSJAo2U%3D' -o /tmp/artifact.zip
+          unzip -q /tmp/artifact.zip -d /tmp/artifact
+          deb="$(find /tmp/artifact -name '*.deb' -type f | head -1)"
           test -n "$deb"
           test "$(sha256sum "$deb" | awk '{print $1}')" = "59f1a57a97963db913cea938a1e4af16728cc0ce67c37c7691c580784bbae6c2"
           test "$(dpkg-deb -f "$deb" Package)" = "com.betterwifirh.tweak"
           test "$(dpkg-deb -f "$deb" Version)" = "0.3.10"
           test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm64e"
-          cp "$deb" /tmp/com.betterwifirh.tweak_0.3.10_iphoneos-arm64e.deb
-
-      - name: Publish package and rebuild APT index
-        shell: bash
-        run: |
-          set -euo pipefail
           sudo apt-get update >/dev/null
           sudo apt-get install -y dpkg-dev >/dev/null
-
           rm -f debs/com.betterwifirh.tweak_*_iphoneos-arm64e.deb
-          cp /tmp/com.betterwifirh.tweak_0.3.10_iphoneos-arm64e.deb debs/
-
+          cp "$deb" debs/com.betterwifirh.tweak_0.3.10_iphoneos-arm64e.deb
           dpkg-scanpackages -m debs /dev/null > Packages
           gzip -9 -c Packages > Packages.gz
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p=Path("README.md")
-          t=p.read_text()
-          t=t.replace("| BetterWiFi RH | 0.3.9 | `iphoneos-arm64e` |",
-                      "| BetterWiFi RH | 0.3.10 | `iphoneos-arm64e` |")
-          p.write_text(t)
-
-          p=Path("BETTERWIFI-RH.md")
-          t=p.read_text()
-          t=t.replace("Current version / Versión actual: **0.3.9**",
-                      "Current version / Versión actual: **0.3.10**")
-          p.write_text(t)
-
-          p=Path("changelogs/BetterWiFi-RH.md")
-          t=p.read_text()
-          if "## 0.3.10" not in t:
-              marker="## 0.3.9"
-              entry="""## 0.3.10
-
-### Corregido
-- El selector de idioma ya no abre una pantalla secundaria vacía/negra en Ajustes.
-- Sustituido el selector `PSLinkListCell` por un selector `PSSegmentCell` integrado directamente en la página de BetterWiFi RH.
-- La recarga del panel tras cambiar el idioma se ejecuta de forma diferida para evitar conflictos durante el evento del control.
-
-### Conservado
-- Automático, Español e Inglés siguen disponibles.
-- No cambia el idioma global de iOS ni de Ajustes.
-
-"""
-              t=t.replace(marker,entry+marker)
-          p.write_text(t)
-          PY
-
           grep -q '^Package: com.betterwifirh.tweak$' Packages
           grep -q '^Version: 0.3.10$' Packages
-          grep -q '^Architecture: iphoneos-arm64e$' Packages
           grep -q '^SHA256: 59f1a57a97963db913cea938a1e4af16728cc0ce67c37c7691c580784bbae6c2$' Packages
-
-      - name: Commit repository update
-        shell: bash
-        run: |
-          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet && exit 0
+          git add debs Packages Packages.gz
           git commit -m "Update BetterWiFi RH to 0.3.10"
           git push
