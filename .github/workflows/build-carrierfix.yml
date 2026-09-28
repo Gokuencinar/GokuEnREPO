@@ -1,4 +1,4 @@
-name: Build CarrierFix 0.2
+name: Build CarrierFix 0.3 iOS 16
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
       - 'build/CarrierFix-shared/**'
       - 'build/CarrierFix-0.1-RootHide/**'
       - 'build/CarrierFix-0.2-Dopamine/**'
-      - 'build/CarrierFix-0.2-Rootful/**'
       - 'CARRIERFIX.md'
       - '.github/workflows/build-carrierfix.yml'
   workflow_dispatch:
@@ -16,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  build-roothide:
+  build-roothide-test:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -31,41 +30,39 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q '^Version: 0.2.1$' build/CarrierFix-0.1-RootHide/control
+          grep -q '^Version: 0.3.0$' build/CarrierFix-0.1-RootHide/control
           grep -q '^Architecture: iphoneos-arm64e$' build/CarrierFix-0.1-RootHide/control
           grep -q '^ARCHS = arm64 arm64e$' build/CarrierFix-0.1-RootHide/Makefile
-          grep -q '^TARGET = iphone:clang:16.5:15.0$' build/CarrierFix-0.1-RootHide/Makefile
-          grep -q 'firmware (>= 15.0), firmware (<= 17.0)' build/CarrierFix-0.1-RootHide/control
-          grep -q '<string>0.2.1</string>' build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
-          grep -q '<key>MinimumOSVersion</key><string>15.0</string>' build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
+          grep -q '^TARGET = iphone:clang:16.5:16.0$' build/CarrierFix-0.1-RootHide/Makefile
+          grep -q 'firmware (>= 16.0), firmware (<< 17.0)' build/CarrierFix-0.1-RootHide/control
+          grep -q '<string>0.3.0</string>' build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
+          grep -q '<key>MinimumOSVersion</key><string>16.0</string>' build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
+          grep -q '/rootfs/var/mobile/Library/Carrier Bundles/Library/Preferences' build/CarrierFix-shared/CFCarrierManager.m
+          grep -q 'com.apple.carrier_1.plist' build/CarrierFix-shared/CFCarrierManager.m
+          grep -q 'directAPN' build/CarrierFix-shared/CFCarrierManager.m
           grep -q 'prepareVerifiedBackup' build/CarrierFix-shared/CFCarrierManager.m
           grep -q 'restore-test-' build/CarrierFix-shared/CFCarrierManager.m
-          grep -q 'patched-' build/CarrierFix-shared/CFCarrierManager.m
-          grep -q 'schemaIsSafeForPatch' build/CarrierFix-shared/CFCarrierManager.m
-          grep -q 'Automatically restores' CARRIERFIX.md
           ! grep -R -q 'killall\|ldrestart\|sbreload' build/CarrierFix-0.1-RootHide build/CarrierFix-shared
           ! grep -R -q 'MobileSubstrate\|LaunchDaemons' build/CarrierFix-0.1-RootHide build/CarrierFix-shared
-          ! grep -q 'libroothide' build/CarrierFix-0.1-RootHide/app/Makefile
           plutil -lint build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
           plutil -lint build/CarrierFix-0.1-RootHide/app/Entitlements.plist
-      - name: Build RootHide package
+      - name: Build RootHide validation package
         shell: bash
         run: |
           set -euo pipefail
           cd build/CarrierFix-0.1-RootHide
           chmod 755 layout/DEBIAN/postinst layout/DEBIAN/postrm
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
-          test -f packages/com.gokuencinar.carrierfix_0.2.1_iphoneos-arm64e.deb
+          test -f packages/com.gokuencinar.carrierfix_0.3.0_iphoneos-arm64e.deb
           app=$(find .theos/_ -type f -name CarrierFix | head -n 1)
-          test -n "$app"
           lipo -archs "$app" | grep -q 'arm64 arm64e\|arm64e arm64'
-          ldid -e "$app" > /tmp/carrierfix-roothide-entitlements.plist
-          grep -q 'platform-application' /tmp/carrierfix-roothide-entitlements.plist
-          grep -q 'com.apple.private.security.no-sandbox' /tmp/carrierfix-roothide-entitlements.plist
+          ldid -e "$app" > /tmp/carrierfix-rh-entitlements.plist
+          grep -q 'platform-application' /tmp/carrierfix-rh-entitlements.plist
+          grep -q 'com.apple.private.security.no-sandbox' /tmp/carrierfix-rh-entitlements.plist
       - uses: actions/upload-artifact@v4
         with:
-          name: CarrierFix-RootHide-0.2.1
-          path: build/CarrierFix-0.1-RootHide/packages/com.gokuencinar.carrierfix_0.2.1_iphoneos-arm64e.deb
+          name: CarrierFix-RootHide-iOS16-0.3.0
+          path: build/CarrierFix-0.1-RootHide/packages/com.gokuencinar.carrierfix_0.3.0_iphoneos-arm64e.deb
 
   build-dopamine:
     runs-on: macos-15
@@ -82,112 +79,62 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q '^Version: 0.2.1$' build/CarrierFix-0.2-Dopamine/control
+          grep -q '^Version: 0.3.0$' build/CarrierFix-0.2-Dopamine/control
           grep -q '^Architecture: iphoneos-arm64$' build/CarrierFix-0.2-Dopamine/control
           grep -q '^ARCHS = arm64 arm64e$' build/CarrierFix-0.2-Dopamine/Makefile
-          grep -q '^TARGET = iphone:clang:16.5:15.0$' build/CarrierFix-0.2-Dopamine/Makefile
+          grep -q '^TARGET = iphone:clang:16.5:16.0$' build/CarrierFix-0.2-Dopamine/Makefile
           grep -q '^THEOS_PACKAGE_SCHEME = rootless$' build/CarrierFix-0.2-Dopamine/Makefile
-          grep -q 'firmware (>= 15.0), firmware (<< 19.0)' build/CarrierFix-0.2-Dopamine/control
+          grep -q 'firmware (>= 16.0), firmware (<< 17.0)' build/CarrierFix-0.2-Dopamine/control
+          grep -q '<string>0.3.0</string>' build/CarrierFix-0.2-Dopamine/app/Resources/Info.plist
+          grep -q '<key>MinimumOSVersion</key><string>16.0</string>' build/CarrierFix-0.2-Dopamine/app/Resources/Info.plist
+          grep -q '/private/var/mobile/Library/Carrier Bundles/Library/Preferences' build/CarrierFix-shared/CFCarrierManager.m
+          grep -q 'com.apple.carrier_1.plist' build/CarrierFix-shared/CFCarrierManager.m
+          grep -q 'directAPN' build/CarrierFix-shared/CFCarrierManager.m
           ! grep -R -q 'roothide.h\|libroothide\|jbroot(' build/CarrierFix-0.2-Dopamine build/CarrierFix-shared
           ! grep -R -q 'killall\|ldrestart\|sbreload' build/CarrierFix-0.2-Dopamine build/CarrierFix-shared
           plutil -lint build/CarrierFix-0.2-Dopamine/app/Resources/Info.plist
           plutil -lint build/CarrierFix-0.2-Dopamine/app/Entitlements.plist
-      - name: Build Dopamine package
+      - name: Build Dopamine iOS 16 package
         shell: bash
         run: |
           set -euo pipefail
           cd build/CarrierFix-0.2-Dopamine
           chmod 755 layout/DEBIAN/postinst layout/DEBIAN/postrm
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          test -f packages/com.gokuencinar.carrierfix.dopamine_0.2.1_iphoneos-arm64.deb
+          test -f packages/com.gokuencinar.carrierfix.dopamine_0.3.0_iphoneos-arm64.deb
           app=$(find .theos/_ -type f -name CarrierFix | head -n 1)
-          test -n "$app"
           lipo -archs "$app" | grep -q 'arm64 arm64e\|arm64e arm64'
-          ldid -e "$app" > /tmp/carrierfix-dopamine-entitlements.plist
-          grep -q 'platform-application' /tmp/carrierfix-dopamine-entitlements.plist
-          grep -q 'com.apple.private.security.no-sandbox' /tmp/carrierfix-dopamine-entitlements.plist
+          ldid -e "$app" > /tmp/carrierfix-dop-entitlements.plist
+          grep -q 'platform-application' /tmp/carrierfix-dop-entitlements.plist
+          grep -q 'com.apple.private.security.no-sandbox' /tmp/carrierfix-dop-entitlements.plist
       - uses: actions/upload-artifact@v4
         with:
-          name: CarrierFix-Dopamine-0.2.1
-          path: build/CarrierFix-0.2-Dopamine/packages/com.gokuencinar.carrierfix.dopamine_0.2.1_iphoneos-arm64.deb
-
-  build-rootful:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Theos
-        uses: waruhachi/theos-action@v2.4.6
-        with:
-          theos-src: 'theos/theos'
-          theos-branch: 'master'
-          sdks-src: 'theos/sdks'
-          sdks-branch: 'master'
-      - name: Validate rootful source
-        shell: bash
-        run: |
-          set -euo pipefail
-          grep -q '^Version: 0.2.1$' build/CarrierFix-0.2-Rootful/control
-          grep -q '^Architecture: iphoneos-arm$' build/CarrierFix-0.2-Rootful/control
-          grep -q '^ARCHS = arm64$' build/CarrierFix-0.2-Rootful/Makefile
-          grep -q '^TARGET = iphone:clang:16.5:15.0$' build/CarrierFix-0.2-Rootful/Makefile
-          grep -q 'firmware (>= 15.0), firmware (<< 17.0)' build/CarrierFix-0.2-Rootful/control
-          ! grep -q 'THEOS_PACKAGE_SCHEME' build/CarrierFix-0.2-Rootful/Makefile
-          ! grep -R -q '/var/jb\|roothide.h\|libroothide\|jbroot(' build/CarrierFix-0.2-Rootful build/CarrierFix-shared
-          ! grep -R -q 'killall\|ldrestart\|sbreload' build/CarrierFix-0.2-Rootful build/CarrierFix-shared
-      - name: Build rootful package
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd build/CarrierFix-0.2-Rootful
-          chmod 755 layout/DEBIAN/postinst layout/DEBIAN/postrm
-          make clean package FINALPACKAGE=1
-          test -f packages/com.gokuencinar.carrierfix.rootful_0.2.1_iphoneos-arm.deb
-          app=$(find .theos/_ -type f -name CarrierFix | head -n 1)
-          test -n "$app"
-          test "$(lipo -archs "$app")" = "arm64"
-          ldid -e "$app" > /tmp/carrierfix-rootful-entitlements.plist
-          grep -q 'platform-application' /tmp/carrierfix-rootful-entitlements.plist
-          grep -q 'com.apple.private.security.no-sandbox' /tmp/carrierfix-rootful-entitlements.plist
-      - uses: actions/upload-artifact@v4
-        with:
-          name: CarrierFix-Rootful-0.2.1
-          path: build/CarrierFix-0.2-Rootful/packages/com.gokuencinar.carrierfix.rootful_0.2.1_iphoneos-arm.deb
+          name: CarrierFix-Dopamine-iOS16-0.3.0
+          path: build/CarrierFix-0.2-Dopamine/packages/com.gokuencinar.carrierfix.dopamine_0.3.0_iphoneos-arm64.deb
 
   inspect-packages:
-    needs: [build-roothide, build-dopamine, build-rootful]
+    needs: [build-roothide-test, build-dopamine]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: CarrierFix-RootHide-0.2.1
-          path: /tmp/roothide
+          name: CarrierFix-RootHide-iOS16-0.3.0
+          path: /tmp/root
       - uses: actions/download-artifact@v4
         with:
-          name: CarrierFix-Dopamine-0.2.1
-          path: /tmp/dopamine
-      - uses: actions/download-artifact@v4
-        with:
-          name: CarrierFix-Rootful-0.2.1
-          path: /tmp/rootful
-      - name: Inspect Debian packages
+          name: CarrierFix-Dopamine-iOS16-0.3.0
+          path: /tmp/dop
+      - name: Inspect packages
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update >/dev/null
-          sudo apt-get install -y dpkg-dev >/dev/null
-          root=/tmp/roothide/com.gokuencinar.carrierfix_0.2.1_iphoneos-arm64e.deb
-          dop=/tmp/dopamine/com.gokuencinar.carrierfix.dopamine_0.2.1_iphoneos-arm64.deb
-          ful=/tmp/rootful/com.gokuencinar.carrierfix.rootful_0.2.1_iphoneos-arm.deb
-          test "$(dpkg-deb -f "$root" Package)" = "com.gokuencinar.carrierfix"
-          test "$(dpkg-deb -f "$root" Version)" = "0.2.1"
-          test "$(dpkg-deb -f "$root" Architecture)" = "iphoneos-arm64e"
-          test "$(dpkg-deb -f "$dop" Package)" = "com.gokuencinar.carrierfix.dopamine"
-          test "$(dpkg-deb -f "$dop" Version)" = "0.2.1"
-          test "$(dpkg-deb -f "$dop" Architecture)" = "iphoneos-arm64"
-          test "$(dpkg-deb -f "$ful" Package)" = "com.gokuencinar.carrierfix.rootful"
-          test "$(dpkg-deb -f "$ful" Version)" = "0.2.1"
-          test "$(dpkg-deb -f "$ful" Architecture)" = "iphoneos-arm"
-          for deb in "$root" "$dop" "$ful"; do
+          root=/tmp/root/com.gokuencinar.carrierfix_0.3.0_iphoneos-arm64e.deb
+          dop=/tmp/dop/com.gokuencinar.carrierfix.dopamine_0.3.0_iphoneos-arm64.deb
+          test "$(dpkg-deb -f "$root" Version)" = '0.3.0'
+          test "$(dpkg-deb -f "$root" Architecture)" = 'iphoneos-arm64e'
+          test "$(dpkg-deb -f "$dop" Version)" = '0.3.0'
+          test "$(dpkg-deb -f "$dop" Architecture)" = 'iphoneos-arm64'
+          for deb in "$root" "$dop"; do
             dpkg-deb -c "$deb" > /tmp/contents.txt
             grep -q 'CarrierFix.app/CarrierFix' /tmp/contents.txt
             ! grep -q 'MobileSubstrate/DynamicLibraries' /tmp/contents.txt

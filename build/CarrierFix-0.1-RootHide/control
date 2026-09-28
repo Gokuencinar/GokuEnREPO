@@ -1,10 +1,10 @@
 Package: com.gokuencinar.carrierfix
 Name: CarrierFix (RootHide)
-Version: 0.2.1
+Version: 0.3.0
 Architecture: iphoneos-arm64e
-Description: Experimental Cricket/AT&T carrier overlay diagnostic and SMS/IMS repair tool for jailbroken iOS 15-17. Verifies a per-carrier backup and restore preflight before modifying the active overlay.
+Description: Experimental Cricket/AT&T carrier overlay diagnostic and SMS/IMS repair tool for jailbroken iOS 16. Verifies a per-carrier backup and restore preflight before modifying the active overlay.
 Maintainer: Gokuencinar
 Author: Gokuencinar
 Section: Tweaks
-Depends: firmware (>= 15.0), firmware (<= 17.0)
-Conflicts: com.gokuencinar.carrierfix.dopamine, com.gokuencinar.carrierfix.rootful
+Depends: firmware (>= 16.0), firmware (<< 17.0)
+Conflicts: com.gokuencinar.carrierfix.dopamine

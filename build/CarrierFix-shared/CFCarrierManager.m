@@ -6,7 +6,6 @@
 #import <limits.h>
 #import <stdlib.h>
 
-static NSString * const CFCarrierPreferencePath = @"/private/var/mobile/Library/Preferences/com.apple.carrier.plist";
 static NSString * const CFBackupDirectory = @"/private/var/mobile/Library/CarrierFix";
 static NSString * const CFHistoryDirectory = @"/private/var/mobile/Library/CarrierFix/History";
 
@@ -31,12 +30,53 @@ static uint64_t CFPathIdentifier(NSString *path) {
 
 @implementation CFCarrierManager
 
-- (NSString *)resolvedCarrierPath {
+- (NSArray<NSString *> *)carrierPreferenceCandidates {
+    NSMutableArray<NSString *> *candidates = [NSMutableArray array];
+    NSArray<NSString *> *roots = @[
+        @"/rootfs/var/mobile/Library/Carrier Bundles/Library/Preferences",
+        @"/private/var/mobile/Library/Carrier Bundles/Library/Preferences",
+        @"/var/mobile/Library/Carrier Bundles/Library/Preferences"
+    ];
+    NSArray<NSString *> *names = @[
+        @"com.apple.carrier_1.plist",
+        @"com.apple.carrier_2.plist",
+        @"com.apple.operator_1.plist",
+        @"com.apple.operator_2.plist",
+        @"com.apple.carrier.default.plist"
+    ];
+    NSFileManager *fm = NSFileManager.defaultManager;
+    for (NSString *root in roots) {
+        for (NSString *name in names) {
+            NSString *candidate = [root stringByAppendingPathComponent:name];
+            if ([fm fileExistsAtPath:candidate]) [candidates addObject:candidate];
+        }
+    }
+    return candidates;
+}
+
+- (NSString *)resolvedPathForCandidate:(NSString *)candidate {
     char resolved[PATH_MAX] = {0};
-    if (realpath(CFCarrierPreferencePath.fileSystemRepresentation, resolved)) {
+    if (realpath(candidate.fileSystemRepresentation, resolved)) {
         return [NSString stringWithUTF8String:resolved];
     }
-    return CFCarrierPreferencePath;
+    return candidate;
+}
+
+- (NSString *)resolvedCarrierPath {
+    NSString *firstReadable = nil;
+    NSMutableSet<NSString *> *seen = [NSMutableSet set];
+    for (NSString *candidate in [self carrierPreferenceCandidates]) {
+        NSString *resolved = [self resolvedPathForCandidate:candidate];
+        if (!resolved.length || [seen containsObject:resolved]) continue;
+        [seen addObject:resolved];
+        NSDictionary *carrier = [self carrierDictionaryAtPath:resolved];
+        if (!carrier) continue;
+        if (!firstReadable && [candidate rangeOfString:@"default" options:NSCaseInsensitiveSearch].location == NSNotFound) {
+            firstReadable = resolved;
+        }
+        if ([self dictionaryLooksCricket:carrier path:resolved]) return resolved;
+    }
+    return firstReadable;
 }
 
 - (NSString *)identifierForPath:(NSString *)path {
@@ -109,15 +149,19 @@ static uint64_t CFPathIdentifier(NSString *path) {
         if (reason) *reason = @"This carrier bundle has no APN configuration array. CarrierFix will not synthesize one from scratch.";
         return NO;
     }
-    BOOL hasConfigurationGroup = NO;
+    BOOL hasRecognizedAPNSchema = NO;
     for (id rawGroup in apns) {
         if (![rawGroup isKindOfClass:NSDictionary.class]) continue;
         if ([rawGroup[@"configuration"] isKindOfClass:NSArray.class]) {
-            hasConfigurationGroup = YES;
+            hasRecognizedAPNSchema = YES;
+            break;
+        }
+        if ([rawGroup[@"apn"] isKindOfClass:NSString.class]) {
+            hasRecognizedAPNSchema = YES;
             break;
         }
     }
-    if (!hasConfigurationGroup) {
+    if (!hasRecognizedAPNSchema) {
         if (reason) *reason = @"The APN schema is different from the iOS 15-18 layouts CarrierFix understands.";
         return NO;
     }
@@ -145,6 +189,8 @@ static uint64_t CFPathIdentifier(NSString *path) {
     NSArray *apns = [carrier[@"apns"] isKindOfClass:NSArray.class] ? carrier[@"apns"] : @[];
     for (id rawGroup in apns) {
         if (![rawGroup isKindOfClass:NSDictionary.class]) continue;
+        NSString *directAPN = [rawGroup[@"apn"] isKindOfClass:NSString.class] ? rawGroup[@"apn"] : @"";
+        if ([directAPN caseInsensitiveCompare:@"ims"] == NSOrderedSame) return YES;
         NSArray *configs = [rawGroup[@"configuration"] isKindOfClass:NSArray.class] ? rawGroup[@"configuration"] : @[];
         for (id rawConfig in configs) {
             if (![rawConfig isKindOfClass:NSDictionary.class]) continue;
@@ -165,6 +211,11 @@ static uint64_t CFPathIdentifier(NSString *path) {
 
 - (NSDictionary *)diagnose {
     NSString *path = [self resolvedCarrierPath];
+    if (!path.length) {
+        return @{ @"ok": @NO,
+                  @"path": @"",
+                  @"message": @"Could not locate an active carrier overlay in the iOS 16 Carrier Bundles preferences." };
+    }
     NSDictionary *carrier = [self carrierDictionaryAtPath:path];
     if (!carrier) {
         return @{ @"ok": @NO, @"path": path ?: @"", @"message": @"Could not read the active carrier plist." };
@@ -215,6 +266,10 @@ static uint64_t CFPathIdentifier(NSString *path) {
 
 - (BOOL)prepareVerifiedBackup:(NSString **)message {
     NSString *path = [self resolvedCarrierPath];
+    if (!path.length) {
+        if (message) *message = @"No active iOS 16 carrier overlay could be located.";
+        return NO;
+    }
     NSPropertyListFormat format = NSPropertyListBinaryFormat_v1_0;
     NSError *readError = nil;
     NSDictionary *carrier = [self carrierDictionaryAtPath:path format:&format error:&readError];
@@ -342,7 +397,20 @@ static uint64_t CFPathIdentifier(NSString *path) {
     BOOL foundIMS = NO;
     for (NSUInteger i = 0; i < apnGroups.count; i++) {
         NSDictionary *group = [apnGroups[i] isKindOfClass:NSDictionary.class] ? apnGroups[i] : nil;
-        if (!group || ![group[@"configuration"] isKindOfClass:NSArray.class]) continue;
+        if (!group) continue;
+
+        NSString *directAPN = [group[@"apn"] isKindOfClass:NSString.class] ? group[@"apn"] : @"";
+        if ([directAPN caseInsensitiveCompare:@"ims"] == NSOrderedSame) {
+            NSMutableDictionary *direct = [group mutableCopy];
+            if (!direct[@"AllowedProtocolMask"]) direct[@"AllowedProtocolMask"] = @3;
+            if (!direct[@"AllowedProtocolMaskInRoaming"]) direct[@"AllowedProtocolMaskInRoaming"] = @3;
+            direct[@"SupportSwitchOver"] = @YES;
+            apnGroups[i] = direct;
+            foundIMS = YES;
+            continue;
+        }
+
+        if (![group[@"configuration"] isKindOfClass:NSArray.class]) continue;
         NSMutableDictionary *mutableGroup = [group mutableCopy];
         NSMutableArray *configs = [group[@"configuration"] mutableCopy];
         for (NSUInteger j = 0; j < configs.count; j++) {
@@ -428,6 +496,10 @@ static uint64_t CFPathIdentifier(NSString *path) {
 
 - (BOOL)restoreOriginal:(NSString **)message {
     NSString *path = [self resolvedCarrierPath];
+    if (!path.length) {
+        if (message) *message = @"No active iOS 16 carrier overlay could be located.";
+        return NO;
+    }
     NSDictionary *paths = [self storagePathsForCarrierPath:path];
     NSDictionary *meta = [NSDictionary dictionaryWithContentsOfFile:paths[@"metadata"]];
     NSData *backup = [NSData dataWithContentsOfFile:paths[@"backup"]];
@@ -473,9 +545,9 @@ static uint64_t CFPathIdentifier(NSString *path) {
 
 - (NSString *)diagnosticText {
     NSDictionary *d = [self diagnose];
-    if (![d[@"ok"] boolValue]) return [NSString stringWithFormat:@"CarrierFix 0.2.1\nError: %@\nPath: %@", d[@"message"] ?: @"Unknown", d[@"path"] ?: @""];
+    if (![d[@"ok"] boolValue]) return [NSString stringWithFormat:@"CarrierFix 0.3.0\nError: %@\nPath: %@", d[@"message"] ?: @"Unknown", d[@"path"] ?: @""];
     return [NSString stringWithFormat:
-            @"CarrierFix 0.2.1\niOS: %@\nModel: %@\nCarrier: %@\nDetected Cricket: %@\nCarrier plist: %@\nWritable overlay: %@\nRecognized IMS/APN schema: %@\nVerified backup: %@\nFix currently present: %@\nSupports IMS: %@\nIMS APN: %@\nIMS ForcedFeatureTags: %@\nSMS TransportFallback: %@\nIMS SMSBundleToVoice: %@\nIMS allowCSFBInVolteMode: %@%@\n\nNo phone number, IMSI or ICCID is included in this report.",
+            @"CarrierFix 0.3.0\niOS: %@\nModel: %@\nCarrier: %@\nDetected Cricket: %@\nCarrier plist: %@\nWritable overlay: %@\nRecognized IMS/APN schema: %@\nVerified backup: %@\nFix currently present: %@\nSupports IMS: %@\nIMS APN: %@\nIMS ForcedFeatureTags: %@\nSMS TransportFallback: %@\nIMS SMSBundleToVoice: %@\nIMS allowCSFBInVolteMode: %@%@\n\nNo phone number, IMSI or ICCID is included in this report.",
             d[@"ios"], d[@"model"], d[@"carrier"], [d[@"cricket"] boolValue] ? @"YES" : @"NO", d[@"path"],
             [d[@"writable"] boolValue] ? @"YES" : @"NO", [d[@"schemaSafe"] boolValue] ? @"YES" : @"NO",
             [d[@"backupAvailable"] boolValue] ? @"YES" : @"NO", [d[@"fixApplied"] boolValue] ? @"YES" : @"NO",

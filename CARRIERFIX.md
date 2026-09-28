@@ -1,39 +1,43 @@
 # CarrierFix
 
-CarrierFix is an experimental carrier-overlay repair utility for jailbroken iOS. Version 0.2 targets Cricket Wireless / AT&T aio carrier bundles with separate RootHide, Dopamine/rootless and classic rootful packages.
+CarrierFix is an experimental Cricket Wireless / AT&T aio SMS/IMS repair utility for **jailbroken iOS 16**.
 
-## Compatibility
+## Supported packages
 
-- **RootHide:** iOS 15.0-17.0.
-- **Dopamine/rootless:** iOS 15.0-18.x where the jailbreak supports the device/firmware combination.
-- **Rootful:** iOS 15.x-16.x.
+- **Dopamine/rootless (final test package):** iOS 16.x.
+- **RootHide (device-validation package):** iOS 16.x, used to validate the same shared repair core on the developer test device.
 
-The repair logic is identical in all three packages and is compiled from one shared source tree.
+Both packages compile the exact same `CFCarrierManager` and UI from `build/CarrierFix-shared`.
 
-## What 0.2 does
+## iOS 16 carrier discovery
 
-- Resolves the active `/private/var/mobile/Library/Preferences/com.apple.carrier.plist` target.
-- Detects Cricket using carrier name, ATT_aio path and Cricket status-bar metadata; it does not identify Cricket from a generic AT&T PLMN alone.
-- Produces a privacy-safe diagnostic without phone number, IMSI or ICCID.
-- Creates a per-carrier byte-for-byte backup and verifies a restore copy before enabling **Apply**.
-- Refuses to restore if the active carrier overlay path changed, so a backup can never be written into another SIM/carrier profile.
-- Archives an older baseline when iOS/the carrier replaces the overlay, then captures the new state before applying a new patch.
-- Refuses unknown IMS/APN schemas instead of creating a complete IMS configuration from scratch.
-- Patches only messaging/IMS compatibility keys based on current Cricket carrier bundles:
-  - `SupportsImsCapability = true`
-  - `IMSConfig/Signaling/ForcedFeatureTags = voice,sms`
-  - `IMSConfig/SMS/SMSBundleToVoice = false`
-  - `IMSConfig/SMS/allowCSFBInVolteMode = false`
-  - `SMSSettings/TransportFallback = false`
-  - requires an existing `ims` APN and preserves its layout, filling only missing protocol/switchover fields; if IMS is absent, Apply stays disabled
-- Verifies the written overlay byte-for-byte and semantically before reporting success.
-- Automatically restores the original if write/read-back/semantic verification fails.
-- Restores the original carrier plist with one button.
+CarrierFix does not assume `/private/var/mobile/Library/Preferences/com.apple.carrier.plist` exists. On iOS 16 it enumerates the real Carrier Bundles preference links:
 
-CarrierFix does not attempt to backport RCS. Its goal is normal carrier SMS/IMS operation on older iOS versions.
+- `/private/var/mobile/Library/Carrier Bundles/Library/Preferences/com.apple.carrier_1.plist`
+- `com.apple.carrier_2.plist` / operator equivalents when present
+- `/rootfs/var/mobile/...` equivalents under RootHide
+
+It resolves the symlink to the actual writable file in `Carrier Bundles/Overlay`, prefers a Cricket profile if one is present, and otherwise uses the first non-default readable carrier for diagnostics.
+
+## APN compatibility
+
+CarrierFix accepts both iOS 16 flat `apns` arrays and newer grouped `configuration` arrays. It requires an existing `ims` APN and will never synthesize IMS from scratch on an unknown profile.
 
 ## Safety
 
-CarrierFix does not modify `/System/Library/Carrier Bundles`. It works only on the active writable carrier plist/overlay. No MobileSubstrate hook, launch daemon, automatic CommCenter kill, userspace reboot or respring is installed. After Apply or Restore, toggle Airplane Mode for around 30 seconds or reboot.
+Before Apply is enabled CarrierFix:
 
-Version 0.2 is experimental and requires real Cricket device testing.
+- verifies Cricket / ATT_aio metadata;
+- verifies the carrier overlay is writable;
+- verifies an existing IMS + APN schema it understands;
+- saves a per-overlay byte-for-byte backup;
+- performs a restore-file preflight;
+- refuses to restore a backup to a different overlay path.
+
+Apply modifies only SMS/IMS compatibility keys and the existing IMS APN. Every write is read back byte-for-byte and then semantically validated. If verification fails, CarrierFix restores the original automatically.
+
+CarrierFix installs no MobileSubstrate hook or LaunchDaemon, does not modify `/System/Library/Carrier Bundles`, and does not run `killall`, `ldrestart`, `sbreload` or an automatic reboot.
+
+CarrierFix does **not** backport RCS. Its target is normal SMS/IMS operation on Cricket on iOS 16.
+
+Version 0.3.0 remains private until it is tested on a real Cricket line exhibiting the SMS problem.
