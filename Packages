@@ -1,19 +1,3 @@
-Package: com.betterwifirh.tweak
-Version: 0.3.11
-Architecture: iphoneos-arm64e
-Maintainer: BetterWiFi RH
-Installed-Size: 416
-Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
-Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak_0.3.11_iphoneos-arm64e.deb
-Size: 106540
-MD5sum: 4e45765dd829374302dd934bc610ef97
-SHA1: 29d30706918f35184fb78191ba06fa879586523e
-SHA256: 3fef1fa435d4ba3e563f2ad91d9fff5af99b1ae71daa2b2d05ee35db14a96b7f
-Section: Tweaks
-Description: Advanced Wi-Fi enhancements for iOS 16 with stable connected-network details, live monitoring, diagnostics, filters, Shuffle integration and RootHide support.
-Author: BetterWiFi RH
-Name: BetterWiFi RH
-
 Package: com.gokuencinar.bandlock
 Version: 0.5.0
 Architecture: iphoneos-arm64e
@@ -124,11 +108,11 @@ MD5sum: 876c241049540d15f2829832aff34cb4
 SHA1: 0b36168bfef8b170146ccda8342b6148001418fa
 SHA256: aaa8aa944bf3f6db88fbfbefb61d000ddbe7b93f8bfcb1d9a25c6d23afc1d16c
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 RootHide with isolated LTE/4G modem control, country band reference, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (RootHide)
 
 Package: com.gokuencinar.bandlock
@@ -192,11 +176,11 @@ MD5sum: 35221f58cacf3a4c2de986b2e5b06d2e
 SHA1: c32bb19ef3eac06be286317b560b3ef022af36c7
 SHA256: 2831f640336333e44fa8d2d8464ce0106c0f39c6ab9be102101d0ada7546414d
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 RootHide with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (RootHide)
 
 Package: com.gokuencinar.bandlock
@@ -212,11 +196,11 @@ MD5sum: 0af4ba014a563e9284f5065182a4f816
 SHA1: 8781eb0fb20fc8afdd4e5b9d21a8e3359662fa0d
 SHA256: 27adec3a965fa5a872c9f197864b55c4692d875c85238ba7ab52b00941599cab
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 RootHide with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (RootHide)
 
 Package: com.gokuencinar.bandlock
@@ -233,11 +217,11 @@ MD5sum: 506408e403291797be8af620ad41a53b
 SHA1: 8620368ae57ca86054174cd9e7b5e323a1f4b7c5
 SHA256: 808ab6a51d086dd4294882dd007ce4732afb39d2dda1f329046a321c4cf85e38
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 15-17 RootHide with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification. iOS 17 support is experimental.
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (RootHide)
 
 Package: com.gokuencinar.bandlock
@@ -254,11 +238,11 @@ MD5sum: 25c6d1fd2b40ff0327d62c32c501e12f
 SHA1: 3fab1aab917585b7d45861e400d5c70b779385d0
 SHA256: f8db1ef42fc32a4e8ebd7276b4e44814985e1211d95a6e18959a25aaa11919b1
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 15-17 RootHide with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification. iOS 17 support is experimental.
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (RootHide)
 
 Package: com.gokuencinar.bandlock.dopamine
@@ -291,11 +275,11 @@ MD5sum: 631f996ba038403bf67c19642cb5841a
 SHA1: 5c03fe16a25a44068dada4069581f39a99b6493d
 SHA256: 1bb4e39723b8e398f021e11d2d022e11521858ff0119953f44e89ff0a1ba83e9
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 Dopamine rootless with isolated LTE/4G modem control, country band reference, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Dopamine)
 
 Package: com.gokuencinar.bandlock.dopamine
@@ -311,11 +295,11 @@ MD5sum: 5622c1b8d72eb1711eb95116abca2a9b
 SHA1: 05c0a3000b3ed5dc108bdfff21e45379593ced7e
 SHA256: 59bc4c774ab6574c4c50292363b2737a2cbe82ee07d3dfa015e737c0dc123cff
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 Dopamine rootless with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Dopamine)
 
 Package: com.gokuencinar.bandlock.dopamine
@@ -331,11 +315,11 @@ MD5sum: 3233d84393455d46ea9da0cebc3197e1
 SHA1: 09285a546c68c9d055a583cfdf016cc2a3bf31b6
 SHA256: 9d1a97ac0e0b98608aaf4af2fb7f7ad433eac41392eba054766b761b9742dbef
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 Dopamine rootless with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Dopamine)
 
 Package: com.gokuencinar.bandlock.dopamine
@@ -352,11 +336,11 @@ MD5sum: 197c313fea4367b2472b5ef86dfa75e1
 SHA1: 2f684493c78ea99e6d92705726045ae9445700e7
 SHA256: da1c60c3a1a30b51b10bcdc1cc0a9493cb564286f80903d3fa2ab00a3312563c
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 15-18 Dopamine rootless with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification. iOS 17 and 18 support is experimental.
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Dopamine)
 
 Package: com.gokuencinar.bandlock.dopamine
@@ -373,11 +357,11 @@ MD5sum: 09398cf95ebc4d26a99157bd8632a2ec
 SHA1: afab582ac82253b7fe7c328574201a0248a65ea3
 SHA256: a8ac023fa591ec51586bc28b9ed9dae38fe80564bef6493db7a01dd1f62ece09
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 15-18 Dopamine rootless with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification. iOS 17 and 18 support is experimental.
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Dopamine)
 
 Package: com.gokuencinar.bandlock.rootful
@@ -393,11 +377,11 @@ MD5sum: 2116173860eb724e5e9002382d350546
 SHA1: 6214bba4a7229b0488a91d3623abcfb82d08c789
 SHA256: 7d199d10299300be94cd43f8e5c95ab4e423cb5416ab04392290e021303c5195
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Rootful)
 
 Package: com.gokuencinar.bandlock.rootful
@@ -413,11 +397,11 @@ MD5sum: 4e303cd94a4e7c72e6c56bbad2135306
 SHA1: c0b40515c24ddc31488d2c95e4c16d2bcd855633
 SHA256: 6340e90d70d2224a83c55977e86d558bb4b487a8d865a4ed1656cffbe639b3cc
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Rootful)
 
 Package: com.gokuencinar.bandlock.rootful
@@ -434,11 +418,11 @@ MD5sum: f1c7cfe3bb0cb7370abfc1cd810521eb
 SHA1: c34f1a0cf4e20acb51d92b432da347706f1c1e86
 SHA256: cbec4265fd8a5822777990543289c07367f71f1b3f8d9be5dbcf884b057cc3d5
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 15-16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Rootful)
 
 Package: com.gokuencinar.bandlock.rootful
@@ -455,10 +439,26 @@ MD5sum: a0b55ecb4365e2791b716683cd51a4c4
 SHA1: f7f9be1bd2a826627e6dec19676c659627bc776a
 SHA256: a965ae0881e9ec3989e21857aa9c753c434a300eab1c5d906d365e3cf87e1427
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 15-16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
 Author: Gokuencinar
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Rootful)
+
+Package: com.betterwifirh.tweak
+Version: 0.3.11
+Architecture: iphoneos-arm64e
+Maintainer: BetterWiFi RH
+Installed-Size: 416
+Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak_0.3.11_iphoneos-arm64e.deb
+Size: 106540
+MD5sum: 4e45765dd829374302dd934bc610ef97
+SHA1: 29d30706918f35184fb78191ba06fa879586523e
+SHA256: 3fef1fa435d4ba3e563f2ad91d9fff5af99b1ae71daa2b2d05ee35db14a96b7f
+Section: Tweaks
+Description: Advanced Wi-Fi enhancements for iOS 16 with stable connected-network details, live monitoring, diagnostics, filters, Shuffle integration and RootHide support.
+Author: BetterWiFi RH
+Name: BetterWiFi RH
 
