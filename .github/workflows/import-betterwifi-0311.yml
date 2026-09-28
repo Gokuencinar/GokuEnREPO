@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ARTIFACT_URL='https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-d5d8-8210-b1ff-fbaafebcb3e1/raw?se=2026-09-28T12%3A00%3A10Z&sp=r&sv=2026-02-06&sr=b&scid=af535487-c407-5ed1-8df3-5a80bd8ccf40&skoid=a63e6f05-dc2f-4fa5-b0e3-b1cb9c0893bb&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-28T08%3A34%3A14Z&ske=2026-09-29T08%3A34%3A14Z&sks=b&skv=2026-02-06&sig=/MiaXJ8qb8njkoyWBYJVsQTkgCT1u5Zajwd1SkhSGLc%3D'
+          ARTIFACT_URL='https://sdmntprpolandcentral.oaiusercontent.com/files/00000000-efc4-820a-9994-3b695f0fb7d7/raw?se=2026-09-28T12%3A02%3A09Z&sp=r&sv=2026-02-06&sr=b&scid=70bac653-c653-5737-b1f5-a1ac41de5d7c&skoid=a63e6f05-dc2f-4fa5-b0e3-b1cb9c0893bb&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-28T08%3A02%3A09Z&ske=2026-09-29T08%3A02%3A09Z&sks=b&skv=2026-02-06&sig=2lleRbDZ/9DUt4KoyZNqzEbMMn1dkKqJYRG5OOI%2BEM4%3D'
           curl -fL "$ARTIFACT_URL" -o /tmp/bwrh0311.zip
           unzip -q /tmp/bwrh0311.zip -d /tmp/bwrh0311
           deb="$(find /tmp/bwrh0311 -name '*.deb' -type f | head -1)"
@@ -28,7 +28,10 @@ jobs:
           test "$(dpkg-deb -f "$deb" Package)" = "com.betterwifirh.tweak"
           test "$(dpkg-deb -f "$deb" Version)" = "0.3.11"
           test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm64e"
-          dpkg-deb -c "$deb" | grep -q 'BetterWiFiRHPrefs.bundle/CreditsAvatar.jpg'
+          rm -rf /tmp/bwrh0311-check
+          mkdir -p /tmp/bwrh0311-check
+          dpkg-deb -x "$deb" /tmp/bwrh0311-check
+          test -f /tmp/bwrh0311-check/Library/PreferenceBundles/BetterWiFiRHPrefs.bundle/CreditsAvatar.jpg
           cp "$deb" /tmp/com.betterwifirh.tweak_0.3.11_iphoneos-arm64e.deb
 
       - name: Publish package and rebuild APT index
