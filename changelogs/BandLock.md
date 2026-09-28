@@ -3,10 +3,29 @@
 This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
 > **About BandLock**  
-> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.2 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.3 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
 
 > **Compatibility**  
 > iOS 15–18 depending on jailbreak variant. **iOS 17 and iOS 18 support is experimental** and depends on community testing. RootHide uses `iphoneos-arm64e`; Dopamine rootless uses `iphoneos-arm64`; Rootful uses `iphoneos-arm` with arm64 binaries and classic filesystem paths.
+
+---
+
+## 1.3 — Configurable Control Center modes
+
+### Added
+- Added per-mode visibility controls for the Control Center selector: **2G**, **3G**, **4G / LTE** and **5G**. **Auto** always remains available as a safe return path.
+- Added real **2G / GSM** selection support to the Control Center module and daemon.
+- Added an **Advanced 5G modes** option. With it disabled, the Control Center shows a single **5G** entry using **5G Auto**; when enabled it shows **5G Auto**, **5G NSA** and **5G SA** separately.
+- 5G entries are automatically hidden when the active device/line does not report 5G support.
+
+### Changed
+- Renamed the third app tab from **Info** to **Settings / Ajustes** and changed its icon to the system gear.
+- Moved Control Center visibility and advanced-5G switches directly to the top of the Settings tab.
+- Kept version, credits, update checks, release notes, repository links, glossary and Buy Me a Coffee below the Control Center settings.
+
+### Validation
+- RootHide, Dopamine and rootful packages compile successfully in GitHub Actions; the rootful package also passes package-layout validation.
+- RootHide 1.3 candidate behavior was validated on an iPhone XS running iOS 16.3.x: app launch, daemon startup, Control Center module loading and SpringBoard reload completed without crashes or Safe Mode.
 
 ---
 

@@ -4,7 +4,7 @@
 
 **BandLock Global** es la edición pública internacional de BandLock para **iOS 15–18**. Desde 1.0 se publica en tres variantes de jailbreak: **RootHide**, **Dopamine rootless** y **rootful clásico**.
 
-> Current public version / Versión pública actual: **1.2** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
+> Current public version / Versión pública actual: **1.3** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
 
 
 ## Español
@@ -15,7 +15,7 @@ BandLock se divide en tres pestañas. CoreTelephony/CommCenter se ejecuta dentro
 
 - **Control** — estado del módem, red actual, banda servidora, modos Automático/Solo LTE/5G Auto/5G On/5G Only, selección independiente LTE y 5G NR, aplicar/restaurar y Field Test. El selector de idioma aparece arriba a la derecha junto al idioma actual.
 - **Países** — buscador con 160 países y territorios. Cada país muestra bandas LTE y 5G NR de referencia y su intersección con lo que reporta el módem del iPhone.
-- **Info** — versión actual, créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico y **Buy Me a Coffee**.
+- **Ajustes** — configuración del módulo del Centro de Control (visibilidad de 2G/3G/4G/5G y modos 5G avanzados), seguida de versión actual, créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico y **Buy Me a Coffee**.
 
 ### Cómo funcionan los perfiles de país
 
@@ -30,7 +30,8 @@ Que una banda figure para un país no garantiza que todos los operadores la util
 ### Funciones
 
 - App UIKit independiente con icono en SpringBoard.
-- Módulo 1×1 para Control Center con selector rápido de **Auto / 3G / 4G / 5G**. El estado visual se actualiza al instante y los cambios Auto/3G/4G usan la ruta directa de CoreTelephony para no quedar bloqueados durante las transiciones por 3G.
+- Módulo 1×1 para Control Center con selector rápido de **Auto / 2G / 3G / 4G / 5G** y visibilidad configurable por modo. **Auto** siempre permanece disponible.
+- El modo 5G puede mostrarse de forma simple como **5G** (usa 5G Auto) o, activando los modos avanzados, como **5G Auto / 5G NSA / 5G SA**. Las opciones 5G se ocultan automáticamente en dispositivos/líneas sin soporte 5G.
 - Selección de todas las bandas LTE que el módem reporta como soportadas.
 - Selección independiente de bandas 5G NR que el módem reporte como configurables.
 - Metadatos de frecuencia y clasificación **FDD / TDD / SDL**.
@@ -81,7 +82,7 @@ BandLock uses three main tabs. CoreTelephony/CommCenter runs inside a separate L
 
 - **Control** — modem status, current network, serving band, Automatic/LTE-only/5G Auto/5G On/5G Only modes, independent LTE and 5G NR selections, apply/restore actions and Field Test. The language selector is shown at the top right beside the current language.
 - **Countries** — searchable list of 160 countries and territories with LTE and 5G NR reference bands and modem-supported intersections.
-- **Info** — current version, credits, update checking, release notes, GokuEnREPO, technical glossary and **Buy Me a Coffee**.
+- **Settings** — Control Center configuration (2G/3G/4G/5G visibility and advanced 5G modes), followed by current version, credits, update checking, release notes, GokuEnREPO, technical glossary and **Buy Me a Coffee**.
 
 ### Country profiles
 
@@ -96,7 +97,8 @@ A band being listed for a country does not mean every carrier uses it or that it
 ### Features
 
 - Standalone UIKit app with a Home Screen icon.
-- 1×1 Control Center module with a quick **Auto / 3G / 4G / 5G** picker. Visual state updates immediately, and Auto/3G/4G use the direct CoreTelephony RAT path so 3G transitions do not block subsequent selections.
+- 1×1 Control Center module with a configurable **Auto / 2G / 3G / 4G / 5G** picker. **Auto** always remains available.
+- 5G can be shown as one simple **5G** option (using 5G Auto) or, with advanced modes enabled, as **5G Auto / 5G NSA / 5G SA**. 5G entries are automatically hidden on devices/lines that do not report 5G support.
 - Manual selection of every LTE band reported as supported by the modem.
 - Independent 5G NR selection for bands reported as configurable by the modem.
 - Frequency and **FDD / TDD / SDL** metadata.

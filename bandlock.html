@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BandLock 1.2 — LTE/4G + 5G NR Band Control for iOS 15–18</title>
-<meta name="description" content="BandLock Global 1.2 is a standalone iOS 15–18 RootHide, Dopamine and rootful app for LTE/4G and supported 5G NR modem control, worldwide country-band references and isolated CoreTelephony access.">
+<title>BandLock 1.3 — LTE/4G + 5G NR Band Control for iOS 15–18</title>
+<meta name="description" content="BandLock Global 1.3 is a standalone iOS 15–18 RootHide, Dopamine and rootful app for LTE/4G and supported 5G NR modem control, configurable Control Center network modes, worldwide country-band references and isolated CoreTelephony access.">
 <meta name="keywords" content="BandLock, BandLock Global, 5G NR band lock, NR bands by country, n78 iPhone, LTE bands by country, LTE band lock iPhone, global LTE band selector, LTE FDD, LTE TDD, SDL LTE, iOS 16 jailbreak app, RootHide, Dopamine, CoreTelephony, Field Test Mode, Sileo, arm64e, Theos">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://gokuencinar.github.io/GokuEnREPO/bandlock.html">
 <meta property="og:type" content="website">
-<meta property="og:title" content="BandLock 1.2 — LTE/4G + 5G NR Band Control for iOS 15–18">
+<meta property="og:title" content="BandLock 1.3 — LTE/4G + 5G NR Band Control for iOS 15–18">
 <meta property="og:description" content="Standalone LTE/4G and 5G NR band-control app with worldwide country references for iOS 15–18 RootHide + Dopamine + Rootful.">
 <meta property="og:url" content="https://gokuencinar.github.io/GokuEnREPO/bandlock.html">
 <meta name="twitter:card" content="summary">
@@ -17,26 +17,26 @@
 :root{color-scheme:light dark}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:920px;margin:44px auto;padding:0 22px;line-height:1.65}a{color:inherit}.card{border:1px solid rgba(127,127,127,.28);border-radius:16px;padding:20px;margin:20px 0}.badges span{display:inline-block;padding:4px 9px;margin:2px;border-radius:999px;background:rgba(127,127,127,.15)}code{background:rgba(127,127,127,.15);padding:3px 6px;border-radius:6px}
 </style>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"BandLock Global","softwareVersion":"1.2","applicationCategory":"UtilitiesApplication","operatingSystem":"iOS 15–18 (jailbroken)","description":"Standalone global LTE/4G and 5G NR band-control app with a launchd-managed modem daemon and searchable country-band catalogue for iOS 15–18 Dopamine and RootHide.","url":"https://gokuencinar.github.io/GokuEnREPO/bandlock.html"}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"BandLock Global","softwareVersion":"1.3","applicationCategory":"UtilitiesApplication","operatingSystem":"iOS 15–18 (jailbroken)","description":"Standalone global LTE/4G and 5G NR band-control app with configurable Control Center network modes, a launchd-managed modem daemon and searchable country-band catalogue for iOS 15–18.","url":"https://gokuencinar.github.io/GokuEnREPO/bandlock.html"}
 </script>
 </head>
 <body>
 <p><a href="./">← GokuEnREPO</a></p>
-<h1>BandLock Global 1.2</h1>
+<h1>BandLock Global 1.3</h1>
 <p><strong>Standalone Worldwide LTE/4G + 5G NR Band Control App for iOS 15–18 · Dopamine · RootHide</strong></p>
 <div class="badges"><span>Standalone app</span><span>Countries</span><span>Global</span><span>iOS 15–18</span><span>RootHide</span><span>Dopamine</span><span>Rootful</span><span>LTE/4G</span><span>5G NR</span><span>CoreTelephony</span></div>
-<section class="card"><h2>Compatibility / Compatibilidad</h2><p><strong>iOS 17 and iOS 18 support is experimental.</strong> RootHide 1.2 has been real-device tested on iOS 16.3.1; iOS 17/18 and the remaining jailbreak/device combinations depend on community validation.</p><p><strong>El soporte para iOS 17 y iOS 18 es experimental.</strong> RootHide 1.2 se ha probado físicamente en iOS 16.3.1; iOS 17/18 y las demás combinaciones de jailbreak/dispositivo dependen de las pruebas de la comunidad.</p></section>
+<section class="card"><h2>Compatibility / Compatibilidad</h2><p><strong>iOS 17 and iOS 18 support is experimental.</strong> RootHide 1.3 has been real-device tested on iOS 16.3.1; iOS 17/18 and the remaining jailbreak/device combinations depend on community validation.</p><p><strong>El soporte para iOS 17 y iOS 18 es experimental.</strong> RootHide 1.3 se ha probado físicamente en iOS 16.3.1; iOS 17/18 y las demás combinaciones de jailbreak/dispositivo dependen de las pruebas de la comunidad.</p></section>
 <section class="card">
 <h2>English</h2>
-<p><strong>BandLock Global 1.2</strong> is a standalone Home Screen app. Its <strong>Control</strong> tab handles modem status, LTE/4G and 5G modes, independent LTE/NR pending selections and explicit apply/restore actions. The <strong>Countries</strong> tab provides an offline catalogue of 160 countries and territories with LTE and 5G NR reference bands.</p>
+<p><strong>BandLock Global 1.3</strong> is a standalone Home Screen app. Its <strong>Control</strong> tab handles modem status, LTE/4G and 5G modes, independent LTE/NR pending selections and explicit apply/restore actions. The <strong>Countries</strong> tab provides an offline catalogue of 160 countries and territories, while <strong>Settings</strong> configures the Control Center module and contains version, credits and update information.</p>
 <p>Country profiles are never applied automatically. BandLock intersects the selected country's LTE/NR bands with the corresponding bands reported by the iPhone modem, prepares pending selections, and requires explicit confirmation before writing.</p>
 <p>BandLock isolates modem operations in a launchd-managed daemon and does not automatically change modem settings at launch or boot. The modem and carrier still decide the final serving band and carrier aggregation among the allowed bands.</p>
 <h3>Highlights</h3>
-<ul><li>Standalone UIKit app with Control, Countries and Info tabs</li><li>1×1 Control Center selector for Automatic / 3G / 4G / 5G with immediate visual refresh</li><li>5G Auto / 5G On / 5G Only plus Automatic / LTE-only controls</li><li>Independent LTE and 5G NR pending selections with persistence</li><li>160-country/territory offline LTE + 5G NR reference catalogue</li><li>Country bands intersected with actual modem-supported bands</li><li>CoreTelephony read-back verification and restore actions</li><li>Seven in-app languages with the current language shown in the top toolbar</li><li>FTMInternal / Field Test launcher and diagnostic logs</li></ul>
+<ul><li>Standalone UIKit app with Control, Countries and Settings tabs</li><li>1×1 Control Center selector with configurable Auto / 2G / 3G / 4G / 5G visibility</li><li>Simple 5G mode or advanced 5G Auto / 5G NSA / 5G SA selector</li><li>Automatic hiding of 5G options on unsupported devices/lines</li><li>Independent LTE and 5G NR pending selections with persistence</li><li>160-country/territory offline LTE + 5G NR reference catalogue</li><li>Country bands intersected with actual modem-supported bands</li><li>CoreTelephony read-back verification and restore actions</li><li>Seven in-app languages with the current language shown in the top toolbar</li><li>FTMInternal / Field Test launcher and diagnostic logs</li></ul>
 </section>
 <section class="card">
 <h2>Español</h2>
-<p><strong>BandLock Global 1.2</strong> es una app independiente en la pantalla de inicio. La pestaña <strong>Control</strong> gestiona el estado del módem, modos LTE/4G y 5G, selecciones pendientes LTE/NR independientes y acciones explícitas de aplicar/restaurar. <strong>Países</strong> ofrece un catálogo offline con 160 países y territorios y bandas LTE y 5G NR de referencia.</p>
+<p><strong>BandLock Global 1.3</strong> es una app independiente en la pantalla de inicio. La pestaña <strong>Control</strong> gestiona el estado del módem, modos LTE/4G y 5G, selecciones pendientes LTE/NR independientes y acciones explícitas de aplicar/restaurar. <strong>Países</strong> ofrece el catálogo offline y <strong>Ajustes</strong> permite configurar la visibilidad del módulo del Centro de Control, los modos 5G avanzados y consultar versión, créditos y actualizaciones.</p>
 <p>Los perfiles de país nunca se aplican automáticamente. BandLock cruza las bandas LTE/NR del país con las que el módem del iPhone reporta para cada tecnología, prepara las selecciones pendientes y exige confirmación explícita antes de escribir.</p>
 <p>BandLock aísla las operaciones del módem en un daemon gestionado por launchd y no cambia automáticamente la configuración del módem al abrir la app o al arrancar. El módem y el operador siguen decidiendo la banda servidora final y la agregación de portadoras entre las bandas permitidas.</p>
 <p>Que una banda sea compatible con el iPhone no implica que el operador la despliegue en tu ubicación. Restringir demasiado la selección puede provocar pérdida de servicio.</p>
