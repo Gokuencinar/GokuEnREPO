@@ -54,6 +54,7 @@ RootHide-compatible Wi-Fi enhancement tweak that expands the information and dia
 - 2.4 GHz / 5 GHz channel analyzer.
 - Network filters and diagnostic tools.
 - Shuffle / PreferenceLoader integration.
+- Manual language selector: Automatic, Spanish or English.
 - No dedicated resident daemon.
 
 ➡️ **[BetterWiFi RH details](BETTERWIFI-RH.md)** · **[Changelog](changelogs/BetterWiFi-RH.md)**
@@ -69,7 +70,7 @@ Nuke Wireless is currently in development. Public package releases are unavailab
 | BandLock (RootHide) | 1.0 | `iphoneos-arm64e` |
 | BandLock (Dopamine) | 1.0 | `iphoneos-arm64` |
 | BandLock (Rootful) | 1.0 | `iphoneos-arm` |
-| BetterWiFi RH | 0.3.8 | `iphoneos-arm64e` |
+| BetterWiFi RH | 0.3.9 | `iphoneos-arm64e` |
 
 The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `debs/` changes.
 
