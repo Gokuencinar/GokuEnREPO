@@ -46,6 +46,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 @property (nonatomic, assign) BOOL supports5G;
 @property (nonatomic, assign) NSUInteger stateEpoch;
 @property (nonatomic, assign) NSTimeInterval statusRefreshNotBefore;
+@property (nonatomic, assign) NSTimeInterval modeIntentPinnedUntil;
 @property (nonatomic, assign) BOOL statusRefreshInFlight;
 @property (nonatomic, strong) dispatch_queue_t daemonQueue;
 @property (nonatomic, strong) UIAlertController *modePicker;
@@ -56,11 +57,14 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _currentModeCode = @"automatic";
-        _confirmedModeCode = @"automatic";
+        NSString *savedMode = BLCCLastModeCode();
+        if ([savedMode hasPrefix:@"5g-"] && !BLCCShow5G()) savedMode = @"automatic";
+        _currentModeCode = savedMode.length ? [savedMode copy] : @"automatic";
+        _confirmedModeCode = [_currentModeCode copy];
         _supports5G = NO;
         _stateEpoch = 0;
         _statusRefreshNotBefore = 0;
+        _modeIntentPinnedUntil = 0;
         _statusRefreshInFlight = NO;
         _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.ccmodule", DISPATCH_QUEUE_SERIAL);
         [self bl_refreshFromDaemon];
@@ -170,6 +174,40 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         return self.supports5G && [self.currentModeCode hasPrefix:@"5g-"];
     }
     return [self.currentModeCode isEqualToString:mode];
+}
+
+- (NSString *)bl_normalizedReportedMode:(NSString *)reportedMode {
+    if (!reportedMode.length) return reportedMode;
+
+    BLCCSynchronizePreferences();
+    NSString *intent = BLCCLastModeCode();
+
+    // While a user-initiated RAT transition is settling, keep the exact mode
+    // they chose instead of allowing a stale modem readback to repaint the tile.
+    if (intent.length && CFAbsoluteTimeGetCurrent() < self.modeIntentPinnedUntil) {
+        return intent;
+    }
+
+    // CoreTelephony cannot reliably distinguish plain Automatic from 5G Auto
+    // on all iOS 16 modem stacks: both can read back as Automatic + preferred
+    // NR. Preserve the last explicit user intent for that ambiguous pair.
+    BOOL reportedIsAutomaticFamily =
+        [reportedMode isEqualToString:@"automatic"] || [reportedMode isEqualToString:@"5g-auto"];
+    BOOL intentIsAutomaticFamily =
+        [intent isEqualToString:@"automatic"] || [intent isEqualToString:@"5g-auto"];
+    if (reportedIsAutomaticFamily && intentIsAutomaticFamily) {
+        if ([intent isEqualToString:@"5g-auto"] && BLCCShow5G()) return @"5g-auto";
+        return @"automatic";
+    }
+
+    // A hidden Control Center mode must not reappear as the tile label merely
+    // because a status refresh reports that RAT. Auto remains the neutral state
+    // for a hidden 5G family.
+    if ([reportedMode hasPrefix:@"5g-"] && !BLCCShow5G()) {
+        return @"automatic";
+    }
+
+    return reportedMode;
 }
 
 - (UIViewController *)bl_topViewController {
@@ -286,6 +324,8 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 
     self.stateEpoch += 1;
     NSUInteger epoch = self.stateEpoch;
+    BLCCSetLastModeCode(requestedMode);
+    self.modeIntentPinnedUntil = CFAbsoluteTimeGetCurrent() + 8.0;
 
     // Keep the UI responsive immediately, but perform the actual modem change
     // through BandLockDaemon. The app uses the same CoreTelephonyClient path
@@ -348,9 +388,17 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
             }
             NSString *confirmed = modeCode.length ? modeCode : requestedMode;
             if (!self.supports5G && [confirmed hasPrefix:@"5g-"]) confirmed = @"automatic";
+            confirmed = [self bl_normalizedReportedMode:confirmed];
             self.currentModeCode = confirmed;
             self.confirmedModeCode = confirmed;
+            self.modeIntentPinnedUntil = CFAbsoluteTimeGetCurrent() + 8.0;
+            self.statusRefreshNotBefore = self.modeIntentPinnedUntil;
             [self bl_syncVisualSelection];
+
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8.0 * NSEC_PER_SEC)),
+                           dispatch_get_main_queue(), ^{
+                if (epoch == self.stateEpoch) [self bl_refreshFromDaemon];
+            });
         });
     });
 }
@@ -380,8 +428,9 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         dispatch_async(dispatch_get_main_queue(), ^{
             self.statusRefreshInFlight = NO;
             if (epoch != self.stateEpoch) return;
-            self.currentModeCode = modeCode;
-            self.confirmedModeCode = modeCode;
+            NSString *normalizedModeCode = [self bl_normalizedReportedMode:modeCode];
+            self.currentModeCode = normalizedModeCode;
+            self.confirmedModeCode = normalizedModeCode;
             self.supports5G = supports5G;
             [self bl_syncVisualSelection];
         });

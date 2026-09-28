@@ -1,6 +1,7 @@
 #import "BLTelephonyManager.h"
 #import "BLCommon.h"
 #import "BLBreadcrumb.h"
+#import "BLCCPreferences.h"
 #import <sys/socket.h>
 #import <sys/stat.h>
 #import <sys/un.h>
@@ -421,8 +422,12 @@ static NSString *BLDaemonSocketPath(void) {
 }
 
 - (void)setNetworkMode:(NSString *)mode completion:(BLActionCompletion)completion {
-    [self sendRequest:@{@"cmd": @"rat", @"mode": mode ?: @"automatic"} completion:^(NSDictionary *result) {
-        if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:NO];
+    NSString *requestedMode = mode.length ? mode : @"automatic";
+    [self sendRequest:@{@"cmd": @"rat", @"mode": requestedMode} completion:^(NSDictionary *result) {
+        if ([result[@"success"] boolValue]) {
+            BLCCSetLastModeCode(requestedMode);
+            [self consumeStatusResult:result resetPending:NO];
+        }
         [self finishResult:result successMessage:BLT(@"Modo de red actualizado.", @"Network mode updated.") completion:completion];
     }];
 }
