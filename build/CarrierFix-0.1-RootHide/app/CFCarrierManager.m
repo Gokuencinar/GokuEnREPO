@@ -1,4 +1,5 @@
 #import "CFCarrierManager.h"
+#import <UIKit/UIKit.h>
 #import <sys/utsname.h>
 #import <sys/stat.h>
 #import <limits.h>

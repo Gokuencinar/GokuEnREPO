@@ -80,7 +80,7 @@
     [button setTitle:title forState:UIControlStateNormal];
     button.backgroundColor = UIColor.tertiarySystemBackgroundColor;
     button.layer.cornerRadius = 10;
-    button.contentEdgeInsets = UIEdgeInsetsMake(12, 12, 12, 12);
+    [button.heightAnchor constraintGreaterThanOrEqualToConstant:46.0].active = YES;
     [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
     return button;
 }
