@@ -6,6 +6,19 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad:** iOS 16.x con RootHide (`iphoneos-arm64e`). El paquete declara compatibilidad con firmware iOS >= 16.0 y < 17.0.
 
+## 0.3.11
+
+### Nuevo
+- Sección de créditos integrada al final de las preferencias.
+- Avatar de Gokuencinar / GokuEn, el mismo utilizado en otros tweaks.
+- Botón para abrir GokuEnREPO.
+- Botón **Buy Me a Coffee** enlazado a https://buymeacoffee.com/gokuen.
+- Los textos de créditos respetan el selector Español / Inglés / Automático.
+
+### Conservado
+- Selector de idioma inline de 0.3.10.
+- Todas las correcciones de filtros, monitor, analizador, estabilidad y consumo.
+
 ## 0.3.10
 
 ### Corregido
