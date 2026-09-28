@@ -1,0 +1,55 @@
+﻿name: Build CarrierFix 0.1 RootHide
+
+on:
+  push:
+    branches: [ carrierfix-0.1 ]
+    paths:
+      - 'build/CarrierFix-0.1-RootHide/**'
+      - 'CARRIERFIX.md'
+      - '.github/workflows/build-carrierfix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-roothide:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup RootHide Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^Version: 0.1.0$' build/CarrierFix-0.1-RootHide/control
+          grep -q '^ARCHS = arm64 arm64e$' build/CarrierFix-0.1-RootHide/Makefile
+          grep -q '^TARGET = iphone:clang:16.5:15.0$' build/CarrierFix-0.1-RootHide/Makefile
+          grep -q 'MinimumOSVersion' build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
+          grep -q 'ForcedFeatureTags' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
+          grep -q 'original-carrier.plist' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
+          grep -q 'realpath' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
+          ! grep -R -q 'killall\|ldrestart\|sbreload' build/CarrierFix-0.1-RootHide
+          plutil -lint build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
+          plutil -lint build/CarrierFix-0.1-RootHide/app/Entitlements.plist
+      - name: Build package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/CarrierFix-0.1-RootHide
+          chmod 755 layout/DEBIAN/postinst layout/DEBIAN/postrm
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          test -f packages/com.gokuencinar.carrierfix_0.1.0_iphoneos-arm64e.deb
+          app=$(find .theos/_ -type f -name CarrierFix | head -n 1)
+          test -n "$app"
+          lipo -archs "$app" | grep -q 'arm64 arm64e\|arm64e arm64'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CarrierFix-RootHide-0.1.0
+          path: build/CarrierFix-0.1-RootHide/packages/com.gokuencinar.carrierfix_0.1.0_iphoneos-arm64e.deb
