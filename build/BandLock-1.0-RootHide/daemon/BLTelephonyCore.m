@@ -278,6 +278,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     else if (supports5G && [selection rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On"; modeCode = @"5g-on"; }
     else if ([selection rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo LTE / 4G", @"LTE / 4G only"); modeCode = @"lte"; }
     else if ([selection rangeOfString:@"UMTS" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo 3G", @"3G only"); modeCode = @"3g"; }
+    else if ([selection rangeOfString:@"GSM" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo 2G", @"2G only"); modeCode = @"2g"; }
     else if (![selection isEqualToString:@"—"]) { mode = selection; modeCode = @"other"; }
     id ratRaw = query[@"ratRaw"] == NSNull.null ? nil : query[@"ratRaw"];
     id cellInfo = query[@"cellInfo"] == NSNull.null ? nil : query[@"cellInfo"];
@@ -621,7 +622,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 - (void)writeLogAction:(NSString *)action detail:(NSString *)detail {
     NSFileManager *fm = NSFileManager.defaultManager;
     [fm createDirectoryAtPath:BLLogDirectory withIntermediateDirectories:YES attributes:nil error:nil];
-    NSString *text = [NSString stringWithFormat:@"BandLock-Version: 1.2\nTimestamp: %@\nAction: %@\nRAT: %@\nServing-Band: %@\nSupported-LTE: %@\nActive-LTE: %@\nPending-LTE: %@\nSupported-NR: %@\nActive-NR: %@\nPending-NR: %@\nDetail: %@\n",
+    NSString *text = [NSString stringWithFormat:@"BandLock-Version: 1.2.1\nTimestamp: %@\nAction: %@\nRAT: %@\nServing-Band: %@\nSupported-LTE: %@\nActive-LTE: %@\nPending-LTE: %@\nSupported-NR: %@\nActive-NR: %@\nPending-NR: %@\nDetail: %@\n",
                       NSDate.date, action ?: @"—", self.radioAccessTechnology ?: @"—", self.servingBand ?: @"—", BLBandList(self.supportedBands), BLBandList(self.activeBands), BLBandList(self.pendingBands), BLNRBandList(self.supportedNRBands), BLNRBandList(self.activeNRBands), BLNRBandList(self.pendingNRBands), detail ?: @"—"];
     [text writeToFile:BLLastLogPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
 }

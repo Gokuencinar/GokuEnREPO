@@ -1,5 +1,6 @@
 #import "BLInfoViewController.h"
 #import "BLFrequencyGlossaryViewController.h"
+#import "BLCCSettingsViewController.h"
 #import "BLLocalization.h"
 #import "BLCommon.h"
 
@@ -67,19 +68,21 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 4; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 5; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (section == 0) return 3;
-    if (section == 1) return 2;
+    if (section == 1) return 1;
     if (section == 2) return 2;
+    if (section == 3) return 2;
     return 1;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     if (section == 0) return BLT(@"Acerca de", @"About");
-    if (section == 1) return BLT(@"Actualizaciones", @"Updates");
-    if (section == 2) return BLT(@"Recursos", @"Resources");
+    if (section == 1) return BLT(@"Ajustes", @"Settings");
+    if (section == 2) return BLT(@"Actualizaciones", @"Updates");
+    if (section == 3) return BLT(@"Recursos", @"Resources");
     return BLT(@"Apoyar desarrollo", @"Support development");
 }
 
@@ -131,10 +134,11 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
     if (indexPath.section == 0 && indexPath.row == 0) return [self valueCell:@"BandLock Global" detail:@"RootHide" symbol:@"antenna.radiowaves.left.and.right" disclosure:NO];
     if (indexPath.section == 0 && indexPath.row == 1) return [self valueCell:BLT(@"Versión actual", @"Current version") detail:version symbol:@"number.circle" disclosure:NO];
     if (indexPath.section == 0) return [self creditsCell];
-    if (indexPath.section == 1 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];
-    if (indexPath.section == 1) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
-    if (indexPath.section == 2 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];
-    if (indexPath.section == 2) return [self valueCell:BLT(@"Más información sobre las frecuencias", @"More information about frequencies") detail:nil symbol:@"info.circle" disclosure:YES];
+    if (indexPath.section == 1) return [self valueCell:BLT(@"Centro de control", @"Control Center") detail:nil symbol:@"switch.2" disclosure:YES];
+    if (indexPath.section == 2 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];
+    if (indexPath.section == 2) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
+    if (indexPath.section == 3 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];
+    if (indexPath.section == 3) return [self valueCell:BLT(@"Más información sobre las frecuencias", @"More information about frequencies") detail:nil symbol:@"info.circle" disclosure:YES];
     return [self valueCell:@"Buy Me a Coffee" detail:nil symbol:@"heart.circle.fill" disclosure:YES];
 }
 
@@ -207,17 +211,21 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (indexPath.section == 1 && indexPath.row == 0) { [self checkForUpdates]; return; }
-    if (indexPath.section == 1 && indexPath.row == 1) {
+    if (indexPath.section == 1) {
+        [self.navigationController pushViewController:[[BLCCSettingsViewController alloc] initWithStyle:UITableViewStyleInsetGrouped] animated:YES];
+        return;
+    }
+    if (indexPath.section == 2 && indexPath.row == 0) { [self checkForUpdates]; return; }
+    if (indexPath.section == 2 && indexPath.row == 1) {
         [self.navigationController pushViewController:[[BLReleaseNotesViewController alloc] init] animated:YES];
         return;
     }
-    if (indexPath.section == 2 && indexPath.row == 0) { [self openRepository]; return; }
-    if (indexPath.section == 2 && indexPath.row == 1) {
+    if (indexPath.section == 3 && indexPath.row == 0) { [self openRepository]; return; }
+    if (indexPath.section == 3 && indexPath.row == 1) {
         [self.navigationController pushViewController:[[BLFrequencyGlossaryViewController alloc] initWithStyle:UITableViewStyleInsetGrouped] animated:YES];
         return;
     }
-    if (indexPath.section == 3) { [self openBuyMeACoffee]; return; }
+    if (indexPath.section == 4) { [self openBuyMeACoffee]; return; }
 }
 
 @end

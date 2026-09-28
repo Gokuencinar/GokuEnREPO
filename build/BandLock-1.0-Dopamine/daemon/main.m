@@ -50,7 +50,9 @@ static void BLDaemonLog(const char *message) {
 static NSString * const BLLTERAT = @"kCTRegistrationRadioAccessTechnologyLTE";
 static NSString * const BLNRRAT = @"kCTRegistrationRadioAccessTechnologyNR";
 static NSString * const BLUTRANRAT = @"kCTRegistrationRadioAccessTechnologyUTRAN";
+static NSString * const BLGSMRAT = @"kCTRegistrationRadioAccessTechnologyGSM";
 static NSString * const BLRATAutomatic = @"kCTRegistrationRATSelectionAutomatic";
+static NSString * const BLRATGSM = @"kCTRegistrationRATSelectionGSM";
 static NSString * const BLRATLTE = @"kCTRegistrationRATSelectionLTE";
 static NSString * const BLRATUMTS = @"kCTRegistrationRATSelectionUMTS";
 static NSString * const BLRATNR = @"kCTRegistrationRATSelectionNR";
@@ -166,7 +168,8 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             }
             NSString *selection = BLRATAutomatic;
             NSString *preferred = nil;
-            if ([mode isEqualToString:@"lte"]) { selection = BLRATLTE; preferred = BLLTERAT; }
+            if ([mode isEqualToString:@"2g"]) { selection = BLRATGSM; preferred = BLGSMRAT; }
+            else if ([mode isEqualToString:@"lte"]) { selection = BLRATLTE; preferred = BLLTERAT; }
             else if ([mode isEqualToString:@"3g"]) { selection = BLRATUMTS; preferred = BLUTRANRAT; }
             else if ([mode isEqualToString:@"5g-auto"]) { selection = BLRATAutomatic; preferred = BLNRRAT; }
             else if ([mode isEqualToString:@"5g-on"]) { selection = BLRATNR; preferred = BLNRRAT; }

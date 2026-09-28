@@ -2,10 +2,10 @@ include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = BandLockCCModule
 BandLockCCModule_BUNDLE_EXTENSION = bundle
-BandLockCCModule_FILES = ../../BandLock-1.0-Dopamine/ccmodule/Module.m
+BandLockCCModule_FILES = ../../BandLock-1.0-Dopamine/ccmodule/Module.m ../shared/BLCCPreferences.m
 BandLockCCModule_FRAMEWORKS = UIKit Foundation QuartzCore
 BandLockCCModule_PRIVATE_FRAMEWORKS = ControlCenterUIKit
-BandLockCCModule_CFLAGS = -fobjc-arc -DBL_VARIANT_ROOTHIDE=1
+BandLockCCModule_CFLAGS = -fobjc-arc -I../shared -DBL_VARIANT_ROOTHIDE=1
 BandLockCCModule_LDFLAGS += -lroothide
 BandLockCCModule_INSTALL_PATH = /Library/ControlCenter/Bundles
 BandLockCCModule_RESOURCE_DIRS = ../../BandLock-1.0-Dopamine/ccmodule/Resources

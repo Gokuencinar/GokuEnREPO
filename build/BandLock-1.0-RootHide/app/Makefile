@@ -16,8 +16,10 @@ BandLock_FILES = \
 	BLCountriesViewController.m \
 	BLCountryDetailViewController.m \
 	BLInfoViewController.m \
+	BLCCSettingsViewController.m \
 	BLLanguageViewController.m \
 	BLFrequencyGlossaryViewController.m \
+	../shared/BLCCPreferences.m \
 	../shared/BLGBandMetadata.m
 BandLock_FRAMEWORKS = UIKit Foundation
 BandLock_CFLAGS = -fobjc-arc -I../shared -DBL_APP_LOCALIZATION=1

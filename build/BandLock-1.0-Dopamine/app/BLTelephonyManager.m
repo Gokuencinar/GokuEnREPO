@@ -107,6 +107,8 @@ static NSString *BLDaemonSocketPath(void) {
         self.detailText = BLT(@"BandLock usa un daemon separado para CoreTelephony. La app principal no ejecuta procesos ni APIs privadas del módem.", @"BandLock uses a separate daemon for CoreTelephony. The main app does not spawn processes or execute modem private APIs.");
     } else if ([self.networkModeCode isEqualToString:@"automatic"]) {
         self.networkMode = BLT(@"Automático", @"Automatic");
+    } else if ([self.networkModeCode isEqualToString:@"2g"]) {
+        self.networkMode = BLT(@"Solo 2G", @"2G only");
     } else if ([self.networkModeCode isEqualToString:@"lte"]) {
         self.networkMode = BLT(@"Solo LTE / 4G", @"LTE / 4G only");
     } else if ([self.networkModeCode isEqualToString:@"5g-auto"]) {
@@ -347,6 +349,7 @@ static NSString *BLDaemonSocketPath(void) {
     NSString *modeCode = [result[@"mode_code"] isKindOfClass:[NSString class]] ? result[@"mode_code"] : nil;
     self.networkModeCode = modeCode ?: @"other";
     if ([modeCode isEqualToString:@"automatic"]) self.networkMode = BLT(@"Automático", @"Automatic");
+    else if ([modeCode isEqualToString:@"2g"]) self.networkMode = BLT(@"Solo 2G", @"2G only");
     else if ([modeCode isEqualToString:@"lte"]) self.networkMode = BLT(@"Solo LTE / 4G", @"LTE / 4G only");
     else if ([modeCode isEqualToString:@"3g"]) self.networkMode = BLT(@"Solo 3G", @"3G only");
     else if ([modeCode isEqualToString:@"5g-auto"]) self.networkMode = @"5G Auto";

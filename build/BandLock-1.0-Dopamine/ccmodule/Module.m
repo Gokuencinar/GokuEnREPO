@@ -8,6 +8,7 @@
 #import <unistd.h>
 #import <string.h>
 #import <dlfcn.h>
+#import "BLCCPreferences.h"
 
 typedef void *BLCTServerConnectionRef;
 typedef BLCTServerConnectionRef (*BLCTServerConnectionCreateFn)(CFAllocatorRef allocator, void (*callback)(void), void *context);
@@ -78,7 +79,8 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
     label.numberOfLines = 2;
 
     NSString *text = @"Auto";
-    if ([self.currentModeCode isEqualToString:@"lte"]) text = @"4G";
+    if ([self.currentModeCode isEqualToString:@"2g"]) text = @"2G";
+    else if ([self.currentModeCode isEqualToString:@"lte"]) text = @"4G";
     else if ([self.currentModeCode isEqualToString:@"3g"]) text = @"3G";
     else if (self.supports5G && [self.currentModeCode hasPrefix:@"5g-"]) text = @"5G";
     else if (![self.currentModeCode isEqualToString:@"automatic"]) text = @"?";
@@ -103,6 +105,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 }
 
 - (BOOL)isSelected {
+    if ([self.currentModeCode isEqualToString:@"2g"]) return YES;
     if ([self.currentModeCode isEqualToString:@"lte"]) return YES;
     if ([self.currentModeCode isEqualToString:@"3g"]) return YES;
     if (self.supports5G && [self.currentModeCode hasPrefix:@"5g-"]) return YES;
@@ -153,14 +156,17 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 
 - (NSString *)bl_titleForMode:(NSString *)mode {
     if ([mode isEqualToString:@"automatic"]) return @"Auto";
+    if ([mode isEqualToString:@"2g"]) return @"2G / GSM";
     if ([mode isEqualToString:@"3g"]) return @"3G / UMTS";
     if ([mode isEqualToString:@"lte"]) return @"4G / LTE";
-    if ([mode isEqualToString:@"5g-on"]) return @"5G";
+    if ([mode isEqualToString:@"5g-auto"]) return BLCCAdvanced5GModes() ? @"5G Auto" : @"5G";
+    if ([mode isEqualToString:@"5g-on"]) return @"5G NSA";
+    if ([mode isEqualToString:@"5g-only"]) return @"5G SA";
     return mode ?: @"";
 }
 
 - (BOOL)bl_modeIsCurrent:(NSString *)mode {
-    if ([mode isEqualToString:@"5g-on"]) {
+    if ([mode isEqualToString:@"5g-auto"] && !BLCCAdvanced5GModes()) {
         return self.supports5G && [self.currentModeCode hasPrefix:@"5g-"];
     }
     return [self.currentModeCode isEqualToString:mode];
@@ -225,7 +231,18 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
                                                 message:@"Selecciona el modo de red"
                                          preferredStyle:UIAlertControllerStyleActionSheet];
 
-        NSArray<NSString *> *modes = @[@"automatic", @"3g", @"lte", @"5g-on"];
+        BLCCSynchronizePreferences();
+        NSMutableArray<NSString *> *modes = [NSMutableArray arrayWithObject:@"automatic"];
+        if (BLCCShow2G()) [modes addObject:@"2g"];
+        if (BLCCShow3G()) [modes addObject:@"3g"];
+        if (BLCCShowLTE()) [modes addObject:@"lte"];
+        if (BLCCShow5G() && self.supports5G) {
+            if (BLCCAdvanced5GModes()) {
+                [modes addObjectsFromArray:@[@"5g-auto", @"5g-on", @"5g-only"]];
+            } else {
+                [modes addObject:@"5g-auto"];
+            }
+        }
         for (NSString *mode in modes) {
             NSString *title = [self bl_titleForMode:mode];
             if ([self bl_modeIsCurrent:mode]) {
@@ -240,9 +257,6 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
                     [self bl_applyMode:mode];
                 }];
 
-            if ([mode isEqualToString:@"5g-on"] && !self.supports5G) {
-                action.enabled = NO;
-            }
             [picker addAction:action];
         }
 
@@ -268,7 +282,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 
 - (void)bl_applyMode:(NSString *)requestedMode {
     if (!requestedMode.length) return;
-    if ([requestedMode isEqualToString:@"5g-on"] && !self.supports5G) return;
+    if ([requestedMode hasPrefix:@"5g-"] && !self.supports5G) return;
 
     self.stateEpoch += 1;
     NSUInteger epoch = self.stateEpoch;
@@ -311,6 +325,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 
     CFStringRef selection = NULL;
     if ([mode isEqualToString:@"automatic"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection7");
+    else if ([mode isEqualToString:@"2g"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection0");
     else if ([mode isEqualToString:@"3g"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection1");
     else if ([mode isEqualToString:@"lte"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection6");
     else if ([mode isEqualToString:@"5g-on"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection11");
