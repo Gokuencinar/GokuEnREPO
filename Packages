@@ -240,6 +240,27 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (RootHide)
 
+Package: com.gokuencinar.bandlock
+Version: 1.3
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 1644
+Depends: firmware (>= 15.0), firmware (<= 17.0)
+Recommends: com.opa334.ccsupport
+Conflicts: com.gokuencinar.bandlock.dopamine, com.gokuencinar.bandlock.rootful
+Filename: debs/com.gokuencinar.bandlock_1.3_iphoneos-arm64e.deb
+Size: 219726
+MD5sum: 25c6d1fd2b40ff0327d62c32c501e12f
+SHA1: 3fab1aab917585b7d45861e400d5c70b779385d0
+SHA256: f8db1ef42fc32a4e8ebd7276b4e44814985e1211d95a6e18959a25aaa11919b1
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
+Description: Standalone BandLock Global app for iOS 15-17 RootHide with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification. iOS 17 support is experimental.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
+Name: BandLock (RootHide)
+
 Package: com.gokuencinar.bandlock.dopamine
 Version: 0.6.34
 Architecture: iphoneos-arm64
@@ -330,6 +351,27 @@ Size: 219170
 MD5sum: 197c313fea4367b2472b5ef86dfa75e1
 SHA1: 2f684493c78ea99e6d92705726045ae9445700e7
 SHA256: da1c60c3a1a30b51b10bcdc1cc0a9493cb564286f80903d3fa2ab00a3312563c
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
+Description: Standalone BandLock Global app for iOS 15-18 Dopamine rootless with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification. iOS 17 and 18 support is experimental.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
+Name: BandLock (Dopamine)
+
+Package: com.gokuencinar.bandlock.dopamine
+Version: 1.3
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Installed-Size: 1644
+Depends: firmware (>= 15.0), firmware (<< 19.0), mobilesubstrate
+Recommends: com.opa334.ccsupport
+Conflicts: com.gokuencinar.bandlock, com.gokuencinar.bandlock.rootful
+Filename: debs/com.gokuencinar.bandlock.dopamine_1.3_iphoneos-arm64.deb
+Size: 219428
+MD5sum: 09398cf95ebc4d26a99157bd8632a2ec
+SHA1: afab582ac82253b7fe7c328574201a0248a65ea3
+SHA256: a8ac023fa591ec51586bc28b9ed9dae38fe80564bef6493db7a01dd1f62ece09
 Section: Tweaks
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
 Description: Standalone BandLock Global app for iOS 15-18 Dopamine rootless with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification. iOS 17 and 18 support is experimental.
