@@ -160,23 +160,30 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 - (UITableViewCell *)switchCellWithTitle:(NSString *)title tag:(BLCCSwitchTag)tag enabled:(BOOL)enabled {
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.textLabel.text = title;
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-
-    UISwitch *toggle = [[UISwitch alloc] init];
-    toggle.tag = tag;
-    toggle.on = enabled;
-    [toggle addTarget:self action:@selector(ccToggleChanged:) forControlEvents:UIControlEventValueChanged];
-    cell.accessoryView = toggle;
+    cell.tag = tag;
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.accessoryType = enabled ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
     return cell;
 }
 
-- (void)ccToggleChanged:(UISwitch *)sender {
-    switch ((BLCCSwitchTag)sender.tag) {
-        case BLCCSwitchTag2G: BLCCSetShow2G(sender.isOn); break;
-        case BLCCSwitchTag3G: BLCCSetShow3G(sender.isOn); break;
-        case BLCCSwitchTagLTE: BLCCSetShowLTE(sender.isOn); break;
-        case BLCCSwitchTag5G: BLCCSetShow5G(sender.isOn); break;
-        case BLCCSwitchTagAdvanced5G: BLCCSetAdvanced5GModes(sender.isOn); break;
+- (BOOL)ccValueForTag:(BLCCSwitchTag)tag {
+    switch (tag) {
+        case BLCCSwitchTag2G: return BLCCShow2G();
+        case BLCCSwitchTag3G: return BLCCShow3G();
+        case BLCCSwitchTagLTE: return BLCCShowLTE();
+        case BLCCSwitchTag5G: return BLCCShow5G();
+        case BLCCSwitchTagAdvanced5G: return BLCCAdvanced5GModes();
+    }
+    return NO;
+}
+
+- (void)setCCValue:(BOOL)enabled forTag:(BLCCSwitchTag)tag {
+    switch (tag) {
+        case BLCCSwitchTag2G: BLCCSetShow2G(enabled); break;
+        case BLCCSwitchTag3G: BLCCSetShow3G(enabled); break;
+        case BLCCSwitchTagLTE: BLCCSetShowLTE(enabled); break;
+        case BLCCSwitchTag5G: BLCCSetShow5G(enabled); break;
+        case BLCCSwitchTagAdvanced5G: BLCCSetAdvanced5GModes(enabled); break;
     }
 }
 
@@ -266,6 +273,17 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    if (indexPath.section == 0 || indexPath.section == 1) {
+        BLCCSwitchTag tag;
+        if (indexPath.section == 1) tag = BLCCSwitchTagAdvanced5G;
+        else if (indexPath.row == 0) tag = BLCCSwitchTag2G;
+        else if (indexPath.row == 1) tag = BLCCSwitchTag3G;
+        else if (indexPath.row == 2) tag = BLCCSwitchTagLTE;
+        else tag = BLCCSwitchTag5G;
+        [self setCCValue:![self ccValueForTag:tag] forTag:tag];
+        [tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+        return;
+    }
     if (indexPath.section == 3 && indexPath.row == 0) { [self checkForUpdates]; return; }
     if (indexPath.section == 3 && indexPath.row == 1) {
         [self.navigationController pushViewController:[[BLReleaseNotesViewController alloc] init] animated:YES];

@@ -116,12 +116,9 @@
     NSString *frequency = nr ? BLGNRFrequencyForBand(band) : BLGFrequencyForBand(band);
     NSString *duplex = nr ? BLGNRDuplexForBand(band) : BLGDuplexForBand(band);
     cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", frequency.length ? frequency : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), duplex];
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    UISwitch *toggle = [[UISwitch alloc] init];
-    toggle.on = nr ? [self.selectedNR containsObject:band] : [self.selected containsObject:band];
-    toggle.tag = indexPath.section * 1000 + indexPath.row;
-    [toggle addTarget:self action:@selector(bandSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-    cell.accessoryView = toggle;
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    BOOL selected = nr ? [self.selectedNR containsObject:band] : [self.selected containsObject:band];
+    cell.accessoryType = selected ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
     return cell;
 }
 
@@ -144,24 +141,23 @@
     [self.tableView reloadData];
 }
 
-- (void)bandSwitchChanged:(UISwitch *)sender {
-    NSInteger section = sender.tag / 1000;
-    NSInteger row = sender.tag % 1000;
-    NSArray *bands = section == 5 ? self.availableNRBands : [self bandsForSection:section];
-    if (row < 0 || row >= (NSInteger)bands.count) return;
-    NSNumber *band = bands[(NSUInteger)row];
-    NSMutableSet *target = section == 5 ? self.selectedNR : self.selected;
-    if (sender.isOn) [target addObject:band]; else [target removeObject:band];
-    [self commitSelection];
-}
-
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (indexPath.section != 0) return;
-    if (indexPath.row == 0) [self setSelectedBands:self.availableBands];
-    else if (indexPath.row == 1) [self setSelectedBands:BLIntersectBands(self.manager.activeBands, self.availableBands)];
-    else if (indexPath.row == 2) [self setSelectedNRBands:self.availableNRBands];
-    else [self setSelectedNRBands:BLIntersectBands(self.manager.activeNRBands, self.availableNRBands)];
+    if (indexPath.section == 0) {
+        if (indexPath.row == 0) [self setSelectedBands:self.availableBands];
+        else if (indexPath.row == 1) [self setSelectedBands:BLIntersectBands(self.manager.activeBands, self.availableBands)];
+        else if (indexPath.row == 2) [self setSelectedNRBands:self.availableNRBands];
+        else [self setSelectedNRBands:BLIntersectBands(self.manager.activeNRBands, self.availableNRBands)];
+        return;
+    }
+    NSArray<NSNumber *> *bands = indexPath.section == 5 ? self.availableNRBands : [self bandsForSection:indexPath.section];
+    if (indexPath.row < 0 || indexPath.row >= (NSInteger)bands.count) return;
+    NSNumber *band = bands[(NSUInteger)indexPath.row];
+    NSMutableSet *target = indexPath.section == 5 ? self.selectedNR : self.selected;
+    if ([target containsObject:band]) [target removeObject:band];
+    else [target addObject:band];
+    [self commitSelection];
+    [tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
 }
 
 @end
