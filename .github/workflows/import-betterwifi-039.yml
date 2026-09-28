@@ -1,0 +1,75 @@
+name: Import BetterWiFi RH 0.3.9
+
+on:
+  push:
+    paths:
+      - '.github/workflows/import-betterwifi-039.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download and verify 0.3.9
+        shell: bash
+        env:
+          ARTIFACT_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-8ca8-81f4-bdab-fba032d7aaba/raw?se=2026-09-28T11%3A16%3A24Z&sp=r&sv=2026-02-06&sr=b&scid=f204b778-393e-5022-8232-74bbf0921903&skoid=a63e6f05-dc2f-4fa5-b0e3-b1cb9c0893bb&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-28T06%3A25%3A05Z&ske=2026-09-29T06%3A25%3A05Z&sks=b&skv=2026-02-06&sig=yd6ue1jXH0XzamkznCVyc6VOIjLunr%2BMWrFED0gKlTw%3D'
+        run: |
+          set -euo pipefail
+          curl -fL "$ARTIFACT_URL" -o /tmp/bwrh039.zip
+          unzip -q /tmp/bwrh039.zip -d /tmp/bwrh039
+          deb="$(find /tmp/bwrh039 -name '*.deb' -type f | head -1)"
+          test -n "$deb"
+          test "$(sha256sum "$deb" | awk '{print $1}')" = "d8ac10e37db972e19b6c3e6b52369a1c10f6873f7269a0811c21bfa1d5fc4fde"
+          test "$(dpkg-deb -f "$deb" Package)" = "com.betterwifirh.tweak"
+          test "$(dpkg-deb -f "$deb" Version)" = "0.3.9"
+          test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm64e"
+          cp "$deb" /tmp/com.betterwifirh.tweak_0.3.9_iphoneos-arm64e.deb
+
+      - name: Publish and rebuild index
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y dpkg-dev >/dev/null
+          rm -f debs/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb
+          cp /tmp/com.betterwifirh.tweak_0.3.9_iphoneos-arm64e.deb debs/
+          rm -rf .upload/bwrh039.part*
+          rmdir .upload 2>/dev/null || true
+          dpkg-scanpackages -m debs /dev/null > Packages
+          gzip -9 -c Packages > Packages.gz
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("README.md")
+          t=p.read_text()
+          t=t.replace("BetterWiFi RH 0.3.8", "BetterWiFi RH 0.3.9")
+          p.write_text(t)
+
+          p=Path("index.html")
+          t=p.read_text()
+          t=t.replace("BetterWiFi RH</strong> — 0.3.8", "BetterWiFi RH</strong> — 0.3.9")
+          p.write_text(t)
+          PY
+
+          grep -q '^Package: com.local.bandlock$' Packages
+          grep -q '^Package: com.betterwifirh.tweak$' Packages
+          grep -q '^Version: 0.3.9$' Packages
+          grep -q '^Architecture: iphoneos-arm64e$' Packages
+          grep -q '^SHA256: d8ac10e37db972e19b6c3e6b52369a1c10f6873f7269a0811c21bfa1d5fc4fde$' Packages
+
+      - name: Commit update
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Update BetterWiFi RH to 0.3.9"
+          git push
