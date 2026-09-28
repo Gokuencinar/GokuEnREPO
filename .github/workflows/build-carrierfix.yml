@@ -33,7 +33,9 @@ jobs:
           grep -q '^TARGET = iphone:clang:16.5:15.0$' build/CarrierFix-0.1-RootHide/Makefile
           grep -q 'MinimumOSVersion' build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
           grep -q 'ForcedFeatureTags' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
-          grep -q 'original-carrier.plist' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
+          grep -q 'prepareVerifiedBackup' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
+          grep -q 'restore-test-' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
+          grep -q 'patched-' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
           grep -q 'realpath' build/CarrierFix-0.1-RootHide/app/CFCarrierManager.m
           ! grep -R -q 'killall\|ldrestart\|sbreload' build/CarrierFix-0.1-RootHide
           plutil -lint build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
