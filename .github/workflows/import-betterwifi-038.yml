@@ -48,10 +48,9 @@ jobs:
           set -euo pipefail
           sudo apt-get update >/dev/null
           sudo apt-get install -y dpkg-dev >/dev/null
-          mkdir -p debs
-          cp /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb debs/
-          dpkg-scanpackages -m debs /dev/null > Packages
-          gzip -9 -c Packages > Packages.gz
+          mkdir -p tweaks/BetterWiFi-RH/debs
+          cp /tmp/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb tweaks/BetterWiFi-RH/debs/
+          bash scripts/rebuild-packages.sh
           rm -rf .upload
 
           python3 - <<'PY'

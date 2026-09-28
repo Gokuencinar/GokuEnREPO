@@ -6,8 +6,8 @@ on:
       - main
     paths:
       - "index.html"
-      - "bandlock.html"
-      - "betterwifi-rh.html"
+      - "tweaks/**/depiction.html"
+      - "tweaks/**/assets/**"
       - "sitemap.xml"
       - "robots.txt"
       - "add/**"

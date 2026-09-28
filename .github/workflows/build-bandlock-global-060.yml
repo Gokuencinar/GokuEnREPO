@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'build/BandLock-0.6.0/**'
+      - 'tweaks/BandLock/build/BandLock-0.6.0/**'
       - '.github/workflows/build-bandlock-global-060.yml'
   workflow_dispatch:
 
@@ -29,36 +29,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          plutil -lint build/BandLock-0.6.0/app/Resources/Info.plist
-          plutil -lint build/BandLock-0.6.0/app/Entitlements.plist
-          python3 -m json.tool build/BandLock-0.6.0/app/Resources/countries.json >/dev/null
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.0/app/Resources/Info.plist
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.0/app/Entitlements.plist
+          python3 -m json.tool tweaks/BandLock/build/BandLock-0.6.0/app/Resources/countries.json >/dev/null
           python3 - <<'PY'
           import json
-          p='build/BandLock-0.6.0/app/Resources/countries.json'
+          p='tweaks/BandLock/build/BandLock-0.6.0/app/Resources/countries.json'
           data=json.load(open(p, encoding='utf-8-sig'))
           assert len(data.get('countries', [])) >= 150
           assert any(c.get('name') == 'Spain' and 20 in c.get('bands', []) for c in data['countries'])
           PY
-          grep -q 'SUBPROJECTS += app' build/BandLock-0.6.0/Makefile
-          grep -q 'APPLICATION_NAME = BandLock' build/BandLock-0.6.0/app/Makefile
-          grep -q 'applyPendingBandsWithCompletion:' build/BandLock-0.6.0/app/BLTelephonyManager.m
-          grep -q 'sleepForTimeInterval:0.8' build/BandLock-0.6.0/app/BLTelephonyManager.m
-          grep -q 'sleepForTimeInterval:1.0' build/BandLock-0.6.0/app/BLTelephonyManager.m
-          grep -q 'Preparar bandas compatibles' build/BandLock-0.6.0/app/BLCountryDetailViewController.m
-          grep -q 'com.gokuencinar.bandlock' build/BandLock-0.6.0/control
-          test ! -d build/BandLock-0.6.0/prefs
-          grep -q 'uicache -a' build/BandLock-0.6.0/layout/DEBIAN/postinst
-          ! grep -R -E 'BLSpainBands|supportedSpain|activeSpain|selectOrangeSpain' build/BandLock-0.6.0
+          grep -q 'SUBPROJECTS += app' tweaks/BandLock/build/BandLock-0.6.0/Makefile
+          grep -q 'APPLICATION_NAME = BandLock' tweaks/BandLock/build/BandLock-0.6.0/app/Makefile
+          grep -q 'applyPendingBandsWithCompletion:' tweaks/BandLock/build/BandLock-0.6.0/app/BLTelephonyManager.m
+          grep -q 'sleepForTimeInterval:0.8' tweaks/BandLock/build/BandLock-0.6.0/app/BLTelephonyManager.m
+          grep -q 'sleepForTimeInterval:1.0' tweaks/BandLock/build/BandLock-0.6.0/app/BLTelephonyManager.m
+          grep -q 'Preparar bandas compatibles' tweaks/BandLock/build/BandLock-0.6.0/app/BLCountryDetailViewController.m
+          grep -q 'com.gokuencinar.bandlock' tweaks/BandLock/build/BandLock-0.6.0/control
+          test ! -d tweaks/BandLock/build/BandLock-0.6.0/prefs
+          grep -q 'uicache -a' tweaks/BandLock/build/BandLock-0.6.0/layout/DEBIAN/postinst
+          ! grep -R -E 'BLSpainBands|supportedSpain|activeSpain|selectOrangeSpain' tweaks/BandLock/build/BandLock-0.6.0
 
       - name: Build RootHide package
         shell: bash
         run: |
           set -euo pipefail
-          cd build/BandLock-0.6.0
+          cd tweaks/BandLock/build/BandLock-0.6.0
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           ls -lh packages/*.deb
           test -f packages/com.gokuencinar.bandlock_0.6.0_iphoneos-arm64e.deb
-          cp packages/com.gokuencinar.bandlock_0.6.0_iphoneos-arm64e.deb ../../debs/
+          cp packages/com.gokuencinar.bandlock_0.6.0_iphoneos-arm64e.deb $GITHUB_WORKSPACE/tweaks/BandLock/debs/
 
       - name: Publish package
         shell: bash
@@ -66,7 +66,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add debs/com.gokuencinar.bandlock_0.6.0_iphoneos-arm64e.deb
+          git add tweaks/BandLock/debs/com.gokuencinar.bandlock_0.6.0_iphoneos-arm64e.deb
           if ! git diff --cached --quiet; then
             git commit -m "Publish BandLock Global 0.6.0"
             git push
@@ -76,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BandLock-0.6.0-deb
-          path: build/BandLock-0.6.0/packages/*.deb
+          path: tweaks/BandLock/build/BandLock-0.6.0/packages/*.deb
           if-no-files-found: error
 
   reindex:
@@ -95,8 +95,7 @@ jobs:
         run: |
           set -euo pipefail
           git pull --ff-only
-          dpkg-scanpackages -m debs /dev/null > Packages
-          gzip -9 -c Packages > Packages.gz
+          bash scripts/rebuild-packages.sh
 
       - name: Publish APT index
         shell: bash

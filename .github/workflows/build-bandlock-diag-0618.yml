@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'build/BandLock-0.6.18/**'
+      - 'tweaks/BandLock/build/BandLock-0.6.18/**'
       - '.github/workflows/build-bandlock-diag-0618.yml'
   workflow_dispatch:
 
@@ -29,51 +29,51 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          plutil -lint build/BandLock-0.6.18/app/Resources/Info.plist
-          plutil -lint build/BandLock-0.6.18/app/Entitlements.plist
-          plutil -lint build/BandLock-0.6.18/daemon/Entitlements.plist
-          plutil -lint build/BandLock-0.6.18/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
-          python3 -m json.tool build/BandLock-0.6.18/app/Resources/countries.json >/dev/null
-          grep -q 'SUBPROJECTS += app daemon launcher' build/BandLock-0.6.18/Makefile
-          ! grep -q 'clientprobe' build/BandLock-0.6.18/Makefile
-          grep -q 'BandLock_LDFLAGS += -lroothide' build/BandLock-0.6.18/app/Makefile
-          grep -q 'BLBreadcrumb.c' build/BandLock-0.6.18/app/Makefile
-          grep -q 'com.apple.private.security.no-container' build/BandLock-0.6.18/app/Entitlements.plist
-          grep -q 'com.apple.private.security.container-required' build/BandLock-0.6.18/app/Entitlements.plist
-          ! grep -R --include='*.m' --include='*.h' -q 'BLProbe' build/BandLock-0.6.18/app
-          ! grep -R --include='*.m' -q 'auto refresh dispatch fired' build/BandLock-0.6.18/app
-          ! grep -R --include='*.m' -q 'dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0' build/BandLock-0.6.18/app
-          ! grep -q 'jbroot(' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q 'CFFIXED_USER_HOME' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q '/.jbroot-' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q 'BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.sock"' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q 'daemonSocketPath' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q 'jbroot(' build/BandLock-0.6.18/daemon/main.m
-          grep -q 'com.gokuencinar.bandlockd.sock' build/BandLock-0.6.18/daemon/main.m
-          grep -q 'SO_NOSIGPIPE' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q 'SO_RCVTIMEO' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q 'signal(SIGPIPE, SIG_IGN)' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          grep -q 'BandLock-client.log' build/BandLock-0.6.18/app/BLBreadcrumb.c
-          grep -q 'BandLock-daemon.log' build/BandLock-0.6.18/daemon/main.m
-          ! grep -q 'CoreTelephonyClient' build/BandLock-0.6.18/app/BLTelephonyManager.m
-          ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.18/app/Entitlements.plist
-          grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.18/daemon/Entitlements.plist
-          grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.18/daemon/Makefile
-          grep -q 'TOOL_NAME = BandLockLauncher' build/BandLock-0.6.18/launcher/Makefile
-          grep -q 'DOMAIN="user/501"' build/BandLock-0.6.18/layout/DEBIAN/postinst
-          grep -q 'launchctl bootstrap "$DOMAIN" "$PLIST"' build/BandLock-0.6.18/layout/DEBIAN/postinst
-          ! grep -q 'kickstart' build/BandLock-0.6.18/layout/DEBIAN/postinst
-          ! grep -q 'launchctl .*system' build/BandLock-0.6.18/layout/DEBIAN/postinst
-          grep -q 'uicache -p /Applications/BandLock.app' build/BandLock-0.6.18/layout/DEBIAN/postinst
-          grep -q 'SOCKET="/tmp/${LABEL}.sock"' build/BandLock-0.6.18/layout/DEBIAN/postinst
-          grep -q 'OLD_SOCKET="/tmp/bandlockd.sock"' build/BandLock-0.6.18/layout/DEBIAN/postinst
-          grep -q '^Version: 0.6.18$' build/BandLock-0.6.18/control
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.18/app/Resources/Info.plist
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.18/app/Entitlements.plist
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.18/daemon/Entitlements.plist
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.18/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          python3 -m json.tool tweaks/BandLock/build/BandLock-0.6.18/app/Resources/countries.json >/dev/null
+          grep -q 'SUBPROJECTS += app daemon launcher' tweaks/BandLock/build/BandLock-0.6.18/Makefile
+          ! grep -q 'clientprobe' tweaks/BandLock/build/BandLock-0.6.18/Makefile
+          grep -q 'BandLock_LDFLAGS += -lroothide' tweaks/BandLock/build/BandLock-0.6.18/app/Makefile
+          grep -q 'BLBreadcrumb.c' tweaks/BandLock/build/BandLock-0.6.18/app/Makefile
+          grep -q 'com.apple.private.security.no-container' tweaks/BandLock/build/BandLock-0.6.18/app/Entitlements.plist
+          grep -q 'com.apple.private.security.container-required' tweaks/BandLock/build/BandLock-0.6.18/app/Entitlements.plist
+          ! grep -R --include='*.m' --include='*.h' -q 'BLProbe' tweaks/BandLock/build/BandLock-0.6.18/app
+          ! grep -R --include='*.m' -q 'auto refresh dispatch fired' tweaks/BandLock/build/BandLock-0.6.18/app
+          ! grep -R --include='*.m' -q 'dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0' tweaks/BandLock/build/BandLock-0.6.18/app
+          ! grep -q 'jbroot(' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q 'CFFIXED_USER_HOME' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q '/.jbroot-' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q 'BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.sock"' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q 'daemonSocketPath' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q 'jbroot(' tweaks/BandLock/build/BandLock-0.6.18/daemon/main.m
+          grep -q 'com.gokuencinar.bandlockd.sock' tweaks/BandLock/build/BandLock-0.6.18/daemon/main.m
+          grep -q 'SO_NOSIGPIPE' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q 'SO_RCVTIMEO' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q 'signal(SIGPIPE, SIG_IGN)' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          grep -q 'BandLock-client.log' tweaks/BandLock/build/BandLock-0.6.18/app/BLBreadcrumb.c
+          grep -q 'BandLock-daemon.log' tweaks/BandLock/build/BandLock-0.6.18/daemon/main.m
+          ! grep -q 'CoreTelephonyClient' tweaks/BandLock/build/BandLock-0.6.18/app/BLTelephonyManager.m
+          ! grep -q 'com.apple.CommCenter.fine-grained' tweaks/BandLock/build/BandLock-0.6.18/app/Entitlements.plist
+          grep -q 'com.apple.CommCenter.fine-grained' tweaks/BandLock/build/BandLock-0.6.18/daemon/Entitlements.plist
+          grep -q 'TOOL_NAME = BandLockDaemon' tweaks/BandLock/build/BandLock-0.6.18/daemon/Makefile
+          grep -q 'TOOL_NAME = BandLockLauncher' tweaks/BandLock/build/BandLock-0.6.18/launcher/Makefile
+          grep -q 'DOMAIN="user/501"' tweaks/BandLock/build/BandLock-0.6.18/layout/DEBIAN/postinst
+          grep -q 'launchctl bootstrap "$DOMAIN" "$PLIST"' tweaks/BandLock/build/BandLock-0.6.18/layout/DEBIAN/postinst
+          ! grep -q 'kickstart' tweaks/BandLock/build/BandLock-0.6.18/layout/DEBIAN/postinst
+          ! grep -q 'launchctl .*system' tweaks/BandLock/build/BandLock-0.6.18/layout/DEBIAN/postinst
+          grep -q 'uicache -p /Applications/BandLock.app' tweaks/BandLock/build/BandLock-0.6.18/layout/DEBIAN/postinst
+          grep -q 'SOCKET="/tmp/${LABEL}.sock"' tweaks/BandLock/build/BandLock-0.6.18/layout/DEBIAN/postinst
+          grep -q 'OLD_SOCKET="/tmp/bandlockd.sock"' tweaks/BandLock/build/BandLock-0.6.18/layout/DEBIAN/postinst
+          grep -q '^Version: 0.6.18$' tweaks/BandLock/build/BandLock-0.6.18/control
 
       - name: Build candidate
         shell: bash
         run: |
           set -euo pipefail
-          cd build/BandLock-0.6.18
+          cd tweaks/BandLock/build/BandLock-0.6.18
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           test -f packages/com.gokuencinar.bandlock_0.6.18_iphoneos-arm64e.deb
           APP_BIN="$(find .theos -path '*/Applications/BandLock.app/BandLock' -type f | head -n 1)"
@@ -92,8 +92,8 @@ jobs:
           grep -q 'com.apple.private.security.container-required' /tmp/bandlock-app-entitlements.plist
           ! grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-app-entitlements.plist
           grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-daemon-entitlements.plist
-          mkdir -p ../../diagnostics
-          cp packages/com.gokuencinar.bandlock_0.6.18_iphoneos-arm64e.deb ../../diagnostics/BandLock-0.6.18-candidate.deb
+          mkdir -p "$GITHUB_WORKSPACE/tweaks/BandLock/diagnostics"
+          cp packages/com.gokuencinar.bandlock_0.6.18_iphoneos-arm64e.deb $GITHUB_WORKSPACE/tweaks/BandLock/diagnostics/BandLock-0.6.18-candidate.deb
 
       - name: Publish diagnostic candidate
         shell: bash
@@ -101,7 +101,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diagnostics/BandLock-0.6.18-candidate.deb
+          git add tweaks/BandLock/diagnostics/BandLock-0.6.18-candidate.deb
           if ! git diff --cached --quiet; then
             git commit -m "Publish BandLock 0.6.18 candidate"
             git pull --rebase origin main
@@ -112,5 +112,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BandLock-0.6.18-candidate
-          path: build/BandLock-0.6.18/packages/*.deb
+          path: tweaks/BandLock/build/BandLock-0.6.18/packages/*.deb
           if-no-files-found: error

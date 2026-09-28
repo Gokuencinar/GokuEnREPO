@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'build/BandLock-0.6.8/**'
+      - 'tweaks/BandLock/build/BandLock-0.6.8/**'
       - '.github/workflows/build-bandlock-diag-068.yml'
   workflow_dispatch:
 
@@ -29,44 +29,44 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          plutil -lint build/BandLock-0.6.8/app/Resources/Info.plist
-          plutil -lint build/BandLock-0.6.8/app/Entitlements.plist
-          plutil -lint build/BandLock-0.6.8/daemon/Entitlements.plist
-          plutil -lint build/BandLock-0.6.8/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
-          python3 -m json.tool build/BandLock-0.6.8/app/Resources/countries.json >/dev/null
-          grep -q 'SUBPROJECTS += app daemon launcher' build/BandLock-0.6.8/Makefile
-          grep -q 'APPLICATION_NAME = BandLock' build/BandLock-0.6.8/app/Makefile
-          grep -q 'TARGET = iphone:clang:16.5:16.0' build/BandLock-0.6.8/Makefile
-          grep -q 'BLTelephonyManager.m' build/BandLock-0.6.8/app/Makefile
-          grep -q 'BLControlViewController.m' build/BandLock-0.6.8/app/Makefile
-          grep -q 'BandLock-0.6.8-ui-stub.log' build/BandLock-0.6.8/app/BLProbe.h
-          grep -q 'stub refresh begin' build/BandLock-0.6.8/app/BLTelephonyManager.m
-          grep -q 'auto refresh dispatch fired' build/BandLock-0.6.8/app/BLControlViewController.m
-          ! grep -q 'AF_UNIX' build/BandLock-0.6.8/app/BLTelephonyManager.m
-          ! grep -q 'CoreTelephonyClient' build/BandLock-0.6.8/app/BLTelephonyManager.m
-          grep -q 'bandlock</string>' build/BandLock-0.6.8/app/Resources/Info.plist
-          grep -q 'TOOL_NAME = BandLockDaemon' build/BandLock-0.6.8/daemon/Makefile
-          grep -q 'TOOL_NAME = BandLockLauncher' build/BandLock-0.6.8/launcher/Makefile
-          grep -q 'SBSLaunchApplicationWithIdentifier' build/BandLock-0.6.8/launcher/main.m
-          plutil -lint build/BandLock-0.6.8/launcher/Entitlements.plist
-          grep -q 'com.apple.springboard.launchapplications' build/BandLock-0.6.8/launcher/Entitlements.plist
-          ! grep -q 'com.apple.CommCenter.fine-grained' build/BandLock-0.6.8/app/Entitlements.plist
-          grep -q '<string>spi</string>' build/BandLock-0.6.8/daemon/Entitlements.plist
-          grep -q '<string>preferences-write</string>' build/BandLock-0.6.8/daemon/Entitlements.plist
-          grep -q 'com.apple.CoreTelephony.CommCenterHelper.allow' build/BandLock-0.6.8/daemon/Entitlements.plist
-          grep -q 'sleepForTimeInterval:0.8' build/BandLock-0.6.8/daemon/main.m
-          grep -q 'sleepForTimeInterval:1.0' build/BandLock-0.6.8/daemon/main.m
-          grep -q 'queryCoreTelephony' build/BandLock-0.6.8/daemon/BLTelephonyCore.m
-          grep -q 'writeLTEBands:' build/BandLock-0.6.8/daemon/main.m
-          grep -q 'KeepAlive' build/BandLock-0.6.8/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
-          grep -q '/usr/libexec/BandLockDaemon' build/BandLock-0.6.8/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
-          grep -q 'com.gokuencinar.bandlock' build/BandLock-0.6.8/control
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.8/app/Resources/Info.plist
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.8/app/Entitlements.plist
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.8/daemon/Entitlements.plist
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.8/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          python3 -m json.tool tweaks/BandLock/build/BandLock-0.6.8/app/Resources/countries.json >/dev/null
+          grep -q 'SUBPROJECTS += app daemon launcher' tweaks/BandLock/build/BandLock-0.6.8/Makefile
+          grep -q 'APPLICATION_NAME = BandLock' tweaks/BandLock/build/BandLock-0.6.8/app/Makefile
+          grep -q 'TARGET = iphone:clang:16.5:16.0' tweaks/BandLock/build/BandLock-0.6.8/Makefile
+          grep -q 'BLTelephonyManager.m' tweaks/BandLock/build/BandLock-0.6.8/app/Makefile
+          grep -q 'BLControlViewController.m' tweaks/BandLock/build/BandLock-0.6.8/app/Makefile
+          grep -q 'BandLock-0.6.8-ui-stub.log' tweaks/BandLock/build/BandLock-0.6.8/app/BLProbe.h
+          grep -q 'stub refresh begin' tweaks/BandLock/build/BandLock-0.6.8/app/BLTelephonyManager.m
+          grep -q 'auto refresh dispatch fired' tweaks/BandLock/build/BandLock-0.6.8/app/BLControlViewController.m
+          ! grep -q 'AF_UNIX' tweaks/BandLock/build/BandLock-0.6.8/app/BLTelephonyManager.m
+          ! grep -q 'CoreTelephonyClient' tweaks/BandLock/build/BandLock-0.6.8/app/BLTelephonyManager.m
+          grep -q 'bandlock</string>' tweaks/BandLock/build/BandLock-0.6.8/app/Resources/Info.plist
+          grep -q 'TOOL_NAME = BandLockDaemon' tweaks/BandLock/build/BandLock-0.6.8/daemon/Makefile
+          grep -q 'TOOL_NAME = BandLockLauncher' tweaks/BandLock/build/BandLock-0.6.8/launcher/Makefile
+          grep -q 'SBSLaunchApplicationWithIdentifier' tweaks/BandLock/build/BandLock-0.6.8/launcher/main.m
+          plutil -lint tweaks/BandLock/build/BandLock-0.6.8/launcher/Entitlements.plist
+          grep -q 'com.apple.springboard.launchapplications' tweaks/BandLock/build/BandLock-0.6.8/launcher/Entitlements.plist
+          ! grep -q 'com.apple.CommCenter.fine-grained' tweaks/BandLock/build/BandLock-0.6.8/app/Entitlements.plist
+          grep -q '<string>spi</string>' tweaks/BandLock/build/BandLock-0.6.8/daemon/Entitlements.plist
+          grep -q '<string>preferences-write</string>' tweaks/BandLock/build/BandLock-0.6.8/daemon/Entitlements.plist
+          grep -q 'com.apple.CoreTelephony.CommCenterHelper.allow' tweaks/BandLock/build/BandLock-0.6.8/daemon/Entitlements.plist
+          grep -q 'sleepForTimeInterval:0.8' tweaks/BandLock/build/BandLock-0.6.8/daemon/main.m
+          grep -q 'sleepForTimeInterval:1.0' tweaks/BandLock/build/BandLock-0.6.8/daemon/main.m
+          grep -q 'queryCoreTelephony' tweaks/BandLock/build/BandLock-0.6.8/daemon/BLTelephonyCore.m
+          grep -q 'writeLTEBands:' tweaks/BandLock/build/BandLock-0.6.8/daemon/main.m
+          grep -q 'KeepAlive' tweaks/BandLock/build/BandLock-0.6.8/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          grep -q '/usr/libexec/BandLockDaemon' tweaks/BandLock/build/BandLock-0.6.8/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist
+          grep -q 'com.gokuencinar.bandlock' tweaks/BandLock/build/BandLock-0.6.8/control
 
       - name: Build RootHide package
         shell: bash
         run: |
           set -euo pipefail
-          cd build/BandLock-0.6.8
+          cd tweaks/BandLock/build/BandLock-0.6.8
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           ls -lh packages/*.deb
           test -f packages/com.gokuencinar.bandlock_0.6.8_iphoneos-arm64e.deb
@@ -90,8 +90,8 @@ jobs:
           grep -q '<string>spi</string>' /tmp/bandlock-daemon-entitlements.plist
           grep -q '<string>preferences-write</string>' /tmp/bandlock-daemon-entitlements.plist
           grep -q 'com.apple.CoreTelephony.CommCenterHelper.allow' /tmp/bandlock-daemon-entitlements.plist
-          mkdir -p ../../diagnostics
-          cp packages/com.gokuencinar.bandlock_0.6.8_iphoneos-arm64e.deb ../../diagnostics/BandLock-0.6.8-ui-stub.deb
+          mkdir -p "$GITHUB_WORKSPACE/tweaks/BandLock/diagnostics"
+          cp packages/com.gokuencinar.bandlock_0.6.8_iphoneos-arm64e.deb $GITHUB_WORKSPACE/tweaks/BandLock/diagnostics/BandLock-0.6.8-ui-stub.deb
 
       - name: Publish package
         shell: bash
@@ -99,7 +99,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diagnostics/BandLock-0.6.8-ui-stub.deb
+          git add tweaks/BandLock/diagnostics/BandLock-0.6.8-ui-stub.deb
           if ! git diff --cached --quiet; then
             git commit -m "Publish BandLock 0.6.8 UI stub diagnostic"
             git push
@@ -109,6 +109,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BandLock-0.6.8-ui-stub-deb
-          path: build/BandLock-0.6.8/packages/*.deb
+          path: tweaks/BandLock/build/BandLock-0.6.8/packages/*.deb
           if-no-files-found: error
 

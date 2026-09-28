@@ -43,7 +43,7 @@ Standalone jailbreak app for manually controlling LTE/4G and supported 5G NR mod
 - Country profiles never modify the modem automatically; compatible bands are prepared for review before applying.
 - Languages: English, Spanish, French, German, Traditional Chinese, Simplified Chinese/Mandarin and Japanese.
 
-➡️ **[BandLock details](BANDLOCK.md)** · **[Changelog](changelogs/BandLock.md)**
+➡️ **[BandLock details](tweaks/BandLock/README.md)** · **[Changelog](tweaks/BandLock/CHANGELOG.md)**
 
 ### 📶 BetterWiFi RH — Wi-Fi Tools
 
@@ -57,22 +57,34 @@ RootHide-compatible Wi-Fi enhancement tweak that expands the information and dia
 - Manual language selector: Automatic, Spanish or English.
 - No dedicated resident daemon.
 
-➡️ **[BetterWiFi RH details](BETTERWIFI-RH.md)** · **[Changelog](changelogs/BetterWiFi-RH.md)**
+➡️ **[BetterWiFi RH details](tweaks/BetterWiFi-RH/README.md)** · **[Changelog](tweaks/BetterWiFi-RH/CHANGELOG.md)**
 
 ### Nuke Wireless — In Development
 
 Nuke Wireless is currently in development. Public package releases are unavailable.
 
+➡️ **[Nuke Wireless details](tweaks/Nuke-Wireless/README.md)**
+
+## Repository layout
+
+Project-specific files live under [`tweaks/`](tweaks/):
+
+- `tweaks/BandLock/` — source snapshots, packages, diagnostics, documentation and depiction.
+- `tweaks/BetterWiFi-RH/` — package, documentation and depiction.
+- `tweaks/Nuke-Wireless/` — documentation and depiction while the project is in development.
+
+The APT entry points (`Release`, `Packages`, `Packages.gz` and repository icons) intentionally stay at the repository root so existing package-manager source URLs keep working unchanged.
+
 ## Current packages
 
 | Package | Version | Architecture |
 | --- | --- | --- |
-| BandLock (RootHide) | 1.0 | `iphoneos-arm64e` |
-| BandLock (Dopamine) | 1.0 | `iphoneos-arm64` |
-| BandLock (Rootful) | 1.0 | `iphoneos-arm` |
+| BandLock (RootHide) | 1.3 | `iphoneos-arm64e` |
+| BandLock (Dopamine) | 1.3 | `iphoneos-arm64` |
+| BandLock (Rootful) | 1.3 | `iphoneos-arm` |
 | BetterWiFi RH | 0.3.11 | `iphoneos-arm64e` |
 
-The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `debs/` changes.
+The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `tweaks/*/debs/` changes.
 
 ## Compatibility
 

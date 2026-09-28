@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'build/BandLock-0.5.0/**'
+      - 'tweaks/BandLock/build/BandLock-0.5.0/**'
       - '.github/workflows/build-bandlock-global-050.yml'
   workflow_dispatch:
 
@@ -29,26 +29,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          plutil -lint build/BandLock-0.5.0/prefs/Resources/Info.plist
-          grep -q 'verifyLTEBands:' build/BandLock-0.5.0/prefs/BLGRootListController.m
-          grep -q 'writeLTEBands:' build/BandLock-0.5.0/prefs/BLGRootListController.m
-          grep -q '0.8 \* NSEC_PER_SEC' build/BandLock-0.5.0/prefs/BLGRootListController.m
-          grep -q '1.0 \* NSEC_PER_SEC' build/BandLock-0.5.0/prefs/BLGRootListController.m
-          grep -q 'allActiveLTEFromQuery:' build/BandLock-0.5.0/prefs/BLGRootListController.m
-          grep -q 'resetSelection:NO' build/BandLock-0.5.0/prefs/BLGRootListController.m
-          grep -q 'BLGBandsForDuplex' build/BandLock-0.5.0/prefs/BLGBandSelectionController.m
-          grep -q 'com.gokuencinar.bandlock' build/BandLock-0.5.0/control
-          ! grep -R -E 'BLSpainBands|supportedSpain|activeSpain|Orange España|España · Orange' build/BandLock-0.5.0
+          plutil -lint tweaks/BandLock/build/BandLock-0.5.0/prefs/Resources/Info.plist
+          grep -q 'verifyLTEBands:' tweaks/BandLock/build/BandLock-0.5.0/prefs/BLGRootListController.m
+          grep -q 'writeLTEBands:' tweaks/BandLock/build/BandLock-0.5.0/prefs/BLGRootListController.m
+          grep -q '0.8 \* NSEC_PER_SEC' tweaks/BandLock/build/BandLock-0.5.0/prefs/BLGRootListController.m
+          grep -q '1.0 \* NSEC_PER_SEC' tweaks/BandLock/build/BandLock-0.5.0/prefs/BLGRootListController.m
+          grep -q 'allActiveLTEFromQuery:' tweaks/BandLock/build/BandLock-0.5.0/prefs/BLGRootListController.m
+          grep -q 'resetSelection:NO' tweaks/BandLock/build/BandLock-0.5.0/prefs/BLGRootListController.m
+          grep -q 'BLGBandsForDuplex' tweaks/BandLock/build/BandLock-0.5.0/prefs/BLGBandSelectionController.m
+          grep -q 'com.gokuencinar.bandlock' tweaks/BandLock/build/BandLock-0.5.0/control
+          ! grep -R -E 'BLSpainBands|supportedSpain|activeSpain|Orange España|España · Orange' tweaks/BandLock/build/BandLock-0.5.0
 
       - name: Build RootHide package
         shell: bash
         run: |
           set -euo pipefail
-          cd build/BandLock-0.5.0
+          cd tweaks/BandLock/build/BandLock-0.5.0
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           ls -lh packages/*.deb
           test -f packages/com.gokuencinar.bandlock_0.5.0_iphoneos-arm64e.deb
-          cp packages/com.gokuencinar.bandlock_0.5.0_iphoneos-arm64e.deb ../../debs/
+          cp packages/com.gokuencinar.bandlock_0.5.0_iphoneos-arm64e.deb $GITHUB_WORKSPACE/tweaks/BandLock/debs/
 
       - name: Publish package
         shell: bash
@@ -56,7 +56,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add debs/com.gokuencinar.bandlock_0.5.0_iphoneos-arm64e.deb
+          git add tweaks/BandLock/debs/com.gokuencinar.bandlock_0.5.0_iphoneos-arm64e.deb
           if ! git diff --cached --quiet; then
             git commit -m "Publish BandLock Global 0.5.0"
             git push
@@ -66,7 +66,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BandLock-0.5.0-deb
-          path: build/BandLock-0.5.0/packages/*.deb
+          path: tweaks/BandLock/build/BandLock-0.5.0/packages/*.deb
           if-no-files-found: error
 
   reindex:
@@ -85,8 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           git pull --ff-only
-          dpkg-scanpackages -m debs /dev/null > Packages
-          gzip -9 -c Packages > Packages.gz
+          bash scripts/rebuild-packages.sh
 
       - name: Publish APT index
         shell: bash
