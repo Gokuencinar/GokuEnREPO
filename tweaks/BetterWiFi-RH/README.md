@@ -16,7 +16,7 @@ BetterWiFi RH adds extra Wi-Fi information and tools directly to the Wi-Fi secti
 
 ## Compatibility
 
-Version **0.3.12** is available in three builds:
+Version **0.3.13** is available in three builds:
 
 - **RootHide:** iOS 16.x — `iphoneos-arm64e`
 - **Dopamine rootless:** iOS 15–18 — `iphoneos-arm64`

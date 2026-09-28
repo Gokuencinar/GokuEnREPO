@@ -6,6 +6,14 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad actual:** RootHide iOS 16 (`iphoneos-arm64e`), Dopamine rootless iOS 15–18 (`iphoneos-arm64`) y rootful iOS 15–17 (`iphoneos-arm`).
 
+## 0.3.13
+
+### Fixed
+- Fixed executable permissions in the **Dopamine rootless** and **rootful** packages.
+- `BetterWiFiRH.dylib` and `BetterWiFiRHPrefs` are now packaged with mode `0755`.
+- Fixes PreferenceLoader reporting that `BetterWiFiRHPrefs.bundle` could not be loaded because its executable could not be located.
+- Added build-time protection so future packages are created with the correct executable permissions.
+
 ## 0.3.12
 
 ### Publicación multiplataforma
