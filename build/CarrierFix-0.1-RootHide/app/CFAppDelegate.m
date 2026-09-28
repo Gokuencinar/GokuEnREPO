@@ -1,4 +1,4 @@
-﻿#import "CFAppDelegate.h"
+#import "CFAppDelegate.h"
 #import "CFViewController.h"
 @implementation CFAppDelegate
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {

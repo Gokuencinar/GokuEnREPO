@@ -1,4 +1,4 @@
-﻿#import "CFViewController.h"
+#import "CFViewController.h"
 #import "CFCarrierManager.h"
 
 @interface CFViewController ()

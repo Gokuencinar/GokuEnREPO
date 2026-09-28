@@ -1,4 +1,4 @@
-﻿#import <Foundation/Foundation.h>
+#import <Foundation/Foundation.h>
 @interface CFCarrierManager : NSObject
 - (NSDictionary *)diagnose;
 - (BOOL)isCricketConfiguration:(NSDictionary *)diagnosis;

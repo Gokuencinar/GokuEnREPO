@@ -1,3 +1,3 @@
-﻿#import <UIKit/UIKit.h>
+#import <UIKit/UIKit.h>
 @interface CFViewController : UIViewController
 @end

@@ -1,4 +1,4 @@
-﻿name: Build CarrierFix 0.1 RootHide
+name: Build CarrierFix 0.1 RootHide
 
 on:
   push:

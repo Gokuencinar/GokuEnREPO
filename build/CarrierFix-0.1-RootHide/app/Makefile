@@ -1,4 +1,4 @@
-﻿include $(THEOS)/makefiles/common.mk
+include $(THEOS)/makefiles/common.mk
 
 APPLICATION_NAME = CarrierFix
 CarrierFix_FILES = main.m CFAppDelegate.m CFViewController.m CFCarrierManager.m

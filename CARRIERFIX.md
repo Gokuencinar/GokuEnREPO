@@ -1,4 +1,4 @@
-﻿# CarrierFix
+# CarrierFix
 
 CarrierFix is an experimental carrier-overlay repair utility for jailbroken iOS. Version 0.1 targets Cricket Wireless / AT&T aio carrier bundles on RootHide iOS 15-17.
 
