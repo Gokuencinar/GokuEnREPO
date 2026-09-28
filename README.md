@@ -70,7 +70,7 @@ Nuke Wireless is currently in development. Public package releases are unavailab
 | BandLock (RootHide) | 1.0 | `iphoneos-arm64e` |
 | BandLock (Dopamine) | 1.0 | `iphoneos-arm64` |
 | BandLock (Rootful) | 1.0 | `iphoneos-arm` |
-| BetterWiFi RH | 0.3.9 | `iphoneos-arm64e` |
+| BetterWiFi RH | 0.3.10 | `iphoneos-arm64e` |
 
 The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `debs/` changes.
 
