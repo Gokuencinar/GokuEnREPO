@@ -6,6 +6,19 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad:** iOS 16.x con RootHide (`iphoneos-arm64e`). El paquete declara compatibilidad con firmware iOS >= 16.0 y < 17.0.
 
+## 0.3.9
+
+### Nuevo
+- Selector de idioma dentro de las preferencias de BetterWiFi RH.
+- Modos **Automático**, **Español** e **Inglés**.
+- El modo Automático sigue el idioma configurado en iOS.
+- Español e Inglés fuerzan únicamente el idioma de BetterWiFi RH, sin cambiar el idioma global de Ajustes.
+- El panel de preferencias se recarga al cambiar el idioma, sin requerir respring.
+- Las pantallas propias del tweak adoptan el idioma seleccionado al volver a abrirlas.
+
+### Conservado
+- Todas las correcciones de estabilidad, filtros, monitor de señal, analizador de canales y optimizaciones de consumo de 0.3.8.
+
 ## 0.3.8
 
 ### Nuevo
@@ -22,5 +35,4 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 - Ajuste del paquete para iOS 16.x.
 
 ### Nota
-- **0.3.8 es la única versión de BetterWiFi RH archivada actualmente en GokuEnREPO.**
-- No se añaden entradas ficticias para versiones anteriores que no están conservadas en este repositorio.
+- 0.3.8 se mantiene documentada como la versión anterior a 0.3.9.
