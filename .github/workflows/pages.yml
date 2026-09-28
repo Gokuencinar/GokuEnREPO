@@ -8,6 +8,8 @@ on:
       - "index.html"
       - "tweaks/**/depiction.html"
       - "tweaks/**/assets/**"
+      - "tweaks/**/README.md"
+      - "tweaks/**/CHANGELOG.md"
       - "sitemap.xml"
       - "robots.txt"
       - "add/**"
