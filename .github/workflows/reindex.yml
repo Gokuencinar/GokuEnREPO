@@ -1,0 +1,45 @@
+name: Rebuild APT index
+
+on:
+  push:
+    paths:
+      - 'tweaks/**/debs/**'
+      - 'scripts/rebuild-packages.sh'
+      - '.github/workflows/reindex.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dpkg tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
+      - name: Generate and commit Packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            echo "Reindex attempt ${attempt}/5"
+            git fetch origin main
+            git reset --hard origin/main
+            bash scripts/rebuild-packages.sh
+            git add Packages Packages.gz
+            if git diff --cached --quiet; then
+              exit 0
+            fi
+            git commit -m "Rebuild APT package index"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Failed to rebuild APT index after 5 attempts" >&2
+          exit 1
