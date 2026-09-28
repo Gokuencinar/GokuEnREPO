@@ -18,7 +18,7 @@ jobs:
       - name: Download and verify 0.3.9
         shell: bash
         env:
-          ARTIFACT_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-8ca8-81f4-bdab-fba032d7aaba/raw?se=2026-09-28T11%3A16%3A24Z&sp=r&sv=2026-02-06&sr=b&scid=f204b778-393e-5022-8232-74bbf0921903&skoid=a63e6f05-dc2f-4fa5-b0e3-b1cb9c0893bb&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-28T06%3A25%3A05Z&ske=2026-09-29T06%3A25%3A05Z&sks=b&skv=2026-02-06&sig=yd6ue1jXH0XzamkznCVyc6VOIjLunr%2BMWrFED0gKlTw%3D'
+          ARTIFACT_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0200-8210-84cb-69dbfbbd52cc/raw?se=2026-09-28T11%3A22%3A33Z&sp=r&sv=2026-02-06&sr=b&scid=715587da-a96c-5a25-8568-62429876bc71&skoid=a63e6f05-dc2f-4fa5-b0e3-b1cb9c0893bb&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-28T07%3A06%3A49Z&ske=2026-09-29T07%3A06%3A49Z&sks=b&skv=2026-02-06&sig=8xDeIlP6WeRVz/RuS%2B2o2iC6yT9WlKXr%2BhPzdKEYKPc%3D'
         run: |
           set -euo pipefail
           curl -fL "$ARTIFACT_URL" -o /tmp/bwrh039.zip
@@ -57,7 +57,23 @@ jobs:
           p.write_text(t)
           PY
 
-          grep -q '^Package: com.local.bandlock$' Packages
+          grep -q '^Package: com.gokuencinar.bandlock
+          grep -q '^Package: com.betterwifirh.tweak$' Packages
+          grep -q '^Version: 0.3.9$' Packages
+          grep -q '^Architecture: iphoneos-arm64e$' Packages
+          grep -q '^SHA256: d8ac10e37db972e19b6c3e6b52369a1c10f6873f7269a0811c21bfa1d5fc4fde$' Packages
+
+      - name: Commit update
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Update BetterWiFi RH to 0.3.9"
+          git push
+ Packages
           grep -q '^Package: com.betterwifirh.tweak$' Packages
           grep -q '^Version: 0.3.9$' Packages
           grep -q '^Architecture: iphoneos-arm64e$' Packages
