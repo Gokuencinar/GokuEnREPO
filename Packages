@@ -1,14 +1,14 @@
 Package: com.betterwifirh.tweak
-Version: 0.3.8
+Version: 0.3.9
 Architecture: iphoneos-arm64e
 Maintainer: BetterWiFi RH
-Installed-Size: 352
+Installed-Size: 360
 Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
-Filename: debs/com.betterwifirh.tweak_0.3.8_iphoneos-arm64e.deb
-Size: 44020
-MD5sum: b5e0916fd872b30a33da4e1824d70a55
-SHA1: 404e4a34e09478a0785db52ab1f0a33471a956ab
-SHA256: 40f189385a83bf175c8e7298fb3272eb10bde0520c6382648c3bb058032f81b2
+Filename: debs/com.betterwifirh.tweak_0.3.9_iphoneos-arm64e.deb
+Size: 46522
+MD5sum: 50d86cbf06d3a62a717c53dd7089bb39
+SHA1: 62e3296c6fe90551397d319424cb67f0b3cca26b
+SHA256: d8ac10e37db972e19b6c3e6b52369a1c10f6873f7269a0811c21bfa1d5fc4fde
 Section: Tweaks
 Description: Advanced Wi-Fi enhancements for iOS 16 with stable connected-network details, live monitoring, diagnostics, filters, Shuffle integration and RootHide support.
 Author: BetterWiFi RH
