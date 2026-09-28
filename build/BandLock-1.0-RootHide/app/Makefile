@@ -16,7 +16,6 @@ BandLock_FILES = \
 	BLCountriesViewController.m \
 	BLCountryDetailViewController.m \
 	BLInfoViewController.m \
-	BLCCSettingsViewController.m \
 	BLLanguageViewController.m \
 	BLFrequencyGlossaryViewController.m \
 	../shared/BLCCPreferences.m \

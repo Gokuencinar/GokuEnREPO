@@ -23,8 +23,8 @@
 
     BLInfoViewController *info = [[BLInfoViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
     UINavigationController *infoNav = [[UINavigationController alloc] initWithRootViewController:info];
-    infoNav.tabBarItem = [[UITabBarItem alloc] initWithTitle:BLT(@"Info", @"Info")
-                                                  image:[UIImage systemImageNamed:@"info.circle.fill"]
+    infoNav.tabBarItem = [[UITabBarItem alloc] initWithTitle:BLT(@"Ajustes", @"Settings")
+                                                  image:[UIImage systemImageNamed:@"gearshape.fill"]
                                                     tag:2];
 
     UITabBarController *tabs = [[UITabBarController alloc] init];

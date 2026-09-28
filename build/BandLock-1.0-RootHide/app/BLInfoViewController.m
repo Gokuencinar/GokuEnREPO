@@ -1,6 +1,6 @@
 #import "BLInfoViewController.h"
 #import "BLFrequencyGlossaryViewController.h"
-#import "BLCCSettingsViewController.h"
+#import "BLCCPreferences.h"
 #import "BLLocalization.h"
 #import "BLCommon.h"
 
@@ -59,31 +59,53 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
 @interface BLInfoViewController ()
 @end
 
+typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
+    BLCCSwitchTag2G = 20,
+    BLCCSwitchTag3G,
+    BLCCSwitchTagLTE,
+    BLCCSwitchTag5G,
+    BLCCSwitchTagAdvanced5G
+};
+
 @implementation BLInfoViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = BLT(@"Información", @"Info");
+    self.title = BLT(@"Ajustes", @"Settings");
     self.navigationController.navigationBar.prefersLargeTitles = YES;
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 5; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 6; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 3;
+    if (section == 0) return 4;
     if (section == 1) return 1;
-    if (section == 2) return 2;
+    if (section == 2) return 3;
     if (section == 3) return 2;
+    if (section == 4) return 2;
     return 1;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    if (section == 0) return BLT(@"Acerca de", @"About");
-    if (section == 1) return BLT(@"Ajustes", @"Settings");
-    if (section == 2) return BLT(@"Actualizaciones", @"Updates");
-    if (section == 3) return BLT(@"Recursos", @"Resources");
+    if (section == 0) return BLT(@"Centro de control · Modos visibles", @"Control Center · Visible modes");
+    if (section == 1) return BLT(@"Centro de control · 5G", @"Control Center · 5G");
+    if (section == 2) return BLT(@"Información", @"Info");
+    if (section == 3) return BLT(@"Actualizaciones", @"Updates");
+    if (section == 4) return BLT(@"Recursos", @"Resources");
     return BLT(@"Apoyar desarrollo", @"Support development");
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
+    if (section == 0) {
+        return BLT(@"Automático siempre permanece visible para que puedas volver a la selección normal de iOS.",
+                   @"Auto always remains visible so you can return to normal iOS network selection.");
+    }
+    if (section == 1) {
+        return BLT(@"Desactivado: aparece una única opción 5G que usa 5G Auto. Activado: aparecen 5G Auto, 5G NSA y 5G SA por separado.",
+                   @"Off: one 5G option is shown using 5G Auto. On: 5G Auto, 5G NSA and 5G SA are shown separately.");
+    }
+    return nil;
 }
 
 - (UITableViewCell *)valueCell:(NSString *)title detail:(NSString *)detail symbol:(NSString *)symbol disclosure:(BOOL)disclosure {
@@ -129,16 +151,43 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
     return cell;
 }
 
+- (UITableViewCell *)switchCellWithTitle:(NSString *)title tag:(BLCCSwitchTag)tag enabled:(BOOL)enabled {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    cell.textLabel.text = title;
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+    UISwitch *toggle = [[UISwitch alloc] init];
+    toggle.tag = tag;
+    toggle.on = enabled;
+    [toggle addTarget:self action:@selector(ccToggleChanged:) forControlEvents:UIControlEventValueChanged];
+    cell.accessoryView = toggle;
+    return cell;
+}
+
+- (void)ccToggleChanged:(UISwitch *)sender {
+    switch ((BLCCSwitchTag)sender.tag) {
+        case BLCCSwitchTag2G: BLCCSetShow2G(sender.isOn); break;
+        case BLCCSwitchTag3G: BLCCSetShow3G(sender.isOn); break;
+        case BLCCSwitchTagLTE: BLCCSetShowLTE(sender.isOn); break;
+        case BLCCSwitchTag5G: BLCCSetShow5G(sender.isOn); break;
+        case BLCCSwitchTagAdvanced5G: BLCCSetAdvanced5GModes(sender.isOn); break;
+    }
+}
+
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *version = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
-    if (indexPath.section == 0 && indexPath.row == 0) return [self valueCell:@"BandLock Global" detail:@"RootHide" symbol:@"antenna.radiowaves.left.and.right" disclosure:NO];
-    if (indexPath.section == 0 && indexPath.row == 1) return [self valueCell:BLT(@"Versión actual", @"Current version") detail:version symbol:@"number.circle" disclosure:NO];
-    if (indexPath.section == 0) return [self creditsCell];
-    if (indexPath.section == 1) return [self valueCell:BLT(@"Centro de control", @"Control Center") detail:nil symbol:@"switch.2" disclosure:YES];
-    if (indexPath.section == 2 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];
-    if (indexPath.section == 2) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
-    if (indexPath.section == 3 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];
-    if (indexPath.section == 3) return [self valueCell:BLT(@"Más información sobre las frecuencias", @"More information about frequencies") detail:nil symbol:@"info.circle" disclosure:YES];
+    if (indexPath.section == 0 && indexPath.row == 0) return [self switchCellWithTitle:@"2G" tag:BLCCSwitchTag2G enabled:BLCCShow2G()];
+    if (indexPath.section == 0 && indexPath.row == 1) return [self switchCellWithTitle:@"3G" tag:BLCCSwitchTag3G enabled:BLCCShow3G()];
+    if (indexPath.section == 0 && indexPath.row == 2) return [self switchCellWithTitle:@"4G / LTE" tag:BLCCSwitchTagLTE enabled:BLCCShowLTE()];
+    if (indexPath.section == 0) return [self switchCellWithTitle:@"5G" tag:BLCCSwitchTag5G enabled:BLCCShow5G()];
+    if (indexPath.section == 1) return [self switchCellWithTitle:BLT(@"Modos 5G avanzados", @"Advanced 5G modes") tag:BLCCSwitchTagAdvanced5G enabled:BLCCAdvanced5GModes()];
+    if (indexPath.section == 2 && indexPath.row == 0) return [self valueCell:@"BandLock Global" detail:@"RootHide" symbol:@"antenna.radiowaves.left.and.right" disclosure:NO];
+    if (indexPath.section == 2 && indexPath.row == 1) return [self valueCell:BLT(@"Versión actual", @"Current version") detail:version symbol:@"number.circle" disclosure:NO];
+    if (indexPath.section == 2) return [self creditsCell];
+    if (indexPath.section == 3 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];
+    if (indexPath.section == 3) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
+    if (indexPath.section == 4 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];
+    if (indexPath.section == 4) return [self valueCell:BLT(@"Más información sobre las frecuencias", @"More information about frequencies") detail:nil symbol:@"info.circle" disclosure:YES];
     return [self valueCell:@"Buy Me a Coffee" detail:nil symbol:@"heart.circle.fill" disclosure:YES];
 }
 
@@ -211,21 +260,17 @@ static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock";
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (indexPath.section == 1) {
-        [self.navigationController pushViewController:[[BLCCSettingsViewController alloc] initWithStyle:UITableViewStyleInsetGrouped] animated:YES];
-        return;
-    }
-    if (indexPath.section == 2 && indexPath.row == 0) { [self checkForUpdates]; return; }
-    if (indexPath.section == 2 && indexPath.row == 1) {
+    if (indexPath.section == 3 && indexPath.row == 0) { [self checkForUpdates]; return; }
+    if (indexPath.section == 3 && indexPath.row == 1) {
         [self.navigationController pushViewController:[[BLReleaseNotesViewController alloc] init] animated:YES];
         return;
     }
-    if (indexPath.section == 3 && indexPath.row == 0) { [self openRepository]; return; }
-    if (indexPath.section == 3 && indexPath.row == 1) {
+    if (indexPath.section == 4 && indexPath.row == 0) { [self openRepository]; return; }
+    if (indexPath.section == 4 && indexPath.row == 1) {
         [self.navigationController pushViewController:[[BLFrequencyGlossaryViewController alloc] initWithStyle:UITableViewStyleInsetGrouped] animated:YES];
         return;
     }
-    if (indexPath.section == 4) { [self openBuyMeACoffee]; return; }
+    if (indexPath.section == 5) { [self openBuyMeACoffee]; return; }
 }
 
 @end
