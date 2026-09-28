@@ -441,3 +441,24 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
 Name: BandLock (Rootful)
 
+Package: com.gokuencinar.bandlock.rootful
+Version: 1.3
+Architecture: iphoneos-arm
+Maintainer: Gokuencinar
+Installed-Size: 828
+Depends: firmware (>= 15.0), firmware (<< 17.0), mobilesubstrate
+Recommends: com.opa334.ccsupport
+Conflicts: com.gokuencinar.bandlock, com.gokuencinar.bandlock.dopamine
+Filename: debs/com.gokuencinar.bandlock.rootful_1.3_iphoneos-arm.deb
+Size: 170868
+MD5sum: a0b55ecb4365e2791b716683cd51a4c4
+SHA1: f7f9be1bd2a826627e6dec19676c659627bc776a
+SHA256: a965ae0881e9ec3989e21857aa9c753c434a300eab1c5d906d365e3cf87e1427
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
+Description: Standalone BandLock Global app for iOS 15-16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
+Name: BandLock (Rootful)
+
