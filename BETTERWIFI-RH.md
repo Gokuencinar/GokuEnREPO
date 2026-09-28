@@ -4,7 +4,7 @@
 
 **BetterWiFi RH** es un tweak de jailbreak compatible con **RootHide** para **iOS 16** que amplía la información y las herramientas de diagnóstico Wi-Fi disponibles en Ajustes.
 
-> Current version / Versión actual: **0.3.8** · Architecture / Arquitectura: **iphoneos-arm64e**
+> Current version / Versión actual: **0.3.9** · Architecture / Arquitectura: **iphoneos-arm64e**
 
 ## Español
 
@@ -24,6 +24,7 @@ BetterWiFi RH añade información ampliada de la red Wi-Fi conectada, monitoriza
 - Integración con Shuffle.
 - PreferenceBundle en Ajustes.
 - Compatibilidad con RootHide.
+- Selector de idioma: Automático, Español e Inglés.
 - Sin daemon residente dedicado.
 
 ### Compatibilidad
@@ -53,6 +54,7 @@ BetterWiFi RH adds richer connected-network information, live signal monitoring,
 - Shuffle integration.
 - Settings PreferenceBundle.
 - RootHide compatibility.
+- Language selector: Automatic, Spanish and English.
 - No dedicated resident daemon.
 
 ### Compatibility
