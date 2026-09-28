@@ -287,30 +287,14 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
     self.stateEpoch += 1;
     NSUInteger epoch = self.stateEpoch;
 
-    // The Control Center path deliberately bypasses CoreTelephonyClient's
-    // synchronous subscription-context lookup. That lookup can stall while the
-    // modem is moving through 3G. _CTServerConnectionSetRATSelection is the
-    // direct path used by stable CC network toggles and does not need that data
-    // context to be available first.
+    // Keep the UI responsive immediately, but perform the actual modem change
+    // through BandLockDaemon. The app uses the same CoreTelephonyClient path
+    // successfully on newer Qualcomm devices, while the direct
+    // _CTServerConnectionSetRATSelection path can return without applying the
+    // requested RAT and the next status refresh then falls back to Auto/5G.
     self.currentModeCode = requestedMode;
     [self bl_syncVisualSelection];
-
-    if (![self bl_setRATDirect:requestedMode]) {
-        [self bl_applyModeThroughDaemon:requestedMode epoch:epoch];
-        return;
-    }
-
-    self.confirmedModeCode = requestedMode;
-
-    // During a 3G handover the modem may temporarily report the previous RAT
-    // or block status queries. Do not let that stale read repaint the tile or
-    // occupy the serial status queue. Verification resumes after a grace
-    // period; direct user selections remain available throughout it.
-    self.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent() + 4.0;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4.0 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        if (epoch == self.stateEpoch) [self bl_refreshFromDaemon];
-    });
+    [self bl_applyModeThroughDaemon:requestedMode epoch:epoch];
 }
 
 - (BOOL)bl_setRATDirect:(NSString *)mode {
@@ -416,7 +400,11 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 
     int one = 1;
     (void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one));
-    struct timeval timeout = {.tv_sec = 1, .tv_usec = 500000};
+    // RAT changes are handled asynchronously from the Control Center UI, so
+    // match the app client's generous IPC window. CoreTelephonyClient may need
+    // several seconds to resolve the subscription context and complete a RAT
+    // transition on newer devices.
+    struct timeval timeout = {.tv_sec = 30, .tv_usec = 0};
     (void)setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     (void)setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 

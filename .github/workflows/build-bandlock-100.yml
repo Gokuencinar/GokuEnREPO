@@ -2,7 +2,7 @@ name: Build BandLock 1.3 (iOS 15-18)
 
 on:
   push:
-    branches: [ bandlock-0.6.36-5g, bandlock-1.1-control-center, bandlock-ios15-18, bandlock-cc-mode-visibility, bandlock-private-diag-noswitch, main ]
+    branches: [ bandlock-0.6.36-5g, bandlock-1.1-control-center, bandlock-ios15-18, bandlock-cc-mode-visibility, bandlock-private-diag2-ccdaemon, main ]
     paths:
       - 'tweaks/BandLock/build/BandLock-1.0-RootHide/**'
       - 'tweaks/BandLock/build/BandLock-1.0-Dopamine/**'
@@ -101,7 +101,7 @@ jobs:
         run: |
           set -euo pipefail
           plutil -lint tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
-          grep -q '^Version: 1.3+diag1$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '^Version: 1.3+diag2$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
           grep -q '^Architecture: iphoneos-arm64$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
           grep -q '<string>1.3</string>' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
           grep -q '<key>MinimumOSVersion</key><string>15.0</string>' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
@@ -137,13 +137,13 @@ jobs:
         run: |
           cd tweaks/BandLock/build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          test -f packages/com.gokuencinar.bandlock.dopamine_1.3+diag1_iphoneos-arm64.deb
+          test -f packages/com.gokuencinar.bandlock.dopamine_1.3+diag2_iphoneos-arm64.deb
           find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
           ! otool -L "$(find .theos/_ -type f -name BandLockCCModule | head -n 1)" | grep -q CoreTelephony
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.3-diag-noswitch
-          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.3+diag1_iphoneos-arm64.deb
+          name: BandLock-Dopamine-1.3-diag2-ccdaemon
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.3+diag2_iphoneos-arm64.deb
 
   publish:
     if: github.ref == 'refs/heads/main'
