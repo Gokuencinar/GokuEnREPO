@@ -1,4 +1,4 @@
-name: Build CarrierFix 0.1 RootHide
+name: Build CarrierFix 0.2 RootHide
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q '^Version: 0.1.0$' build/CarrierFix-0.1-RootHide/control
+          grep -q '^Version: 0.2.0$' build/CarrierFix-0.1-RootHide/control
           grep -q '^ARCHS = arm64 arm64e$' build/CarrierFix-0.1-RootHide/Makefile
           grep -q '^TARGET = iphone:clang:16.5:15.0$' build/CarrierFix-0.1-RootHide/Makefile
           grep -q 'MinimumOSVersion' build/CarrierFix-0.1-RootHide/app/Resources/Info.plist
@@ -45,11 +45,11 @@ jobs:
           cd build/CarrierFix-0.1-RootHide
           chmod 755 layout/DEBIAN/postinst layout/DEBIAN/postrm
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
-          test -f packages/com.gokuencinar.carrierfix_0.1.0_iphoneos-arm64e.deb
+          test -f packages/com.gokuencinar.carrierfix_0.2.0_iphoneos-arm64e.deb
           app=$(find .theos/_ -type f -name CarrierFix | head -n 1)
           test -n "$app"
           lipo -archs "$app" | grep -q 'arm64 arm64e\|arm64e arm64'
       - uses: actions/upload-artifact@v4
         with:
-          name: CarrierFix-RootHide-0.1.0
-          path: build/CarrierFix-0.1-RootHide/packages/com.gokuencinar.carrierfix_0.1.0_iphoneos-arm64e.deb
+          name: CarrierFix-RootHide-0.2.0
+          path: build/CarrierFix-0.1-RootHide/packages/com.gokuencinar.carrierfix_0.2.0_iphoneos-arm64e.deb

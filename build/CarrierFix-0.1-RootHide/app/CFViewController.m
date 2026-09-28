@@ -6,6 +6,7 @@
 @property(nonatomic,strong) UITextView *textView;
 @property(nonatomic,strong) UIButton *applyButton;
 @property(nonatomic,strong) UIButton *restoreButton;
+@property(nonatomic,strong) UILabel *safetyLabel;
 @end
 
 @implementation CFViewController
@@ -20,7 +21,7 @@
     subtitle.translatesAutoresizingMaskIntoConstraints = NO;
     subtitle.numberOfLines = 0;
     subtitle.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
-    subtitle.text = @"Experimental Cricket SMS/IMS repair for older jailbroken iOS versions. CarrierFix backs up the active carrier configuration before making any change.";
+    subtitle.text = @"Experimental Cricket SMS/IMS repair for older jailbroken iOS versions. CarrierFix refuses unknown carrier schemas and verifies a restorable backup before enabling Apply.";
 
     self.textView = [UITextView new];
     self.textView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -30,7 +31,7 @@
     self.textView.layer.cornerRadius = 12.0;
     self.textView.textContainerInset = UIEdgeInsetsMake(12, 10, 12, 10);
 
-    UIButton *diagnose = [self buttonWithTitle:@"Refresh diagnostic" action:@selector(refreshDiagnostic)];
+    UIButton *diagnose = [self buttonWithTitle:@"Refresh + verify backup" action:@selector(refreshDiagnostic)];
     self.applyButton = [self buttonWithTitle:@"Apply Cricket SMS Fix" action:@selector(applyFix)];
     self.restoreButton = [self buttonWithTitle:@"Restore Original" action:@selector(restoreOriginal)];
     UIButton *copy = [self buttonWithTitle:@"Copy diagnostic" action:@selector(copyDiagnostic)];
@@ -40,15 +41,21 @@
     buttons.spacing = 10;
     buttons.translatesAutoresizingMaskIntoConstraints = NO;
 
+    self.safetyLabel = [UILabel new];
+    self.safetyLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.safetyLabel.numberOfLines = 0;
+    self.safetyLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightSemibold];
+
     UILabel *warning = [UILabel new];
     warning.translatesAutoresizingMaskIntoConstraints = NO;
     warning.numberOfLines = 0;
     warning.font = [UIFont systemFontOfSize:12];
     warning.textColor = UIColor.secondaryLabelColor;
-    warning.text = @"After Apply/Restore, toggle Airplane Mode for ~30 seconds or reboot. If calling/data/SMS gets worse, restore immediately. CarrierFix does not enable RCS on iOS versions that do not contain Apple's RCS stack.";
+    warning.text = @"After Apply/Restore, toggle Airplane Mode for ~30 seconds or reboot. If calling/data/SMS gets worse, restore immediately. CarrierFix does not backport RCS.";
 
     [self.view addSubview:subtitle];
     [self.view addSubview:self.textView];
+    [self.view addSubview:self.safetyLabel];
     [self.view addSubview:buttons];
     [self.view addSubview:warning];
 
@@ -60,8 +67,11 @@
         [self.textView.topAnchor constraintEqualToAnchor:subtitle.bottomAnchor constant:14],
         [self.textView.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:16],
         [self.textView.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-16],
-        [self.textView.heightAnchor constraintGreaterThanOrEqualToConstant:245],
-        [buttons.topAnchor constraintEqualToAnchor:self.textView.bottomAnchor constant:14],
+        [self.textView.heightAnchor constraintGreaterThanOrEqualToConstant:235],
+        [self.safetyLabel.topAnchor constraintEqualToAnchor:self.textView.bottomAnchor constant:10],
+        [self.safetyLabel.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:16],
+        [self.safetyLabel.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-16],
+        [buttons.topAnchor constraintEqualToAnchor:self.safetyLabel.bottomAnchor constant:10],
         [buttons.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:16],
         [buttons.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-16],
         [warning.topAnchor constraintEqualToAnchor:buttons.bottomAnchor constant:14],
@@ -86,23 +96,45 @@
 }
 
 - (void)refreshDiagnostic {
+    NSDictionary *initial = [self.manager diagnose];
+    NSString *backupMessage = nil;
+    BOOL backupReady = NO;
+    if ([initial[@"ok"] boolValue] && [initial[@"cricket"] boolValue] && [initial[@"schemaSafe"] boolValue] && [initial[@"writable"] boolValue]) {
+        backupReady = [self.manager prepareForApply:&backupMessage];
+    }
     NSDictionary *d = [self.manager diagnose];
     self.textView.text = [self.manager diagnosticText];
-    BOOL readable = [d[@"ok"] boolValue];
-    BOOL cricket = [d[@"cricket"] boolValue];
-    self.applyButton.enabled = readable && cricket;
-    self.applyButton.alpha = self.applyButton.enabled ? 1.0 : 0.45;
+
+    BOOL canApply = [d[@"ok"] boolValue] && [d[@"cricket"] boolValue] && [d[@"schemaSafe"] boolValue] && [d[@"writable"] boolValue] && backupReady;
+    self.applyButton.enabled = canApply;
+    self.applyButton.alpha = canApply ? 1.0 : 0.45;
+    BOOL canRestore = [self.manager hasVerifiedBackupForActiveCarrier];
+    self.restoreButton.enabled = canRestore;
+    self.restoreButton.alpha = canRestore ? 1.0 : 0.45;
+
+    if (canApply) {
+        self.safetyLabel.textColor = UIColor.systemGreenColor;
+        self.safetyLabel.text = backupMessage.length ? backupMessage : @"Safety preflight passed. Apply is enabled.";
+    } else {
+        self.safetyLabel.textColor = UIColor.systemOrangeColor;
+        NSString *reason = nil;
+        if (![d[@"cricket"] boolValue]) reason = @"Cricket / ATT_aio not detected.";
+        else if (![d[@"writable"] boolValue]) reason = @"Carrier overlay is not safely writable in this environment.";
+        else if (![d[@"schemaSafe"] boolValue]) reason = d[@"schemaReason"];
+        else reason = backupMessage ?: @"Backup/restore preflight did not pass.";
+        self.safetyLabel.text = [NSString stringWithFormat:@"Apply disabled: %@", reason ?: @"unknown reason"];
+    }
 }
 
 - (void)applyFix {
-    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Apply Cricket SMS Fix?" message:@"CarrierFix will back up the active carrier plist, then patch only IMS/SMS-related keys and the IMS APN. This is experimental." preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Apply Cricket SMS Fix?" message:@"The verified original backup will be kept. CarrierFix patches only the existing IMS/SMS schema and IMS APN. Failed verification triggers an automatic restore." preferredStyle:UIAlertControllerStyleAlert];
     __weak typeof(self) weakSelf = self;
     [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     [confirm addAction:[UIAlertAction actionWithTitle:@"Apply" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
         NSString *message = nil;
         BOOL ok = [weakSelf.manager applyCricketSMSFix:&message];
         [weakSelf refreshDiagnostic];
-        [weakSelf showMessage:message ?: (ok ? @"Applied." : @"Failed.") title:ok ? @"Applied" : @"Not applied"];
+        [weakSelf showMessage:message ?: (ok ? @"Applied." : @"Failed.") title:ok ? @"Applied + verified" : @"Not applied"];
     }]];
     [self presentViewController:confirm animated:YES completion:nil];
 }
@@ -111,7 +143,7 @@
     NSString *message = nil;
     BOOL ok = [self.manager restoreOriginal:&message];
     [self refreshDiagnostic];
-    [self showMessage:message ?: (ok ? @"Restored." : @"Restore failed.") title:ok ? @"Restored" : @"Not restored"];
+    [self showMessage:message ?: (ok ? @"Restored." : @"Restore failed.") title:ok ? @"Restored + verified" : @"Not restored"];
 }
 
 - (void)copyDiagnostic {
