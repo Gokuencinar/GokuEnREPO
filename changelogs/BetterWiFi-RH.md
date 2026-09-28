@@ -6,6 +6,17 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad:** iOS 16.x con RootHide (`iphoneos-arm64e`). El paquete declara compatibilidad con firmware iOS >= 16.0 y < 17.0.
 
+## 0.3.10
+
+### Corregido
+- El selector de idioma ya no abre una pantalla secundaria vacía/negra.
+- Se sustituye `PSLinkListCell` por un selector `PSSegmentCell` integrado en la propia página.
+- La recarga de preferencias tras cambiar el idioma se difiere al siguiente ciclo de la cola principal para evitar conflictos durante el evento del control.
+
+### Conservado
+- Modos **Automático**, **Español** e **Inglés**.
+- El cambio sigue afectando únicamente a BetterWiFi RH.
+
 ## 0.3.9
 
 ### Nuevo
