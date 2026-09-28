@@ -25,7 +25,7 @@ The repair logic is identical in all three packages and is compiled from one sha
   - `IMSConfig/SMS/SMSBundleToVoice = false`
   - `IMSConfig/SMS/allowCSFBInVolteMode = false`
   - `SMSSettings/TransportFallback = false`
-  - preserves an existing `ims` APN layout and fills only missing protocol/switchover fields; if the recognized APN schema has no IMS entry, adds the current Cricket IMS entry
+  - requires an existing `ims` APN and preserves its layout, filling only missing protocol/switchover fields; if IMS is absent, Apply stays disabled
 - Verifies the written overlay byte-for-byte and semantically before reporting success.
 - Automatically restores the original if write/read-back/semantic verification fails.
 - Restores the original carrier plist with one button.

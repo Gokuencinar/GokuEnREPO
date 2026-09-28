@@ -1,6 +1,6 @@
 Package: com.gokuencinar.carrierfix.dopamine
 Name: CarrierFix (Dopamine)
-Version: 0.2.0
+Version: 0.2.1
 Architecture: iphoneos-arm64
 Description: Experimental Cricket/AT&T carrier overlay diagnostic and SMS/IMS repair tool for jailbroken iOS 15-18. Creates and verifies a per-carrier backup before modifying the active overlay and supports one-tap restore.
 Maintainer: Gokuencinar

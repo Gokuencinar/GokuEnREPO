@@ -21,6 +21,14 @@ static uint64_t CFPathIdentifier(NSString *path) {
     return hash;
 }
 
+@interface CFCarrierManager ()
+- (NSString *)resolvedCarrierPath;
+- (BOOL)hasIMSAPN:(NSDictionary *)carrier;
+- (BOOL)schemaIsSafeForPatch:(NSDictionary *)carrier reason:(NSString **)reason;
+- (BOOL)prepareVerifiedBackup:(NSString **)message;
+- (NSDictionary *)patchedCarrierFromOriginal:(NSDictionary *)original;
+@end
+
 @implementation CFCarrierManager
 
 - (NSString *)resolvedCarrierPath {
@@ -113,6 +121,10 @@ static uint64_t CFPathIdentifier(NSString *path) {
         if (reason) *reason = @"The APN schema is different from the iOS 15-18 layouts CarrierFix understands.";
         return NO;
     }
+    if (![self hasIMSAPN:carrier]) {
+        if (reason) *reason = @"This Cricket profile has no existing IMS APN. CarrierFix will not create one automatically on an untested carrier/iOS combination; copy the diagnostic for a targeted profile instead.";
+        return NO;
+    }
     return YES;
 }
 
@@ -123,9 +135,9 @@ static uint64_t CFPathIdentifier(NSString *path) {
     NSDictionary *smsSettings = [carrier[@"SMSSettings"] isKindOfClass:NSDictionary.class] ? carrier[@"SMSSettings"] : @{};
     if (![carrier[@"SupportsImsCapability"] boolValue]) return NO;
     if (![signaling[@"ForcedFeatureTags"] isEqual:@"voice,sms"]) return NO;
-    if ([smsSettings[@"TransportFallback"] boolValue]) return NO;
-    if ([imsSMS[@"SMSBundleToVoice"] boolValue]) return NO;
-    if ([imsSMS[@"allowCSFBInVolteMode"] boolValue]) return NO;
+    if (![smsSettings[@"TransportFallback"] isKindOfClass:NSNumber.class] || [smsSettings[@"TransportFallback"] boolValue]) return NO;
+    if (![imsSMS[@"SMSBundleToVoice"] isKindOfClass:NSNumber.class] || [imsSMS[@"SMSBundleToVoice"] boolValue]) return NO;
+    if (![imsSMS[@"allowCSFBInVolteMode"] isKindOfClass:NSNumber.class] || [imsSMS[@"allowCSFBInVolteMode"] boolValue]) return NO;
     return YES;
 }
 
@@ -328,11 +340,9 @@ static uint64_t CFPathIdentifier(NSString *path) {
 
     NSMutableArray *apnGroups = [carrier[@"apns"] mutableCopy];
     BOOL foundIMS = NO;
-    NSInteger firstConfigurationGroup = -1;
     for (NSUInteger i = 0; i < apnGroups.count; i++) {
         NSDictionary *group = [apnGroups[i] isKindOfClass:NSDictionary.class] ? apnGroups[i] : nil;
         if (!group || ![group[@"configuration"] isKindOfClass:NSArray.class]) continue;
-        if (firstConfigurationGroup < 0) firstConfigurationGroup = (NSInteger)i;
         NSMutableDictionary *mutableGroup = [group mutableCopy];
         NSMutableArray *configs = [group[@"configuration"] mutableCopy];
         for (NSUInteger j = 0; j < configs.count; j++) {
@@ -349,21 +359,7 @@ static uint64_t CFPathIdentifier(NSString *path) {
         mutableGroup[@"configuration"] = configs;
         apnGroups[i] = mutableGroup;
     }
-
-    if (!foundIMS && firstConfigurationGroup >= 0) {
-        NSMutableDictionary *group = [apnGroups[(NSUInteger)firstConfigurationGroup] mutableCopy];
-        NSMutableArray *configs = [group[@"configuration"] mutableCopy];
-        [configs addObject:@{ @"apn": @"ims",
-                              @"username": @"",
-                              @"password": @"",
-                              @"type-mask": @131072,
-                              @"tech-type-mask": @131072,
-                              @"AllowedProtocolMask": @3,
-                              @"AllowedProtocolMaskInRoaming": @3,
-                              @"SupportSwitchOver": @YES }];
-        group[@"configuration"] = configs;
-        apnGroups[(NSUInteger)firstConfigurationGroup] = group;
-    }
+    if (!foundIMS) return nil;
     carrier[@"apns"] = apnGroups;
     return carrier;
 }
@@ -392,6 +388,10 @@ static uint64_t CFPathIdentifier(NSString *path) {
     NSError *error = nil;
     NSDictionary *original = [self carrierDictionaryAtPath:path format:NULL error:&error];
     NSDictionary *candidate = [self patchedCarrierFromOriginal:original];
+    if (!candidate) {
+        if (message) *message = @"The IMS APN disappeared between safety preflight and Apply. No changes were made.";
+        return NO;
+    }
     NSData *candidateData = [NSPropertyListSerialization dataWithPropertyList:candidate format:format options:0 error:&error];
     if (!candidateData.length) {
         if (message) *message = error.localizedDescription ?: @"Could not serialize the patched carrier configuration.";
@@ -473,9 +473,9 @@ static uint64_t CFPathIdentifier(NSString *path) {
 
 - (NSString *)diagnosticText {
     NSDictionary *d = [self diagnose];
-    if (![d[@"ok"] boolValue]) return [NSString stringWithFormat:@"CarrierFix 0.2.0\nError: %@\nPath: %@", d[@"message"] ?: @"Unknown", d[@"path"] ?: @""];
+    if (![d[@"ok"] boolValue]) return [NSString stringWithFormat:@"CarrierFix 0.2.1\nError: %@\nPath: %@", d[@"message"] ?: @"Unknown", d[@"path"] ?: @""];
     return [NSString stringWithFormat:
-            @"CarrierFix 0.2.0\niOS: %@\nModel: %@\nCarrier: %@\nDetected Cricket: %@\nCarrier plist: %@\nWritable overlay: %@\nRecognized IMS/APN schema: %@\nVerified backup: %@\nFix currently present: %@\nSupports IMS: %@\nIMS APN: %@\nIMS ForcedFeatureTags: %@\nSMS TransportFallback: %@\nIMS SMSBundleToVoice: %@\nIMS allowCSFBInVolteMode: %@%@\n\nNo phone number, IMSI or ICCID is included in this report.",
+            @"CarrierFix 0.2.1\niOS: %@\nModel: %@\nCarrier: %@\nDetected Cricket: %@\nCarrier plist: %@\nWritable overlay: %@\nRecognized IMS/APN schema: %@\nVerified backup: %@\nFix currently present: %@\nSupports IMS: %@\nIMS APN: %@\nIMS ForcedFeatureTags: %@\nSMS TransportFallback: %@\nIMS SMSBundleToVoice: %@\nIMS allowCSFBInVolteMode: %@%@\n\nNo phone number, IMSI or ICCID is included in this report.",
             d[@"ios"], d[@"model"], d[@"carrier"], [d[@"cricket"] boolValue] ? @"YES" : @"NO", d[@"path"],
             [d[@"writable"] boolValue] ? @"YES" : @"NO", [d[@"schemaSafe"] boolValue] ? @"YES" : @"NO",
             [d[@"backupAvailable"] boolValue] ? @"YES" : @"NO", [d[@"fixApplied"] boolValue] ? @"YES" : @"NO",
