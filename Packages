@@ -688,10 +688,10 @@ Conflicts: com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.rootful
 Breaks: com.betterwifirh.tweak (<< 0.3.15)
 Replaces: com.betterwifirh.tweak (<< 0.3.15)
 Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.dopamine_0.3.15_iphoneos-arm64.deb
-Size: 126880
-MD5sum: f07b323d58861f7568d77878e51f66ca
-SHA1: 4f25be8a41e46d29c04a7713b162bf62e5e3c6b4
-SHA256: aca38dcc2385c526ff265028b5da7622b885b3d9bffe74b9b29508b9d0fb19bc
+Size: 126782
+MD5sum: d3e07d3aba10a72ab6d070a81f824458
+SHA1: 5358537a8b9856a080f763f3885f1de421b7efdf
+SHA256: 8892a073dbf023443e6f26a3106e83d6cb8312c8ac473edaedd58d7d0ed065a7
 Section: Tweaks
 Description: Advanced Wi-Fi tools for iOS 15-18 Dopamine rootless with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
 Author: BetterWiFi RH
@@ -709,10 +709,10 @@ Conflicts: com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.dopamine
 Breaks: com.betterwifirh.tweak (<< 0.3.15)
 Replaces: com.betterwifirh.tweak (<< 0.3.15)
 Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.rootful_0.3.15_iphoneos-arm.deb
-Size: 104272
-MD5sum: b3e4be9065c71a591c9c5fa1147c0915
-SHA1: d81b4595441a28c84298841ebf45e1e9f609cc7a
-SHA256: 1d4d39ccb65f57a1d49a95e47d5fe636ae57a7fbc217a574e736e8225a84a33b
+Size: 104180
+MD5sum: dccc558fffb6da31cd137e2b5250ad14
+SHA1: 221118879e386ff4f7788fc6eac55a33328329a1
+SHA256: c263fbc94d98e08a0432d6946866bb63b691c1860406c129d561e39c0352983d
 Section: Tweaks
 Description: Advanced Wi-Fi tools for iOS 15-17 rootful jailbreaks with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
 Author: BetterWiFi RH
@@ -730,10 +730,10 @@ Conflicts: com.betterwifirh.tweak.dopamine, com.betterwifirh.tweak.rootful
 Breaks: com.betterwifirh.tweak (<< 0.3.15)
 Replaces: com.betterwifirh.tweak (<< 0.3.15)
 Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.roothide_0.3.15_iphoneos-arm64e.deb
-Size: 107524
-MD5sum: aeacb13b51ccdebae76551f00ec54164
-SHA1: 82e7019a37cf406e724835e08478df659b6b20c9
-SHA256: 06381827b945ff801ee32d334c5323433a076f7ecd957cd5fde38f5baee78b8c
+Size: 107442
+MD5sum: cf5f95bdd8cf1ac7ee6f15c8a48b6f85
+SHA1: b1ea63aee1e8e4b001b4716cd6980a2ac670a2cb
+SHA256: 8bb3c2faf55d157ecd4d6b9a10d15b316bb2b052e1d1b4ad8cdbbd5a3bf29e51
 Section: Tweaks
 Description: Advanced Wi-Fi tools for iOS 16 RootHide with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
 Author: BetterWiFi RH
