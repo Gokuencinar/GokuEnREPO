@@ -6,6 +6,17 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad actual:** RootHide iOS 16 (`iphoneos-arm64e`), Dopamine rootless iOS 15–18 (`iphoneos-arm64`) y rootful iOS 15–17 (`iphoneos-arm`).
 
+## 1.0
+
+### Fixed
+- Completed the manual English translation for segmented controls and advanced filters.
+- Added a proper Settings/Shuffle icon based on Sileo's generic tweak icon.
+- Added 1x, 2x and 3x Retina icon assets with rounded corners so the icon displays at the correct size and stays sharp.
+
+### Packaging
+- Kept the three separate package IDs for RootHide, Dopamine rootless and rootful.
+- Recompiled all three variants as the stable 1.0 release.
+
 ## 0.3.16
 
 ### Packaging
