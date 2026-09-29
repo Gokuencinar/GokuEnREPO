@@ -22,7 +22,7 @@ for i, block in enumerate(blocks):
             k, v = line.split(": ", 1)
             fields[k] = v
 
-    if fields.get("Package") != "com.betterwifirh.tweak" or fields.get("Version") not in {"0.3.12", "0.3.13"}:
+    if fields.get("Package") != "com.betterwifirh.tweak" or fields.get("Version") not in {"0.3.12", "0.3.13", "0.3.14"}:
         continue
 
     arch = fields.get("Architecture")

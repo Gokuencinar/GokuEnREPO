@@ -6,6 +6,16 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad actual:** RootHide iOS 16 (`iphoneos-arm64e`), Dopamine rootless iOS 15–18 (`iphoneos-arm64`) y rootful iOS 15–17 (`iphoneos-arm`).
 
+## 0.3.14
+
+### Fixed
+- Rebuilt the **Dopamine rootless** package cleanly from source on macOS instead of reusing converted RootHide binaries.
+- Both BetterWiFiRH.dylib and BetterWiFiRHPrefs now contain native **arm64 + modern arm64e** slices (0x80000002) for current Dopamine environments.
+- Added build-time validation that rejects legacy arm64e ABI slices before a Dopamine package can be published.
+- Kept executable permissions at 0755 for the tweak dylib and PreferenceBundle executable.
+- Corrected package architecture metadata for all three variants: iphoneos-arm64e (RootHide), iphoneos-arm64 (Dopamine rootless), and iphoneos-arm (rootful).
+- This rebuild addresses reported PreferenceBundle loading failures on iOS 16 Dopamine and pointer-authentication crashes reported on iOS 18 Dopamine.
+
 ## 0.3.13
 
 ### Fixed
