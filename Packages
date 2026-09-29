@@ -488,6 +488,27 @@ Name: BetterWiFi RH (Dopamine)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
 
+Package: com.betterwifirh.tweak.dopamine
+Version: 0.3.17
+Architecture: iphoneos-arm64
+Maintainer: BetterWiFi RH
+Installed-Size: 612
+Depends: firmware (>= 15.0), firmware (<< 19.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.dopamine_0.3.17_iphoneos-arm64.deb
+Size: 145758
+MD5sum: cfb5577dd0d3e716e0dc5ff721bf07e0
+SHA1: 938016700a118116c8340feb0530b69bd55a8fb8
+SHA256: b08e2cf1958063c50a528f8be3ea616517dc533737ddc4b9ff2941b5ac079178
+Section: Tweaks
+Description: Advanced Wi-Fi tools for iOS 15-18 Dopamine rootless with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Dopamine)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
 Package: com.betterwifirh.tweak.rootful
 Version: 0.3.15
 Architecture: iphoneos-arm
@@ -530,6 +551,27 @@ Name: BetterWiFi RH (Rootful)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
 
+Package: com.betterwifirh.tweak.rootful
+Version: 0.3.17
+Architecture: iphoneos-arm
+Maintainer: BetterWiFi RH
+Installed-Size: 340
+Depends: firmware (>= 15.0), firmware (<< 18.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.dopamine
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.rootful_0.3.17_iphoneos-arm.deb
+Size: 122762
+MD5sum: ca0c60ff9cbf7adaa3dc2b821bced2cd
+SHA1: bed5adac177e1ea6947329b208f9b214020ace7c
+SHA256: 67fe8fe93775d83e0a8b84f28cbae11b52fa2fbcff4606e1b1e3effa1210ae51
+Section: Tweaks
+Description: Advanced Wi-Fi tools for iOS 15-17 rootful jailbreaks with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Rootful)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
 Package: com.betterwifirh.tweak.roothide
 Version: 0.3.15
 Architecture: iphoneos-arm64e
@@ -565,6 +607,27 @@ Size: 107494
 MD5sum: 0724845a71776cf2a6cfc641db03b544
 SHA1: 96c6fc7d2e4108e79f98d97a318836867a4ec3ca
 SHA256: 7a2a6254f3e3929a93ac8da09bb63a993f9708f2cffac4cddf190a56322d984d
+Section: Tweaks
+Description: Advanced Wi-Fi tools for iOS 16 RootHide with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (RootHide)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.roothide
+Version: 0.3.17
+Architecture: iphoneos-arm64e
+Maintainer: BetterWiFi RH
+Installed-Size: 436
+Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.dopamine, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.roothide_0.3.17_iphoneos-arm64e.deb
+Size: 126166
+MD5sum: ec42da89c94a424534353a9dffe104fe
+SHA1: 83f26a90eff983e03a6470cafcfc8e8dc9e8be3e
+SHA256: b5f4eea99f278f57ee119c39fb87cf97cb52a593233e2795d4671912f98b4866
 Section: Tweaks
 Description: Advanced Wi-Fi tools for iOS 16 RootHide with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
 Author: BetterWiFi RH
