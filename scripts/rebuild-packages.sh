@@ -2,7 +2,6 @@
 set -euo pipefail
 
 : > Packages
-# Only publish packages from each tweak's dedicated debs/ directory.
 for package_dir in tweaks/*/debs; do
   [ -d "$package_dir" ] || continue
   dpkg-scanpackages -m "$package_dir" /dev/null >> Packages
@@ -14,6 +13,40 @@ from pathlib import Path
 path = Path("Packages")
 blocks = path.read_text().strip().split("\n\n")
 
+legacy_versions = {"0.3.12", "0.3.13", "0.3.14"}
+legacy_package = "com.betterwifirh.tweak"
+new_version = "0.3.15"
+
+legacy_variants = {
+    "iphoneos-arm64e": (
+        "BetterWiFi RH (RootHide)",
+        "Advanced Wi-Fi tools for iOS 16 RootHide with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
+    ),
+    "iphoneos-arm64": (
+        "BetterWiFi RH (Dopamine)",
+        "Advanced Wi-Fi tools for iOS 15-18 Dopamine rootless with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
+    ),
+    "iphoneos-arm": (
+        "BetterWiFi RH (Rootful)",
+        "Advanced Wi-Fi tools for iOS 15-17 rootful jailbreaks with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
+    ),
+}
+
+new_variants = {
+    "com.betterwifirh.tweak.roothide": (
+        "BetterWiFi RH (RootHide)",
+        "Advanced Wi-Fi tools for iOS 16 RootHide with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
+    ),
+    "com.betterwifirh.tweak.dopamine": (
+        "BetterWiFi RH (Dopamine)",
+        "Advanced Wi-Fi tools for iOS 15-18 Dopamine rootless with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
+    ),
+    "com.betterwifirh.tweak.rootful": (
+        "BetterWiFi RH (Rootful)",
+        "Advanced Wi-Fi tools for iOS 15-17 rootful jailbreaks with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
+    ),
+}
+
 for i, block in enumerate(blocks):
     lines = block.splitlines()
     fields = {}
@@ -22,28 +55,25 @@ for i, block in enumerate(blocks):
             k, v = line.split(": ", 1)
             fields[k] = v
 
-    if fields.get("Package") != "com.betterwifirh.tweak" or fields.get("Version") not in {"0.3.12", "0.3.13", "0.3.14"}:
-        continue
-
+    package = fields.get("Package")
+    version = fields.get("Version")
     arch = fields.get("Architecture")
-    variants = {
-        "iphoneos-arm64e": (
-            "BetterWiFi RH (RootHide)",
-            "Advanced Wi-Fi tools for iOS 16 RootHide with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
-        ),
-        "iphoneos-arm64": (
-            "BetterWiFi RH (Dopamine)",
-            "Advanced Wi-Fi tools for iOS 15-18 Dopamine rootless with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
-        ),
-        "iphoneos-arm": (
-            "BetterWiFi RH (Rootful)",
-            "Advanced Wi-Fi tools for iOS 15-17 rootful jailbreaks with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection."
-        ),
-    }
-    if arch not in variants:
+
+    name = None
+    description = None
+
+    if package == legacy_package and version in legacy_versions:
+        if arch in legacy_variants:
+            name, description = legacy_variants[arch]
+    elif package in new_variants and version == new_version:
+        name, description = new_variants[package]
+    elif package == legacy_package and version == new_version:
+        name = "BetterWiFi RH (Migration)"
+        description = "Transitional package that installs the correct BetterWiFi RH variant for this jailbreak architecture."
+
+    if not name:
         continue
 
-    name, description = variants[arch]
     rewritten = []
     seen = set()
     for line in lines:

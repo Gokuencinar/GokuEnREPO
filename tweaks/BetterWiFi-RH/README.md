@@ -16,13 +16,13 @@ BetterWiFi RH adds extra Wi-Fi information and tools directly to the Wi-Fi secti
 
 ## Compatibility
 
-Version **0.3.14** is available in three builds:
+Version **0.3.15** is available in three builds:
 
 - **RootHide:** iOS 16.x — `iphoneos-arm64e`
 - **Dopamine rootless:** iOS 15–18 — `iphoneos-arm64`
 - **Rootful:** iOS 15–17 — `iphoneos-arm`
 
-Compatibility outside the setups I have personally tested may vary, so feedback is welcome.
+Package IDs are now split by jailbreak environment so Sileo cannot confuse RootHide, Dopamine and rootful builds. Existing 0.3.14 installations migrate automatically through a transitional package.\n\nCompatibility outside the setups I have personally tested may vary, so feedback is welcome.
 
 ## Install
 

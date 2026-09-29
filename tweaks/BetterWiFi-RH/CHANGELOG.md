@@ -6,6 +6,17 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad actual:** RootHide iOS 16 (`iphoneos-arm64e`), Dopamine rootless iOS 15–18 (`iphoneos-arm64`) y rootful iOS 15–17 (`iphoneos-arm`).
 
+## 0.3.15
+
+### Packaging
+- Split BetterWiFi RH into unique package IDs so Sileo can no longer select the wrong jailbreak variant:
+  - com.betterwifirh.tweak.roothide
+  - com.betterwifirh.tweak.dopamine
+  - com.betterwifirh.tweak.rootful
+- Added architecture-specific com.betterwifirh.tweak 0.3.15 transitional packages so users upgrading from 0.3.14 are automatically migrated to the correct variant.
+- Added Conflicts, Breaks and Replaces metadata to prevent incompatible variants from being installed together.
+- Kept the 0.3.14 codebase and modern arm64e fix unchanged; 0.3.15 is primarily a package-selection/migration fix.
+
 ## 0.3.14
 
 ### Fixed
