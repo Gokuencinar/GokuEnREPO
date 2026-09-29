@@ -6,13 +6,6 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad actual:** RootHide iOS 16 (`iphoneos-arm64e`), Dopamine rootless iOS 15–18 (`iphoneos-arm64`) y rootful iOS 15–17 (`iphoneos-arm`).
 
-## 0.3.17
-
-### Fixed
-- Fixed the manual English/Spanish selector for segmented preference controls. Language, band, network type and sorting segments now rebuild the `PSSpecifier` title map instead of leaving previously localized labels cached.
-- Added an explicit BetterWiFi RH Settings icon inside the PreferenceBundle so Dopamine/iOS 17–18 no longer has to rely on PreferenceLoader's fallback icon behavior.
-- Rebuilt and validated the RootHide, Dopamine rootless and rootful packages from the same 0.3.17 source.
-
 ## 0.3.16
 
 ### Packaging
