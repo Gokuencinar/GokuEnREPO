@@ -623,3 +623,120 @@ Author: BetterWiFi RH
 Name: BetterWiFi RH (Rootful)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak
+Version: 0.3.15
+Architecture: iphoneos-arm64e
+Maintainer: BetterWiFi RH
+Installed-Size: 1
+Depends: com.betterwifirh.tweak.roothide (= 0.3.15)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak_0.3.15_iphoneos-arm64e.deb
+Size: 564
+MD5sum: e5419237d0ae0a149c87e914e2efbf0f
+SHA1: 1b6b5f850efc94ae94f7e34ac2c483f81edbabd4
+SHA256: 4d16bd152a2bd3e63c2a2031d057e315207ce7ae9d737b8001dd0dc8b05e8e4b
+Section: Tweaks
+Description: Transitional package that installs the correct BetterWiFi RH variant for this jailbreak architecture.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Migration)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak
+Version: 0.3.15
+Architecture: iphoneos-arm
+Maintainer: BetterWiFi RH
+Installed-Size: 1
+Depends: com.betterwifirh.tweak.rootful (= 0.3.15)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak_0.3.15_iphoneos-arm.deb
+Size: 560
+MD5sum: 87fe6303f448d6dd4864036be0e98a2d
+SHA1: 45e0d6355d0c695854f8ba91c4c4e34dd0edc845
+SHA256: 4ccc150d74b8ab2a164aca3fb0cb93783e5c888f89597a344c52a5d99daa0c1e
+Section: Tweaks
+Description: Transitional package that installs the correct BetterWiFi RH variant for this jailbreak architecture.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Migration)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak
+Version: 0.3.15
+Architecture: iphoneos-arm64
+Maintainer: BetterWiFi RH
+Installed-Size: 1
+Depends: com.betterwifirh.tweak.dopamine (= 0.3.15)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak_0.3.15_iphoneos-arm64.deb
+Size: 564
+MD5sum: 57bc6d7d6b2492e1eebbb178679fb341
+SHA1: d31bb2105cea077cc2a5eef016d779f0e01d07ad
+SHA256: 4a9822f41ecc8fe8e11caec4d4999306f1808eb5a8caeff3c26a6a31fa1fdba2
+Section: Tweaks
+Description: Transitional package that installs the correct BetterWiFi RH variant for this jailbreak architecture.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Migration)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.dopamine
+Version: 0.3.15
+Architecture: iphoneos-arm64
+Maintainer: BetterWiFi RH
+Installed-Size: 592
+Depends: firmware (>= 15.0), firmware (<< 19.0), preferenceloader
+Conflicts: com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.15)
+Replaces: com.betterwifirh.tweak (<< 0.3.15)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.dopamine_0.3.15_iphoneos-arm64.deb
+Size: 126880
+MD5sum: f07b323d58861f7568d77878e51f66ca
+SHA1: 4f25be8a41e46d29c04a7713b162bf62e5e3c6b4
+SHA256: aca38dcc2385c526ff265028b5da7622b885b3d9bffe74b9b29508b9d0fb19bc
+Section: Tweaks
+Description: Advanced Wi-Fi tools for iOS 15-18 Dopamine rootless with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Dopamine)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.rootful
+Version: 0.3.15
+Architecture: iphoneos-arm
+Maintainer: BetterWiFi RH
+Installed-Size: 320
+Depends: firmware (>= 15.0), firmware (<< 18.0), preferenceloader
+Conflicts: com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.dopamine
+Breaks: com.betterwifirh.tweak (<< 0.3.15)
+Replaces: com.betterwifirh.tweak (<< 0.3.15)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.rootful_0.3.15_iphoneos-arm.deb
+Size: 104272
+MD5sum: b3e4be9065c71a591c9c5fa1147c0915
+SHA1: d81b4595441a28c84298841ebf45e1e9f609cc7a
+SHA256: 1d4d39ccb65f57a1d49a95e47d5fe636ae57a7fbc217a574e736e8225a84a33b
+Section: Tweaks
+Description: Advanced Wi-Fi tools for iOS 15-17 rootful jailbreaks with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Rootful)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.roothide
+Version: 0.3.15
+Architecture: iphoneos-arm64e
+Maintainer: BetterWiFi RH
+Installed-Size: 416
+Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
+Conflicts: com.betterwifirh.tweak.dopamine, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.15)
+Replaces: com.betterwifirh.tweak (<< 0.3.15)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.roothide_0.3.15_iphoneos-arm64e.deb
+Size: 107524
+MD5sum: aeacb13b51ccdebae76551f00ec54164
+SHA1: 82e7019a37cf406e724835e08478df659b6b20c9
+SHA256: 06381827b945ff801ee32d334c5323433a076f7ecd957cd5fde38f5baee78b8c
+Section: Tweaks
+Description: Advanced Wi-Fi tools for iOS 16 RootHide with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters, diagnostics, Shuffle integration and language selection.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (RootHide)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
