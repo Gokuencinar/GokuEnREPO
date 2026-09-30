@@ -6,6 +6,13 @@ Este archivo documenta las versiones de BetterWiFi RH publicadas actualmente en 
 
 **Compatibilidad actual:** RootHide iOS 16 (`iphoneos-arm64e`), Dopamine rootless iOS 15–18 (`iphoneos-arm64`) y rootful iOS 15–17 (`iphoneos-arm`).
 
+## 1.1
+
+- Added Wi-Fi quality score, compact technical mode and extended signal history.
+- Added IPv6, OUI, scan age, tap-to-copy and diagnostic sharing.
+- Improved filters and sorting, including 6 GHz support and clearer units.
+- Cleaned up and reorganized the settings interface.
+
 ## 1.0
 
 ### Fixed

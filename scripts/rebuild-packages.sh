@@ -18,15 +18,15 @@ out = []
 split_names = {
     "com.betterwifirh.tweak.roothide": (
         "BetterWiFi RH (RootHide)",
-        "Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.",
+        "Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.",
     ),
     "com.betterwifirh.tweak.dopamine": (
         "BetterWiFi RH (Dopamine)",
-        "Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.",
+        "Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.",
     ),
     "com.betterwifirh.tweak.rootful": (
         "BetterWiFi RH (Rootful)",
-        "Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.",
+        "Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.",
     ),
 }
 
