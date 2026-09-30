@@ -14,9 +14,17 @@ BetterWiFi RH adds extra Wi-Fi information and tools directly to the Wi-Fi secti
 - English and Spanish interface
 - No dedicated background daemon
 
+## What's new in 1.1
+
+- Wi-Fi quality score and compact technical mode
+- Extended signal history with min / average / max values
+- IPv6, OUI and scan-age information
+- Tap-to-copy and diagnostic sharing
+- Improved filters and sorting, including 6 GHz
+
 ## Compatibility
 
-Version **1.0** is available in three builds:
+Version **1.1** is available in three builds:
 
 - **RootHide:** iOS 16.x — `iphoneos-arm64e`
 - **Dopamine rootless:** iOS 15–18 — `iphoneos-arm64`
