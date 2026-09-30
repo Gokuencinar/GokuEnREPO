@@ -14,6 +14,15 @@ BetterWiFi RH adds extra Wi-Fi information and tools directly to the Wi-Fi secti
 - English and Spanish interface
 - No dedicated background daemon
 
+## What's new in 1.2~exp1
+
+**Experimental public build.**
+
+- Added advanced network topology analysis.
+- Detects multiple access points sharing the same SSID.
+- Adds possible mesh / multi-AP and band-steering detection.
+- Shows connected AP, alternate APs, RSSI, channels, bands and roaming hints.
+
 ## What's new in 1.1.1
 
 - Added support for arm64 devices on RootHide.
@@ -28,7 +37,7 @@ BetterWiFi RH adds extra Wi-Fi information and tools directly to the Wi-Fi secti
 
 ## Compatibility
 
-Version **1.1.1** is available in three builds:
+Version **1.2~exp1** is currently the public experimental build in three variants:
 
 - **RootHide:** iOS 16.x — `iphoneos-arm64e`
 - **Dopamine rootless:** iOS 15–18 — `iphoneos-arm64`
