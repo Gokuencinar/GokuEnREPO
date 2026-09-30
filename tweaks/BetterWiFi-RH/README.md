@@ -14,6 +14,10 @@ BetterWiFi RH adds extra Wi-Fi information and tools directly to the Wi-Fi secti
 - English and Spanish interface
 - No dedicated background daemon
 
+## What's new in 1.1.1
+
+- Added support for arm64 devices on RootHide.
+
 ## What's new in 1.1
 
 - Wi-Fi quality score and compact technical mode
@@ -24,7 +28,7 @@ BetterWiFi RH adds extra Wi-Fi information and tools directly to the Wi-Fi secti
 
 ## Compatibility
 
-Version **1.1** is available in three builds:
+Version **1.1.1** is available in three builds:
 
 - **RootHide:** iOS 16.x — `iphoneos-arm64e`
 - **Dopamine rootless:** iOS 15–18 — `iphoneos-arm64`
