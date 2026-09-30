@@ -22,8 +22,6 @@ Version **1.0** is available in three builds:
 - **Dopamine rootless:** iOS 15–18 — `iphoneos-arm64`
 - **Rootful:** iOS 15–17 — `iphoneos-arm`
 
-Package IDs are split by jailbreak environment so Sileo cannot confuse RootHide, Dopamine and rootful builds. The legacy package ID is no longer published in the APT index; users coming from 0.3.14/0.3.15 should install the matching variant once, and Sileo will remove the legacy package through Conflicts/Replaces metadata. Compatibility outside the setups I have personally tested may vary, so feedback is welcome.
-
 ## Install
 
 Add GokuEnREPO to your package manager:
