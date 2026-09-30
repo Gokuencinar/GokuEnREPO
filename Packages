@@ -461,7 +461,7 @@ MD5sum: d3e07d3aba10a72ab6d070a81f824458
 SHA1: 5358537a8b9856a080f763f3885f1de421b7efdf
 SHA256: 8892a073dbf023443e6f26a3106e83d6cb8312c8ac473edaedd58d7d0ed065a7
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (Dopamine)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -482,7 +482,7 @@ MD5sum: dcceb0ef9511bce42fc057d9c0a14168
 SHA1: a24385844c1e107fb72123395f06fb3d58bf95d4
 SHA256: 11a9b9d8f62de75cd79b9e39c85901d3410b2e26f7572cc9c43e17706b2728ae
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (Dopamine)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -503,7 +503,28 @@ MD5sum: 9c42f21eb150dbd549a44ff4fb019b82
 SHA1: a9cf364dd55b11e672e6729ed44679f83d096703
 SHA256: 19879573f707c6d47070fbf615ba8f50d7f9d9d685fe1617cdf1a8ba911e7dfd
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Dopamine)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.dopamine
+Version: 1.1
+Architecture: iphoneos-arm64
+Maintainer: BetterWiFi RH
+Installed-Size: 640
+Depends: firmware (>= 15.0), firmware (<< 19.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.dopamine_1.1_iphoneos-arm64.deb
+Size: 140558
+MD5sum: 022a327dcab3b5e07fd61a6918e403b5
+SHA1: ac0176ac1722909a5512ceb2ddc2ef8161976131
+SHA256: 96547caa0903caa052eed270144dbb19e2eb1c88264f5ca66eb6d085bb71068b
+Section: Tweaks
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (Dopamine)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -524,7 +545,7 @@ MD5sum: dccc558fffb6da31cd137e2b5250ad14
 SHA1: 221118879e386ff4f7788fc6eac55a33328329a1
 SHA256: c263fbc94d98e08a0432d6946866bb63b691c1860406c129d561e39c0352983d
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (Rootful)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -545,7 +566,7 @@ MD5sum: b5b33fcab3b9054835831da609977c14
 SHA1: 92660309ceee4a4ede43a7bb8407707f0667755d
 SHA256: d26f30b59fa3db3d2141151d27ff0fda1ed86059b571fdcf2df7a23798054a32
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (Rootful)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -566,7 +587,28 @@ MD5sum: 58e0d2c778ba6f51a145805d474e45ba
 SHA1: 8815127f8bbe9d5e6f8a854ef7387006d0d1d0c0
 SHA256: a28161c0220c99e5e67ba15fad09a869a497e4c94563f20863185b3a11d558ec
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Rootful)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.rootful
+Version: 1.1
+Architecture: iphoneos-arm
+Maintainer: BetterWiFi RH
+Installed-Size: 352
+Depends: firmware (>= 15.0), firmware (<< 18.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.dopamine
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.rootful_1.1_iphoneos-arm.deb
+Size: 115506
+MD5sum: 89167e5b0dd246e92a09e117c8f172b3
+SHA1: 75a1c2724513ef06091838e94b17e3a3efbe1544
+SHA256: 111c9a0ec1768885ce7c2d0ac8a6758c2e0e83ea3723115409f65098af4f62b6
+Section: Tweaks
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (Rootful)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -587,7 +629,7 @@ MD5sum: cf5f95bdd8cf1ac7ee6f15c8a48b6f85
 SHA1: b1ea63aee1e8e4b001b4716cd6980a2ac670a2cb
 SHA256: 8bb3c2faf55d157ecd4d6b9a10d15b316bb2b052e1d1b4ad8cdbbd5a3bf29e51
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (RootHide)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -608,7 +650,7 @@ MD5sum: 0724845a71776cf2a6cfc641db03b544
 SHA1: 96c6fc7d2e4108e79f98d97a318836867a4ec3ca
 SHA256: 7a2a6254f3e3929a93ac8da09bb63a993f9708f2cffac4cddf190a56322d984d
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (RootHide)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
@@ -629,7 +671,28 @@ MD5sum: 11d29bb8144a136a190836b09b4fee16
 SHA1: 552a010af35dab3ef68f39217374dc987fb9d6ad
 SHA256: b8a6b0f30f23cb9e68e223cfd5c82f60c4e633aca3bdf9b68e9d2a5eba6fe424
 Section: Tweaks
-Description: Advanced Wi-Fi tools for iOS 16/17/18 (Dopamine/RootHide/Relaxin) with connected-network details, live signal monitoring and history, 2.4/5 GHz channel analysis, classic/advanced filters.
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (RootHide)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.roothide
+Version: 1.1
+Architecture: iphoneos-arm64e
+Maintainer: BetterWiFi RH
+Installed-Size: 432
+Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.dopamine, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.roothide_1.1_iphoneos-arm64e.deb
+Size: 118618
+MD5sum: bb6a85fc35dd9c30e3921c58bfff1af2
+SHA1: c99a4fd1256f1dafef150720c1dba4da662a87e9
+SHA256: 9c63bb5b01597c6783d08d4135bc53e64e3654d42d57a1011afff852442a6a45
+Section: Tweaks
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
 Name: BetterWiFi RH (RootHide)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
