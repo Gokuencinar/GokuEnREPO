@@ -551,6 +551,27 @@ Name: BetterWiFi RH (Dopamine)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
 
+Package: com.betterwifirh.tweak.dopamine
+Version: 1.2~exp1
+Architecture: iphoneos-arm64
+Maintainer: BetterWiFi RH
+Installed-Size: 672
+Depends: firmware (>= 15.0), firmware (<< 19.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.dopamine_1.2~exp1_iphoneos-arm64.deb
+Size: 152010
+MD5sum: e6dee5f89871ac1f77140fff1b5a06cb
+SHA1: 265d388fcedefbfe52a363619cd1a5803f61b691
+SHA256: c9bc92803e3c9f4f74aa4a31a555a21673bc7163270b29ee42c8006eb0531de3
+Section: Tweaks
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Dopamine)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
 Package: com.betterwifirh.tweak.rootful
 Version: 0.3.15
 Architecture: iphoneos-arm
@@ -656,6 +677,27 @@ Name: BetterWiFi RH (Rootful)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
 
+Package: com.betterwifirh.tweak.rootful
+Version: 1.2~exp1
+Architecture: iphoneos-arm
+Maintainer: BetterWiFi RH
+Installed-Size: 368
+Depends: firmware (>= 15.0), firmware (<< 18.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.roothide, com.betterwifirh.tweak.dopamine
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.rootful_1.2~exp1_iphoneos-arm.deb
+Size: 122462
+MD5sum: 2e0a0e2a1cbb053befaf06fb7734c3cd
+SHA1: 53a95ae730f0ba3d930ef433304cbd94f578c9dd
+SHA256: 83b9f1707ee8d337517f312c38900c94211954acbf32a747257bfb52a7c31e33
+Section: Tweaks
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (Rootful)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
 Package: com.betterwifirh.tweak.roothide
 Version: 0.3.15
 Architecture: iphoneos-arm64e
@@ -754,6 +796,27 @@ Size: 140022
 MD5sum: e83d1b9b07b1363e2f4ff2555db5273c
 SHA1: 687fe084ad5f26b0302f7575a382813fc95b02a7
 SHA256: ecee8b087292737d2ce453cf8590e9dafda178db1596934ac305100cabcff359
+Section: Tweaks
+Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
+Author: BetterWiFi RH
+Name: BetterWiFi RH (RootHide)
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: com.betterwifirh.tweak.roothide
+Version: 1.2~exp1
+Architecture: iphoneos-arm64e
+Maintainer: BetterWiFi RH
+Installed-Size: 640
+Depends: firmware (>= 16.0), firmware (<< 17.0), preferenceloader
+Conflicts: com.betterwifirh.tweak, com.betterwifirh.tweak.dopamine, com.betterwifirh.tweak.rootful
+Breaks: com.betterwifirh.tweak (<< 0.3.16)
+Replaces: com.betterwifirh.tweak (<< 0.3.16)
+Filename: tweaks/BetterWiFi-RH/debs/com.betterwifirh.tweak.roothide_1.2~exp1_iphoneos-arm64e.deb
+Size: 151242
+MD5sum: cd97fb6b8b20071e5f537e8a7881ab42
+SHA1: f0dc4583dd226e1639c9bf8a89024cd4a5a07b2d
+SHA256: e4e6abe692a12566a204840363865657d3f53ebb59aefe5031626f3ada4a6bf9
 Section: Tweaks
 Description: Advanced Wi-Fi tools with connected-network details, quality score, live signal history, diagnostics, and improved 2.4/5/6 GHz filtering.
 Author: BetterWiFi RH
