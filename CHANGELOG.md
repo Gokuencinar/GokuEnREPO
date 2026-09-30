@@ -10,6 +10,6 @@ Historial de los paquetes publicados en este repositorio APT.
 ## Estado actual
 
 - **BandLock:** 1.3
-- **BetterWiFi RH:** 1.1.1
+- **BetterWiFi RH:** 1.2~exp1 (experimental)
 
 Para el detalle de cada versión, consulta el changelog específico de cada paquete. Cada entrada diferencia novedades, cambios y correcciones cuando existen datos históricos suficientes.
