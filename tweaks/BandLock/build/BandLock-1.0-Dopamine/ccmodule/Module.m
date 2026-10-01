@@ -182,27 +182,23 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
     BLCCSynchronizePreferences();
     NSString *intent = BLCCLastModeCode();
 
-    // While a user-initiated RAT transition is settling, keep the exact mode
-    // they chose instead of allowing a stale modem readback to repaint the tile.
-    if (intent.length && CFAbsoluteTimeGetCurrent() < self.modeIntentPinnedUntil) {
-        return intent;
+    // On some iOS 16 / Qualcomm combinations CoreTelephony reports Automatic
+    // again shortly after a successful forced 3G/LTE change even though the
+    // modem remains on the requested RAT. The CC tile therefore represents the
+    // last mode BandLock successfully requested, not that ambiguous readback.
+    if (intent.length) {
+        if ([intent isEqualToString:@"2g"]) return BLCCShow2G() ? @"2g" : @"automatic";
+        if ([intent isEqualToString:@"3g"]) return BLCCShow3G() ? @"3g" : @"automatic";
+        if ([intent isEqualToString:@"lte"]) return BLCCShowLTE() ? @"lte" : @"automatic";
+        if ([intent hasPrefix:@"5g-"]) return BLCCShow5G() ? intent : @"automatic";
+        if ([intent isEqualToString:@"automatic"]) return @"automatic";
     }
 
-    // CoreTelephony cannot reliably distinguish plain Automatic from 5G Auto
-    // on all iOS 16 modem stacks: both can read back as Automatic + preferred
-    // NR. Preserve the last explicit user intent for that ambiguous pair.
-    BOOL reportedIsAutomaticFamily =
-        [reportedMode isEqualToString:@"automatic"] || [reportedMode isEqualToString:@"5g-auto"];
-    BOOL intentIsAutomaticFamily =
-        [intent isEqualToString:@"automatic"] || [intent isEqualToString:@"5g-auto"];
-    if (reportedIsAutomaticFamily && intentIsAutomaticFamily) {
-        if ([intent isEqualToString:@"5g-auto"] && BLCCShow5G()) return @"5g-auto";
-        return @"automatic";
-    }
-
-    // A hidden Control Center mode must not reappear as the tile label merely
-    // because a status refresh reports that RAT. Auto remains the neutral state
-    // for a hidden 5G family.
+    // With no persisted BandLock intent yet, use the modem readback, but never
+    // surface a mode the user explicitly hid from the Control Center selector.
+    if ([reportedMode isEqualToString:@"2g"] && !BLCCShow2G()) return @"automatic";
+    if ([reportedMode isEqualToString:@"3g"] && !BLCCShow3G()) return @"automatic";
+    if ([reportedMode isEqualToString:@"lte"] && !BLCCShowLTE()) return @"automatic";
     if ([reportedMode hasPrefix:@"5g-"] && !BLCCShow5G()) {
         return @"automatic";
     }
@@ -377,16 +373,18 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (epoch != self.stateEpoch) return;
 
-            if (!success) {
-                self.currentModeCode = self.confirmedModeCode ?: @"automatic";
-                [self bl_syncVisualSelection];
-                return;
-            }
+              if (!success) {
+                  BLCCSetLastModeCode(self.confirmedModeCode ?: @"automatic");
+                  self.currentModeCode = self.confirmedModeCode ?: @"automatic";
+                  [self bl_syncVisualSelection];
+                  return;
+              }
 
             if ([supports5GValue respondsToSelector:@selector(boolValue)]) {
                 self.supports5G = [supports5GValue boolValue];
-            }
-            NSString *confirmed = modeCode.length ? modeCode : requestedMode;
+              }
+              BLCCSetLastModeCode(requestedMode);
+              NSString *confirmed = modeCode.length ? modeCode : requestedMode;
             if (!self.supports5G && [confirmed hasPrefix:@"5g-"]) confirmed = @"automatic";
             confirmed = [self bl_normalizedReportedMode:confirmed];
             self.currentModeCode = confirmed;
