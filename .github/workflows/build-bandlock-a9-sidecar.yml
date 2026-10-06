@@ -46,11 +46,11 @@ jobs:
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-A9-Sidecar
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          deb='packages/com.gokuencinar.bandlock.a9test_1.4~a9diag1_iphoneos-arm64.deb'
+          deb='packages/com.gokuencinar.bandlock.a9test_1.4~a9diag1_iphoneos-arm64e.deb'
           test -f "$deb"
           lipo -archs .theos/_/var/jb/usr/libexec/BandLockA9TestDaemon | grep -Eq 'arm64 arm64e|arm64e arm64'
           lipo -archs .theos/_/var/jb/Applications/BandLockA9Test.app/BandLockA9Test | grep -Eq 'arm64 arm64e|arm64e arm64'
       - uses: actions/upload-artifact@v4
         with:
           name: BandLock-A9-Sidecar-Test
-          path: tweaks/BandLock/build/BandLock-A9-Sidecar/packages/com.gokuencinar.bandlock.a9test_1.4~a9diag1_iphoneos-arm64.deb
+          path: tweaks/BandLock/build/BandLock-A9-Sidecar/packages/com.gokuencinar.bandlock.a9test_1.4~a9diag1_iphoneos-arm64e.deb

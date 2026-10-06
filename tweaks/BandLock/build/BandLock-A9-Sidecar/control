@@ -1,7 +1,7 @@
 Package: com.gokuencinar.bandlock.a9test
 Name: BandLock A9 Test
 Version: 1.4~a9diag1
-Architecture: iphoneos-arm64
+Architecture: iphoneos-arm64e
 Description: Side-by-side BandLock diagnostic app for validating the Dopamine daemon and IPC without replacing the installed BandLock package.
 Maintainer: Gokuencinar
 Author: Gokuencinar
