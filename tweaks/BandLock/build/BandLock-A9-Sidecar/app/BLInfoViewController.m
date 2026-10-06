@@ -9,10 +9,10 @@ static NSString * const BLBuyMeACoffeeURL = @"https://buymeacoffee.com/gokuen";
 static NSString * const BLPackagesURL = @"https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/Packages";
 static NSString * const BLChangelogRawURL = @"https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/CHANGELOG.md";
 #if BL_VARIANT_ROOTFUL
-static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock.rootful";
+static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock.a9test";
 static NSString * const BLVariantName = @"Rootful";
 #else
-static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock.dopamine";
+static NSString * const BLPackageIdentifier = @"com.gokuencinar.bandlock.a9test";
 static NSString * const BLVariantName = @"Dopamine";
 #endif
 

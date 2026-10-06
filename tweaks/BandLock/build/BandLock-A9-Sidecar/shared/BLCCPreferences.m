@@ -2,9 +2,9 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <notify.h>
 
-NSString * const BLCCPreferencesChangedNotification = @"com.gokuencinar.bandlock.ccprefs.changed";
+NSString * const BLCCPreferencesChangedNotification = @"com.gokuencinar.bandlock.a9test.ccprefs.changed";
 
-static CFStringRef const BLCCPreferencesDomain = CFSTR("com.gokuencinar.bandlock.ccprefs");
+static CFStringRef const BLCCPreferencesDomain = CFSTR("com.gokuencinar.bandlock.a9test.ccprefs");
 static CFStringRef const BLCCShow2GKey = CFSTR("Show2G");
 static CFStringRef const BLCCShow3GKey = CFSTR("Show3G");
 static CFStringRef const BLCCShowLTEKey = CFSTR("ShowLTE");

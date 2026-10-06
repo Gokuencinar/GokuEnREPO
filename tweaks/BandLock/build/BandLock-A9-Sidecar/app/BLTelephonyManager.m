@@ -139,7 +139,7 @@ static NSString *BLIPCFailureDetail(NSString *stage,
         BLBreadcrumb("manager init begin");
         signal(SIGPIPE, SIG_IGN);
         BLBreadcrumb("SIGPIPE ignored process-wide");
-        _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.daemon-client", DISPATCH_QUEUE_SERIAL);
+        _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.a9test.daemon-client", DISPATCH_QUEUE_SERIAL);
         _daemonSocketPath = [BLDaemonSocketPath() copy];
         BLBreadcrumbf("manager socket path cached path=%s",
                       _daemonSocketPath.fileSystemRepresentation ?: "(null)");
