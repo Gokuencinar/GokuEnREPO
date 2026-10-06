@@ -38,8 +38,16 @@ jobs:
           ! grep -q '^Conflicts:' "$root/control"
           grep -q 'APPLICATION_NAME = BandLockA9Test' "$root/app/Makefile"
           grep -q 'TOOL_NAME = BandLockA9TestDaemon' "$root/daemon/Makefile"
+          grep -q '<string>bandlocka9test</string>' "$root/app/Resources/Info.plist"
+          grep -q 'isEqualToString:@"bandlocka9test"' "$root/app/BLAppDelegate.m"
           grep -q '/tmp/com.gokuencinar.bandlockd.a9test.sock' "$root/app/BLTelephonyManager.m"
           grep -q '/tmp/com.gokuencinar.bandlockd.a9test.sock' "$root/daemon/main.m"
+          grep -q '/var/mobile/Library/Logs/BandLockGlobal/BandLock-A9Test-daemon.log' "$root/app/BLTelephonyManager.m"
+          grep -q '/var/mobile/Library/Logs/BandLockGlobal/BandLock-A9Test-daemon.log' "$root/daemon/main.m"
+          grep -q '/var/mobile/Library/Logs/BandLockGlobal/BandLock-A9Test-daemon.log' "$root/daemon/BLTelephonyCore.m"
+          grep -q 'BandLockA9Test/BandLock-A9Test-last.txt' "$root/daemon/BLTelephonyCore.m"
+          test -x "$root/layout/DEBIAN/postinst"
+          test -x "$root/layout/DEBIAN/postrm"
       - name: Build sidecar
         shell: bash
         run: |

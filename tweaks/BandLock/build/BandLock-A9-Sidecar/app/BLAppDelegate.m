@@ -5,6 +5,7 @@
 #import "BLCommon.h"
 #import "BLLocalization.h"
 #import "BLTelephonyManager.h"
+#import "BLBreadcrumb.h"
 
 @implementation BLAppDelegate
 
@@ -62,16 +63,30 @@
 }
 
 - (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
-    if (![[url.scheme lowercaseString] isEqualToString:@"bandlock"] || ![[url.host lowercaseString] isEqualToString:@"diag"]) return NO;
+    BLBreadcrumbf("deep link enter scheme=%s host=%s path=%s",
+                  url.scheme.UTF8String ?: "(null)",
+                  url.host.UTF8String ?: "(null)",
+                  url.path.UTF8String ?: "(null)");
+    if (![[url.scheme lowercaseString] isEqualToString:@"bandlocka9test"] || ![[url.host lowercaseString] isEqualToString:@"diag"]) {
+        BLBreadcrumb("deep link rejected");
+        return NO;
+    }
     NSString *command = url.path.lowercaseString ?: @"";
     if ([command isEqualToString:@"/ping"]) {
+        BLBreadcrumb("deep link ping accepted");
         return YES;
     }
     if ([command isEqualToString:@"/refresh"]) {
+        BLBreadcrumb("deep link refresh begin");
         [BLTelephonyManager.sharedManager refreshWithCompletion:^(BOOL success, NSString *message) {
+            BLBreadcrumbf("deep link refresh completion success=%d message=%s",
+                          success ? 1 : 0,
+                          message.UTF8String ?: "(null)");
         }];
+        BLBreadcrumb("deep link refresh queued");
         return YES;
     }
+    BLBreadcrumb("deep link unknown command accepted");
     return YES;
 }
 

@@ -5,6 +5,7 @@
 #import <objc/message.h>
 #import <dlfcn.h>
 #import <fcntl.h>
+#import <sys/stat.h>
 #import <sys/time.h>
 #import <unistd.h>
 
@@ -16,13 +17,19 @@ static NSString * const BLRATLTE = @"kCTRegistrationRATSelectionLTE";
 static NSString * const BLRATUMTS = @"kCTRegistrationRATSelectionUMTS";
 static NSString * const BLRATNR = @"kCTRegistrationRATSelectionNR";
 static NSString * const BLRATNRSA = @"kCTRegistrationRATSelectionNRStandAlone";
-static NSString * const BLLogDirectory = @"/var/mobile/Library/Logs/BandLockGlobal";
-static NSString * const BLLastLogPath = @"/var/mobile/Library/Logs/BandLockGlobal/BandLock-last.txt";
+static NSString * const BLLogDirectory = @"/var/mobile/Library/Logs/BandLockGlobal/BandLockA9Test";
+static NSString * const BLLastLogPath = @"/var/mobile/Library/Logs/BandLockGlobal/BandLockA9Test/BandLock-A9Test-last.txt";
 static NSString * const BLStateDefaultsKey = @"BandLockA9TestGlobalState";
 
-static void BLA9DiagLog(const char *message) {
-    int fd = open("/tmp/BandLock-A9Test-daemon.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
+static void BLWriteA9DiagLine(const char *path, const char *line, size_t count) {
+    if (!path || !*path || !line || !count) return;
+    int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd < 0) return;
+    (void)write(fd, line, count);
+    close(fd);
+}
+
+static void BLA9DiagLog(const char *message) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     char line[512];
@@ -36,9 +43,10 @@ static void BLA9DiagLog(const char *message) {
     if (length > 0) {
         size_t count = (size_t)length;
         if (count >= sizeof(line)) count = sizeof(line) - 1;
-        (void)write(fd, line, count);
+        (void)mkdir("/var/mobile/Library/Logs/BandLockGlobal", 0755);
+        BLWriteA9DiagLine("/tmp/BandLock-A9Test-daemon.log", line, count);
+        BLWriteA9DiagLine("/var/mobile/Library/Logs/BandLockGlobal/BandLock-A9Test-daemon.log", line, count);
     }
-    close(fd);
 }
 
 static id BLMsg0(id object, SEL selector) { return ((id (*)(id, SEL))objc_msgSend)(object, selector); }

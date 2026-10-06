@@ -28,13 +28,26 @@ static NSString *BLDaemonSocketPath(void) {
 }
 
 static NSString *BLDaemonLogTail(void) {
-    NSError *error = nil;
-    NSString *log = [NSString stringWithContentsOfFile:@"/tmp/BandLock-A9Test-daemon.log"
-                                             encoding:NSUTF8StringEncoding
-                                                error:&error];
+    NSArray<NSString *> *paths = @[
+        @"/var/mobile/Library/Logs/BandLockGlobal/BandLock-A9Test-daemon.log",
+        @"/tmp/BandLock-A9Test-daemon.log"
+    ];
+    NSError *lastError = nil;
+    NSString *log = nil;
+    NSString *usedPath = nil;
+    for (NSString *path in paths) {
+        NSError *error = nil;
+        NSString *candidate = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
+        if (candidate.length) {
+            log = candidate;
+            usedPath = path;
+            break;
+        }
+        if (error) lastError = error;
+    }
     if (!log.length) {
         return [NSString stringWithFormat:@"daemon_log=%@",
-                error.localizedDescription.length ? error.localizedDescription : @"unavailable"];
+                lastError.localizedDescription.length ? lastError.localizedDescription : @"unavailable"];
     }
 
     NSArray<NSString *> *rawLines = [log componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet];
@@ -44,7 +57,9 @@ static NSString *BLDaemonLogTail(void) {
     }
     NSUInteger start = lines.count > 10 ? lines.count - 10 : 0;
     NSArray<NSString *> *tail = [lines subarrayWithRange:NSMakeRange(start, lines.count - start)];
-    return [NSString stringWithFormat:@"daemon_log_tail:\n%@", [tail componentsJoinedByString:@"\n"]];
+    return [NSString stringWithFormat:@"daemon_log_path=%@\ndaemon_log_tail:\n%@",
+            usedPath ?: @"unknown",
+            [tail componentsJoinedByString:@"\n"]];
 }
 
 static NSString *BLInstallDiagnostic(void) {
