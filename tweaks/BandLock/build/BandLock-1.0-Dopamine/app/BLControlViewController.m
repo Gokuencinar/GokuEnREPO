@@ -238,7 +238,7 @@
 
     UILabel *version = [[UILabel alloc] init];
     NSString *bundleVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
-    version.text = [NSString stringWithFormat:@"BandLock Global %@", bundleVersion];
+    version.text = [NSString stringWithFormat:@"BandLock Global %@ · A9 diagnostic", bundleVersion];
     version.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
     version.textColor = UIColor.tertiaryLabelColor;
     version.numberOfLines = 0;
@@ -271,6 +271,13 @@
 - (void)showAlert:(NSString *)message {
     BLBreadcrumb("UI showAlert begin");
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"BandLock" message:message ?: @"" preferredStyle:UIAlertControllerStyleAlert];
+    if ([message containsString:@"BandLock A9 diagnostic"]) {
+        [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Copiar diagnóstico", @"Copy diagnostics")
+                                                 style:UIAlertActionStyleDefault
+                                               handler:^(__unused UIAlertAction *action) {
+            UIPasteboard.generalPasteboard.string = message ?: @"";
+        }]];
+    }
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Aceptar", @"OK") style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
     BLBreadcrumb("UI showAlert end");

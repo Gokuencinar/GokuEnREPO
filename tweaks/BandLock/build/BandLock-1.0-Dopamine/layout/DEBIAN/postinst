@@ -5,13 +5,36 @@ PLIST="/var/jb/Library/LaunchDaemons/${LABEL}.plist"
 SOCKET="/tmp/${LABEL}.sock"
 OLD_SOCKET="/tmp/com.gokuencinar.bandlockd.sock"
 DOMAIN="user/501"
+DIAG_DIR="/var/mobile/Library/Logs/BandLockGlobal"
+DIAG="${DIAG_DIR}/BandLock-install-diag.txt"
 
-launchctl bootout "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+mkdir -p "$DIAG_DIR" >/dev/null 2>&1 || true
+{
+    echo "BandLock A9 install diagnostic"
+    date
+    echo "domain=${DOMAIN}"
+    echo "label=${LABEL}"
+    echo "plist=${PLIST}"
+    echo "binary=/var/jb/usr/libexec/BandLockDaemon"
+    ls -ld "$PLIST" /var/jb/usr/libexec/BandLockDaemon 2>&1 || true
+} >"$DIAG" 2>&1
+
+launchctl bootout "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
+echo "bootout_rc=$?" >>"$DIAG"
 rm -f "$SOCKET" >/dev/null 2>&1 || true
 rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
 
-launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
-launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || true
+launchctl enable "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
+echo "enable_rc=$?" >>"$DIAG"
+launchctl bootstrap "$DOMAIN" "$PLIST" >>"$DIAG" 2>&1
+echo "bootstrap_rc=$?" >>"$DIAG"
+sleep 1
+echo "--- launchctl print user/501 ---" >>"$DIAG"
+launchctl print "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1 || true
+echo "--- launchctl print system ---" >>"$DIAG"
+launchctl print "system/${LABEL}" >>"$DIAG" 2>&1 || true
+echo "--- socket ---" >>"$DIAG"
+ls -la "$SOCKET" >>"$DIAG" 2>&1 || true
 
 
 

@@ -4,6 +4,9 @@
 #import <UIKit/UIKit.h>
 #import <objc/message.h>
 #import <dlfcn.h>
+#import <fcntl.h>
+#import <sys/time.h>
+#import <unistd.h>
 
 static NSString * const BLLTERAT = @"kCTRegistrationRadioAccessTechnologyLTE";
 static NSString * const BLNRRAT = @"kCTRegistrationRadioAccessTechnologyNR";
@@ -16,6 +19,27 @@ static NSString * const BLRATNRSA = @"kCTRegistrationRATSelectionNRStandAlone";
 static NSString * const BLLogDirectory = @"/var/mobile/Library/Logs/BandLockGlobal";
 static NSString * const BLLastLogPath = @"/var/mobile/Library/Logs/BandLockGlobal/BandLock-last.txt";
 static NSString * const BLStateDefaultsKey = @"BandLockGlobalState";
+
+static void BLA9DiagLog(const char *message) {
+    int fd = open("/tmp/BandLock-daemon.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0) return;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    char line[512];
+    int length = snprintf(line,
+                          sizeof(line),
+                          "%lld.%03d pid=%d A9DIAG %s\n",
+                          (long long)tv.tv_sec,
+                          (int)(tv.tv_usec / 1000),
+                          (int)getpid(),
+                          message ? message : "(null)");
+    if (length > 0) {
+        size_t count = (size_t)length;
+        if (count >= sizeof(line)) count = sizeof(line) - 1;
+        (void)write(fd, line, count);
+    }
+    close(fd);
+}
 
 static id BLMsg0(id object, SEL selector) { return ((id (*)(id, SEL))objc_msgSend)(object, selector); }
 static id BLMsgErr(id object, SEL selector, NSError **error) { return ((id (*)(id, SEL, NSError **))objc_msgSend)(object, selector, error); }
@@ -202,30 +226,49 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 }
 
 - (NSDictionary *)queryCoreTelephony {
+    BLA9DiagLog("query begin");
+    BLA9DiagLog("dlopen begin");
     void *handle = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony", RTLD_NOW | RTLD_LOCAL);
+    BLA9DiagLog(handle ? "dlopen end ok" : "dlopen end failed");
     if (!handle) return @{@"error": BLT(@"No se pudo cargar CoreTelephony.", @"Could not load CoreTelephony.")};
 
     id ratRaw = nil;
     Class networkInfoClass = NSClassFromString(@"CTTelephonyNetworkInfo");
     if (networkInfoClass) {
+        BLA9DiagLog("CTTelephonyNetworkInfo init begin");
         id networkInfo = [[networkInfoClass alloc] init];
+        BLA9DiagLog("CTTelephonyNetworkInfo init end");
         SEL ratSelector = NSSelectorFromString(@"serviceCurrentRadioAccessTechnology");
-        if ([networkInfo respondsToSelector:ratSelector]) ratRaw = BLMsg0(networkInfo, ratSelector);
+        if ([networkInfo respondsToSelector:ratSelector]) {
+            BLA9DiagLog("serviceCurrentRadioAccessTechnology begin");
+            ratRaw = BLMsg0(networkInfo, ratSelector);
+            BLA9DiagLog("serviceCurrentRadioAccessTechnology end");
+        }
     }
 
     Class clientClass = NSClassFromString(@"CoreTelephonyClient");
     if (!clientClass) return @{@"error": BLT(@"CoreTelephonyClient no está disponible.", @"CoreTelephonyClient is unavailable.")};
+    BLA9DiagLog("CoreTelephonyClient init begin");
     id client = [[clientClass alloc] init];
+    BLA9DiagLog("CoreTelephonyClient init end");
     if (!client) return @{@"error": BLT(@"No se pudo crear CoreTelephonyClient.", @"Could not create CoreTelephonyClient.")};
 
     NSError *contextError = nil;
     id context = nil;
     SEL currentSelector = NSSelectorFromString(@"getCurrentDataSubscriptionContextSync:");
-    if ([client respondsToSelector:currentSelector]) context = BLMsgErr(client, currentSelector, &contextError);
+    if ([client respondsToSelector:currentSelector]) {
+        BLA9DiagLog("getCurrentDataSubscriptionContextSync begin");
+        context = BLMsgErr(client, currentSelector, &contextError);
+        BLA9DiagLog("getCurrentDataSubscriptionContextSync end");
+    }
     if (!context) {
         contextError = nil;
         SEL preferredSelector = NSSelectorFromString(@"getPreferredDataSubscriptionContextSync:");
-        if ([client respondsToSelector:preferredSelector]) context = BLMsgErr(client, preferredSelector, &contextError);
+        if ([client respondsToSelector:preferredSelector]) {
+            BLA9DiagLog("getPreferredDataSubscriptionContextSync begin");
+            context = BLMsgErr(client, preferredSelector, &contextError);
+            BLA9DiagLog("getPreferredDataSubscriptionContextSync end");
+        }
     }
     if (!context) return @{@"error": contextError ? contextError.description : BLT(@"No hay contexto de datos activo.", @"No active data subscription context.")};
 
@@ -233,18 +276,27 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSError *supports5GError = nil;
     SEL supports5GSelector = NSSelectorFromString(@"getSupports5G:error:");
     if ([client respondsToSelector:supports5GSelector]) {
+        BLA9DiagLog("getSupports5G begin");
         id supports5GValue = BLMsgObjErr(client, supports5GSelector, context, &supports5GError);
+        BLA9DiagLog("getSupports5G end");
         if (!supports5GError && [supports5GValue respondsToSelector:@selector(boolValue)]) supports5G = [supports5GValue boolValue];
     }
 
     SEL bandSelector = NSSelectorFromString(@"getBandInfo:error:");
     if (![client respondsToSelector:bandSelector]) return @{@"error": @"getBandInfo:error: unavailable"};
     NSError *bandError = nil;
+    BLA9DiagLog("getBandInfo begin");
     id bandInfo = BLMsgObjErr(client, bandSelector, context, &bandError);
+    BLA9DiagLog("getBandInfo end");
     if (!bandInfo) return @{@"error": bandError ? bandError.description : @"getBandInfo:error: returned nil"};
 
+    BLA9DiagLog("readRatSelection begin");
     NSDictionary *ratSelection = [self readRatSelectionFromClient:client context:context];
+    BLA9DiagLog("readRatSelection end");
+    BLA9DiagLog("copyCellInfo begin");
     id cellInfo = [self copyCellInfoFromClient:client context:context];
+    BLA9DiagLog("copyCellInfo end");
+    BLA9DiagLog("query end");
     return @{@"client": client,
              @"context": context,
              @"bandInfo": bandInfo,

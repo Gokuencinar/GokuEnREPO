@@ -27,6 +27,76 @@ static NSString *BLDaemonSocketPath(void) {
     return BLDaemonSocketRelativePath;
 }
 
+static NSString *BLDaemonLogTail(void) {
+    NSError *error = nil;
+    NSString *log = [NSString stringWithContentsOfFile:@"/tmp/BandLock-daemon.log"
+                                             encoding:NSUTF8StringEncoding
+                                                error:&error];
+    if (!log.length) {
+        return [NSString stringWithFormat:@"daemon_log=%@",
+                error.localizedDescription.length ? error.localizedDescription : @"unavailable"];
+    }
+
+    NSArray<NSString *> *rawLines = [log componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet];
+    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+    for (NSString *line in rawLines) {
+        if (line.length) [lines addObject:line];
+    }
+    NSUInteger start = lines.count > 10 ? lines.count - 10 : 0;
+    NSArray<NSString *> *tail = [lines subarrayWithRange:NSMakeRange(start, lines.count - start)];
+    return [NSString stringWithFormat:@"daemon_log_tail:\n%@", [tail componentsJoinedByString:@"\n"]];
+}
+
+static NSString *BLInstallDiagnostic(void) {
+    NSError *error = nil;
+    NSString *path = @"/var/mobile/Library/Logs/BandLockGlobal/BandLock-install-diag.txt";
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
+    if (!text.length) {
+        return [NSString stringWithFormat:@"install_diag=%@",
+                error.localizedDescription.length ? error.localizedDescription : @"unavailable"];
+    }
+    if (text.length > 2600) {
+        NSString *first = [text substringToIndex:1300];
+        NSString *last = [text substringFromIndex:text.length - 1300];
+        text = [NSString stringWithFormat:@"%@\n...\n%@", first, last];
+    }
+    return [NSString stringWithFormat:@"install_diag:\n%@", text];
+}
+
+static NSString *BLIPCFailureDetail(NSString *stage,
+                                    NSString *socketPath,
+                                    int operationErrno,
+                                    int statRC,
+                                    int statErrno,
+                                    const struct stat *socketStat) {
+    NSString *errnoText = operationErrno > 0
+        ? [NSString stringWithUTF8String:strerror(operationErrno)]
+        : @"none";
+    NSString *socketState = statRC == 0
+        ? [NSString stringWithFormat:@"present mode=%04o uid=%d gid=%d",
+           (unsigned int)(socketStat->st_mode & 07777),
+           (int)socketStat->st_uid,
+           (int)socketStat->st_gid]
+        : [NSString stringWithFormat:@"missing/unreadable stat_errno=%d", statErrno];
+
+    return [NSString stringWithFormat:
+            @"BandLock A9 diagnostic\n"
+             "stage=%@\n"
+             "socket=%@\n"
+             "socket_state=%@\n"
+             "errno=%d (%@)\n"
+             "uid=%d euid=%d\n\n%@\n\n%@",
+             stage ?: @"unknown",
+             socketPath ?: @"(null)",
+             socketState,
+             operationErrno,
+             errnoText ?: @"unknown",
+             (int)getuid(),
+             (int)geteuid(),
+             BLDaemonLogTail(),
+             BLInstallDiagnostic()];
+}
+
 @interface BLTelephonyManager ()
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *supportedBands;
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *activeBands;
@@ -148,8 +218,16 @@ static NSString *BLDaemonSocketPath(void) {
     BLBreadcrumb("socket begin");
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
-        BLBreadcrumbf("socket failed errno=%d", errno);
-        return [self daemonUnavailableResult:[NSString stringWithFormat:@"socket errno=%d", errno]];
+        int savedErrno = errno;
+        BLBreadcrumbf("socket failed errno=%d", savedErrno);
+        struct stat emptyStat;
+        memset(&emptyStat, 0, sizeof(emptyStat));
+        return [self daemonUnavailableResult:BLIPCFailureDetail(@"socket",
+                                                                [self socketPath],
+                                                                savedErrno,
+                                                                -1,
+                                                                0,
+                                                                &emptyStat)];
     }
     BLBreadcrumbf("socket end fd=%d", fd);
 
@@ -182,9 +260,10 @@ static NSString *BLDaemonSocketPath(void) {
     struct stat socketStat;
     memset(&socketStat, 0, sizeof(socketStat));
     int statRC = stat(path, &socketStat);
+    int statErrno = statRC == 0 ? 0 : errno;
     BLBreadcrumbf("socket stat rc=%d errno=%d mode=%o uid=%d gid=%d",
                   statRC,
-                  statRC == 0 ? 0 : errno,
+                  statErrno,
                   statRC == 0 ? (unsigned int)(socketStat.st_mode & 07777) : 0U,
                   statRC == 0 ? (int)socketStat.st_uid : -1,
                   statRC == 0 ? (int)socketStat.st_gid : -1);
@@ -195,22 +274,28 @@ static NSString *BLDaemonSocketPath(void) {
     strlcpy(address.sun_path, path, sizeof(address.sun_path));
 
     int connected = -1;
+    int connectErrno = 0;
     for (NSInteger attempt = 0; attempt < 5; attempt++) {
         BLBreadcrumbf("connect begin attempt=%ld", (long)attempt + 1);
         connected = connect(fd, (struct sockaddr *)&address, sizeof(address));
+        connectErrno = connected == 0 ? 0 : errno;
         BLBreadcrumbf("connect end attempt=%ld rc=%d errno=%d",
                       (long)attempt + 1,
                       connected,
-                      connected == 0 ? 0 : errno);
+                      connectErrno);
         if (connected == 0) break;
-        if (errno != ENOENT && errno != ECONNREFUSED) break;
+        if (connectErrno != ENOENT && connectErrno != ECONNREFUSED) break;
         usleep(150000);
     }
     if (connected != 0) {
-        int savedErrno = errno;
-        BLBreadcrumbf("connect failed final errno=%d", savedErrno);
+        BLBreadcrumbf("connect failed final errno=%d", connectErrno);
         close(fd);
-        return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"No se pudo conectar con BandLockDaemon (errno %d).", @"Could not connect to BandLockDaemon (errno %d)."), savedErrno]];
+        return [self daemonUnavailableResult:BLIPCFailureDetail(@"connect",
+                                                                pathString,
+                                                                connectErrno,
+                                                                statRC,
+                                                                statErrno,
+                                                                &socketStat)];
     }
 
     const uint8_t *bytes = wire.bytes;
@@ -218,14 +303,19 @@ static NSString *BLDaemonSocketPath(void) {
     BLBreadcrumbf("write begin bytes=%lu", (unsigned long)remaining);
     while (remaining > 0) {
         ssize_t written = write(fd, bytes, remaining);
+        int writeErrno = written > 0 ? 0 : errno;
         BLBreadcrumbf("write chunk rc=%ld errno=%d remaining-before=%lu",
                       (long)written,
-                      written > 0 ? 0 : errno,
+                      writeErrno,
                       (unsigned long)remaining);
         if (written <= 0) {
-            int savedErrno = errno;
             close(fd);
-            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La comunicación con el daemon falló al enviar (errno %d).", @"Daemon communication failed while sending (errno %d)."), savedErrno]];
+            return [self daemonUnavailableResult:BLIPCFailureDetail(@"write",
+                                                                    pathString,
+                                                                    writeErrno,
+                                                                    statRC,
+                                                                    statErrno,
+                                                                    &socketStat)];
         }
         bytes += written;
         remaining -= (NSUInteger)written;
@@ -237,14 +327,19 @@ static NSString *BLDaemonSocketPath(void) {
     BLBreadcrumb("read begin");
     while (responseData.length < 131072) {
         ssize_t count = read(fd, buffer, sizeof(buffer));
+        int readErrno = count >= 0 ? 0 : errno;
         BLBreadcrumbf("read chunk rc=%ld errno=%d total-before=%lu",
                       (long)count,
-                      count >= 0 ? 0 : errno,
+                      readErrno,
                       (unsigned long)responseData.length);
         if (count < 0) {
-            int savedErrno = errno;
             close(fd);
-            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La respuesta del daemon falló (errno %d).", @"Daemon response failed (errno %d)."), savedErrno]];
+            return [self daemonUnavailableResult:BLIPCFailureDetail(@"read",
+                                                                    pathString,
+                                                                    readErrno,
+                                                                    statRC,
+                                                                    statErrno,
+                                                                    &socketStat)];
         }
         if (count == 0) break;
         [responseData appendBytes:buffer length:(NSUInteger)count];
@@ -256,7 +351,12 @@ static NSString *BLDaemonSocketPath(void) {
 
     if (!responseData.length) {
         BLBreadcrumb("empty response");
-        return [self daemonUnavailableResult:BLT(@"BandLockDaemon cerró la conexión sin responder. Si CoreTelephony hizo fallar el daemon, la app principal permanece abierta.", @"BandLockDaemon closed the connection without replying. If CoreTelephony crashed the daemon, the main app remains open.")];
+        return [self daemonUnavailableResult:BLIPCFailureDetail(@"empty-response",
+                                                                pathString,
+                                                                0,
+                                                                statRC,
+                                                                statErrno,
+                                                                &socketStat)];
     }
 
     BLBreadcrumb("json parse begin");
