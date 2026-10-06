@@ -10,6 +10,23 @@ This changelog documents the public BandLock releases currently distributed thro
 
 ---
 
+## 1.4 candidate — Dopamine UI and Control Center hardening
+
+> **Unreleased candidate.** Public repository packages remain at 1.3 until this candidate is validated and explicitly published.
+
+### Changed
+- Dopamine band pickers and Settings use tappable rows with checkmarks instead of switch controls, preserving the same preferences and selections.
+- Dopamine Control Center mode changes use the daemon-backed path used by the app and keep the last successfully applied BandLock mode as the tile state.
+- Persisted Control Center intent is shared between the app and module so refreshes do not overwrite an explicit 2G/3G/4G/5G selection with an ambiguous modem readback.
+- Hidden modes remain hidden during state refresh, and failed mode changes roll back the stored tile state instead of displaying a selection that was not applied.
+
+### Candidate validation
+- The recovered Dopamine candidate chain (diag1 through diag4) compiled successfully in its private CI runs.
+- The candidate source has been recovered into a normal versioned 1.4 branch and the diagnostic package suffixes have been removed.
+- RootHide and rootful remain behaviorally aligned with the public 1.3 feature set and are versioned together for candidate packaging.
+
+---
+
 ## 1.3 — Configurable Control Center modes
 
 ### Added

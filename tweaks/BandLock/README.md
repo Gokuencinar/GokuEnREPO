@@ -6,6 +6,8 @@
 
 > Current public version / Versión pública actual: **1.3** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
 
+> Development candidate / Candidato de desarrollo: **1.4** on branch `bandlock-1.4-candidate`. It is not published in the APT repository.
+
 
 ## Español
 
