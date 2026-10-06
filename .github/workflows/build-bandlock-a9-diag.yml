@@ -32,14 +32,22 @@ jobs:
         run: |
           set -euo pipefail
           plutil -lint tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
-          grep -q '^Version: 1.4~a9diag1$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          root=tweaks/BandLock/build/BandLock-1.0-Dopamine
+          grep -q '^Version: 1.4~a9diag2$' "$root/control"
           grep -q '^Architecture: iphoneos-arm64$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
           grep -q '^ARCHS = arm64 arm64e$' tweaks/BandLock/build/BandLock-1.0-Dopamine/Makefile
           grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-Dopamine/Makefile
           grep -q 'BandLock A9 diagnostic' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
           grep -q 'Copy diagnostics' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'getBandInfo begin' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
-          grep -q 'BandLock-install-diag.txt' tweaks/BandLock/build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
+          grep -q 'isEqualToString:@"bandlock"' "$root/app/BLAppDelegate.m"
+          grep -q 'BandLock-A9Diag-install-diag.txt' "$root/app/BLTelephonyManager.m"
+          grep -q 'BandLock-A9Diag-install-diag.txt' "$root/layout/DEBIAN/postinst"
+          grep -q 'BandLock-A9Diag-daemon.log' "$root/app/BLTelephonyManager.m"
+          grep -q 'BandLock-A9Diag-daemon.log' "$root/daemon/main.m"
+          grep -q 'BandLock-A9Diag-daemon.log' "$root/daemon/BLTelephonyCore.m"
+          test -x "$root/layout/DEBIAN/postinst"
+          test -x "$root/layout/DEBIAN/postrm"
           ! grep -R --exclude-dir='ccmodule' --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' tweaks/BandLock/build/BandLock-1.0-Dopamine
       - name: Build Dopamine diagnostic
         shell: bash
@@ -47,9 +55,10 @@ jobs:
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          test -f 'packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag1_iphoneos-arm64.deb'
+          test -f 'packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag2_iphoneos-arm64.deb'
           lipo -archs .theos/_/var/jb/usr/libexec/BandLockDaemon | grep -Eq 'arm64 arm64e|arm64e arm64'
+          lipo -archs .theos/_/var/jb/Applications/BandLock.app/BandLock | grep -Eq 'arm64 arm64e|arm64e arm64'
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.4-a9diag1
-          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag1_iphoneos-arm64.deb
+          name: BandLock-Dopamine-1.4-a9diag2
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag2_iphoneos-arm64.deb

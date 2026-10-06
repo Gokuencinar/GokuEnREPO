@@ -13,11 +13,15 @@
 #import <sys/time.h>
 #import <string.h>
 
-static void BLDaemonLog(const char *message) {
-    const char *path = "/tmp/BandLock-daemon.log";
-    if (!path || !*path) return;
+static void BLWriteDaemonLogLine(const char *path, const char *line, size_t count) {
+    if (!path || !*path || !line || !count) return;
     int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd < 0) return;
+    (void)write(fd, line, count);
+    close(fd);
+}
+
+static void BLDaemonLog(const char *message) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     char line[1200];
@@ -31,9 +35,10 @@ static void BLDaemonLog(const char *message) {
     if (length > 0) {
         size_t count = (size_t)length;
         if (count >= sizeof(line)) count = sizeof(line) - 1;
-        (void)write(fd, line, count);
+        (void)mkdir("/var/mobile/Library/Logs/BandLockGlobal", 0755);
+        BLWriteDaemonLogLine("/tmp/BandLock-daemon.log", line, count);
+        BLWriteDaemonLogLine("/var/mobile/Library/Logs/BandLockGlobal/BandLock-A9Diag-daemon.log", line, count);
     }
-    close(fd);
 }
 
 @interface BLTelephonyManager (BandLockDaemonPrivate)

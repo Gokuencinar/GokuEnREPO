@@ -6,9 +6,14 @@ SOCKET="/tmp/${LABEL}.sock"
 OLD_SOCKET="/tmp/com.gokuencinar.bandlockd.sock"
 DOMAIN="user/501"
 DIAG_DIR="/var/mobile/Library/Logs/BandLockGlobal"
-DIAG="${DIAG_DIR}/BandLock-install-diag.txt"
+DIAG="${DIAG_DIR}/BandLock-A9Diag-install-diag.txt"
+DAEMON_DIAG="${DIAG_DIR}/BandLock-A9Diag-daemon.log"
 
 mkdir -p "$DIAG_DIR" >/dev/null 2>&1 || true
+: >"$DAEMON_DIAG" 2>/dev/null || true
+chown 501:0 "$DAEMON_DIAG" >/dev/null 2>&1 || true
+chmod 0644 "$DAEMON_DIAG" >/dev/null 2>&1 || true
+rm -f /tmp/BandLock-daemon.log >/dev/null 2>&1 || true
 {
     echo "BandLock A9 install diagnostic"
     date
