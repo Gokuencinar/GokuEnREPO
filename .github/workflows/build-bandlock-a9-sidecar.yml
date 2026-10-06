@@ -1,0 +1,57 @@
+name: Build BandLock A9 sidecar test
+
+on:
+  push:
+    branches: [ bandlock-a9-diag ]
+    paths:
+      - 'tweaks/BandLock/build/BandLock-A9-Sidecar/**'
+      - '.github/workflows/build-bandlock-a9-sidecar.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-sidecar:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=tweaks/BandLock/build/BandLock-A9-Sidecar
+          plutil -lint "$root/app/Resources/Info.plist"
+          plutil -lint "$root/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.a9test.plist"
+          grep -q '^Package: com.gokuencinar.bandlock.a9test$' "$root/control"
+          ! grep -q '^Conflicts:' "$root/control"
+          grep -q 'APPLICATION_NAME = BandLockA9Test' "$root/app/Makefile"
+          grep -q 'TOOL_NAME = BandLockA9TestDaemon' "$root/daemon/Makefile"
+          grep -q '/tmp/com.gokuencinar.bandlockd.a9test.sock' "$root/app/BLTelephonyManager.m"
+          grep -q '/tmp/com.gokuencinar.bandlockd.a9test.sock' "$root/daemon/main.m"
+      - name: Build sidecar
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd tweaks/BandLock/build/BandLock-A9-Sidecar
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          deb='packages/com.gokuencinar.bandlock.a9test_1.4~a9diag1_iphoneos-arm64.deb'
+          test -f "$deb"
+          test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock.a9test'
+          lipo -archs .theos/_/var/jb/usr/libexec/BandLockA9TestDaemon | grep -Eq 'arm64 arm64e|arm64e arm64'
+          lipo -archs .theos/_/var/jb/Applications/BandLockA9Test.app/BandLockA9Test | grep -Eq 'arm64 arm64e|arm64e arm64'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-A9-Sidecar-Test
+          path: tweaks/BandLock/build/BandLock-A9-Sidecar/packages/com.gokuencinar.bandlock.a9test_1.4~a9diag1_iphoneos-arm64.deb
