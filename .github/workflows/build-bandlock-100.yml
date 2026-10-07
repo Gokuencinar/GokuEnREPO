@@ -45,6 +45,8 @@ jobs:
           grep -q 'hasRefreshedStatus' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLControlViewController.m
           grep -q 'currentLanguageName' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLControlViewController.m
           grep -q 'BandLockPendingNRBands' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLTelephonyManager.m
+          grep -q 'BLCCLastModeCode' tweaks/BandLock/build/BandLock-1.0-RootHide/shared/BLCCPreferences.h
+          grep -q 'BLCCSetLastModeCode' tweaks/BandLock/build/BandLock-1.0-RootHide/shared/BLCCPreferences.m
           grep -q 'kCTRegistrationRATSelectionUMTS' tweaks/BandLock/build/BandLock-1.0-RootHide/daemon/main.m
           grep -q 'BLCCModule : CCUIToggleModule' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.h
           grep -q 'bl_presentModePicker' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
