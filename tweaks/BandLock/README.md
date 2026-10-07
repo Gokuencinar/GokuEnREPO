@@ -19,11 +19,13 @@ Country profiles only prepare a selection for review. They do not change modem s
 
 ## Compatibility
 
-Current public version: **1.3**
+Current public version: **1.4**
 
 - **RootHide:** iOS 15–17 — `iphoneos-arm64e`
 - **Dopamine rootless:** iOS 15–18 — `iphoneos-arm64`
 - **Rootful:** iOS 15–16 — `iphoneos-arm`
+
+BandLock 1.4 adds support for A9 devices on iOS 16.
 
 Support on newer iOS versions and different devices can vary because BandLock relies on private CoreTelephony/CommCenter behavior.
 
