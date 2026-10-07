@@ -21,7 +21,7 @@
     subtitle.translatesAutoresizingMaskIntoConstraints = NO;
     subtitle.numberOfLines = 0;
     subtitle.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
-    subtitle.text = @"Experimental Cricket SMS/IMS repair for jailbroken iOS 16. CarrierFix refuses unknown iOS 16 carrier schemas and verifies a restorable backup before enabling Apply.";
+    subtitle.text = @"Experimental Cricket SMS/IMS repair for jailbroken iOS 16/17. CarrierFix refuses unknown carrier schemas and verifies a restorable backup before enabling Apply.";
 
     self.textView = [UITextView new];
     self.textView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -127,7 +127,7 @@
 }
 
 - (void)applyFix {
-    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Apply Cricket SMS Fix?" message:@"The verified original backup will be kept. CarrierFix patches only the existing IMS/SMS schema and IMS APN. Failed verification triggers an automatic restore." preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Apply Cricket SMS Fix?" message:@"The verified original backup will be kept. CarrierFix patches only the validated IMS/SMS compatibility keys and requires an existing IMS APN. Failed verification triggers an automatic restore." preferredStyle:UIAlertControllerStyleAlert];
     __weak typeof(self) weakSelf = self;
     [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     [confirm addAction:[UIAlertAction actionWithTitle:@"Apply" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {

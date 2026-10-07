@@ -1,0 +1,90 @@
+name: Build CarrierFix iOS 17 Test
+
+on:
+  push:
+    branches: [ carrierfix-ios17 ]
+    paths:
+      - 'build/CarrierFix-shared/**'
+      - 'build/CarrierFix-0.4-iOS17-Dopamine/**'
+      - 'CARRIERFIX.md'
+      - '.github/workflows/build-carrierfix-ios17.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-dopamine-ios17-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate iOS 17 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^Package: com.gokuencinar.carrierfix.ios17test$' build/CarrierFix-0.4-iOS17-Dopamine/control
+          grep -q '^Version: 0.4.0~ios17test1$' build/CarrierFix-0.4-iOS17-Dopamine/control
+          grep -q '^Architecture: iphoneos-arm64$' build/CarrierFix-0.4-iOS17-Dopamine/control
+          grep -q '^ARCHS = arm64 arm64e$' build/CarrierFix-0.4-iOS17-Dopamine/Makefile
+          grep -q '^TARGET = iphone:clang:16.5:17.0$' build/CarrierFix-0.4-iOS17-Dopamine/Makefile
+          grep -q '^THEOS_PACKAGE_SCHEME = rootless$' build/CarrierFix-0.4-iOS17-Dopamine/Makefile
+          grep -q 'firmware (>= 17.0), firmware (<< 18.0)' build/CarrierFix-0.4-iOS17-Dopamine/control
+          grep -q '<key>CarrierFixBuildLabel</key><string>0.4.0~ios17test1</string>' build/CarrierFix-0.4-iOS17-Dopamine/app/Resources/Info.plist
+          grep -q '<key>MinimumOSVersion</key><string>17.0</string>' build/CarrierFix-0.4-iOS17-Dopamine/app/Resources/Info.plist
+          grep -q 'contentsOfDirectoryAtPath' build/CarrierFix-shared/CFCarrierManager.m
+          grep -q 'metadataMatchesCurrentIOSMajor' build/CarrierFix-shared/CFCarrierManager.m
+          grep -q 'prepareVerifiedBackup' build/CarrierFix-shared/CFCarrierManager.m
+          ! grep -R -q 'roothide.h\|libroothide\|jbroot(' build/CarrierFix-0.4-iOS17-Dopamine build/CarrierFix-shared
+          ! grep -R -q 'killall\|ldrestart\|sbreload' build/CarrierFix-0.4-iOS17-Dopamine build/CarrierFix-shared
+          plutil -lint build/CarrierFix-0.4-iOS17-Dopamine/app/Resources/Info.plist
+          plutil -lint build/CarrierFix-0.4-iOS17-Dopamine/app/Entitlements.plist
+      - name: Build Dopamine iOS 17 validation package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/CarrierFix-0.4-iOS17-Dopamine
+          chmod 755 layout/DEBIAN/postinst layout/DEBIAN/postrm
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          deb='packages/com.gokuencinar.carrierfix.ios17test_0.4.0~ios17test1_iphoneos-arm64.deb'
+          test -f "$deb"
+          app=$(find .theos/_ -type f -name CarrierFix17Test | head -n 1)
+          test -n "$app"
+          lipo -archs "$app" | grep -q 'arm64 arm64e\|arm64e arm64'
+          vtool -show-build "$app" > /tmp/carrierfix-ios17-build.txt
+          grep -q 'minos 17.0' /tmp/carrierfix-ios17-build.txt
+          ldid -e "$app" > /tmp/carrierfix-ios17-entitlements.plist
+          grep -q 'platform-application' /tmp/carrierfix-ios17-entitlements.plist
+          grep -q 'com.apple.private.security.no-sandbox' /tmp/carrierfix-ios17-entitlements.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CarrierFix-Dopamine-iOS17-Test-0.4.0
+          path: build/CarrierFix-0.4-iOS17-Dopamine/packages/com.gokuencinar.carrierfix.ios17test_0.4.0~ios17test1_iphoneos-arm64.deb
+
+  inspect-ios17-package:
+    needs: [build-dopamine-ios17-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: CarrierFix-Dopamine-iOS17-Test-0.4.0
+          path: /tmp/ios17
+      - name: Inspect iOS 17 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          deb='/tmp/ios17/com.gokuencinar.carrierfix.ios17test_0.4.0~ios17test1_iphoneos-arm64.deb'
+          test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.carrierfix.ios17test'
+          test "$(dpkg-deb -f "$deb" Version)" = '0.4.0~ios17test1'
+          test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64'
+          dpkg-deb -f "$deb" Depends | grep -q 'firmware (>= 17.0), firmware (<< 18.0)'
+          dpkg-deb -c "$deb" > /tmp/contents.txt
+          grep -q 'CarrierFix17Test.app/CarrierFix17Test' /tmp/contents.txt
+          ! grep -q 'MobileSubstrate/DynamicLibraries' /tmp/contents.txt
+          ! grep -q 'LaunchDaemons' /tmp/contents.txt

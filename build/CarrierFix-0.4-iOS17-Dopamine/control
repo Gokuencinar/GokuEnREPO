@@ -1,0 +1,9 @@
+Package: com.gokuencinar.carrierfix.ios17test
+Name: CarrierFix iOS 17 Test
+Version: 0.4.0~ios17test1
+Architecture: iphoneos-arm64
+Description: Experimental Cricket/AT&T carrier overlay diagnostic and SMS/IMS repair validation build for jailbroken iOS 17. Creates and verifies a per-carrier backup before modifying the active overlay and supports one-tap restore.
+Maintainer: Gokuencinar
+Author: Gokuencinar
+Section: Tweaks
+Depends: firmware (>= 17.0), firmware (<< 18.0)
