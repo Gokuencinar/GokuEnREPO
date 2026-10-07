@@ -18,6 +18,7 @@ static NSString * const BLLastLogPath = @"/var/mobile/Library/Logs/BandLockGloba
 static NSString * const BLStateDefaultsKey = @"BandLockGlobalState";
 
 static id BLMsg0(id object, SEL selector) { return ((id (*)(id, SEL))objc_msgSend)(object, selector); }
+static id BLMsg1(id object, SEL selector, id argument) { return ((id (*)(id, SEL, id))objc_msgSend)(object, selector, argument); }
 static id BLMsgErr(id object, SEL selector, NSError **error) { return ((id (*)(id, SEL, NSError **))objc_msgSend)(object, selector, error); }
 static id BLMsgObjErr(id object, SEL selector, id argument, NSError **error) { return ((id (*)(id, SEL, id, NSError **))objc_msgSend)(object, selector, argument, error); }
 static id BLMsg2(id object, SEL selector, id arg1, id arg2) { return ((id (*)(id, SEL, id, id))objc_msgSend)(object, selector, arg1, arg2); }
@@ -77,6 +78,33 @@ static NSString *BLNRBandKey(NSDictionary *dictionary) {
 
 static NSArray<NSNumber *> *BLNRBandsFromDictionary(NSDictionary *dictionary) {
     NSString *key = BLNRBandKey(dictionary);
+    return key.length ? BLSortedBands(dictionary[key]) : @[];
+}
+
+static NSString *BLLTEBandKey(NSDictionary *dictionary) {
+    if (![dictionary isKindOfClass:[NSDictionary class]]) return nil;
+    if ([dictionary[BLLTERAT] isKindOfClass:[NSArray class]] || [dictionary[BLLTERAT] isKindOfClass:[NSSet class]]) return BLLTERAT;
+    for (id key in dictionary) {
+        if (![key isKindOfClass:[NSString class]]) continue;
+        NSString *text = (NSString *)key;
+        if ([text rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location == NSNotFound) continue;
+        id value = dictionary[key];
+        if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSSet class]]) return text;
+    }
+    return nil;
+}
+
+static NSArray<NSNumber *> *BLBandsForRat(id bandInfo, NSString *rat, BOOL supported) {
+    if (!bandInfo || !rat.length) return @[];
+    SEL forRatSelector = NSSelectorFromString(supported ? @"supportedBandsForRat:" : @"activeBandsForRat:");
+    if ([bandInfo respondsToSelector:forRatSelector]) {
+        NSArray<NSNumber *> *direct = BLSortedBands(BLMsg1(bandInfo, forRatSelector, rat));
+        if (direct.count) return direct;
+    }
+    SEL dictionarySelector = NSSelectorFromString(supported ? @"supportedBands" : @"activeBands");
+    NSDictionary *dictionary = [bandInfo respondsToSelector:dictionarySelector] ? BLMsg0(bandInfo, dictionarySelector) : nil;
+    NSString *key = [rat isEqualToString:BLLTERAT] ? BLLTEBandKey(dictionary) : nil;
+    if (!key.length && ([dictionary[rat] isKindOfClass:[NSArray class]] || [dictionary[rat] isKindOfClass:[NSSet class]])) key = rat;
     return key.length ? BLSortedBands(dictionary[key]) : @[];
 }
 
@@ -261,8 +289,9 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     SEL activeSelector = NSSelectorFromString(@"activeBands");
     NSDictionary *supported = [bandInfo respondsToSelector:supportedSelector] ? BLMsg0(bandInfo, supportedSelector) : nil;
     NSDictionary *active = [bandInfo respondsToSelector:activeSelector] ? BLMsg0(bandInfo, activeSelector) : nil;
-    NSArray *supportedLTE = BLSortedBands(supported[BLLTERAT]);
-    NSArray *activeLTE = BLSortedBands(active[BLLTERAT]);
+    NSArray *supportedLTE = BLBandsForRat(bandInfo, BLLTERAT, YES);
+    NSArray *activeLTE = BLBandsForRat(bandInfo, BLLTERAT, NO);
+    if (!supportedLTE.count && activeLTE.count) supportedLTE = activeLTE;
     NSArray *supportedNR = BLNRBandsFromDictionary(supported);
     NSArray *activeNR = BLNRBandsFromDictionary(active);
     NSString *selection = [query[@"ratSelection"] isKindOfClass:[NSString class]] ? query[@"ratSelection"] : @"—";
@@ -413,8 +442,16 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSDictionary *currentActive = [currentBandInfo respondsToSelector:activeSelector] ? BLMsg0(currentBandInfo, activeSelector) : nil;
     NSDictionary *currentSupported = [currentBandInfo respondsToSelector:supportedSelector] ? BLMsg0(currentBandInfo, supportedSelector) : nil;
     if (![currentActive isKindOfClass:[NSDictionary class]]) { if (errorText) *errorText = @"Invalid CTBandInfo ActiveBands"; return NO; }
+    NSString *lteKey = BLLTEBandKey(currentSupported);
+    if (!lteKey.length) lteKey = BLLTEBandKey(currentActive);
+    if (!lteKey.length) { if (errorText) *errorText = @"LTE band group unavailable in CTBandInfo"; return NO; }
+    NSMutableDictionary *effectiveSupported = [currentSupported isKindOfClass:[NSDictionary class]] ? [currentSupported mutableCopy] : [NSMutableDictionary dictionary];
+    if (![effectiveSupported[lteKey] isKindOfClass:[NSArray class]] && ![effectiveSupported[lteKey] isKindOfClass:[NSSet class]]) {
+        id activeForLTE = currentActive[lteKey];
+        if ([activeForLTE isKindOfClass:[NSArray class]] || [activeForLTE isKindOfClass:[NSSet class]]) effectiveSupported[lteKey] = activeForLTE;
+    }
     NSMutableDictionary *newActive = [currentActive mutableCopy];
-    newActive[BLLTERAT] = bands;
+    newActive[lteKey] = bands;
     // Build a fresh CTBandInfo first. Mutating a copy with setFActiveBands:
     // can widen the active set but, on this iOS 16.3 modem, does not reliably
     // remove bands when narrowing the selection again.
@@ -422,8 +459,8 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     Class bandInfoClass = NSClassFromString(@"CTBandInfo");
     SEL initSelector = NSSelectorFromString(@"initWithSupported:andActiveBands:");
     id allocated = bandInfoClass ? [bandInfoClass alloc] : nil;
-    if (allocated && [allocated respondsToSelector:initSelector] && [currentSupported isKindOfClass:[NSDictionary class]]) {
-        modifiedBandInfo = BLMsg2(allocated, initSelector, currentSupported, newActive);
+    if (allocated && [allocated respondsToSelector:initSelector] && effectiveSupported.count) {
+        modifiedBandInfo = BLMsg2(allocated, initSelector, effectiveSupported, newActive);
     }
 
     // Fallback for devices where the initializer is unavailable.
@@ -445,9 +482,7 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 
 - (NSArray<NSNumber *> *)activeLTEFromQuery:(NSDictionary *)query {
     id bandInfo = query[@"bandInfo"];
-    SEL activeSelector = NSSelectorFromString(@"activeBands");
-    NSDictionary *active = [bandInfo respondsToSelector:activeSelector] ? BLMsg0(bandInfo, activeSelector) : nil;
-    return BLSortedBands(active[BLLTERAT]);
+    return BLBandsForRat(bandInfo, BLLTERAT, NO);
 }
 
 - (BOOL)writeNRBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText {

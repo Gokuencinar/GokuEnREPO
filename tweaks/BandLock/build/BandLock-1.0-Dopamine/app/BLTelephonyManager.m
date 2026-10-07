@@ -369,8 +369,18 @@ static NSString *BLDaemonSocketPath(void) {
         [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingBandsDefaultsKey];
         [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingNRBandsDefaultsKey];
     } else {
-        if (!self.hasExplicitPendingBands) _pendingBands = [self.activeBands copy];
-        if (!self.hasExplicitPendingNRBands) _pendingNRBands = [self.activeNRBands copy];
+        if (!self.hasExplicitPendingBands) {
+            _pendingBands = [self.activeBands copy];
+        } else if (self.supportedBands.count) {
+            _pendingBands = [BLIntersectBands(self.supportedBands, _pendingBands) copy];
+            [NSUserDefaults.standardUserDefaults setObject:_pendingBands forKey:BLPendingBandsDefaultsKey];
+        }
+        if (!self.hasExplicitPendingNRBands) {
+            _pendingNRBands = [self.activeNRBands copy];
+        } else if (self.supportedNRBands.count) {
+            _pendingNRBands = [BLIntersectBands(self.supportedNRBands, _pendingNRBands) copy];
+            [NSUserDefaults.standardUserDefaults setObject:_pendingNRBands forKey:BLPendingNRBandsDefaultsKey];
+        }
     }
     BLBreadcrumb("consume pending assigned");
     BLBreadcrumb("consume status end");
@@ -397,8 +407,9 @@ static NSString *BLDaemonSocketPath(void) {
     self.statusText = BLT(@"Consultando daemon…", @"Querying daemon…");
     [self sendRequest:@{@"cmd": @"status"} completion:^(NSDictionary *result) {
         BLBreadcrumb("refresh result block enter");
-        if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:NO];
-        self.hasRefreshedStatus = YES;
+        BOOL success = [result[@"success"] boolValue];
+        if (success) [self consumeStatusResult:result resetPending:NO];
+        self.hasRefreshedStatus = success;
         [self finishResult:result successMessage:BLT(@"Estado del módem actualizado.", @"Modem state updated.") completion:completion];
         BLBreadcrumb("refresh result block end");
     }];

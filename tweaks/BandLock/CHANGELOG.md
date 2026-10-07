@@ -3,27 +3,29 @@
 This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
 > **About BandLock**  
-> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.3 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.4 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
 
 > **Compatibility**  
 > iOS 15–18 depending on jailbreak variant. **iOS 17 and iOS 18 support is experimental** and depends on community testing. RootHide uses `iphoneos-arm64e`; Dopamine rootless uses `iphoneos-arm64`; Rootful uses `iphoneos-arm` with arm64 binaries and classic filesystem paths.
 
 ---
 
-## 1.4 candidate — Dopamine UI and Control Center hardening
+## 1.4 — A9 support and Dopamine hardening
 
-> **Unreleased candidate.** Public repository packages remain at 1.3 until this candidate is validated and explicitly published.
+### Added
+- Added support for A9 devices on iOS 16.
 
 ### Changed
 - Dopamine band pickers and Settings use tappable rows with checkmarks instead of switch controls, preserving the same preferences and selections.
 - Dopamine Control Center mode changes use the daemon-backed path used by the app and keep the last successfully applied BandLock mode as the tile state.
 - Persisted Control Center intent is shared between the app and module so refreshes do not overwrite an explicit 2G/3G/4G/5G selection with an ambiguous modem readback.
 - Hidden modes remain hidden during state refresh, and failed mode changes roll back the stored tile state instead of displaying a selection that was not applied.
+- LTE band discovery now handles A9/iOS 16 CoreTelephony responses that expose active bands without a separate supported-band list, allowing safe manual narrowing of the reported bands.
+- Dopamine daemon startup now falls back to the system launchd domain when the per-user domain is unavailable.
 
-### Candidate validation
-- The recovered Dopamine candidate chain (diag1 through diag4) compiled successfully in its private CI runs.
-- The candidate source has been recovered into a normal versioned 1.4 branch and the diagnostic package suffixes have been removed.
-- RootHide and rootful remain behaviorally aligned with the public 1.3 feature set and are versioned together for candidate packaging.
+### Validation
+- A9 LTE refresh, manual band editing and band application were validated successfully on a real device.
+- RootHide, Dopamine and rootful packages are built and validated separately for the public 1.4 release.
 
 ---
 

@@ -1,4 +1,4 @@
-name: Build BandLock 1.4 candidate (iOS 15-18)
+name: Build BandLock 1.4 release (iOS 15-18)
 
 on:
   push:
@@ -82,7 +82,7 @@ jobs:
           find .theos/_ -type f -name 'SettingsIcon@3x.png' | grep -q SettingsIcon
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-RootHide-1.4-candidate
+          name: BandLock-RootHide-1.4
           path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.4_iphoneos-arm64e.deb
 
   build-dopamine:
@@ -113,6 +113,12 @@ jobs:
           grep -q 'hasRefreshedStatus' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'currentLanguageName' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'BandLockPendingNRBands' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          grep -q 'self.hasRefreshedStatus = success' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          grep -q 'supportedBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'activeBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'if (!supportedLTE.count && activeLTE.count) supportedLTE = activeLTE;' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'SYSTEM_DOMAIN="system"' tweaks/BandLock/build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
+          grep -q 'launchctl kickstart -k' tweaks/BandLock/build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
           grep -q 'kCTRegistrationRATSelectionUMTS' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/main.m
           grep -q 'BLCCModule : CCUIToggleModule' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.h
           grep -q 'bl_presentModePicker' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
@@ -142,7 +148,7 @@ jobs:
           ! otool -L "$(find .theos/_ -type f -name BandLockCCModule | head -n 1)" | grep -q CoreTelephony
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.4-candidate
+          name: BandLock-Dopamine-1.4
           path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.4_iphoneos-arm64.deb
 
   publish:
@@ -155,11 +161,11 @@ jobs:
           ref: main
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-RootHide-1.4-candidate
+          name: BandLock-RootHide-1.4
           path: /tmp/root
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Dopamine-1.4-candidate
+          name: BandLock-Dopamine-1.4
           path: /tmp/dop
       - run: sudo apt-get update && sudo apt-get install -y dpkg-dev
       - name: Publish BandLock 1.4 to APT repository

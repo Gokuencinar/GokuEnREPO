@@ -150,7 +150,18 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
 
         if ([command isEqualToString:@"status"]) {
             BLDaemonLog("status query begin");
-            NSDictionary *payload = BLStatusPayload(manager, [manager queryCoreTelephony]);
+            NSDictionary *payload = nil;
+            for (NSInteger attempt = 1; attempt <= 4; attempt++) {
+                payload = BLStatusPayload(manager, [manager queryCoreTelephony]);
+                if (![payload[@"success"] boolValue] || [payload[@"supported"] count] > 0) break;
+                [NSThread sleepForTimeInterval:0.35];
+            }
+            if ([payload[@"success"] boolValue] && [payload[@"supported"] count] == 0) {
+                NSMutableDictionary *unavailable = [payload mutableCopy];
+                unavailable[@"success"] = @NO;
+                unavailable[@"message"] = @"The modem did not return LTE band capabilities yet. Tap Refresh status again.";
+                payload = unavailable;
+            }
             BLDaemonLog("status query end");
             return payload;
         }

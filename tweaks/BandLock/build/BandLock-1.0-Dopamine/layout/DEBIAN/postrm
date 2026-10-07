@@ -3,9 +3,9 @@
 LABEL="com.gokuencinar.bandlockd.dopamine"
 SOCKET="/tmp/${LABEL}.sock"
 OLD_SOCKET="/tmp/com.gokuencinar.bandlockd.sock"
-DOMAIN="user/501"
 
-launchctl bootout "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+launchctl bootout "user/501/${LABEL}" >/dev/null 2>&1 || true
+launchctl bootout "system/${LABEL}" >/dev/null 2>&1 || true
 rm -f "$SOCKET" >/dev/null 2>&1 || true
 rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
 

@@ -1,4 +1,4 @@
-name: Build BandLock 1.4 Rootful candidate
+name: Build BandLock 1.4 Rootful release
 
 on:
   push:
@@ -44,6 +44,9 @@ jobs:
           grep -q 'com.gokuencinar.bandlockd.rootful.sock' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
           grep -q 'com.gokuencinar.bandlockd.rootful.sock' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/main.m
           grep -q 'kCTRegistrationRATSelectionUMTS' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/main.m
+          grep -q 'supportedBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'activeBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'if (!supportedLTE.count && activeLTE.count) supportedLTE = activeLTE;' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
           grep -q 'BLCCModule : CCUIToggleModule' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.h
           grep -q 'bl_presentModePicker' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
           grep -q 'UIAlertControllerStyleActionSheet' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
@@ -81,7 +84,7 @@ jobs:
           ! otool -L "$(find .theos/_ -type f -name BandLockCCModule | head -n 1)" | grep -q CoreTelephony
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Rootful-1.4-candidate
+          name: BandLock-Rootful-1.4
           path: tweaks/BandLock/build/BandLock-1.0-Rootful/packages/com.gokuencinar.bandlock.rootful_1.4_iphoneos-arm.deb
 
   validate-package:
@@ -90,7 +93,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Rootful-1.4-candidate
+          name: BandLock-Rootful-1.4
           path: /tmp/bandlock
       - name: Inspect rootful Debian
         shell: bash
@@ -128,7 +131,7 @@ jobs:
           ref: main
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Rootful-1.4-candidate
+          name: BandLock-Rootful-1.4
           path: /tmp/bandlock
       - name: Install APT tools
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev

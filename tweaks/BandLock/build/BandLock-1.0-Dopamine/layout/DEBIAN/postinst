@@ -4,17 +4,28 @@ LABEL="com.gokuencinar.bandlockd.dopamine"
 PLIST="/var/jb/Library/LaunchDaemons/${LABEL}.plist"
 SOCKET="/tmp/${LABEL}.sock"
 OLD_SOCKET="/tmp/com.gokuencinar.bandlockd.sock"
-DOMAIN="user/501"
+USER_DOMAIN="user/501"
+SYSTEM_DOMAIN="system"
+DOMAIN="$USER_DOMAIN"
 
-launchctl bootout "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+if ! launchctl print "$USER_DOMAIN" >/dev/null 2>&1; then
+    DOMAIN="$SYSTEM_DOMAIN"
+fi
+
+launchctl bootout "${USER_DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+launchctl bootout "${SYSTEM_DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
 rm -f "$SOCKET" >/dev/null 2>&1 || true
 rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
 
 launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
-launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || true
+if ! launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1; then
+    if [ "$DOMAIN" != "$SYSTEM_DOMAIN" ]; then
+        DOMAIN="$SYSTEM_DOMAIN"
+        launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+        launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || true
+    fi
+fi
+launchctl kickstart -k "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
 
-
-
-
-# Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.\n
+# Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.
 exit 0
