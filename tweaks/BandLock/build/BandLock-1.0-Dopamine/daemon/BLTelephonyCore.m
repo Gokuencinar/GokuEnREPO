@@ -351,6 +351,10 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSDictionary *active = [bandInfo respondsToSelector:activeSelector] ? BLMsg0(bandInfo, activeSelector) : nil;
     NSArray *supportedLTE = BLBandsForRat(bandInfo, BLLTERAT, YES);
     NSArray *activeLTE = BLBandsForRat(bandInfo, BLLTERAT, NO);
+    if (!supportedLTE.count && activeLTE.count) {
+        BLA9DiagLog("snapshot LTE supported empty; using active bands as safe supported fallback");
+        supportedLTE = activeLTE;
+    }
     BLA9DiagLog([[NSString stringWithFormat:@"snapshot LTE supported=%lu active=%lu supportedKeys=%@ activeKeys=%@",
                  (unsigned long)supportedLTE.count,
                  (unsigned long)activeLTE.count,
@@ -509,6 +513,14 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSString *lteKey = BLLTEBandKey(currentSupported);
     if (!lteKey.length) lteKey = BLLTEBandKey(currentActive);
     if (!lteKey.length) { if (errorText) *errorText = @"LTE band group unavailable in CTBandInfo"; return NO; }
+    NSMutableDictionary *effectiveSupported = [currentSupported isKindOfClass:[NSDictionary class]] ? [currentSupported mutableCopy] : [NSMutableDictionary dictionary];
+    if (![effectiveSupported[lteKey] isKindOfClass:[NSArray class]] && ![effectiveSupported[lteKey] isKindOfClass:[NSSet class]]) {
+        id activeForLTE = currentActive[lteKey];
+        if ([activeForLTE isKindOfClass:[NSArray class]] || [activeForLTE isKindOfClass:[NSSet class]]) {
+            effectiveSupported[lteKey] = activeForLTE;
+            BLA9DiagLog("write LTE supported dictionary missing LTE group; copied current active group as safe fallback");
+        }
+    }
     NSMutableDictionary *newActive = [currentActive mutableCopy];
     newActive[lteKey] = bands;
     // Build a fresh CTBandInfo first. Mutating a copy with setFActiveBands:
@@ -518,8 +530,8 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     Class bandInfoClass = NSClassFromString(@"CTBandInfo");
     SEL initSelector = NSSelectorFromString(@"initWithSupported:andActiveBands:");
     id allocated = bandInfoClass ? [bandInfoClass alloc] : nil;
-    if (allocated && [allocated respondsToSelector:initSelector] && [currentSupported isKindOfClass:[NSDictionary class]]) {
-        modifiedBandInfo = BLMsg2(allocated, initSelector, currentSupported, newActive);
+    if (allocated && [allocated respondsToSelector:initSelector] && effectiveSupported.count) {
+        modifiedBandInfo = BLMsg2(allocated, initSelector, effectiveSupported, newActive);
     }
 
     // Fallback for devices where the initializer is unavailable.
