@@ -33,7 +33,7 @@ jobs:
           set -euo pipefail
           plutil -lint tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
           root=tweaks/BandLock/build/BandLock-1.0-Dopamine
-          grep -q '^Version: 1.4~a9diag3$' "$root/control"
+          grep -q '^Version: 1.4~a9diag4$' "$root/control"
           grep -q '^Architecture: iphoneos-arm64$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
           grep -q '^ARCHS = arm64 arm64e$' tweaks/BandLock/build/BandLock-1.0-Dopamine/Makefile
           grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-Dopamine/Makefile
@@ -46,6 +46,10 @@ jobs:
           grep -q 'BandLock-A9Diag-daemon.log' "$root/app/BLTelephonyManager.m"
           grep -q 'BandLock-A9Diag-daemon.log' "$root/daemon/main.m"
           grep -q 'BandLock-A9Diag-daemon.log' "$root/daemon/BLTelephonyCore.m"
+          grep -q 'supportedBandsForRat:' "$root/daemon/BLTelephonyCore.m"
+          grep -q 'activeBandsForRat:' "$root/daemon/BLTelephonyCore.m"
+          grep -q 'status attempt=.*zero LTE supported bands' "$root/daemon/main.m"
+          grep -q 'self.hasRefreshedStatus = success' "$root/app/BLTelephonyManager.m"
           grep -q 'USER_DOMAIN="user/501"' "$root/layout/DEBIAN/postinst"
           grep -q 'SYSTEM_DOMAIN="system"' "$root/layout/DEBIAN/postinst"
           grep -q 'launchctl kickstart -k' "$root/layout/DEBIAN/postinst"
@@ -59,10 +63,10 @@ jobs:
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          test -f 'packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag3_iphoneos-arm64.deb'
+          test -f 'packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag4_iphoneos-arm64.deb'
           lipo -archs .theos/_/var/jb/usr/libexec/BandLockDaemon | grep -Eq 'arm64 arm64e|arm64e arm64'
           lipo -archs .theos/_/var/jb/Applications/BandLock.app/BandLock | grep -Eq 'arm64 arm64e|arm64e arm64'
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.4-a9diag3
-          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag3_iphoneos-arm64.deb
+          name: BandLock-Dopamine-1.4-a9diag4
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.4~a9diag4_iphoneos-arm64.deb
