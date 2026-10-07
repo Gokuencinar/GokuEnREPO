@@ -3,10 +3,26 @@
 This changelog documents the public BandLock releases currently distributed through **GokuEnREPO**.
 
 > **About BandLock**  
-> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.3 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
+> BandLock is an iOS jailbreak app for inspecting and selecting LTE/4G and supported 5G NR bands, controlling radio access mode, and viewing worldwide band references. BandLock 1.4 is distributed in separate builds for **RootHide**, **Dopamine rootless**, and **classic rootful** jailbreaks.
 
 > **Compatibility**  
 > iOS 15–18 depending on jailbreak variant. **iOS 17 and iOS 18 support is experimental** and depends on community testing. RootHide uses `iphoneos-arm64e`; Dopamine rootless uses `iphoneos-arm64`; Rootful uses `iphoneos-arm` with arm64 binaries and classic filesystem paths.
+
+---
+
+## 1.4 — A9 support and Dopamine hardening
+
+### Added
+- Added support for A9 devices on iOS 16.
+
+### Changed
+- Improved LTE band discovery for devices where CoreTelephony reports active LTE bands without a separate supported-band list, allowing safe manual narrowing of the reported bands.
+- Dopamine daemon startup now falls back to the system launchd domain when the per-user domain is unavailable.
+- Pending band selections are reconciled with the latest modem capabilities after refresh.
+
+### Validation
+- A9 LTE refresh, manual band editing and band application were validated successfully on a real device.
+- RootHide, Dopamine and rootful packages are built and validated separately for this release.
 
 ---
 
