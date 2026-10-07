@@ -247,8 +247,8 @@ static uint64_t CFPathIdentifier(NSString *path) {
         id rawSMSSettings = carrier[@"SMSSettings"];
         NSDictionary *smsSettings = [rawSMSSettings isKindOfClass:NSDictionary.class] ? rawSMSSettings : nil;
 
-        // Cricket 31.1 and the iOS 17.5+ 58.1 bundle use this grouped ATT_aio
-        // IMS shape. Refuse any other iOS 17 layout instead of guessing.
+        // Keep iOS 17 fail-closed: only accept the grouped ATT_aio IMS shape
+        // already understood by CarrierFix instead of synthesizing a new layout.
         if (!hasGroupedAPNSchema || hasFlatAPNSchema || !imsSMS ||
             ![forcedTags isEqualToString:@"voice,sms"] ||
             ![registrationPolicy isEqualToString:@"ATT"] ||
@@ -286,8 +286,6 @@ static uint64_t CFPathIdentifier(NSString *path) {
     if (![smsSettings[@"TransportFallback"] isKindOfClass:NSNumber.class] || [smsSettings[@"TransportFallback"] boolValue]) return NO;
     if (![imsSMS[@"SMSBundleToVoice"] isKindOfClass:NSNumber.class] || [imsSMS[@"SMSBundleToVoice"] boolValue]) return NO;
     if (![imsSMS[@"allowCSFBInVolteMode"] isKindOfClass:NSNumber.class] || [imsSMS[@"allowCSFBInVolteMode"] boolValue]) return NO;
-    if ([self currentIOSMajorVersion] == 17 &&
-        (![imsSMS[@"enableInNonVoLTEMode"] isKindOfClass:NSNumber.class] || [imsSMS[@"enableInNonVoLTEMode"] boolValue])) return NO;
     return YES;
 }
 
@@ -522,7 +520,11 @@ static uint64_t CFPathIdentifier(NSString *path) {
     }
     NSNumber *permissions = metadata[@"permissions"];
     if (permissions) {
-        [[NSFileManager defaultManager] setAttributes:@{NSFilePosixPermissions: permissions} ofItemAtPath:path error:nil];
+        NSError *permissionsError = nil;
+        if (![[NSFileManager defaultManager] setAttributes:@{NSFilePosixPermissions: permissions} ofItemAtPath:path error:&permissionsError]) {
+            if (errorText) *errorText = permissionsError.localizedDescription ?: @"The carrier overlay was written but its original permissions could not be restored.";
+            return NO;
+        }
     }
     NSData *readBack = [NSData dataWithContentsOfFile:path];
     if (![readBack isEqualToData:data]) {
@@ -571,7 +573,6 @@ static uint64_t CFPathIdentifier(NSString *path) {
     NSMutableDictionary *imsSMS = [(originalIMSSMS ?: @{}) mutableCopy];
     imsSMS[@"SMSBundleToVoice"] = @NO;
     imsSMS[@"allowCSFBInVolteMode"] = @NO;
-    if (majorVersion == 17) imsSMS[@"enableInNonVoLTEMode"] = @NO;
     ims[@"SMS"] = imsSMS;
     carrier[@"IMSConfig"] = ims;
 
@@ -749,6 +750,24 @@ static uint64_t CFPathIdentifier(NSString *path) {
         return NO;
     }
 
+    NSString *postWriteActivePath = [self resolvedCarrierPath];
+    NSData *postWriteData = [NSData dataWithContentsOfFile:path];
+    if (![postWriteData isEqualToData:candidateData]) {
+        if (message) *message = @"The carrier overlay changed again immediately after Apply. CarrierFix did not overwrite that newer state; refresh the diagnostic before doing anything else.";
+        return NO;
+    }
+    if (![postWriteActivePath isEqual:path]) {
+        NSString *rollbackError = nil;
+        BOOL restored = [self restoreVerifiedBackupAtPath:path metadata:meta error:&rollbackError];
+        if (restored) [[NSFileManager defaultManager] removeItemAtPath:paths[@"patched"] error:nil];
+        if (message) {
+            *message = restored
+                ? @"The active SIM/eSIM carrier overlay changed immediately after Apply. CarrierFix restored the old overlay and cancelled the operation; refresh the diagnostic for the newly active line."
+                : [NSString stringWithFormat:@"The active SIM/eSIM carrier overlay changed immediately after Apply, and CarrierFix could not restore the old overlay: %@", rollbackError ?: @"unknown restore error"];
+        }
+        return NO;
+    }
+
     if (message) *message = @"Cricket IMS/SMS compatibility keys were applied and verified. Toggle Airplane Mode for about 30 seconds, then test SMS to an Android number. If anything gets worse, use Restore Original.";
     return YES;
 }
@@ -803,7 +822,17 @@ static uint64_t CFPathIdentifier(NSString *path) {
         if (message) *message = [NSString stringWithFormat:@"Restore failed: %@", writeError ?: @"unknown error"];
         return NO;
     }
+    NSString *postRestoreActivePath = [self resolvedCarrierPath];
+    NSData *postRestoreData = [NSData dataWithContentsOfFile:path];
+    if (![postRestoreData isEqualToData:backup]) {
+        if (message) *message = @"The carrier overlay changed again immediately after Restore. CarrierFix did not overwrite that newer state; refresh the diagnostic before doing anything else.";
+        return NO;
+    }
     [[NSFileManager defaultManager] removeItemAtPath:paths[@"patched"] error:nil];
+    if (![postRestoreActivePath isEqual:path]) {
+        if (message) *message = @"The original overlay was restored, but the active SIM/eSIM carrier changed during Restore. Refresh the diagnostic before applying anything to the newly active line.";
+        return NO;
+    }
     if (message) *message = @"Original carrier configuration restored and verified byte-for-byte. Toggle Airplane Mode for about 30 seconds or reboot before testing again.";
     return YES;
 }
