@@ -40,6 +40,8 @@ jobs:
           grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-RootHide/Makefile
           grep -q 'Depends: firmware (>= 15.0), firmware (<= 17.0)' tweaks/BandLock/build/BandLock-1.0-RootHide/control
           grep -q '^Recommends: com.opa334.ccsupport$' tweaks/BandLock/build/BandLock-1.0-RootHide/control
+          grep -q '^Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md$' tweaks/BandLock/build/BandLock-1.0-RootHide/control
+          grep -q '^Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png$' tweaks/BandLock/build/BandLock-1.0-RootHide/control
           python3 -m json.tool tweaks/BandLock/build/BandLock-1.0-RootHide/app/Resources/countries.json >/dev/null
           grep -q '5G Auto / 5G On / 5G Only' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLControlViewController.m
           grep -q 'hasRefreshedStatus' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLControlViewController.m
@@ -110,6 +112,8 @@ jobs:
           grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-Dopamine/Makefile
           grep -q 'Depends: firmware (>= 15.0), firmware (<< 19.0), mobilesubstrate' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
           grep -q '^Recommends: com.opa334.ccsupport$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '^Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '^Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
           python3 -m json.tool tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/countries.json >/dev/null
           grep -q '5G Auto / 5G On / 5G Only' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m
           grep -q 'hasRefreshedStatus' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m

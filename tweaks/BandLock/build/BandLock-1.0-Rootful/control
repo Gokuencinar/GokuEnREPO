@@ -6,9 +6,9 @@ Description: Standalone BandLock Global app for iOS 15-16 rootful jailbreaks wit
 Maintainer: Gokuencinar
 Author: Gokuencinar
 Section: Tweaks
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
 Depends: firmware (>= 15.0), firmware (<< 17.0), mobilesubstrate
 Recommends: com.opa334.ccsupport
 Conflicts: com.gokuencinar.bandlock, com.gokuencinar.bandlock.dopamine

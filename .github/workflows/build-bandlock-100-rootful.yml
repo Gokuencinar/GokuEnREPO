@@ -38,6 +38,8 @@ jobs:
           grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-Rootful/Makefile
           grep -q 'Depends: firmware (>= 15.0), firmware (<< 17.0), mobilesubstrate' tweaks/BandLock/build/BandLock-1.0-Rootful/control
           grep -q '^Recommends: com.opa334.ccsupport$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
           grep -q 'BL_VARIANT_ROOTFUL=1' tweaks/BandLock/build/BandLock-1.0-Rootful/Makefile
           ! grep -q 'THEOS_PACKAGE_SCHEME' tweaks/BandLock/build/BandLock-1.0-Rootful/Makefile
           grep -q '/usr/libexec/BandLockDaemon' tweaks/BandLock/build/BandLock-1.0-Rootful/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.rootful.plist
