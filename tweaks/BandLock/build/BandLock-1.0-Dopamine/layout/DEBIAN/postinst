@@ -4,7 +4,9 @@ LABEL="com.gokuencinar.bandlockd.dopamine"
 PLIST="/var/jb/Library/LaunchDaemons/${LABEL}.plist"
 SOCKET="/tmp/${LABEL}.sock"
 OLD_SOCKET="/tmp/com.gokuencinar.bandlockd.sock"
-DOMAIN="user/501"
+USER_DOMAIN="user/501"
+SYSTEM_DOMAIN="system"
+DOMAIN="$USER_DOMAIN"
 DIAG_DIR="/var/mobile/Library/Logs/BandLockGlobal"
 DIAG="${DIAG_DIR}/BandLock-A9Diag-install-diag.txt"
 DAEMON_DIAG="${DIAG_DIR}/BandLock-A9Diag-daemon.log"
@@ -14,35 +16,55 @@ mkdir -p "$DIAG_DIR" >/dev/null 2>&1 || true
 chown 501:0 "$DAEMON_DIAG" >/dev/null 2>&1 || true
 chmod 0644 "$DAEMON_DIAG" >/dev/null 2>&1 || true
 rm -f /tmp/BandLock-daemon.log >/dev/null 2>&1 || true
+
+# Some iOS 15/Dopamine environments do not expose the user/501 launchd
+# domain to root maintainer scripts. In that case, load the LaunchDaemon in
+# the system domain; its plist still runs BandLockDaemon as the mobile user.
+if ! launchctl print "$USER_DOMAIN" >/dev/null 2>&1; then
+    DOMAIN="$SYSTEM_DOMAIN"
+fi
+
 {
     echo "BandLock A9 install diagnostic"
     date
-    echo "domain=${DOMAIN}"
+    echo "selected_domain=${DOMAIN}"
     echo "label=${LABEL}"
     echo "plist=${PLIST}"
     echo "binary=/var/jb/usr/libexec/BandLockDaemon"
     ls -ld "$PLIST" /var/jb/usr/libexec/BandLockDaemon 2>&1 || true
 } >"$DIAG" 2>&1
 
-launchctl bootout "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
-echo "bootout_rc=$?" >>"$DIAG"
+launchctl bootout "${USER_DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
+echo "bootout_user_rc=$?" >>"$DIAG"
+launchctl bootout "${SYSTEM_DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
+echo "bootout_system_rc=$?" >>"$DIAG"
 rm -f "$SOCKET" >/dev/null 2>&1 || true
 rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
 
 launchctl enable "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
 echo "enable_rc=$?" >>"$DIAG"
 launchctl bootstrap "$DOMAIN" "$PLIST" >>"$DIAG" 2>&1
-echo "bootstrap_rc=$?" >>"$DIAG"
+BOOTSTRAP_RC=$?
+echo "bootstrap_rc=$BOOTSTRAP_RC" >>"$DIAG"
+
+if [ "$BOOTSTRAP_RC" -ne 0 ] && [ "$DOMAIN" != "$SYSTEM_DOMAIN" ]; then
+    DOMAIN="$SYSTEM_DOMAIN"
+    echo "fallback_domain=${DOMAIN}" >>"$DIAG"
+    launchctl enable "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
+    echo "fallback_enable_rc=$?" >>"$DIAG"
+    launchctl bootstrap "$DOMAIN" "$PLIST" >>"$DIAG" 2>&1
+    echo "fallback_bootstrap_rc=$?" >>"$DIAG"
+fi
+
+launchctl kickstart -k "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1
+echo "kickstart_rc=$?" >>"$DIAG"
 sleep 1
 echo "--- launchctl print user/501 ---" >>"$DIAG"
-launchctl print "${DOMAIN}/${LABEL}" >>"$DIAG" 2>&1 || true
+launchctl print "${USER_DOMAIN}/${LABEL}" >>"$DIAG" 2>&1 || true
 echo "--- launchctl print system ---" >>"$DIAG"
-launchctl print "system/${LABEL}" >>"$DIAG" 2>&1 || true
+launchctl print "${SYSTEM_DOMAIN}/${LABEL}" >>"$DIAG" 2>&1 || true
 echo "--- socket ---" >>"$DIAG"
 ls -la "$SOCKET" >>"$DIAG" 2>&1 || true
 
-
-
-
-# Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.\n
+# Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.
 exit 0
