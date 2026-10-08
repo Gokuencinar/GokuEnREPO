@@ -31,7 +31,7 @@
     self.textView.layer.cornerRadius = 12.0;
     self.textView.textContainerInset = UIEdgeInsetsMake(12, 10, 12, 10);
 
-    UIButton *diagnose = [self buttonWithTitle:@"Refresh + verify backup" action:@selector(refreshDiagnostic)];
+    UIButton *diagnose = [self buttonWithTitle:@"Refresh + verify backup" action:@selector(refreshDiagnosticTapped)];
     self.applyButton = [self buttonWithTitle:@"Apply Cricket SMS Fix" action:@selector(applyFix)];
     self.restoreButton = [self buttonWithTitle:@"Restore Original" action:@selector(restoreOriginal)];
     UIButton *copy = [self buttonWithTitle:@"Copy diagnostic" action:@selector(copyDiagnostic)];
@@ -99,13 +99,13 @@
     NSDictionary *initial = [self.manager diagnose];
     NSString *backupMessage = nil;
     BOOL backupReady = NO;
-    if ([initial[@"ok"] boolValue] && [initial[@"cricket"] boolValue] && [initial[@"schemaSafe"] boolValue] && [initial[@"writable"] boolValue]) {
+    if ([initial[@"ok"] boolValue] && [initial[@"cricket"] boolValue] && [initial[@"schemaSafe"] boolValue] && [initial[@"writable"] boolValue] && ![initial[@"fixApplied"] boolValue]) {
         backupReady = [self.manager prepareForApply:&backupMessage];
     }
     NSDictionary *d = [self.manager diagnose];
     self.textView.text = [self.manager diagnosticText];
 
-    BOOL canApply = [d[@"ok"] boolValue] && [d[@"cricket"] boolValue] && [d[@"schemaSafe"] boolValue] && [d[@"writable"] boolValue] && backupReady;
+    BOOL canApply = [d[@"ok"] boolValue] && [d[@"cricket"] boolValue] && [d[@"schemaSafe"] boolValue] && [d[@"writable"] boolValue] && ![d[@"fixApplied"] boolValue] && backupReady;
     self.applyButton.enabled = canApply;
     self.applyButton.alpha = canApply ? 1.0 : 0.45;
     BOOL canRestore = [self.manager hasVerifiedBackupForActiveCarrier];
@@ -121,9 +121,44 @@
         if (![d[@"cricket"] boolValue]) reason = @"Cricket / ATT_aio not detected.";
         else if (![d[@"writable"] boolValue]) reason = @"Carrier overlay is not safely writable in this environment.";
         else if (![d[@"schemaSafe"] boolValue]) reason = d[@"schemaReason"];
+        else if ([d[@"fixApplied"] boolValue]) reason = @"The IMS/SMS target flags are already present. No patch is needed.";
         else reason = backupMessage ?: @"Backup/restore preflight did not pass.";
         self.safetyLabel.text = [NSString stringWithFormat:@"Apply disabled: %@", reason ?: @"unknown reason"];
     }
+}
+
+- (void)refreshDiagnosticTapped {
+    [self refreshDiagnostic];
+    NSDictionary *diagnostic = [self.manager diagnose];
+    NSString *title = @"Diagnostic refreshed";
+    NSString *message = nil;
+
+    if (![diagnostic[@"ok"] boolValue]) {
+        title = @"Carrier not found";
+        message = diagnostic[@"message"] ?: @"CarrierFix could not read the active carrier overlay. No changes were made.";
+    } else if (![diagnostic[@"cricket"] boolValue]) {
+        title = @"Cricket not detected";
+        message = @"CarrierFix refreshed the diagnostic, but it did not detect an active Cricket / ATT_aio profile. Nothing was changed.";
+    } else if (![diagnostic[@"schemaSafe"] boolValue]) {
+        title = @"Unsupported carrier profile";
+        message = diagnostic[@"schemaReason"] ?: @"CarrierFix cannot safely patch this carrier schema. Nothing was changed.";
+    } else if (![diagnostic[@"writable"] boolValue]) {
+        title = @"Carrier overlay is read-only";
+        message = [NSString stringWithFormat:
+                   @"Refresh worked and Cricket was detected, but CarrierFix cannot write the active overlay from this app.\n\nCarrier file writable: %@\nOverlay folder writable: %@\nApp UID: %@\nCarrier owner UID: %@ (mode %@)\n\nNo backup or changes were made. Tap Copy diagnostic and send the full report. Do not change file permissions manually.%@",
+                   [diagnostic[@"fileWritable"] boolValue] ? @"YES" : @"NO",
+                   [diagnostic[@"directoryWritable"] boolValue] ? @"YES" : @"NO",
+                   diagnostic[@"effectiveUID"], diagnostic[@"fileOwner"], diagnostic[@"fileMode"],
+                   [diagnostic[@"fixApplied"] boolValue] ? @"\n\nThe IMS/SMS target flags are already present in this profile; that does not mean SMS is working." : @""];
+    } else if ([diagnostic[@"fixApplied"] boolValue]) {
+        message = @"The IMS/SMS target flags are already present in this carrier profile. CarrierFix did not write anything because this patch has no new change to apply. Test SMS normally; these flags alone do not guarantee that SMS works.";
+    } else if (![diagnostic[@"backupAvailable"] boolValue]) {
+        title = @"Backup not ready";
+        message = @"Cricket was detected and the carrier overlay is writable, but CarrierFix could not verify a restorable backup. Apply stays disabled. Tap Copy diagnostic and send the report.";
+    } else {
+        message = @"Cricket was detected and the original carrier configuration was backed up and verified. Apply is ready, but this build is still experimental.";
+    }
+    [self showMessage:message title:title];
 }
 
 - (void)applyFix {

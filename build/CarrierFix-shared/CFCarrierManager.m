@@ -358,7 +358,13 @@ static uint64_t CFPathIdentifier(NSString *path) {
     NSString *forcedTags = [signaling[@"ForcedFeatureTags"] isKindOfClass:NSString.class] ? signaling[@"ForcedFeatureTags"] : @"(missing)";
     NSString *schemaReason = nil;
     BOOL schemaSafe = [self schemaIsSafeForPatch:carrier reason:&schemaReason];
-    BOOL carrierWritable = [[NSFileManager defaultManager] isWritableFileAtPath:path] && [self hasWritableDirectoryForPath:path];
+    BOOL fileWritable = [[NSFileManager defaultManager] isWritableFileAtPath:path];
+    BOOL directoryWritable = [self hasWritableDirectoryForPath:path];
+    BOOL carrierWritable = fileWritable && directoryWritable;
+    NSDictionary *fileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil] ?: @{};
+    NSNumber *filePermissions = fileAttributes[NSFilePosixPermissions];
+    NSString *fileMode = filePermissions ? [NSString stringWithFormat:@"%04lo", (unsigned long)filePermissions.unsignedIntegerValue] : @"unknown";
+    NSNumber *fileOwner = fileAttributes[NSFileOwnerAccountID];
 
     return @{ @"ok": @YES,
               @"path": path ?: @"",
@@ -368,6 +374,11 @@ static uint64_t CFPathIdentifier(NSString *path) {
               @"ios": UIDevice.currentDevice.systemVersion ?: @"",
               @"model": [self machineIdentifier],
               @"writable": @(carrierWritable),
+              @"fileWritable": @(fileWritable),
+              @"directoryWritable": @(directoryWritable),
+              @"fileMode": fileMode,
+              @"fileOwner": fileOwner ?: @"unknown",
+              @"effectiveUID": @(geteuid()),
               @"schemaSafe": @(schemaSafe),
               @"apnSchema": [self apnSchemaDescription:carrier],
               @"schemaReason": schemaReason ?: @"",
@@ -630,6 +641,11 @@ static uint64_t CFPathIdentifier(NSString *path) {
         return NO;
     }
 
+    if ([d[@"fixApplied"] boolValue]) {
+        if (message) *message = @"The IMS/SMS target flags are already present in this Cricket profile. CarrierFix made no changes; these values alone do not confirm SMS is working.";
+        return YES;
+    }
+
     NSString *path = [d[@"path"] isKindOfClass:NSString.class] ? d[@"path"] : @"";
     if (!path.length) {
         if (message) *message = @"The diagnosed carrier overlay path is missing. No changes were made.";
@@ -868,9 +884,11 @@ static uint64_t CFPathIdentifier(NSString *path) {
     if (![version isKindOfClass:NSString.class] || !version.length) version = @"unknown";
     if (![d[@"ok"] boolValue]) return [NSString stringWithFormat:@"CarrierFix %@\nError: %@\nPath: %@", version, d[@"message"] ?: @"Unknown", d[@"path"] ?: @""];
     return [NSString stringWithFormat:
-            @"CarrierFix %@\niOS: %@\nModel: %@\nCarrier: %@\nCarrier bundle version: %@\nDetected Cricket: %@\nCarrier plist: %@\nAPN schema: %@\nWritable overlay: %@\nRecognized IMS/APN schema: %@\nVerified backup: %@\nFix currently present: %@\nSupports IMS: %@\nIMS APN: %@\nIMS ForcedFeatureTags: %@\nSMS TransportFallback: %@\nIMS SMSBundleToVoice: %@\nIMS allowCSFBInVolteMode: %@\nIMS enableInNonVoLTEMode: %@%@\n\nNo phone number, IMSI or ICCID is included in this report.",
+            @"CarrierFix %@\niOS: %@\nModel: %@\nCarrier: %@\nCarrier bundle version: %@\nDetected Cricket: %@\nCarrier plist: %@\nAPN schema: %@\nWritable overlay: %@\nCarrier file writable: %@\nOverlay folder writable: %@\nCarrier file mode: %@\nCarrier file owner UID: %@\nApp effective UID: %@\nRecognized IMS/APN schema: %@\nVerified backup: %@\nIMS/SMS target flags already present: %@\nSupports IMS: %@\nIMS APN: %@\nIMS ForcedFeatureTags: %@\nSMS TransportFallback: %@\nIMS SMSBundleToVoice: %@\nIMS allowCSFBInVolteMode: %@\nIMS enableInNonVoLTEMode: %@%@\n\nNo phone number, IMSI or ICCID is included in this report.",
             version, d[@"ios"], d[@"model"], d[@"carrier"], d[@"carrierBundleVersion"], [d[@"cricket"] boolValue] ? @"YES" : @"NO", d[@"path"], d[@"apnSchema"],
-            [d[@"writable"] boolValue] ? @"YES" : @"NO", [d[@"schemaSafe"] boolValue] ? @"YES" : @"NO",
+            [d[@"writable"] boolValue] ? @"YES" : @"NO", [d[@"fileWritable"] boolValue] ? @"YES" : @"NO",
+            [d[@"directoryWritable"] boolValue] ? @"YES" : @"NO", d[@"fileMode"], d[@"fileOwner"], d[@"effectiveUID"],
+            [d[@"schemaSafe"] boolValue] ? @"YES" : @"NO",
             [d[@"backupAvailable"] boolValue] ? @"YES" : @"NO", [d[@"fixApplied"] boolValue] ? @"YES" : @"NO",
             [d[@"supportsIMS"] boolValue] ? @"YES" : @"NO", [d[@"hasIMSAPN"] boolValue] ? @"YES" : @"NO",
             d[@"forcedFeatureTags"], d[@"smsTransportFallback"], d[@"smsBundleToVoice"], d[@"allowCSFBInVolteMode"], d[@"enableInNonVoLTEMode"],

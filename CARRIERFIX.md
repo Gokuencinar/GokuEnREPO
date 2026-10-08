@@ -44,4 +44,4 @@ CarrierFix installs no MobileSubstrate hook or LaunchDaemon, does not modify `/S
 
 CarrierFix does **not** backport RCS. Its target is normal SMS/IMS operation on Cricket. On iOS 17, messages to Android are still SMS/MMS rather than iPhone RCS.
 
-Version 0.3.0 remains the iOS 16 private validation build. The isolated iOS 17 validation package is `0.4.0~ios17test1` and should remain a test build until its diagnostics and Apply/Restore flow are verified on a real Cricket line exhibiting the SMS problem.
+Version 0.3.0 remains the iOS 16 private validation build. The isolated iOS 17 validation package is `0.4.0~ios17test2` and should remain a test build until its diagnostics and Apply/Restore flow are verified on a real Cricket line exhibiting the SMS problem. Test 2 shows an explicit result when Refresh is pressed and reports the carrier file/folder write checks plus owner UID, file mode, and app effective UID. A report saying the target IMS/SMS flags are already present is not proof that SMS is working; do not bypass filesystem protections or blindly apply the same values.
