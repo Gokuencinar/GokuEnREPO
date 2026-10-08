@@ -229,8 +229,24 @@
                                                   style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
         [weakSelf shareCarrierFile:ipcc expectedSHA384:[CFCarrierUpdateManager officialCricket58SHA384]];
     }]];
+    [options addAction:[UIAlertAction actionWithTitle:@"Check on-device install support"
+                                                  style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+        [weakSelf checkOnDeviceCarrierInstallation];
+    }]];
     [options addAction:[UIAlertAction actionWithTitle:@"Done" style:UIAlertActionStyleCancel handler:nil]];
     [self presentViewController:options animated:YES completion:nil];
+}
+
+- (void)checkOnDeviceCarrierInstallation {
+    NSString *report = [CFCarrierUpdateManager onDeviceInstallationCapabilityReport];
+    UIAlertController *result = [UIAlertController alertControllerWithTitle:@"On-device install preflight"
+        message:report preferredStyle:UIAlertControllerStyleAlert];
+    [result addAction:[UIAlertAction actionWithTitle:@"Copy report"
+          style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+        UIPasteboard.generalPasteboard.string = report;
+    }]];
+    [result addAction:[UIAlertAction actionWithTitle:@"Done" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:result animated:YES completion:nil];
 }
 
 - (void)prepareOfficialCricketUpdate {

@@ -1,8 +1,8 @@
 Package: com.gokuencinar.carrierfix.ios17test
 Name: CarrierFix iOS 17 Test
-Version: 0.4.0~ios17test4
+Version: 0.4.0~ios17test5
 Architecture: iphoneos-arm64
-Description: Experimental Cricket/AT&T diagnostic and carrier update preparation for jailbroken iOS 17. Exports the SHA-384-verified original Apple IPCC and a local reference copy without installing or bypassing firmware compatibility.
+Description: Experimental Cricket/AT&T diagnostics and official IPCC preparation for jailbroken iOS 17. Exports verified carrier files and checks on-device CoreTelephony installation capability without installing unsupported packages.
 Maintainer: Gokuencinar
 Author: Gokuencinar
 Section: Tweaks

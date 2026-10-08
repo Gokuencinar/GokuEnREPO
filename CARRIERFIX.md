@@ -44,9 +44,9 @@ CarrierFix installs no MobileSubstrate hook or LaunchDaemon, does not modify `/S
 
 CarrierFix does **not** backport RCS. Its target is normal SMS/IMS operation on Cricket. On iOS 17, messages to Android are still SMS/MMS rather than iPhone RCS.
 
-Version 0.3.0 remains the iOS 16 private validation build. The isolated iOS 17 validation package is `0.4.0~ios17test4` and should remain a test build until its diagnostics and Apply/Restore flow are verified on a real Cricket line exhibiting the SMS problem. Test 2 added explicit Refresh feedback and file/folder permissions. Test 3 introduced an **export-only** Cricket carrier update preparation button to the iOS 17 app. Test 4 adds share-time hash checks, protected staging in cache, and discards snapshots after aborted preparation. iOS 16 is unchanged.
+Version 0.3.0 remains the iOS 16 private validation build. The isolated iOS 17 validation package is `0.4.0~ios17test5` and should remain a test build until its diagnostics and Apply/Restore flow are verified on a real Cricket line exhibiting the SMS problem. Test 2 added Refresh feedback and file/folder permissions; Test 3 added export-only carrier update preparation; Test 4 improved staging and verification. Test 5 adds a **read-only CoreTelephony/CommCenter installation-capability preflight** in the iOS 17 app. iOS 16 is unchanged.
 
-## Official Cricket carrier update preparation (test4)
+## Official Cricket carrier update preparation (test5)
 
 - On the known Cricket iPhone 15 Pro Max (`iPhone16,2`) with iOS 17.x, **Prepare official Cricket update** creates a private, read-back-verified snapshot of the active Cricket overlay and downloads Apple's original `ATT_aio_US_iPhone.ipcc` version 58.1 over HTTPS.
 - It verifies the downloaded package against the pinned SHA-384 `55CED9623258B24B76670A5CA19CB5F53D4B23F7B7389E1257AAD8BED5BA981CB1241342B6740945F675FBB7BD0B29B5` before storing it. A failed check leaves the active carrier unchanged.
@@ -56,3 +56,11 @@ Version 0.3.0 remains the iOS 16 private validation build. The isolated iOS 17 v
 - On a compatible iOS version, updates can be offered via **Settings → General → About**; an independently verified Apple-supported desktop carrier-update flow may be possible when the installed Apple device software accepts the official IPCC. CarrierFix cannot promise or perform that external installation.
 
 Read `build/CarrierFix-0.4-iOS17-Dopamine/CRICKET-56-TO-58-SAFETY.md` for the compatibility report, remaining data needed from the user's phone, and restore precautions.
+
+### On-device installation capability check
+
+CarrierFix Test 5 adds a third action to the **Carrier update prepared (NOT installed)** dialog: **Check on-device install support**. Its report checks the process's code-signing entitlements (`platform-application`, `com.apple.CommCenter.fine-grained:spi`, and `preferences-reset`) and whether `CoreTelephony` exposes the private `_CTServerConnectionCreate`, `_CTServerConnectionInstallCarrierBundle`, and `_CTServerConnectionResetCarrierBundle` symbols.
+
+This is a **read-only diagnostic**, not an installer. It does not call those interfaces, modify mobile configuration, contact the baseband, or restart CommCenter. An entitlement embedded in a binary and an available symbol do **not** guarantee that CommCenter will authorize the operation on iOS 17.1. The user should copy the preflight report and share it without the original carrier snapshot. An actual installation attempt remains disabled until its acceptance criteria and a reliable recovery path have been checked on the target device.
+
+Technical reference: DevelopCubeLab/CellularInfo provides an independent open-source example of on-device IPCC management using `_CTServerConnectionInstallCarrierBundle`, staging under `/private/var/tmp/`, and `spi` entitlement. This project does not copy CellularInfo source code. Its implementation must not be assumed to work unchanged on the reporter's device.

@@ -69,7 +69,7 @@ upgrade for iOS 17.1. Keep the existing Cricket 56.0 profile untouched.
 
 ## Test3 preparation UI
 
-CarrierFix `0.4.0~ios17test4` now offers **Prepare official Cricket update**:
+CarrierFix `0.4.0~ios17test5` now offers **Prepare official Cricket update**:
 it reads the active profile and stores a checked private snapshot, downloads
 Apple's unmodified IPCC and checks the pinned SHA-384, then offers **separate**
 share actions for each file, with immediate re-verification before sharing.
@@ -83,3 +83,10 @@ alter the version, force AppleMobileDevice carrier-testing when eligibility
 fails, or mistake the read-only reference snapshot for a working rollback.
 The share action for the original profile is sensitive: save it privately,
 not in an untrusted message.
+
+Test 5 introduces a new **Check on-device install support** action in the
+preparation dialog. The app checks runtime entitlements and the presence
+of private CoreTelephony install/reset functions without invoking them.
+The user should send the copied preflight report. This is prerequisite
+research toward a possible direct, fully verified update workflow; it does
+not prove Apple accepts Cricket 58.1 on iOS 17.1 or validate rollback.

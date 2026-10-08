@@ -14,4 +14,7 @@
            expectedSHA384:(NSString *)expectedSHA384
                     error:(NSError **)error;
 + (void)discardReferenceAtURL:(NSURL *)fileURL;
+// Read-only preflight: checks effective entitlements and CoreTelephony symbols.
+// It never invokes install/reset, changes any carrier files, or restarts CommCenter.
++ (NSString *)onDeviceInstallationCapabilityReport;
 @end

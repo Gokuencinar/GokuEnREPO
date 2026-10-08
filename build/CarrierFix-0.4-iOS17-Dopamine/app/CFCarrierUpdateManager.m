@@ -4,6 +4,10 @@
 #import <stdlib.h>
 #import <string.h>
 #import <sys/stat.h>
+#import <dlfcn.h>
+#import <Security/Security.h>
+#import <UIKit/UIKit.h>
+#import <unistd.h>
 
 static NSString * const CFAppleIPCCURL =
     @"https://updates.cdn-apple.com/20240513/carrierbundles/032-23478/E247835C-8950-4A31-A430-A6DB27A40158/ATT_aio_US_iPhone.ipcc";
@@ -27,6 +31,59 @@ static NSString *CFCarrierSHA384(NSData *data) {
 }
 
 @implementation CFCarrierUpdateManager
+
++ (NSString *)onDeviceInstallationCapabilityReport {
+    SecTaskRef task = SecTaskCreateFromSelf(kCFAllocatorDefault);
+    CFErrorRef entitlementError = NULL;
+    CFTypeRef entitlement = task ?
+        SecTaskCopyValueForEntitlement(task, CFSTR("com.apple.CommCenter.fine-grained"), &entitlementError) : NULL;
+    NSArray *rights = (entitlement && CFGetTypeID(entitlement) == CFArrayGetTypeID()) ?
+        (__bridge NSArray *)entitlement : @[];
+    BOOL spiDeclared = [rights containsObject:@"spi"];
+    BOOL resetDeclared = [rights containsObject:@"preferences-reset"];
+    BOOL platformDeclared = NO;
+    if (task) {
+        CFTypeRef platform = SecTaskCopyValueForEntitlement(task, CFSTR("platform-application"), NULL);
+        platformDeclared = platform && CFGetTypeID(platform) == CFBooleanGetTypeID() && CFBooleanGetValue(platform);
+        if (platform) CFRelease(platform);
+    }
+    if (entitlement) CFRelease(entitlement);
+    if (entitlementError) CFRelease(entitlementError);
+    if (task) CFRelease(task);
+
+    void *library = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony",
+                           RTLD_NOW | RTLD_LOCAL);
+    BOOL createAPI = library && dlsym(library, "_CTServerConnectionCreate");
+    BOOL installAPI = library && dlsym(library, "_CTServerConnectionInstallCarrierBundle");
+    BOOL resetAPI = library && dlsym(library, "_CTServerConnectionResetCarrierBundle");
+    if (library) dlclose(library);
+
+    NSString *version = [UIDevice currentDevice].systemVersion ?: @"unknown";
+    BOOL canInvestigate = platformDeclared && spiDeclared && createAPI && installAPI && resetAPI;
+    return [NSString stringWithFormat:
+      @"CarrierFix on-device IPCC preflight (read-only)\n"
+       @"iOS: %@\n"
+       @"Effective UID: %u\n"
+       @"Platform entitlement present: %@\n"
+       @"CommCenter SPI entitlement present: %@\n"
+       @"CommCenter preferences-reset entitlement present: %@\n"
+       @"CoreTelephony library load: %@\n"
+       @"Create connection symbol: %@\n"
+       @"Install carrier bundle symbol: %@\n"
+       @"Reset carrier bundle symbol: %@\n\n"
+       @"Preliminary eligibility: %@\n"
+       @"No installation, restore or service restart was attempted. "
+       @"These checks do not prove CommCenter will authorize an install or accept Cricket 58.1 on iOS %@. "
+       @"An original overlay reference copy is not a tested rollback.",
+       version, (unsigned)geteuid(),
+       platformDeclared ? @"YES" : @"NO", spiDeclared ? @"YES" : @"NO",
+       resetDeclared ? @"YES" : @"NO",
+       library ? @"YES" : @"NO",
+       createAPI ? @"YES" : @"NO",
+       installAPI ? @"YES" : @"NO",
+       resetAPI ? @"YES" : @"NO",
+       canInvestigate ? @"POTENTIAL (not verified)" : @"BLOCKED / requires more investigation", version];
+}
 
 + (NSURL *)researchDirectory:(NSError **)error {
     NSURL *library = [[[NSFileManager defaultManager] URLsForDirectory:NSCachesDirectory
