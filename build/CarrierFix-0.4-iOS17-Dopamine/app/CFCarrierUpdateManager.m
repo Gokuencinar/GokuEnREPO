@@ -33,23 +33,34 @@ static NSString *CFCarrierSHA384(NSData *data) {
 @implementation CFCarrierUpdateManager
 
 + (NSString *)onDeviceInstallationCapabilityReport {
-    SecTaskRef task = SecTaskCreateFromSelf(kCFAllocatorDefault);
+    // SecTask is a private Security SPI omitted from some Theos SDKs.
+    // Resolve it dynamically and fail closed if this iOS build lacks it.
+    typedef CFTypeRef (*CFTaskCreateFn)(CFAllocatorRef);
+    typedef CFTypeRef (*CFTaskEntitlementFn)(CFTypeRef, CFStringRef, CFErrorRef *);
+    void *security = dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_NOW | RTLD_LOCAL);
+    CFTaskCreateFn makeTask = security ? (CFTaskCreateFn)dlsym(security, "SecTaskCreateFromSelf") : NULL;
+    CFTaskEntitlementFn copyEntitlement = security ?
+        (CFTaskEntitlementFn)dlsym(security, "SecTaskCopyValueForEntitlement") : NULL;
+    BOOL entitlementAPI = makeTask && copyEntitlement;
+    CFTypeRef task = entitlementAPI ? makeTask(kCFAllocatorDefault) : NULL;
     CFErrorRef entitlementError = NULL;
     CFTypeRef entitlement = task ?
-        SecTaskCopyValueForEntitlement(task, CFSTR("com.apple.CommCenter.fine-grained"), &entitlementError) : NULL;
+        copyEntitlement(task, CFSTR("com.apple.CommCenter.fine-grained"), &entitlementError) : NULL;
     NSArray *rights = (entitlement && CFGetTypeID(entitlement) == CFArrayGetTypeID()) ?
         (__bridge NSArray *)entitlement : @[];
     BOOL spiDeclared = [rights containsObject:@"spi"];
     BOOL resetDeclared = [rights containsObject:@"preferences-reset"];
     BOOL platformDeclared = NO;
     if (task) {
-        CFTypeRef platform = SecTaskCopyValueForEntitlement(task, CFSTR("platform-application"), NULL);
-        platformDeclared = platform && CFGetTypeID(platform) == CFBooleanGetTypeID() && CFBooleanGetValue(platform);
+        CFTypeRef platform = copyEntitlement(task, CFSTR("platform-application"), NULL);
+        platformDeclared = platform && CFGetTypeID(platform) == CFBooleanGetTypeID() &&
+            CFBooleanGetValue((CFBooleanRef)platform);
         if (platform) CFRelease(platform);
     }
     if (entitlement) CFRelease(entitlement);
     if (entitlementError) CFRelease(entitlementError);
     if (task) CFRelease(task);
+    if (security) dlclose(security);
 
     void *library = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony",
                            RTLD_NOW | RTLD_LOCAL);
@@ -59,11 +70,12 @@ static NSString *CFCarrierSHA384(NSData *data) {
     if (library) dlclose(library);
 
     NSString *version = [UIDevice currentDevice].systemVersion ?: @"unknown";
-    BOOL canInvestigate = platformDeclared && spiDeclared && createAPI && installAPI && resetAPI;
+    BOOL canInvestigate = entitlementAPI && platformDeclared && spiDeclared && createAPI && installAPI && resetAPI;
     return [NSString stringWithFormat:
       @"CarrierFix on-device IPCC preflight (read-only)\n"
        @"iOS: %@\n"
        @"Effective UID: %u\n"
+       @"Security entitlement API: %@\n"
        @"Platform entitlement present: %@\n"
        @"CommCenter SPI entitlement present: %@\n"
        @"CommCenter preferences-reset entitlement present: %@\n"
@@ -75,7 +87,7 @@ static NSString *CFCarrierSHA384(NSData *data) {
        @"No installation, restore or service restart was attempted. "
        @"These checks do not prove CommCenter will authorize an install or accept Cricket 58.1 on iOS %@. "
        @"An original overlay reference copy is not a tested rollback.",
-       version, (unsigned)geteuid(),
+       version, (unsigned)geteuid(), entitlementAPI ? @"YES" : @"NO",
        platformDeclared ? @"YES" : @"NO", spiDeclared ? @"YES" : @"NO",
        resetDeclared ? @"YES" : @"NO",
        library ? @"YES" : @"NO",
