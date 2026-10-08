@@ -203,9 +203,10 @@
 }
 
 #if CARRIERFIX_IOS17_UPDATE
-- (void)shareCarrierFile:(NSURL *)fileURL {
-    if (!fileURL || ![[NSFileManager defaultManager] fileExistsAtPath:fileURL.path]) {
-        [self showMessage:@"The selected file is no longer available in CarrierFix's private storage." title:@"File missing"];
+- (void)shareCarrierFile:(NSURL *)fileURL expectedSHA384:(NSString *)expectedSHA384 {
+    NSError *checkError = nil;
+    if (![CFCarrierUpdateManager verifyExportAtURL:fileURL expectedSHA384:expectedSHA384 error:&checkError]) {
+        [self showMessage:checkError.localizedDescription ?: @"The staged file could not be verified. Export refused." title:@"Export blocked"];
         return;
     }
     UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[fileURL] applicationActivities:nil];
@@ -214,7 +215,7 @@
     [self presentViewController:activity animated:YES completion:nil];
 }
 
-- (void)showPreparedCarrierFiles:(NSURL *)ipcc original:(NSURL *)original {
+- (void)showPreparedCarrierFiles:(NSURL *)ipcc original:(NSURL *)original originalSHA384:(NSString *)originalHash {
     NSString *details = [NSString stringWithFormat:@"Cricket 58.1 was downloaded from Apple and its SHA-384 was verified. Apple lists this update for iOS 17.5 and newer; this phone runs iOS %@. CarrierFix has NOT installed it and cannot guarantee the system will accept it. The original overlay was copied for reference, but a working restore is NOT verified. Save that copy privately, not in a public chat. Jailbreak processes with the same mobile UID may access these files.", UIDevice.currentDevice.systemVersion ?: @"unknown"];
     UIAlertController *options = [UIAlertController alertControllerWithTitle:@"Carrier update prepared (NOT installed)"
           message:details
@@ -222,11 +223,11 @@
     __weak typeof(self) weakSelf = self;
     [options addAction:[UIAlertAction actionWithTitle:@"Save original reference copy"
                                                   style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
-        [weakSelf shareCarrierFile:original];
+        [weakSelf shareCarrierFile:original expectedSHA384:originalHash];
     }]];
     [options addAction:[UIAlertAction actionWithTitle:@"Export Apple .ipcc"
                                                   style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
-        [weakSelf shareCarrierFile:ipcc];
+        [weakSelf shareCarrierFile:ipcc expectedSHA384:[CFCarrierUpdateManager officialCricket58SHA384]];
     }]];
     [options addAction:[UIAlertAction actionWithTitle:@"Done" style:UIAlertActionStyleCancel handler:nil]];
     [self presentViewController:options animated:YES completion:nil];
@@ -256,7 +257,8 @@
         }
         NSError *snapshotError = nil;
         NSURL *original = nil;
-        if (![CFCarrierUpdateManager archiveCarrierAtPath:path model:d[@"model"] output:&original error:&snapshotError]) {
+        NSString *originalHash = nil;
+        if (![CFCarrierUpdateManager archiveCarrierAtPath:path model:d[@"model"] output:&original expectedSHA384:&originalHash error:&snapshotError]) {
             [strongSelf showMessage:snapshotError.localizedDescription ?: @"Could not save a verified reference copy of the active carrier." title:@"Preparation stopped"];
             return;
         }
@@ -268,15 +270,17 @@
             owner.exportCarrierUpdateButton.enabled = YES;
             [owner.exportCarrierUpdateButton setTitle:@"Prepare official Cricket update" forState:UIControlStateNormal];
             if (!ipcc) {
-                [owner showMessage:[NSString stringWithFormat:@"%@\n\nThe original reference copy was saved privately; no carrier settings were changed.", downloadError.localizedDescription ?: @"The official Apple download could not be verified."] title:@"Preparation stopped"];
+                [CFCarrierUpdateManager discardReferenceAtURL:original];
+                [owner showMessage:[NSString stringWithFormat:@"%@\n\nThe incomplete local snapshot was discarded. No carrier settings were changed.", downloadError.localizedDescription ?: @"The official Apple download could not be verified."] title:@"Preparation stopped"];
                 return;
             }
             NSDictionary *latest = [owner.manager diagnose];
             if (![latest[@"path"] isEqualToString:path] || ![latest[@"cricket"] boolValue]) {
-                [owner showMessage:@"The active carrier/SIM changed while the update was downloading. Files were only saved privately; no update was installed." title:@"Carrier changed"];
+                [CFCarrierUpdateManager discardReferenceAtURL:original];
+                [owner showMessage:@"The active carrier/SIM changed while the update was downloading. The temporary reference snapshot was discarded; no update was installed." title:@"Carrier changed"];
                 return;
             }
-            [owner showPreparedCarrierFiles:ipcc original:original];
+            [owner showPreparedCarrierFiles:ipcc original:original originalSHA384:originalHash];
         }];
     }]];
     [self presentViewController:confirm animated:YES completion:nil];

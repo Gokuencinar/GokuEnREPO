@@ -69,10 +69,11 @@ upgrade for iOS 17.1. Keep the existing Cricket 56.0 profile untouched.
 
 ## Test3 preparation UI
 
-CarrierFix `0.4.0~ios17test3` now offers **Prepare official Cricket update**:
+CarrierFix `0.4.0~ios17test4` now offers **Prepare official Cricket update**:
 it reads the active profile and stores a checked private snapshot, downloads
 Apple's unmodified IPCC and checks the pinned SHA-384, then offers **separate**
-share actions for each file. This does not itself update the iPhone. It lets
+share actions for each file, with immediate re-verification before sharing.
+This does not itself update the iPhone. It lets
 the maintainer examine the exact on-device profile and keep a candidate for
 an Apple-managed update if a compatible version or supported delivery path
 becomes available.

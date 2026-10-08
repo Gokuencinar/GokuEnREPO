@@ -3,6 +3,7 @@
 #import <limits.h>
 #import <stdlib.h>
 #import <string.h>
+#import <sys/stat.h>
 
 static NSString * const CFAppleIPCCURL =
     @"https://updates.cdn-apple.com/20240513/carrierbundles/032-23478/E247835C-8950-4A31-A430-A6DB27A40158/ATT_aio_US_iPhone.ipcc";
@@ -28,10 +29,10 @@ static NSString *CFCarrierSHA384(NSData *data) {
 @implementation CFCarrierUpdateManager
 
 + (NSURL *)researchDirectory:(NSError **)error {
-    NSURL *library = [[[NSFileManager defaultManager] URLsForDirectory:NSLibraryDirectory
+    NSURL *library = [[[NSFileManager defaultManager] URLsForDirectory:NSCachesDirectory
                                                               inDomains:NSUserDomainMask] firstObject];
     if (!library) {
-        if (error) *error = CFUpdateError(@"Could not resolve the app's Library directory.");
+        if (error) *error = CFUpdateError(@"Could not resolve the app's cache directory.");
         return nil;
     }
     NSURL *folder = [library URLByAppendingPathComponent:@"CarrierFixUpdateResearch" isDirectory:YES];
@@ -39,6 +40,14 @@ static NSString *CFCarrierSHA384(NSData *data) {
     if (![fm createDirectoryAtURL:folder
                                  withIntermediateDirectories:YES
                                                   attributes:@{NSFilePosixPermissions:@0700} error:error]) {
+        return nil;
+    }
+    // A same-UID jailbreak process must not redirect our staging directory
+    // through a pre-existing symbolic link.
+    struct stat directoryInfo = {0};
+    if (lstat(folder.fileSystemRepresentation, &directoryInfo) != 0 ||
+        !S_ISDIR(directoryInfo.st_mode) || S_ISLNK(directoryInfo.st_mode)) {
+        if (error) *error = CFUpdateError(@"The carrier update staging directory is not a real directory.");
         return nil;
     }
     if (![fm setAttributes:@{NSFilePosixPermissions:@0700} ofItemAtPath:folder.path error:error]) {
@@ -50,6 +59,7 @@ static NSString *CFCarrierSHA384(NSData *data) {
 + (BOOL)archiveCarrierAtPath:(NSString *)path
                     model:(NSString *)model
                    output:(NSURL **)output
+           expectedSHA384:(NSString **)expectedSHA384
                     error:(NSError **)error {
     // Verify the canonical filesystem location, not an untrusted string prefix
     // that could contain ../ traversal or resolve through a malicious symlink.
@@ -71,8 +81,11 @@ static NSString *CFCarrierSHA384(NSData *data) {
         return NO;
     }
     NSDictionary *carrier = [NSPropertyListSerialization propertyListWithData:original options:0 format:nil error:error];
-    if (![carrier isKindOfClass:NSDictionary.class] ||
-        ![[carrier[@"CarrierName"] description] isEqualToString:@"Cricket"]) {
+    NSString *carrierName = [carrier[@"CarrierName"] isKindOfClass:NSString.class] ? carrier[@"CarrierName"] : @"";
+    NSString *wifiName = [carrier[@"OverrideOperatorWiFiName"] isKindOfClass:NSString.class] ? carrier[@"OverrideOperatorWiFiName"] : @"";
+    BOOL cricket = [carrierName rangeOfString:@"Cricket" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+                   [wifiName rangeOfString:@"Cricket" options:NSCaseInsensitiveSearch].location != NSNotFound;
+    if (![carrier isKindOfClass:NSDictionary.class] || !cricket) {
         if (error) *error = CFUpdateError(@"The active plist is not a validated Cricket dictionary.");
         return NO;
     }
@@ -128,7 +141,63 @@ static NSString *CFCarrierSHA384(NSData *data) {
         return NO;
     }
     if (output) *output = backup;
+    if (expectedSHA384) *expectedSHA384 = hash;
     return YES;
+}
+
++ (NSString *)officialCricket58SHA384 {
+    return CFAppleSHA384;
+}
+
++ (BOOL)verifyExportAtURL:(NSURL *)fileURL
+           expectedSHA384:(NSString *)expectedSHA384
+                    error:(NSError **)error {
+    if (!fileURL.isFileURL || expectedSHA384.length != CC_SHA384_DIGEST_LENGTH * 2) {
+        if (error) *error = CFUpdateError(@"File/hash selection is invalid.");
+        return NO;
+    }
+    NSURL *folder = [self researchDirectory:error];
+    if (!folder) return NO;
+    NSString *name = fileURL.lastPathComponent ?: @"";
+    BOOL official = [name isEqualToString:@"ATT_aio_US_iPhone.ipcc"];
+    BOOL original = [name hasPrefix:@"Cricket-original-"] && [name hasSuffix:@".plist"] &&
+                    ![name hasSuffix:@".metadata.plist"];
+    if ((!official && !original) || (official && ![expectedSHA384 isEqualToString:CFAppleSHA384])) {
+        if (error) *error = CFUpdateError(@"Unexpected staged carrier file.");
+        return NO;
+    }
+    char fileResolved[PATH_MAX] = {0};
+    char folderResolved[PATH_MAX] = {0};
+    struct stat item = {0};
+    if (!realpath(fileURL.fileSystemRepresentation, fileResolved) ||
+        !realpath(folder.fileSystemRepresentation, folderResolved) ||
+        lstat(fileURL.fileSystemRepresentation, &item) != 0 ||
+        !S_ISREG(item.st_mode) ||
+        ![[NSString stringWithUTF8String:fileResolved] isEqualToString:
+          [[NSString stringWithUTF8String:folderResolved] stringByAppendingPathComponent:name]]) {
+        if (error) *error = CFUpdateError(@"Staged file is missing or no longer inside the expected directory.");
+        return NO;
+    }
+    NSData *data = [NSData dataWithContentsOfURL:fileURL options:0 error:error];
+    if (!data.length || data.length > 4 * 1024 * 1024 ||
+        (official && data.length != 89008) ||
+        ![CFCarrierSHA384(data) isEqualToString:expectedSHA384]) {
+        if (error) *error = CFUpdateError(@"The saved file changed since verification. Export blocked.");
+        return NO;
+    }
+    return YES;
+}
+
++ (void)discardReferenceAtURL:(NSURL *)fileURL {
+    if (!fileURL.isFileURL) return;
+    NSString *name = fileURL.lastPathComponent ?: @"";
+    if (![name hasPrefix:@"Cricket-original-"] || ![name hasSuffix:@".plist"] ||
+        [name hasSuffix:@".metadata.plist"]) return;
+    NSURL *folder = [self researchDirectory:nil];
+    if (!folder || ![fileURL.path isEqualToString:[[folder URLByAppendingPathComponent:name] path]]) return;
+    [[NSFileManager defaultManager] removeItemAtURL:fileURL error:nil];
+    NSString *metadataName = [[name substringToIndex:name.length - @".plist".length] stringByAppendingString:@".metadata.plist"];
+    [[NSFileManager defaultManager] removeItemAtURL:[folder URLByAppendingPathComponent:metadataName] error:nil];
 }
 
 + (void)downloadOfficialCricket58WithCompletion:(void (^)(NSURL *fileURL, NSError *error))completion {

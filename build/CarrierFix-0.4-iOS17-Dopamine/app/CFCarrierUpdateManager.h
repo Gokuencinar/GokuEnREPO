@@ -6,6 +6,12 @@
 + (BOOL)archiveCarrierAtPath:(NSString *)path
                     model:(NSString *)model
                    output:(NSURL **)output
+           expectedSHA384:(NSString **)expectedSHA384
                     error:(NSError **)error;
 + (void)downloadOfficialCricket58WithCompletion:(void (^)(NSURL *fileURL, NSError *error))completion;
++ (NSString *)officialCricket58SHA384;
++ (BOOL)verifyExportAtURL:(NSURL *)fileURL
+           expectedSHA384:(NSString *)expectedSHA384
+                    error:(NSError **)error;
++ (void)discardReferenceAtURL:(NSURL *)fileURL;
 @end
