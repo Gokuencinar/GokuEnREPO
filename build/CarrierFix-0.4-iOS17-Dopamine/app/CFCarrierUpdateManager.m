@@ -1,5 +1,8 @@
 #import "CFCarrierUpdateManager.h"
 #import <CommonCrypto/CommonDigest.h>
+#import <limits.h>
+#import <stdlib.h>
+#import <string.h>
 
 static NSString * const CFAppleIPCCURL =
     @"https://updates.cdn-apple.com/20240513/carrierbundles/032-23478/E247835C-8950-4A31-A430-A6DB27A40158/ATT_aio_US_iPhone.ipcc";
@@ -48,18 +51,29 @@ static NSString *CFCarrierSHA384(NSData *data) {
                     model:(NSString *)model
                    output:(NSURL **)output
                     error:(NSError **)error {
-    if (![model isEqualToString:@"iPhone16,2"] ||
-        ![path hasPrefix:@"/private/var/mobile/Library/Carrier Bundles/Overlay/"] ||
-        ![path hasSuffix:@".plist"]) {
+    // Verify the canonical filesystem location, not an untrusted string prefix
+    // that could contain ../ traversal or resolve through a malicious symlink.
+    char canonical[PATH_MAX] = {0};
+    if (![model isEqualToString:@"iPhone16,2"] || !path.length ||
+        !realpath(path.fileSystemRepresentation, canonical)) {
         if (error) *error = CFUpdateError(@"The active Cricket overlay does not match the tested iPhone 15 Pro Max path. Nothing was changed.");
         return NO;
     }
-    NSData *original = [NSData dataWithContentsOfFile:path options:0 error:error];
+    NSString *resolvedPath = [NSString stringWithUTF8String:canonical];
+    if (![resolvedPath hasPrefix:@"/private/var/mobile/Library/Carrier Bundles/Overlay/"] ||
+        ![resolvedPath hasSuffix:@".plist"] || ![path isEqualToString:resolvedPath]) {
+        if (error) *error = CFUpdateError(@"Carrier overlay path is not canonical or escapes the expected Overlay directory.");
+        return NO;
+    }
+    NSData *original = [NSData dataWithContentsOfFile:resolvedPath options:0 error:error];
     if (!original.length || original.length > (4 * 1024 * 1024)) {
         if (error && !*error) *error = CFUpdateError(@"Carrier overlay is missing or unexpectedly large.");
         return NO;
     }
-    if (![NSPropertyListSerialization propertyListWithData:original options:0 format:nil error:error]) {
+    NSDictionary *carrier = [NSPropertyListSerialization propertyListWithData:original options:0 format:nil error:error];
+    if (![carrier isKindOfClass:NSDictionary.class] ||
+        ![[carrier[@"CarrierName"] description] isEqualToString:@"Cricket"]) {
+        if (error) *error = CFUpdateError(@"The active plist is not a validated Cricket dictionary.");
         return NO;
     }
     NSString *hash = CFCarrierSHA384(original);
@@ -74,19 +88,20 @@ static NSString *CFCarrierSHA384(NSData *data) {
     NSURL *metadata = [folder URLByAppendingPathComponent:[NSString stringWithFormat:@"Cricket-original-%@.metadata.plist", idPart]];
     if (![original writeToURL:backup options:NSDataWritingAtomic error:error]) return NO;
     NSData *verified = [NSData dataWithContentsOfURL:backup options:0 error:error];
-    NSData *current = [NSData dataWithContentsOfFile:path options:0 error:error];
+    NSData *current = [NSData dataWithContentsOfFile:resolvedPath options:0 error:error];
     if (![verified isEqualToData:original] || ![current isEqualToData:original]) {
         [[NSFileManager defaultManager] removeItemAtURL:backup error:nil];
         if (error) *error = CFUpdateError(@"Carrier overlay changed during the read-only snapshot. Snapshot was discarded.");
         return NO;
     }
-    if (![[NSFileManager defaultManager] setAttributes:@{NSFilePosixPermissions:@0600}
+    if (![[NSFileManager defaultManager] setAttributes:@{NSFilePosixPermissions:@0600,
+                                                        NSFileProtectionKey:NSFileProtectionComplete}
                                            ofItemAtPath:backup.path error:error]) {
         [[NSFileManager defaultManager] removeItemAtURL:backup error:nil];
         return NO;
     }
     NSDictionary *meta = @{
-        @"originalPath":path, @"model":model,
+        @"originalPath":resolvedPath, @"model":model,
         @"iOS":NSProcessInfo.processInfo.operatingSystemVersionString ?: @"unknown",
         @"SHA384":hash, @"savedAt":[NSDate date],
         @"description":@"Reference copy only, NOT an independently verified restorable backup."
@@ -98,7 +113,8 @@ static NSString *CFCarrierSHA384(NSData *data) {
         [[NSFileManager defaultManager] removeItemAtURL:backup error:nil];
         return NO;
     }
-    if (![[NSFileManager defaultManager] setAttributes:@{NSFilePosixPermissions:@0600}
+    if (![[NSFileManager defaultManager] setAttributes:@{NSFilePosixPermissions:@0600,
+                                                        NSFileProtectionKey:NSFileProtectionComplete}
                                            ofItemAtPath:metadata.path error:error]) {
         [[NSFileManager defaultManager] removeItemAtURL:backup error:nil];
         [[NSFileManager defaultManager] removeItemAtURL:metadata error:nil];

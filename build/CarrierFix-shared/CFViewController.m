@@ -66,7 +66,7 @@
     warning.textColor = UIColor.secondaryLabelColor;
     warning.text = @"After Apply/Restore, toggle Airplane Mode for ~30 seconds or reboot. If calling/data/SMS gets worse, restore immediately. CarrierFix does not backport RCS.";
 #if CARRIERFIX_IOS17_UPDATE
-    warning.text = @"Cricket 58.1 is listed by Apple for iOS 17.5+. This build can verify and export the original IPCC, not install it on iOS 17.1. Never delete the eSIM or change carrier file permissions.";
+    warning.text = @"Cricket 58.1 is listed by Apple for iOS 17.5+. This build only verifies and exports the IPCC; it does not install unsupported carrier bundles. Never delete the eSIM or change file permissions.";
 #endif
 
     [self.view addSubview:subtitle];
@@ -215,8 +215,9 @@
 }
 
 - (void)showPreparedCarrierFiles:(NSURL *)ipcc original:(NSURL *)original {
+    NSString *details = [NSString stringWithFormat:@"Cricket 58.1 was downloaded from Apple and its SHA-384 was verified. Apple lists this update for iOS 17.5 and newer; this phone runs iOS %@. CarrierFix has NOT installed it and cannot guarantee the system will accept it. The original overlay was copied for reference, but a working restore is NOT verified. Save that copy privately, not in a public chat. Jailbreak processes with the same mobile UID may access these files.", UIDevice.currentDevice.systemVersion ?: @"unknown"];
     UIAlertController *options = [UIAlertController alertControllerWithTitle:@"Carrier update prepared (NOT installed)"
-          message:@"Cricket 58.1 was downloaded from Apple and its SHA-384 was verified. Apple lists this update for iOS 17.5 and newer; this phone runs iOS 17.1. CarrierFix has NOT installed it and cannot guarantee the system will accept it. The original overlay was copied for reference, but a working restore is NOT verified. Save that copy privately, not in a public chat."
+          message:details
           preferredStyle:UIAlertControllerStyleAlert];
     __weak typeof(self) weakSelf = self;
     [options addAction:[UIAlertAction actionWithTitle:@"Save original reference copy"
@@ -238,8 +239,9 @@
         [self showMessage:@"This export is limited to the known Cricket profile on iPhone 15 Pro Max with iOS 17. No carrier settings were changed." title:@"Unsupported device"];
         return;
     }
+    NSString *confirmMessage = [NSString stringWithFormat:@"This will save a local reference copy of the active Cricket overlay and download Apple's original 58.1 .ipcc after SHA-384 verification. It will NOT install or apply anything. Apple lists 58.1 for iOS 17.5+, so compatibility with iOS %@ is NOT established unless Apple offers it. Do not force an update or rely on the reference copy as a verified restore. Continue?", d[@"ios"] ?: @"unknown"];
     UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Prepare Cricket 58.1?"
-        message:@"This will make a local reference copy of the currently active Cricket overlay and download Apple's original 58.1 .ipcc after SHA-384 verification. It will NOT install or apply anything. Apple lists 58.1 for iOS 17.5+, so compatibility with your iOS 17.1 is NOT established. It is not safe to force an update or rely on the reference copy as a verified restore. Continue?"
+        message:confirmMessage
         preferredStyle:UIAlertControllerStyleAlert];
     __weak typeof(self) weakSelf = self;
     [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
