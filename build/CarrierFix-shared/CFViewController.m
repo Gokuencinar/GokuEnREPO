@@ -1,5 +1,8 @@
 #import "CFViewController.h"
 #import "CFCarrierManager.h"
+#if CARRIERFIX_IOS17_UPDATE
+#import "CFCarrierUpdateManager.h"
+#endif
 
 @interface CFViewController ()
 @property(nonatomic,strong) CFCarrierManager *manager;
@@ -7,6 +10,9 @@
 @property(nonatomic,strong) UIButton *applyButton;
 @property(nonatomic,strong) UIButton *restoreButton;
 @property(nonatomic,strong) UILabel *safetyLabel;
+#if CARRIERFIX_IOS17_UPDATE
+@property(nonatomic,strong) UIButton *exportCarrierUpdateButton;
+#endif
 @end
 
 @implementation CFViewController
@@ -22,6 +28,9 @@
     subtitle.numberOfLines = 0;
     subtitle.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
     subtitle.text = @"Experimental Cricket SMS/IMS repair for jailbroken iOS 16/17. CarrierFix refuses unknown carrier schemas and verifies a restorable backup before enabling Apply.";
+#if CARRIERFIX_IOS17_UPDATE
+    subtitle.text = @"Cricket SMS diagnostic and carrier update preparation. The official Apple update can be exported, but cannot be installed by CarrierFix or forced onto unsupported iOS versions.";
+#endif
 
     self.textView = [UITextView new];
     self.textView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -37,6 +46,10 @@
     UIButton *copy = [self buttonWithTitle:@"Copy diagnostic" action:@selector(copyDiagnostic)];
 
     UIStackView *buttons = [[UIStackView alloc] initWithArrangedSubviews:@[diagnose, self.applyButton, self.restoreButton, copy]];
+#if CARRIERFIX_IOS17_UPDATE
+    self.exportCarrierUpdateButton = [self buttonWithTitle:@"Prepare official Cricket update" action:@selector(prepareOfficialCricketUpdate)];
+    [buttons addArrangedSubview:self.exportCarrierUpdateButton];
+#endif
     buttons.axis = UILayoutConstraintAxisVertical;
     buttons.spacing = 10;
     buttons.translatesAutoresizingMaskIntoConstraints = NO;
@@ -52,6 +65,9 @@
     warning.font = [UIFont systemFontOfSize:12];
     warning.textColor = UIColor.secondaryLabelColor;
     warning.text = @"After Apply/Restore, toggle Airplane Mode for ~30 seconds or reboot. If calling/data/SMS gets worse, restore immediately. CarrierFix does not backport RCS.";
+#if CARRIERFIX_IOS17_UPDATE
+    warning.text = @"Cricket 58.1 is listed by Apple for iOS 17.5+. This build can verify and export the original IPCC, not install it on iOS 17.1. Never delete the eSIM or change carrier file permissions.";
+#endif
 
     [self.view addSubview:subtitle];
     [self.view addSubview:self.textView];
@@ -185,6 +201,85 @@
     UIPasteboard.generalPasteboard.string = [self.manager diagnosticText];
     [self showMessage:@"Diagnostic copied. It intentionally excludes phone number, IMSI and ICCID." title:@"Copied"];
 }
+
+#if CARRIERFIX_IOS17_UPDATE
+- (void)shareCarrierFile:(NSURL *)fileURL {
+    if (!fileURL || ![[NSFileManager defaultManager] fileExistsAtPath:fileURL.path]) {
+        [self showMessage:@"The selected file is no longer available in CarrierFix's private storage." title:@"File missing"];
+        return;
+    }
+    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[fileURL] applicationActivities:nil];
+    activity.popoverPresentationController.sourceView = self.exportCarrierUpdateButton;
+    activity.popoverPresentationController.sourceRect = self.exportCarrierUpdateButton.bounds;
+    [self presentViewController:activity animated:YES completion:nil];
+}
+
+- (void)showPreparedCarrierFiles:(NSURL *)ipcc original:(NSURL *)original {
+    UIAlertController *options = [UIAlertController alertControllerWithTitle:@"Carrier update prepared (NOT installed)"
+          message:@"Cricket 58.1 was downloaded from Apple and its SHA-384 was verified. Apple lists this update for iOS 17.5 and newer; this phone runs iOS 17.1. CarrierFix has NOT installed it and cannot guarantee the system will accept it. The original overlay was copied for reference, but a working restore is NOT verified. Save that copy privately, not in a public chat."
+          preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(self) weakSelf = self;
+    [options addAction:[UIAlertAction actionWithTitle:@"Save original reference copy"
+                                                  style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+        [weakSelf shareCarrierFile:original];
+    }]];
+    [options addAction:[UIAlertAction actionWithTitle:@"Export Apple .ipcc"
+                                                  style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+        [weakSelf shareCarrierFile:ipcc];
+    }]];
+    [options addAction:[UIAlertAction actionWithTitle:@"Done" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:options animated:YES completion:nil];
+}
+
+- (void)prepareOfficialCricketUpdate {
+    NSDictionary *d = [self.manager diagnose];
+    if (![d[@"ok"] boolValue] || ![d[@"cricket"] boolValue] || ![d[@"model"] isEqualToString:@"iPhone16,2"] ||
+        ![d[@"ios"] hasPrefix:@"17."]) {
+        [self showMessage:@"This export is limited to the known Cricket profile on iPhone 15 Pro Max with iOS 17. No carrier settings were changed." title:@"Unsupported device"];
+        return;
+    }
+    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Prepare Cricket 58.1?"
+        message:@"This will make a local reference copy of the currently active Cricket overlay and download Apple's original 58.1 .ipcc after SHA-384 verification. It will NOT install or apply anything. Apple lists 58.1 for iOS 17.5+, so compatibility with your iOS 17.1 is NOT established. It is not safe to force an update or rely on the reference copy as a verified restore. Continue?"
+        preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(self) weakSelf = self;
+    [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [confirm addAction:[UIAlertAction actionWithTitle:@"Prepare only" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+        typeof(self) strongSelf = weakSelf;
+        if (!strongSelf || !strongSelf.exportCarrierUpdateButton.enabled) return;
+        NSString *path = [d[@"path"] isKindOfClass:NSString.class] ? d[@"path"] : @"";
+        NSDictionary *now = [strongSelf.manager diagnose];
+        if (![now[@"path"] isEqualToString:path] || ![now[@"cricket"] boolValue]) {
+            [strongSelf showMessage:@"The active carrier changed before the snapshot. No update was downloaded." title:@"Carrier changed"];
+            return;
+        }
+        NSError *snapshotError = nil;
+        NSURL *original = nil;
+        if (![CFCarrierUpdateManager archiveCarrierAtPath:path model:d[@"model"] output:&original error:&snapshotError]) {
+            [strongSelf showMessage:snapshotError.localizedDescription ?: @"Could not save a verified reference copy of the active carrier." title:@"Preparation stopped"];
+            return;
+        }
+        strongSelf.exportCarrierUpdateButton.enabled = NO;
+        [strongSelf.exportCarrierUpdateButton setTitle:@"Verifying Apple download..." forState:UIControlStateNormal];
+        [CFCarrierUpdateManager downloadOfficialCricket58WithCompletion:^(NSURL *ipcc, NSError *downloadError) {
+            typeof(self) owner = weakSelf;
+            if (!owner) return;
+            owner.exportCarrierUpdateButton.enabled = YES;
+            [owner.exportCarrierUpdateButton setTitle:@"Prepare official Cricket update" forState:UIControlStateNormal];
+            if (!ipcc) {
+                [owner showMessage:[NSString stringWithFormat:@"%@\n\nThe original reference copy was saved privately; no carrier settings were changed.", downloadError.localizedDescription ?: @"The official Apple download could not be verified."] title:@"Preparation stopped"];
+                return;
+            }
+            NSDictionary *latest = [owner.manager diagnose];
+            if (![latest[@"path"] isEqualToString:path] || ![latest[@"cricket"] boolValue]) {
+                [owner showMessage:@"The active carrier/SIM changed while the update was downloading. Files were only saved privately; no update was installed." title:@"Carrier changed"];
+                return;
+            }
+            [owner showPreparedCarrierFiles:ipcc original:original];
+        }];
+    }]];
+    [self presentViewController:confirm animated:YES completion:nil];
+}
+#endif
 
 - (void)showMessage:(NSString *)message title:(NSString *)title {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];

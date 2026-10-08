@@ -66,3 +66,19 @@ Further sources:
 
 **Conclusion:** This research does not provide a safely installable carrier
 upgrade for iOS 17.1. Keep the existing Cricket 56.0 profile untouched.
+
+## Test3 preparation UI
+
+CarrierFix `0.4.0~ios17test3` now offers **Prepare official Cricket update**:
+it reads the active profile and stores a checked private snapshot, downloads
+Apple's unmodified IPCC and checks the pinned SHA-384, then offers **separate**
+share actions for each file. This does not itself update the iPhone. It lets
+the maintainer examine the exact on-device profile and keep a candidate for
+an Apple-managed update if a compatible version or supported delivery path
+becomes available.
+
+The current user should **not install the exported 58.1 IPCC on iOS 17.1**,
+alter the version, force AppleMobileDevice carrier-testing when eligibility
+fails, or mistake the read-only reference snapshot for a working rollback.
+The share action for the original profile is sensitive: save it privately,
+not in an untrusted message.

@@ -44,4 +44,15 @@ CarrierFix installs no MobileSubstrate hook or LaunchDaemon, does not modify `/S
 
 CarrierFix does **not** backport RCS. Its target is normal SMS/IMS operation on Cricket. On iOS 17, messages to Android are still SMS/MMS rather than iPhone RCS.
 
-Version 0.3.0 remains the iOS 16 private validation build. The isolated iOS 17 validation package is `0.4.0~ios17test2` and should remain a test build until its diagnostics and Apply/Restore flow are verified on a real Cricket line exhibiting the SMS problem. Test 2 shows an explicit result when Refresh is pressed and reports the carrier file/folder write checks plus owner UID, file mode, and app effective UID. A report saying the target IMS/SMS flags are already present is not proof that SMS is working; do not bypass filesystem protections or blindly apply the same values.
+Version 0.3.0 remains the iOS 16 private validation build. The isolated iOS 17 validation package is `0.4.0~ios17test3` and should remain a test build until its diagnostics and Apply/Restore flow are verified on a real Cricket line exhibiting the SMS problem. Test 2 added explicit Refresh feedback and file/folder permissions. Test 3 adds an **export-only** Cricket carrier update preparation button to the iOS 17 app; iOS 16 is unchanged.
+
+## Official Cricket carrier update preparation (test3)
+
+- On the known Cricket iPhone 15 Pro Max (`iPhone16,2`) with iOS 17.x, **Prepare official Cricket update** creates a private, read-back-verified snapshot of the active Cricket overlay and downloads Apple's original `ATT_aio_US_iPhone.ipcc` version 58.1 over HTTPS.
+- It verifies the downloaded package against the pinned SHA-384 `55CED9623258B24B76670A5CA19CB5F53D4B23F7B7389E1257AAD8BED5BA981CB1241342B6740945F675FBB7BD0B29B5` before storing it. A failed check leaves the active carrier unchanged.
+- Separate share actions export the unmodified Apple `.ipcc` or the user's original reference snapshot. The original snapshot may contain private operator configuration: **save it privately**, not in chats or public issue reports. The snapshot is deliberately called a *reference*, not a proven restorable backup. A factory/system restore of the overlay is not provided.
+- The app **does not install** the `.ipcc`, change the active overlay, invoke private baseband APIs, change SIM/eSIM state, bypass Apple's carrier update eligibility, or initiate an iOS update.
+- Apple's current OTA catalog lists Cricket 58.1 for **iOS 17.5 or newer**; the reported user is on iOS 17.1. That compatibility gate is explicitly shown in the UI. Do **not** use an unsupported carrier version or try to force-load it simply because the file was exported. The official Apple iOS-carrier version compatibility decision must be respected.
+- On a compatible iOS version, updates can be offered via **Settings → General → About**; an independently verified Apple-supported desktop carrier-update flow may be possible when the installed Apple device software accepts the official IPCC. CarrierFix cannot promise or perform that external installation.
+
+Read `build/CarrierFix-0.4-iOS17-Dopamine/CRICKET-56-TO-58-SAFETY.md` for the compatibility report, remaining data needed from the user's phone, and restore precautions.
