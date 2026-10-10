@@ -1,0 +1,18 @@
+name: Inspect official dependency downloads
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch official indexes and hash-verified packages
+        run: python3 scripts/fetch-official-dependencies.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-dependency-downloads
+          path: .build/dependency-downloads/
+          retention-days: 7
