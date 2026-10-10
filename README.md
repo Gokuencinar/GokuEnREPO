@@ -1,6 +1,5 @@
 # GokuEnREPO
 
-My personal APT repository for iOS jailbreak tweaks.
 
 ## Add the repo
 
