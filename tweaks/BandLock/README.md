@@ -29,8 +29,6 @@ BandLock 1.4 adds support for A9 devices on iOS 16.
 
 Support on newer iOS versions and different devices can vary because BandLock relies on private CoreTelephony/CommCenter behavior.
 
-The RootHide build has been tested on an iPhone XS running iOS 16.3.1. Other combinations benefit from community testing.
-
 ## Install
 
 Add GokuEnREPO:
