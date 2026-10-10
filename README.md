@@ -33,6 +33,8 @@ Nuke Wireless is a Wi-Fi management toolkit focused on discovering and controlli
 
 [Details](tweaks/Nuke-Wireless/README.md)
 
+Original `arpoison`, `ldid`, `network-cmds` packages and their auxiliary libraries are available for RootHide, Dopamine/rootless and rootful. [Dependencies, sources and bootstrap requirements](tweaks/NukeWireless-Dependencies/README.md).
+
 ## Support
 
 [Buy Me a Coffee](https://buymeacoffee.com/GokuEn)
