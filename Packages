@@ -886,3 +886,417 @@ Author: BetterWiFi RH
 Name: BetterWiFi RH (RootHide)
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/BetterWiFi-RH
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html
+
+Package: arpoison
+Version: 0.7
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 72
+Depends: libiosexec1 (>= 1.2.2), libnet9
+Filename: tweaks/NukeWireless-Dependencies/debs/arpoison_0.7_iphoneos-arm64.deb
+Size: 9596
+MD5sum: ef23cef9e317e5bc83620c91fc354bf2
+SHA1: 19d9be15d8afd2be0e76028ce301a95bbf1bb63a
+SHA256: 39aeee5c8880b3d6ef953b7e986ebacfee784308517ba4b870451d110f17e51b
+Section: Networking
+Priority: optional
+Homepage: http://www.arpoison.net/
+Description: Generates user-defined ARP packets
+
+Package: arpoison
+Version: 0.7
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 72
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1), libnet9
+Filename: tweaks/NukeWireless-Dependencies/debs/arpoison_0.7_iphoneos-arm64e.deb
+Size: 10608
+MD5sum: 55fb087ff4716de30ae15ac2857583f9
+SHA1: 6ecb085543d5212ab11a9b6932d394aa28b1f4a5
+SHA256: b12e17bd3c47c2cda9e9307bb35617905b2c763463de7ab46640bcfeccdb32dd
+Section: Networking
+Priority: optional
+Homepage: http://www.arpoison.net/
+Description: Generates user-defined ARP packets
+
+Package: arpoison
+Version: 0.7
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 5
+Depends: libnet9
+Filename: tweaks/NukeWireless-Dependencies/debs/arpoison_0.7_iphoneos-arm.deb
+Size: 9696
+MD5sum: 321ed4d660ea07a7d98062b0cd6a75af
+SHA1: 2618260382f59dc2f874760f6f3644cc6f6bf1d0
+SHA256: 5ab3d26dd93cd6b3a2554462638fe2fa319541087344d365e4e5fb01cd8e9c89
+Section: Networking
+Priority: optional
+Homepage: http://www.arpoison.net/
+Description: Generates user-defined ARP packets
+
+Package: ldid
+Version: 2.1.5-procursus7
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 220
+Depends: libiosexec1 (>= 1.2.2), libssl3, libplist3 (>= 2.2.0)
+Filename: tweaks/NukeWireless-Dependencies/debs/ldid_2.1.5-procursus7_iphoneos-arm64.deb
+Size: 69060
+MD5sum: 2c50700eb17c2eb66ecc3edae9ee792d
+SHA1: bc9a716a9be8adb80d9f04340c8e6777cc3aa41f
+SHA256: a0cced42e3b04c72cd1fb340a3d8197cafa6929f449a5c63e7a18920688833d6
+Section: Development
+Priority: optional
+Description: pseudo-codesign Mach-O files
+Author: Jay Freeman (saurik) <saurik@saurik.com>
+
+Package: ldid
+Version: 2.1.5-procursus7
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 236
+Depends: libiosexec1 (>= 1.2.2), libssl3, libplist3 (>= 2.2.0)
+Filename: tweaks/NukeWireless-Dependencies/debs/ldid_2.1.5-procursus7_iphoneos-arm.deb
+Size: 72498
+MD5sum: c2d7d27b154df53a2ce34ed47c378565
+SHA1: 7bd1a7c6ab79f9df931e8768d7199d563b3f9618
+SHA256: 0ff838697e2916333a48676346aaa5563c95bac809db807ec416cb7393c7761f
+Section: Development
+Priority: optional
+Description: pseudo-codesign Mach-O files
+Author: Jay Freeman (saurik) <saurik@saurik.com>
+
+Package: ldid
+Version: 2.1.5-procursus7
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 220
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1), libssl3, libplist3 (>= 2.2.0)
+Filename: tweaks/NukeWireless-Dependencies/debs/ldid_2.1.5-procursus7_iphoneos-arm64e.deb
+Size: 79670
+MD5sum: d0188be30a49b6be46049b99ffaae588
+SHA1: 62c4955a657f4b36dc2dc41361edd3f8555a7f1b
+SHA256: 6acfab0204e2a918740e96abc676d49dcb8c7a3d4bf9266535c208723a897917
+Section: Development
+Priority: optional
+Description: pseudo-codesign Mach-O files
+Author: Jay Freeman (saurik) <saurik@saurik.com>
+
+Package: libnet9
+Version: 1.2
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 4
+Filename: tweaks/NukeWireless-Dependencies/debs/libnet9_1.2_iphoneos-arm.deb
+Size: 30352
+MD5sum: 2ffcac5aeeea3a564b0ced89f8cada77
+SHA1: 088ea15dfb868a490559a95f59fa572a812a4afb
+SHA256: 36b470a7da714d7b339de78d22d39100d91a35b2fe1bbc2cd788a942b7f98124
+Section: Libraries
+Priority: optional
+Description: library for the construction and handling of network packets
+ libnet provides a portable framework for low-level network packet
+ writing and handling.
+ .
+ libnet features portable packet creation interfaces at the IP layer
+ and link layer, as well as a host of supplementary functionality.
+ .
+ Using libnet, quick and simple packet assembly applications can be
+ whipped up with little effort. With a bit more time, more complex
+ programs can be written (Traceroute and ping were easily rewritten
+ using libnet and libpcap).
+ .
+ This package contains the shared library.
+
+Package: libnet9
+Version: 1.2
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 116
+Depends: libiosexec1 (>= 1.2.2)
+Filename: tweaks/NukeWireless-Dependencies/debs/libnet9_1.2_iphoneos-arm64.deb
+Size: 29798
+MD5sum: b873a15f1446dab22c03be2fd0bf102f
+SHA1: 3a2c1572755eb8d3515c991ee704653c5fc04555
+SHA256: eeb4b43c3b1e94523d42d51dcaa42ea45b7305c4f9cf10c08e08a53aed1ff795
+Section: Libraries
+Priority: optional
+Description: library for the construction and handling of network packets
+ libnet provides a portable framework for low-level network packet
+ writing and handling.
+ .
+ libnet features portable packet creation interfaces at the IP layer
+ and link layer, as well as a host of supplementary functionality.
+ .
+ Using libnet, quick and simple packet assembly applications can be
+ whipped up with little effort. With a bit more time, more complex
+ programs can be written (Traceroute and ping were easily rewritten
+ using libnet and libpcap).
+ .
+ This package contains the shared library.
+
+Package: libnet9
+Version: 1.2
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 116
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1)
+Filename: tweaks/NukeWireless-Dependencies/debs/libnet9_1.2_iphoneos-arm64e.deb
+Size: 34038
+MD5sum: 197a84ec28a792033ccbf71038839647
+SHA1: 81b6589a4b61869441c58ec92a73116787d4c5b2
+SHA256: 51f5c64a86a8ad4dab824149c1bab336b0e96c3791e3b0ad8a6c1e237b640c7f
+Section: Libraries
+Priority: optional
+Description: library for the construction and handling of network packets
+ libnet provides a portable framework for low-level network packet
+ writing and handling.
+ .
+ libnet features portable packet creation interfaces at the IP layer
+ and link layer, as well as a host of supplementary functionality.
+ .
+ Using libnet, quick and simple packet assembly applications can be
+ whipped up with little effort. With a bit more time, more complex
+ programs can be written (Traceroute and ping were easily rewritten
+ using libnet and libpcap).
+ .
+ This package contains the shared library.
+
+Package: libpcapa
+Version: 1.10.1-1
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 324
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1), libssl3
+Filename: tweaks/NukeWireless-Dependencies/debs/libpcapa_1.10.1-1_iphoneos-arm64e.deb
+Size: 115576
+MD5sum: 5e51529551176e146a04c858c7c96950
+SHA1: 4016895f244ec0713dcecc4f603fee6c8063fd30
+SHA256: b5af2690c84eff43915f0837ac5c003ae8c43f31eb92b54aa8c1c621cd5eefe9
+Section: Libraries
+Priority: optional
+Homepage: http://www.tcpdump.org/
+Description: system interface for user-level packet capture
+ libpcap (Packet CAPture) provides a portable framework for low-level
+ network monitoring.  Applications include network statistics collection,
+ security monitoring, network debugging, etc.
+ .
+ Since almost every system vendor provides a different interface for
+ packet capture, and since there are several tools that require this
+ functionality, the libpcap authors created this system-independent API
+ to ease in porting and to alleviate the need for several
+ system-dependent packet capture modules in each application.
+
+Package: libpcapa
+Version: 1.10.4
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 324
+Depends: libiosexec1 (>= 1.3.1), libssl3
+Filename: tweaks/NukeWireless-Dependencies/debs/libpcapa_1.10.4_iphoneos-arm.deb
+Size: 98988
+MD5sum: 3dd372f37f2c5d7e57b49ffef750d0a0
+SHA1: b964a23026d2c64047f2c7a1720777423c38ad3a
+SHA256: 6b9c6bed0dbd93cbee263eb39be2f0a7d3edc6762a767294b53089abb0a68904
+Section: Libraries
+Priority: optional
+Homepage: http://www.tcpdump.org/
+Description: system interface for user-level packet capture
+ libpcap (Packet CAPture) provides a portable framework for low-level
+ network monitoring.  Applications include network statistics collection,
+ security monitoring, network debugging, etc.
+ .
+ Since almost every system vendor provides a different interface for
+ packet capture, and since there are several tools that require this
+ functionality, the libpcap authors created this system-independent API
+ to ease in porting and to alleviate the need for several
+ system-dependent packet capture modules in each application.
+
+Package: libpcapa
+Version: 1.10.4
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 324
+Depends: libiosexec1 (>= 1.3.1), libssl3
+Filename: tweaks/NukeWireless-Dependencies/debs/libpcapa_1.10.4_iphoneos-arm64.deb
+Size: 99134
+MD5sum: 9d8264e0888cc37a6c746439be25d13b
+SHA1: 86cc2d7219297d01cdbe97eebfcef3c93f1bd988
+SHA256: cc76fab1854da84b3175c9ff08422c739e3e9b5ca3c7a38931346454ef41e7d3
+Section: Libraries
+Priority: optional
+Homepage: http://www.tcpdump.org/
+Description: system interface for user-level packet capture
+ libpcap (Packet CAPture) provides a portable framework for low-level
+ network monitoring.  Applications include network statistics collection,
+ security monitoring, network debugging, etc.
+ .
+ Since almost every system vendor provides a different interface for
+ packet capture, and since there are several tools that require this
+ functionality, the libpcap authors created this system-independent API
+ to ease in porting and to alleviate the need for several
+ system-dependent packet capture modules in each application.
+
+Package: libplist3
+Version: 2.2.0+git20230130.4b50a5a
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 132
+Depends: libiosexec1 (>= 1.2.2)
+Conflicts: libplist
+Replaces: libplist
+Provides: libplist (= 99)
+Filename: tweaks/NukeWireless-Dependencies/debs/libplist3_2.2.0+git20230130.4b50a5a_iphoneos-arm.deb
+Size: 44874
+MD5sum: 5c1085926388def497d3e6cbc54ff21c
+SHA1: cb38c3fcbacef0bdc54151893f0b7885080bdc1d
+SHA256: 6261ff956a1a5944760bc42f6039bce8b55dae2af5722c24a1447d09544f668f
+Section: Development
+Priority: standard
+Description: Library for handling Apple binary and XML property lists
+
+Package: libplist3
+Version: 2.2.0+git20230130.4b50a5a
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 132
+Depends: libiosexec1 (>= 1.2.2)
+Conflicts: libplist
+Replaces: libplist
+Provides: libplist (= 99)
+Filename: tweaks/NukeWireless-Dependencies/debs/libplist3_2.2.0+git20230130.4b50a5a_iphoneos-arm64.deb
+Size: 44864
+MD5sum: bca322eba9e8f6b0c6ef8c9482241c72
+SHA1: 084ba36bac2f5d732a0a1baea8982b7ff5ddaeb1
+SHA256: 0cefd3bbb8b8fdd4df92f1ce09a137fa39d6496a22a3e252a5a9784ad3ff4f4f
+Section: Development
+Priority: standard
+Description: Library for handling Apple binary and XML property lists
+
+Package: libplist3
+Version: 2.2.0+git20230130.4b50a5a
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 132
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1)
+Conflicts: libplist
+Replaces: libplist
+Provides: libplist (= 99)
+Filename: tweaks/NukeWireless-Dependencies/debs/libplist3_2.2.0+git20230130.4b50a5a_iphoneos-arm64e.deb
+Size: 44936
+MD5sum: c23bc4cdbad22f5517d29ae0184572c1
+SHA1: 7ddd0d885ddb41d83588ae66efd83649244031fd
+SHA256: c1d7d425141db10c15382cbde703206e44aef0977094d72f91c52d37c4118c33
+Section: Development
+Priority: standard
+Description: Library for handling Apple binary and XML property lists
+
+Package: libssl3
+Version: 3.0.8
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 4016
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1), ca-certificates
+Filename: tweaks/NukeWireless-Dependencies/debs/libssl3_3.0.8_iphoneos-arm64e.deb
+Size: 1748668
+MD5sum: dec42008a8aa4d5c75bbe5ddd244d00a
+SHA1: 8a62a83b3dd643f9d8d53b8ecd5f9d78f5698dde
+SHA256: 0cc5d03b738b672512f171ccad50f8afdfd9c8ea5dd7eb102a213b9dc76bcc7a
+Section: Libraries
+Priority: standard
+Description: Secure Sockets Layer toolkit - shared libraries
+ This package is part of the OpenSSL project's implementation of the SSL
+ and TLS cryptographic protocols for secure communication over the
+ Internet.
+ .
+ It provides the libssl and libcrypto shared libraries.
+
+Package: libssl3
+Version: 3.2.1
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 5056
+Depends: libiosexec1 (>= 1.3.1), ca-certificates
+Filename: tweaks/NukeWireless-Dependencies/debs/libssl3_3.2.1_iphoneos-arm64.deb
+Size: 2202960
+MD5sum: 11f4baf9869fa1a0c7327f5a95f6f472
+SHA1: e5b5b427c0c1826553387fdb09fa95454c4ee708
+SHA256: cea1b21c8f11c7bb7ca963dd115e837e8041298056695a32ca5ddb4190e17d75
+Section: Libraries
+Priority: standard
+Description: Secure Sockets Layer toolkit - shared libraries
+ This package is part of the OpenSSL project's implementation of the SSL
+ and TLS cryptographic protocols for secure communication over the
+ Internet.
+ .
+ It provides the libssl and libcrypto shared libraries.
+
+Package: libssl3
+Version: 3.2.1
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 5056
+Depends: libiosexec1 (>= 1.3.1), ca-certificates
+Filename: tweaks/NukeWireless-Dependencies/debs/libssl3_3.2.1_iphoneos-arm.deb
+Size: 2189408
+MD5sum: fa30e626ffb6b0552530ead445ad5e19
+SHA1: da001eba7d5e4986380384ab6596273305361a6e
+SHA256: 0ad8d0d01cd3472093151dbbbf633f76b0e108cc1334f7898517664ff4d95042
+Section: Libraries
+Priority: standard
+Description: Secure Sockets Layer toolkit - shared libraries
+ This package is part of the OpenSSL project's implementation of the SSL
+ and TLS cryptographic protocols for secure communication over the
+ Internet.
+ .
+ It provides the libssl and libcrypto shared libraries.
+
+Package: network-cmds
+Version: 641-1
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 1548
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1), firmware (>= 9.0) | rtadvd, libpcapa
+Filename: tweaks/NukeWireless-Dependencies/debs/network-cmds_641-1_iphoneos-arm64e.deb
+Size: 260840
+MD5sum: f55234c6f2fd6adf28dc5ad33bffad5b
+SHA1: 06ed83f08c4754ed3c09e549696c3395b1d2bd3c
+SHA256: 68c50ab1c2ca7632b53b4ee3cd025dce2ee618c565db5d08f714735208661e67
+Section: Networking
+Priority: important
+Description: arp, ndp, traceroute, mnc, mtest, traceroute6, ifconfig, ip6addrctl, netstat, ping6, route, rtsol
+
+Package: network-cmds
+Version: 669
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 2156
+Depends: libiosexec1 (>= 1.3.1), firmware (>= 9.0) | rtadvd, libpcapa
+Conflicts: inetutils (<< 2.5)
+Replaces: inetutils (<< 2.5)
+Filename: tweaks/NukeWireless-Dependencies/debs/network-cmds_669_iphoneos-arm64.deb
+Size: 259566
+MD5sum: 400a5d07de842e36d6387df9b4501c7d
+SHA1: 1ba9e7e2011dd4702bb5652eb5ea0d9eecf15ba6
+SHA256: f5915acce67168998c895e184eaf69e6d5396454c7dbc350490d1f15a7da926c
+Section: Networking
+Priority: important
+Description: arp, ndp, traceroute, mnc, mtest, traceroute6, ifconfig, ip6addrctl, netstat, ping6, route, rtsol
+
+Package: network-cmds
+Version: 669
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 2156
+Depends: libiosexec1 (>= 1.3.1), firmware (>= 9.0) | rtadvd, libpcapa
+Conflicts: inetutils (<< 2.5)
+Replaces: inetutils (<< 2.5)
+Filename: tweaks/NukeWireless-Dependencies/debs/network-cmds_669_iphoneos-arm.deb
+Size: 259476
+MD5sum: 28d2d90b3cbe8de85fa8d3a14d2162ac
+SHA1: 2c6de7024773e763ba7f9220c3a5978b49fd3663
+SHA256: 2686f47ebcc6af1f06f68a81395b446266aeea774d14db5035fc6bda6d61768e
+Section: Networking
+Priority: important
+Description: arp, ndp, traceroute, mnc, mtest, traceroute6, ifconfig, ip6addrctl, netstat, ping6, route, rtsol
