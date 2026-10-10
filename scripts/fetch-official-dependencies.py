@@ -12,13 +12,18 @@ import urllib.request
 OUT = Path('.build/dependency-downloads')
 SPECS = {
     'roothide': ('https://roothide.github.io/procursus/', 'iphoneos-arm64e/1900', 'iphoneos-arm64e'),
-    'rootless': ('https://apt.procurs.us/', 'iphoneos-arm64/1800', 'iphoneos-arm64'),
-    'rootful': ('https://apt.procurs.us/', '1800', 'iphoneos-arm'),
+    'rootless': ('https://apt.procurs.us/', 'iphoneos-arm64-rootless/1800', 'iphoneos-arm64'),
+    'rootful': ('https://apt.procurs.us/', 'iphoneos-arm64/1800', 'iphoneos-arm'),
 }
-NAMES = ['arpoison', 'ldid', 'network-cmds', 'libnet9', 'libssl3', 'libplist3', 'libpcapa', 'ca-certificates']
+# Bootstrap-owned packages (firmware, roothide, libiosexec1, ca-certificates)
+# must come from the installed jailbreak, not a cross-scheme mirror.
+NAMES = ['arpoison', 'ldid', 'network-cmds', 'libnet9', 'libssl3', 'libplist3', 'libpcapa']
 
 def read(url, limit):
-    with urllib.request.urlopen(url, timeout=45) as response:
+    request = urllib.request.Request(url, headers={
+        'User-Agent': 'GokuEnREPO/1.0 (+https://github.com/Gokuencinar/GokuEnREPO)',
+    })
+    with urllib.request.urlopen(request, timeout=45) as response:
         raw = response.read(limit+1)
     if len(raw) > limit:
         raise ValueError('download exceeds bound')
@@ -40,6 +45,9 @@ def fetch(item):
     try:
         release_url = base+'dists/'+suite+'/Release'
         release = read(release_url, 1024*1024)
+        assert fields(release.decode('utf-8')).get('Architectures') == architecture
+        report['release_url'] = release_url
+        report['release_sha256'] = hashlib.sha256(release).hexdigest()
         (folder/'Release').write_bytes(release)
         relative = f'main/binary-{architecture}/Packages.xz'
         sha_section = release.decode().split('SHA256:\n',1)[1].split('\nSHA',1)[0]
@@ -48,6 +56,7 @@ def fetch(item):
         digest, size, _ = matching[0]
         packed = read(base+'dists/'+suite+'/'+relative, 16*1024*1024)
         assert len(packed) == int(size) and hashlib.sha256(packed).hexdigest() == digest
+        report['index_sha256'] = digest
         index = lzma.decompress(packed).decode('utf-8')
         (folder/'Packages').write_text(index, encoding='utf-8')
         candidates = [fields(block) for block in index.split('\n\n')]
