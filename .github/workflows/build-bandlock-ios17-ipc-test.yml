@@ -30,13 +30,17 @@ jobs:
           set -euo pipefail
           root=tweaks/BandLock/build/BandLock-1.0-Dopamine
           plutil -lint "$root/app/Resources/Info.plist"
-          grep -q '^Version: 1.4.1~ios17test1$' "$root/control"
+          grep -q '^Version: 1.4.1~ios17test2$' "$root/control"
           grep -q '<key>CFBundleShortVersionString</key><string>1.4.1</string>' "$root/app/Resources/Info.plist"
           grep -q 'int connectErrno = 0;' "$root/app/BLTelephonyManager.m"
           grep -q 'connectErrno = connected == 0 ? 0 : errno;' "$root/app/BLTelephonyManager.m"
           grep -q 'connectErrno != ENOENT && connectErrno != ECONNREFUSED' "$root/app/BLTelephonyManager.m"
           grep -q 'int writeErrno = written > 0 ? 0 : errno;' "$root/app/BLTelephonyManager.m"
           grep -q 'int readErrno = count >= 0 ? 0 : errno;' "$root/app/BLTelephonyManager.m"
+          grep -q 'BandLock iOS 17 diagnostic' "$root/app/BLTelephonyManager.m"
+          grep -q 'Copy diagnostics' "$root/app/BLControlViewController.m"
+          grep -q 'BandLock-iOS17-install-diag.txt' "$root/layout/DEBIAN/postinst"
+          grep -q 'BandLock-iOS17-daemon.log' "$root/daemon/main.m"
           grep -q 'SYSTEM_DOMAIN="system"' "$root/layout/DEBIAN/postinst"
           grep -q 'launchctl kickstart -k' "$root/layout/DEBIAN/postinst"
       - name: Build Dopamine test package
@@ -45,9 +49,9 @@ jobs:
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          test -f 'packages/com.gokuencinar.bandlock.dopamine_1.4.1~ios17test1_iphoneos-arm64.deb'
+          test -f 'packages/com.gokuencinar.bandlock.dopamine_1.4.1~ios17test2_iphoneos-arm64.deb'
           file .theos/obj/arm64/BandLock.app/BandLock 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.4.1-ios17test1
-          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.4.1~ios17test1_iphoneos-arm64.deb
+          name: BandLock-Dopamine-1.4.1-ios17test2
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.4.1~ios17test2_iphoneos-arm64.deb

@@ -14,10 +14,6 @@
 #import <string.h>
 
 static void BLDaemonLog(const char *message) {
-    const char *path = "/tmp/BandLock-daemon.log";
-    if (!path || !*path) return;
-    int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
-    if (fd < 0) return;
     struct timeval tv;
     gettimeofday(&tv, NULL);
     char line[1200];
@@ -28,12 +24,19 @@ static void BLDaemonLog(const char *message) {
                           (int)(tv.tv_usec / 1000),
                           (int)getpid(),
                           message ? message : "(null)");
-    if (length > 0) {
-        size_t count = (size_t)length;
-        if (count >= sizeof(line)) count = sizeof(line) - 1;
+    if (length <= 0) return;
+    size_t count = (size_t)length;
+    if (count >= sizeof(line)) count = sizeof(line) - 1;
+    const char *paths[] = {
+        "/tmp/BandLock-daemon.log",
+        "/var/mobile/Library/Logs/BandLockGlobal/BandLock-iOS17-daemon.log"
+    };
+    for (NSUInteger i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
+        int fd = open(paths[i], O_WRONLY | O_CREAT | O_APPEND, 0644);
+        if (fd < 0) continue;
         (void)write(fd, line, count);
+        close(fd);
     }
-    close(fd);
 }
 
 @interface BLTelephonyManager (BandLockDaemonPrivate)
@@ -345,13 +348,19 @@ static void BLServeClient(int clientFD) {
 int main(int argc, char *argv[]) {
     @autoreleasepool {
         signal(SIGPIPE, SIG_IGN);
-        BLDaemonLog("daemon start");
+        BLDaemonLog([[NSString stringWithFormat:@"daemon start uid=%d euid=%d", (int)getuid(), (int)geteuid()] UTF8String]);
         NSString *socketPath = BLSocketPath();
         const char *path = socketPath.fileSystemRepresentation;
-        if (!path || strlen(path) >= sizeof(((struct sockaddr_un *)0)->sun_path)) return 70;
+        if (!path || strlen(path) >= sizeof(((struct sockaddr_un *)0)->sun_path)) {
+            BLDaemonLog("invalid socket path");
+            return 70;
+        }
 
         int serverFD = socket(AF_UNIX, SOCK_STREAM, 0);
-        if (serverFD < 0) return 71;
+        if (serverFD < 0) {
+            BLDaemonLog([[NSString stringWithFormat:@"server socket failed errno=%d", errno] UTF8String]);
+            return 71;
+        }
         unlink(path);
 
         struct sockaddr_un address;
@@ -359,10 +368,21 @@ int main(int argc, char *argv[]) {
         address.sun_family = AF_UNIX;
         strlcpy(address.sun_path, path, sizeof(address.sun_path));
 
-        if (bind(serverFD, (struct sockaddr *)&address, sizeof(address)) != 0) { close(serverFD); return 72; }
+        if (bind(serverFD, (struct sockaddr *)&address, sizeof(address)) != 0) {
+            int bindErrno = errno;
+            BLDaemonLog([[NSString stringWithFormat:@"bind failed errno=%d path=%@", bindErrno, socketPath] UTF8String]);
+            close(serverFD);
+            return 72;
+        }
         chmod(path, 0600);
-        if (listen(serverFD, 8) != 0) { close(serverFD); unlink(path); return 73; }
-        BLDaemonLog("daemon listening");
+        if (listen(serverFD, 8) != 0) {
+            int listenErrno = errno;
+            BLDaemonLog([[NSString stringWithFormat:@"listen failed errno=%d", listenErrno] UTF8String]);
+            close(serverFD);
+            unlink(path);
+            return 73;
+        }
+        BLDaemonLog([[NSString stringWithFormat:@"daemon listening path=%@", socketPath] UTF8String]);
 
         while (1) {
             int clientFD = accept(serverFD, NULL, NULL);

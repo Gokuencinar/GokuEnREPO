@@ -271,6 +271,13 @@
 - (void)showAlert:(NSString *)message {
     BLBreadcrumb("UI showAlert begin");
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"BandLock" message:message ?: @"" preferredStyle:UIAlertControllerStyleAlert];
+    if ([message containsString:@"BandLock iOS 17 diagnostic"]) {
+        [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Copiar diagnóstico", @"Copy diagnostics")
+                                                 style:UIAlertActionStyleDefault
+                                               handler:^(__unused UIAlertAction *action) {
+            UIPasteboard.generalPasteboard.string = message ?: @"";
+        }]];
+    }
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Aceptar", @"OK") style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
     BLBreadcrumb("UI showAlert end");

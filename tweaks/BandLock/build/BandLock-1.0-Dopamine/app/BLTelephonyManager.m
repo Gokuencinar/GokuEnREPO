@@ -27,6 +27,56 @@ static NSString *BLDaemonSocketPath(void) {
     return BLDaemonSocketRelativePath;
 }
 
+static NSString *BLReadTail(NSString *path, NSUInteger maxLines) {
+    NSError *error = nil;
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
+    if (!text.length) {
+        return [NSString stringWithFormat:@"%@=%@",
+                path.lastPathComponent ?: @"file",
+                error.localizedDescription.length ? error.localizedDescription : @"unavailable"];
+    }
+    NSArray<NSString *> *rawLines = [text componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet];
+    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+    for (NSString *line in rawLines) if (line.length) [lines addObject:line];
+    NSUInteger start = lines.count > maxLines ? lines.count - maxLines : 0;
+    return [[lines subarrayWithRange:NSMakeRange(start, lines.count - start)] componentsJoinedByString:@"\n"];
+}
+
+static NSString *BLIPCFailureDetail(NSString *stage,
+                                    NSString *socketPath,
+                                    int operationErrno,
+                                    int statRC,
+                                    int statErrno,
+                                    const struct stat *socketStat) {
+    NSString *errnoText = operationErrno > 0 ? [NSString stringWithUTF8String:strerror(operationErrno)] : @"none";
+    NSString *socketState = statRC == 0
+        ? [NSString stringWithFormat:@"present mode=%04o uid=%d gid=%d",
+           (unsigned int)(socketStat->st_mode & 07777),
+           (int)socketStat->st_uid,
+           (int)socketStat->st_gid]
+        : [NSString stringWithFormat:@"missing/unreadable stat_errno=%d", statErrno];
+    NSString *daemonTail = BLReadTail(@"/var/mobile/Library/Logs/BandLockGlobal/BandLock-iOS17-daemon.log", 14);
+    NSString *installTail = BLReadTail(@"/var/mobile/Library/Logs/BandLockGlobal/BandLock-iOS17-install-diag.txt", 40);
+    return [NSString stringWithFormat:
+            @"BandLock iOS 17 diagnostic\n"
+             "stage=%@\n"
+             "socket=%@\n"
+             "socket_state=%@\n"
+             "errno=%d (%@)\n"
+             "uid=%d euid=%d\n\n"
+             "daemon_log_tail:\n%@\n\n"
+             "install_diag:\n%@",
+             stage ?: @"unknown",
+             socketPath ?: @"(null)",
+             socketState,
+             operationErrno,
+             errnoText ?: @"unknown",
+             (int)getuid(),
+             (int)geteuid(),
+             daemonTail ?: @"unavailable",
+             installTail ?: @"unavailable"];
+}
+
 @interface BLTelephonyManager ()
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *supportedBands;
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *activeBands;
@@ -198,7 +248,7 @@ static NSString *BLDaemonSocketPath(void) {
 
     int connected = -1;
     int connectErrno = 0;
-    for (NSInteger attempt = 0; attempt < 5; attempt++) {
+    for (NSInteger attempt = 0; attempt < 30; attempt++) {
         BLBreadcrumbf("connect begin attempt=%ld", (long)attempt + 1);
         connected = connect(fd, (struct sockaddr *)&address, sizeof(address));
         connectErrno = connected == 0 ? 0 : errno;
@@ -208,12 +258,17 @@ static NSString *BLDaemonSocketPath(void) {
                       connectErrno);
         if (connected == 0) break;
         if (connectErrno != ENOENT && connectErrno != ECONNREFUSED) break;
-        usleep(150000);
+        usleep(200000);
     }
     if (connected != 0) {
         BLBreadcrumbf("connect failed final errno=%d", connectErrno);
         close(fd);
-        return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"No se pudo conectar con BandLockDaemon (errno %d).", @"Could not connect to BandLockDaemon (errno %d)."), connectErrno]];
+        return [self daemonUnavailableResult:BLIPCFailureDetail(@"connect",
+                                                               pathString,
+                                                               connectErrno,
+                                                               statRC,
+                                                               statErrno,
+                                                               &socketStat)];
     }
 
     const uint8_t *bytes = wire.bytes;
