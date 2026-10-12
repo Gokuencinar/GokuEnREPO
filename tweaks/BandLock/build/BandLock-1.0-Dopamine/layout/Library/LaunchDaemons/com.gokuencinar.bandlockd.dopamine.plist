@@ -15,11 +15,6 @@
     <key>UserName</key>
     <string>mobile</string>
     <key>ProcessType</key>
-    <string>Background</string>
-    <key>JetsamProperties</key>
-    <dict>
-        <key>JetsamMemoryLimit</key>
-        <integer>64</integer>
-    </dict>
+    <string>Interactive</string>
 </dict>
 </plist>
