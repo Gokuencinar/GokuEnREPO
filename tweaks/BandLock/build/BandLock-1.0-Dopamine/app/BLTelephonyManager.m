@@ -148,8 +148,9 @@ static NSString *BLDaemonSocketPath(void) {
     BLBreadcrumb("socket begin");
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
-        BLBreadcrumbf("socket failed errno=%d", errno);
-        return [self daemonUnavailableResult:[NSString stringWithFormat:@"socket errno=%d", errno]];
+        int socketErrno = errno;
+        BLBreadcrumbf("socket failed errno=%d", socketErrno);
+        return [self daemonUnavailableResult:[NSString stringWithFormat:@"socket errno=%d", socketErrno]];
     }
     BLBreadcrumbf("socket end fd=%d", fd);
 
@@ -182,9 +183,10 @@ static NSString *BLDaemonSocketPath(void) {
     struct stat socketStat;
     memset(&socketStat, 0, sizeof(socketStat));
     int statRC = stat(path, &socketStat);
+    int statErrno = statRC == 0 ? 0 : errno;
     BLBreadcrumbf("socket stat rc=%d errno=%d mode=%o uid=%d gid=%d",
                   statRC,
-                  statRC == 0 ? 0 : errno,
+                  statErrno,
                   statRC == 0 ? (unsigned int)(socketStat.st_mode & 07777) : 0U,
                   statRC == 0 ? (int)socketStat.st_uid : -1,
                   statRC == 0 ? (int)socketStat.st_gid : -1);
@@ -195,22 +197,23 @@ static NSString *BLDaemonSocketPath(void) {
     strlcpy(address.sun_path, path, sizeof(address.sun_path));
 
     int connected = -1;
+    int connectErrno = 0;
     for (NSInteger attempt = 0; attempt < 5; attempt++) {
         BLBreadcrumbf("connect begin attempt=%ld", (long)attempt + 1);
         connected = connect(fd, (struct sockaddr *)&address, sizeof(address));
+        connectErrno = connected == 0 ? 0 : errno;
         BLBreadcrumbf("connect end attempt=%ld rc=%d errno=%d",
                       (long)attempt + 1,
                       connected,
-                      connected == 0 ? 0 : errno);
+                      connectErrno);
         if (connected == 0) break;
-        if (errno != ENOENT && errno != ECONNREFUSED) break;
+        if (connectErrno != ENOENT && connectErrno != ECONNREFUSED) break;
         usleep(150000);
     }
     if (connected != 0) {
-        int savedErrno = errno;
-        BLBreadcrumbf("connect failed final errno=%d", savedErrno);
+        BLBreadcrumbf("connect failed final errno=%d", connectErrno);
         close(fd);
-        return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"No se pudo conectar con BandLockDaemon (errno %d).", @"Could not connect to BandLockDaemon (errno %d)."), savedErrno]];
+        return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"No se pudo conectar con BandLockDaemon (errno %d).", @"Could not connect to BandLockDaemon (errno %d)."), connectErrno]];
     }
 
     const uint8_t *bytes = wire.bytes;
@@ -218,14 +221,14 @@ static NSString *BLDaemonSocketPath(void) {
     BLBreadcrumbf("write begin bytes=%lu", (unsigned long)remaining);
     while (remaining > 0) {
         ssize_t written = write(fd, bytes, remaining);
+        int writeErrno = written > 0 ? 0 : errno;
         BLBreadcrumbf("write chunk rc=%ld errno=%d remaining-before=%lu",
                       (long)written,
-                      written > 0 ? 0 : errno,
+                      writeErrno,
                       (unsigned long)remaining);
         if (written <= 0) {
-            int savedErrno = errno;
             close(fd);
-            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La comunicación con el daemon falló al enviar (errno %d).", @"Daemon communication failed while sending (errno %d)."), savedErrno]];
+            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La comunicación con el daemon falló al enviar (errno %d).", @"Daemon communication failed while sending (errno %d)."), writeErrno]];
         }
         bytes += written;
         remaining -= (NSUInteger)written;
@@ -237,14 +240,14 @@ static NSString *BLDaemonSocketPath(void) {
     BLBreadcrumb("read begin");
     while (responseData.length < 131072) {
         ssize_t count = read(fd, buffer, sizeof(buffer));
+        int readErrno = count >= 0 ? 0 : errno;
         BLBreadcrumbf("read chunk rc=%ld errno=%d total-before=%lu",
                       (long)count,
-                      count >= 0 ? 0 : errno,
+                      readErrno,
                       (unsigned long)responseData.length);
         if (count < 0) {
-            int savedErrno = errno;
             close(fd);
-            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La respuesta del daemon falló (errno %d).", @"Daemon response failed (errno %d)."), savedErrno]];
+            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La respuesta del daemon falló (errno %d).", @"Daemon response failed (errno %d)."), readErrno]];
         }
         if (count == 0) break;
         [responseData appendBytes:buffer length:(NSUInteger)count];
