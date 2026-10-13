@@ -1,5 +1,12 @@
 # BandLock Changelog
 
+## 1.5
+
+- Fixed BandLockDaemon restarts on iOS 17 with Dopamine.
+- Improved daemon connection retries.
+
+---
+
 ## 1.4
 
 - Added support for A9 devices on iOS 16.
