@@ -12,6 +12,13 @@
 #import <stdio.h>
 #import <sys/time.h>
 #import <string.h>
+#import <stdint.h>
+
+#if !BL_VARIANT_ROOTFUL
+// Use the same 64 MB per-process limit as the validated Dopamine iOS 17 test.
+extern int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *buffer, size_t buffersize);
+enum { BLJetsamSetTaskLimit = 6, BLJetsamLimitMB = 64 };
+#endif
 
 static void BLDaemonLog(const char *message) {
     const char *path = "/tmp/BandLock-daemon.log";
@@ -343,6 +350,10 @@ static void BLServeClient(int clientFD) {
 }
 
 int main(int argc, char *argv[]) {
+#if !BL_VARIANT_ROOTFUL
+    // Apply the validated Dopamine limit to this daemon only.
+    (void)memorystatus_control(BLJetsamSetTaskLimit, (int32_t)getpid(), BLJetsamLimitMB, NULL, 0);
+#endif
     @autoreleasepool {
         signal(SIGPIPE, SIG_IGN);
         BLDaemonLog("daemon start");

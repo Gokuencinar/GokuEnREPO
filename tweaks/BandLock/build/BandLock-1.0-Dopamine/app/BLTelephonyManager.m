@@ -195,19 +195,21 @@ static NSString *BLDaemonSocketPath(void) {
     strlcpy(address.sun_path, path, sizeof(address.sun_path));
 
     int connected = -1;
-    for (NSInteger attempt = 0; attempt < 5; attempt++) {
+    int connectErrno = 0;
+    for (NSInteger attempt = 0; attempt < 30; attempt++) {
         BLBreadcrumbf("connect begin attempt=%ld", (long)attempt + 1);
         connected = connect(fd, (struct sockaddr *)&address, sizeof(address));
+        connectErrno = connected == 0 ? 0 : errno;
         BLBreadcrumbf("connect end attempt=%ld rc=%d errno=%d",
                       (long)attempt + 1,
                       connected,
-                      connected == 0 ? 0 : errno);
+                      connectErrno);
         if (connected == 0) break;
-        if (errno != ENOENT && errno != ECONNREFUSED) break;
-        usleep(150000);
+        if (connectErrno != ENOENT && connectErrno != ECONNREFUSED) break;
+        usleep(200000);
     }
     if (connected != 0) {
-        int savedErrno = errno;
+        int savedErrno = connectErrno;
         BLBreadcrumbf("connect failed final errno=%d", savedErrno);
         close(fd);
         return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"No se pudo conectar con BandLockDaemon (errno %d).", @"Could not connect to BandLockDaemon (errno %d)."), savedErrno]];

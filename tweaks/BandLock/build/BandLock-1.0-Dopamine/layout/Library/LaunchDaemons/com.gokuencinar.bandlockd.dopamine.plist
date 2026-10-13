@@ -15,6 +15,6 @@
     <key>UserName</key>
     <string>mobile</string>
     <key>ProcessType</key>
-    <string>Background</string>
+    <string>Interactive</string>
 </dict>
 </plist>

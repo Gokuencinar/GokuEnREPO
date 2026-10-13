@@ -1,0 +1,338 @@
+name: Build and publish BandLock 1.5
+
+on:
+  push:
+    branches: [ bandlock-1.5-release ]
+    paths:
+      - 'tweaks/BandLock/build/BandLock-1.0-RootHide/**'
+      - 'tweaks/BandLock/build/BandLock-1.0-Dopamine/**'
+      - '.github/workflows/build-bandlock-15-release.yml'
+      - 'tweaks/BandLock/build/BandLock-1.0-Rootful/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-roothide:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup RootHide Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate RootHide source
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint tweaks/BandLock/build/BandLock-1.0-RootHide/app/Resources/Info.plist
+          grep -q '^Version: 1.5$' tweaks/BandLock/build/BandLock-1.0-RootHide/control
+          grep -q '<string>1.5</string>' tweaks/BandLock/build/BandLock-1.0-RootHide/app/Resources/Info.plist
+          grep -q '<key>MinimumOSVersion</key><string>15.0</string>' tweaks/BandLock/build/BandLock-1.0-RootHide/app/Resources/Info.plist
+          grep -q '^ARCHS = arm64 arm64e$' tweaks/BandLock/build/BandLock-1.0-RootHide/Makefile
+          grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-RootHide/Makefile
+          grep -q 'Depends: firmware (>= 15.0), firmware (<= 17.0)' tweaks/BandLock/build/BandLock-1.0-RootHide/control
+          grep -q '^Recommends: com.opa334.ccsupport$' tweaks/BandLock/build/BandLock-1.0-RootHide/control
+          grep -q '^Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md$' tweaks/BandLock/build/BandLock-1.0-RootHide/control
+          grep -q '^Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png$' tweaks/BandLock/build/BandLock-1.0-RootHide/control
+          python3 -m json.tool tweaks/BandLock/build/BandLock-1.0-RootHide/app/Resources/countries.json >/dev/null
+          grep -q '5G Auto / 5G On / 5G Only' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLControlViewController.m
+          grep -q 'hasRefreshedStatus' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLControlViewController.m
+          grep -q 'currentLanguageName' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLControlViewController.m
+          grep -q 'BandLockPendingNRBands' tweaks/BandLock/build/BandLock-1.0-RootHide/app/BLTelephonyManager.m
+          grep -q 'BLCCLastModeCode' tweaks/BandLock/build/BandLock-1.0-RootHide/shared/BLCCPreferences.h
+          grep -q 'BLCCSetLastModeCode' tweaks/BandLock/build/BandLock-1.0-RootHide/shared/BLCCPreferences.m
+          grep -q 'kCTRegistrationRATSelectionUMTS' tweaks/BandLock/build/BandLock-1.0-RootHide/daemon/main.m
+          grep -q 'BLCCModule : CCUIToggleModule' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.h
+          grep -q 'bl_presentModePicker' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'UIAlertControllerStyleActionSheet' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'connectedScenes' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'UIWindowScene' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'rootViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          ! grep -q 'contentViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'stateEpoch' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'self.currentModeCode = requestedMode;' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q '_CTServerConnectionSetRATSelection' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          ! grep -q 'CoreTelephony' tweaks/BandLock/build/BandLock-1.0-RootHide/ccmodule/Makefile
+          grep -q 'dlsym' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'reconfigureView' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'CCSGetModuleSizeAtRuntime' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<key>CCSModuleSize</key>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<false/>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -A1 -q '<key>MinimumOSVersion</key>.*' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<string>15.0</string>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q '<key>ModuleSize</key>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q 'CCUIMenuModuleViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'BOOL supports5G = \[query\[@"supports5G"\] boolValue\] || supportedNR.count > 0;' tweaks/BandLock/build/BandLock-1.0-RootHide/daemon/BLTelephonyCore.m
+          test -f tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/SettingsIcon@3x.png
+          ! grep -q 'sbreload\|killall\|uicache' tweaks/BandLock/build/BandLock-1.0-RootHide/layout/DEBIAN/postinst
+          ! grep -q 'sbreload\|killall\|uicache' tweaks/BandLock/build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
+      - name: Build RootHide
+        run: |
+          cd tweaks/BandLock/build/BandLock-1.0-RootHide
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          test -f packages/com.gokuencinar.bandlock_1.5_iphoneos-arm64e.deb
+          find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
+          lipo -archs "$(find .theos/_ -type f -name BandLockCCModule | head -n 1)" | grep -q 'arm64 arm64e\|arm64e arm64'
+          ! otool -L "$(find .theos/_ -type f -name BandLockCCModule | head -n 1)" | grep -q CoreTelephony
+          find .theos/_ -type f -name 'SettingsIcon@3x.png' | grep -q SettingsIcon
+          find .theos/_ -type f -name 'SettingsIcon@3x.png' | grep -q SettingsIcon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-RootHide-1.5
+          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.5_iphoneos-arm64e.deb
+
+  build-dopamine:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate Dopamine source
+        shell: bash
+        run: |
+          set -euo pipefail
+          plutil -lint tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
+          grep -q '^Version: 1.5$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '^Architecture: iphoneos-arm64$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '<string>1.5</string>' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
+          grep -q '<key>MinimumOSVersion</key><string>15.0</string>' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/Info.plist
+          grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-Dopamine/Makefile
+          grep -q 'Depends: firmware (>= 15.0), firmware (<< 19.0), mobilesubstrate' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '^Recommends: com.opa334.ccsupport$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '^Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          grep -q '^Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png$' tweaks/BandLock/build/BandLock-1.0-Dopamine/control
+          python3 -m json.tool tweaks/BandLock/build/BandLock-1.0-Dopamine/app/Resources/countries.json >/dev/null
+          grep -q '5G Auto / 5G On / 5G Only' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m
+          grep -q 'hasRefreshedStatus' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m
+          grep -q 'currentLanguageName' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLControlViewController.m
+          grep -q 'BandLockPendingNRBands' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          grep -q 'self.hasRefreshedStatus = success' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          grep -q 'supportedBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'activeBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'if (!supportedLTE.count && activeLTE.count) supportedLTE = activeLTE;' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'SYSTEM_DOMAIN="system"' tweaks/BandLock/build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
+          grep -q 'launchctl kickstart -k' tweaks/BandLock/build/BandLock-1.0-Dopamine/layout/DEBIAN/postinst
+          grep -q 'kCTRegistrationRATSelectionUMTS' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/main.m
+          grep -q 'BLCCModule : CCUIToggleModule' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.h
+          grep -q 'bl_presentModePicker' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'UIAlertControllerStyleActionSheet' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'connectedScenes' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'rootViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          ! grep -q 'contentViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'stateEpoch' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'self.currentModeCode = requestedMode;' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q '_CTServerConnectionSetRATSelection' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          ! grep -q 'CoreTelephony' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Makefile
+          grep -q 'dlsym' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'reconfigureView' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'CCSGetModuleSizeAtRuntime' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<key>CCSModuleSize</key>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<false/>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<string>15.0</string>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q '<key>ModuleSize</key>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q 'CCUIMenuModuleViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          ! grep -R --exclude-dir='ccmodule' --include='*.m' --include='*.h' --include='Makefile' -q 'jbroot\|roothide.h\|libroothide\|/.jbroot-' tweaks/BandLock/build/BandLock-1.0-Dopamine
+      - name: Build Dopamine
+        run: |
+          cd tweaks/BandLock/build/BandLock-1.0-Dopamine
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          test -f packages/com.gokuencinar.bandlock.dopamine_1.5_iphoneos-arm64.deb
+          find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
+          ! otool -L "$(find .theos/_ -type f -name BandLockCCModule | head -n 1)" | grep -q CoreTelephony
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.5
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.5_iphoneos-arm64.deb
+
+  build-rootful:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate rootful source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^Version: 1.5$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^Architecture: iphoneos-arm$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^Package: com.gokuencinar.bandlock.rootful$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^TARGET = iphone:clang:16.5:15.0$' tweaks/BandLock/build/BandLock-1.0-Rootful/Makefile
+          grep -q 'Depends: firmware (>= 15.0), firmware (<< 17.0), mobilesubstrate' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^Recommends: com.opa334.ccsupport$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q '^Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png$' tweaks/BandLock/build/BandLock-1.0-Rootful/control
+          grep -q 'BL_VARIANT_ROOTFUL=1' tweaks/BandLock/build/BandLock-1.0-Rootful/Makefile
+          ! grep -q 'THEOS_PACKAGE_SCHEME' tweaks/BandLock/build/BandLock-1.0-Rootful/Makefile
+          grep -q '/usr/libexec/BandLockDaemon' tweaks/BandLock/build/BandLock-1.0-Rootful/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.rootful.plist
+          grep -q 'com.gokuencinar.bandlockd.rootful.sock' tweaks/BandLock/build/BandLock-1.0-Dopamine/app/BLTelephonyManager.m
+          grep -q 'com.gokuencinar.bandlockd.rootful.sock' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/main.m
+          grep -q 'kCTRegistrationRATSelectionUMTS' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/main.m
+          grep -q 'supportedBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'activeBandsForRat:' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'if (!supportedLTE.count && activeLTE.count) supportedLTE = activeLTE;' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          grep -q 'BLCCModule : CCUIToggleModule' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.h
+          grep -q 'bl_presentModePicker' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'UIAlertControllerStyleActionSheet' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'connectedScenes' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'UIWindowScene' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'rootViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          ! grep -q 'contentViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'stateEpoch' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'self.currentModeCode = requestedMode;' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q '_CTServerConnectionSetRATSelection' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          ! grep -q 'CoreTelephony' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Makefile
+          grep -q 'dlsym' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'reconfigureView' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'CCSGetModuleSizeAtRuntime' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<key>CCSModuleSize</key>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<false/>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          grep -q '<string>15.0</string>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q '<key>ModuleSize</key>' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/Info.plist
+          ! grep -q 'CCUIMenuModuleViewController' tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m
+          grep -q 'BOOL supports5G = \[query\[@"supports5G"\] boolValue\] || supportedNR.count > 0;' tweaks/BandLock/build/BandLock-1.0-Dopamine/daemon/BLTelephonyCore.m
+          test -f tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Resources/SettingsIcon@3x.png
+          ! grep -q 'sbreload\|killall\|uicache' tweaks/BandLock/build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
+          ! grep -R -q '/var/jb' tweaks/BandLock/build/BandLock-1.0-Rootful
+          ! grep -R -q 'roothide.h\|libroothide\|jbroot(' tweaks/BandLock/build/BandLock-1.0-Rootful
+          chmod 755 tweaks/BandLock/build/BandLock-1.0-Rootful/layout/DEBIAN/postinst
+          chmod 755 tweaks/BandLock/build/BandLock-1.0-Rootful/layout/DEBIAN/postrm
+      - name: Build rootful package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd tweaks/BandLock/build/BandLock-1.0-Rootful
+          make clean package FINALPACKAGE=1
+          test -f packages/com.gokuencinar.bandlock.rootful_1.5_iphoneos-arm.deb
+          find .theos/_ -type f -name BandLockCCModule | grep -q BandLockCCModule
+          ! otool -L "$(find .theos/_ -type f -name BandLockCCModule | head -n 1)" | grep -q CoreTelephony
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Rootful-1.5
+          path: tweaks/BandLock/build/BandLock-1.0-Rootful/packages/com.gokuencinar.bandlock.rootful_1.5_iphoneos-arm.deb
+
+  validate-package:
+    needs: build-rootful
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Rootful-1.5
+          path: /tmp/bandlock
+      - name: Inspect rootful Debian
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev binutils
+          deb=/tmp/bandlock/com.gokuencinar.bandlock.rootful_1.5_iphoneos-arm.deb
+          test "$(dpkg-deb -f "$deb" Package)" = "com.gokuencinar.bandlock.rootful"
+          test "$(dpkg-deb -f "$deb" Version)" = "1.5"
+          test "$(dpkg-deb -f "$deb" Architecture)" = "iphoneos-arm"
+          dpkg-deb -c "$deb" > /tmp/bandlock-rootful-contents.txt
+          grep -q 'Applications/BandLock.app/BandLock' /tmp/bandlock-rootful-contents.txt
+          grep -q 'usr/libexec/BandLockDaemon' /tmp/bandlock-rootful-contents.txt
+          grep -q 'usr/bin/BandLockLauncher' /tmp/bandlock-rootful-contents.txt
+          grep -q 'Library/LaunchDaemons/com.gokuencinar.bandlockd.rootful.plist' /tmp/bandlock-rootful-contents.txt
+          grep -q 'Library/MobileSubstrate/DynamicLibraries/BandLockFieldBridge.dylib' /tmp/bandlock-rootful-contents.txt
+          grep -q 'Library/ControlCenter/Bundles/BandLockCCModule.bundle/BandLockCCModule' /tmp/bandlock-rootful-contents.txt
+          grep -q 'Library/ControlCenter/Bundles/BandLockCCModule.bundle/SettingsIcon@3x.png' /tmp/bandlock-rootful-contents.txt
+          rm -rf /tmp/rootful-extract
+          mkdir -p /tmp/rootful-extract
+          dpkg-deb -x "$deb" /tmp/rootful-extract
+          ! grep -R -a -q '/var/jb' /tmp/rootful-extract
+          ! grep -R -a -q 'libroothide\|\.jbroot-' /tmp/rootful-extract
+          grep -a -q 'com.gokuencinar.bandlockd.rootful.sock' /tmp/rootful-extract/Library/ControlCenter/Bundles/BandLockCCModule.bundle/BandLockCCModule
+
+
+  publish:
+    if: github.ref == 'refs/heads/bandlock-1.5-release'
+    needs: [build-roothide, build-dopamine, build-rootful, validate-package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/checkout@v4
+        with:
+          ref: bandlock-1.5-release
+          path: release-source
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-RootHide-1.5
+          path: /tmp/root
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.5
+          path: /tmp/dop
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Rootful-1.5
+          path: /tmp/rootful
+      - name: Verify all three release packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          for spec in             'com.gokuencinar.bandlock_1.5_iphoneos-arm64e.deb com.gokuencinar.bandlock iphoneos-arm64e /tmp/root'             'com.gokuencinar.bandlock.dopamine_1.5_iphoneos-arm64.deb com.gokuencinar.bandlock.dopamine iphoneos-arm64 /tmp/dop'             'com.gokuencinar.bandlock.rootful_1.5_iphoneos-arm.deb com.gokuencinar.bandlock.rootful iphoneos-arm /tmp/rootful'; do
+            read -r filename package arch folder <<< "$spec"
+            deb="$folder/$filename"
+            test -s "$deb"
+            test "$(dpkg-deb -f "$deb" Package)" = "$package"
+            test "$(dpkg-deb -f "$deb" Version)" = "1.5"
+            test "$(dpkg-deb -f "$deb" Architecture)" = "$arch"
+            dpkg-deb --contents "$deb" > /tmp/bandlock-release-contents.txt
+            grep -q BandLockDaemon /tmp/bandlock-release-contents.txt
+          done
+      - name: Publish BandLock 1.5 to public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/root/com.gokuencinar.bandlock_1.5_iphoneos-arm64e.deb tweaks/BandLock/debs/
+            cp /tmp/dop/com.gokuencinar.bandlock.dopamine_1.5_iphoneos-arm64.deb tweaks/BandLock/debs/
+            cp /tmp/rootful/com.gokuencinar.bandlock.rootful_1.5_iphoneos-arm.deb tweaks/BandLock/debs/
+            cp release-source/tweaks/BandLock/README.md tweaks/BandLock/README.md
+            cp release-source/tweaks/BandLock/CHANGELOG.md tweaks/BandLock/CHANGELOG.md
+            cp release-source/tweaks/BandLock/depiction.html tweaks/BandLock/depiction.html
+            sed -i -E 's/(\| BandLock \(RootHide\) \| )1\.4( \|)/\11.5\2/;s/(\| BandLock \(Dopamine\) \| )1\.4( \|)/\11.5\2/;s/(\| BandLock \(Rootful\) \| )1\.4( \|)/\11.5\2/' README.md
+            sed -i -E 's/^(- \*\*BandLock:\*\* )[0-9.]+$/\11.5/' CHANGELOG.md
+            bash scripts/rebuild-packages.sh
+            grep -q 'Version: 1.5' Packages
+            git add tweaks/BandLock/debs/*_1.5_*.deb tweaks/BandLock/README.md tweaks/BandLock/CHANGELOG.md tweaks/BandLock/depiction.html README.md CHANGELOG.md Packages Packages.gz
+            if git diff --cached --quiet; then
+              echo 'BandLock 1.5 already published'
+              exit 0
+            fi
+            git commit -m 'Publish BandLock 1.5'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Could not publish BandLock 1.5 to main' >&2
+          exit 1

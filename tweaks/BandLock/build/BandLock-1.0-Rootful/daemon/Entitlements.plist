@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>platform-application</key>
+    <true/>
+    <key>com.apple.private.security.no-sandbox</key>
+    <true/>
+    <key>com.apple.CommCenter.fine-grained</key>
+    <array>
+        <string>spi</string>
+        <string>identity</string>
+        <string>phone</string>
+        <string>carrier-settings</string>
+        <string>preferences-write</string>
+        <string>developer-settings</string>
+    </array>
+    <key>com.apple.CoreTelephony.CommCenterHelper.allow</key>
+    <true/>
+</dict>
+</plist>
