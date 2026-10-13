@@ -6,6 +6,8 @@
     <true/>
     <key>com.apple.private.security.no-sandbox</key>
     <true/>
+    <key>com.apple.private.memorystatus</key>
+    <true/>
     <key>com.apple.CommCenter.fine-grained</key>
     <array>
         <string>spi</string>

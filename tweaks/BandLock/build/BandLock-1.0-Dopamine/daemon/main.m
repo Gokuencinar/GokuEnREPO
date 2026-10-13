@@ -12,6 +12,18 @@
 #import <stdio.h>
 #import <sys/time.h>
 #import <string.h>
+#import <stdint.h>
+
+// XNU memorystatus_control commands. Keep the request restricted to this
+// daemon's own PID; the user-domain launchd memory default is 6 MB on iOS 17.
+extern int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *buffer, size_t buffersize);
+enum { BLJetsamSetTaskLimit = 6, BLJetsamGetLimits = 8, BLJetsamLimitMB = 64 };
+typedef struct {
+    int32_t activeMB;
+    uint32_t activeAttributes;
+    int32_t inactiveMB;
+    uint32_t inactiveAttributes;
+} BLJetsamLimits;
 
 static void BLDaemonLog(const char *message) {
     struct timeval tv;
@@ -346,6 +358,19 @@ static void BLServeClient(int clientFD) {
 }
 
 int main(int argc, char *argv[]) {
+    // Run before Foundation/CoreTelephony initialization, and log the actual
+    // kernel result. An entitlement or policy refusal must remain observable.
+    int setLimitRC = memorystatus_control(BLJetsamSetTaskLimit, (int32_t)getpid(), BLJetsamLimitMB, NULL, 0);
+    int setLimitErrno = setLimitRC == 0 ? 0 : errno;
+    BLJetsamLimits limits = {0};
+    int readLimitsRC = memorystatus_control(BLJetsamGetLimits, (int32_t)getpid(), 0, &limits, sizeof(limits));
+    int readLimitsErrno = readLimitsRC == 0 ? 0 : errno;
+    char jetsamDiagnostic[256];
+    snprintf(jetsamDiagnostic, sizeof(jetsamDiagnostic),
+             "jetsam self-limit request=%dMB set_rc=%d set_errno=%d get_rc=%d get_errno=%d active=%dMB inactive=%dMB",
+             BLJetsamLimitMB, setLimitRC, setLimitErrno, readLimitsRC, readLimitsErrno,
+             (int)limits.activeMB, (int)limits.inactiveMB);
+    BLDaemonLog(jetsamDiagnostic);
     @autoreleasepool {
         signal(SIGPIPE, SIG_IGN);
         BLDaemonLog([[NSString stringWithFormat:@"daemon start uid=%d euid=%d", (int)getuid(), (int)geteuid()] UTF8String]);
