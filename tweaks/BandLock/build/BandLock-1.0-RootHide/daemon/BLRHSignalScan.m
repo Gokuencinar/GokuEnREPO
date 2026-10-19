@@ -12,6 +12,9 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <stdlib.h>
 #import <dlfcn.h>
+#import <limits.h>
+#import <stdint.h>
+#import <string.h>
 
 @interface BLTelephonyManager (BLRHSignalScanPrivate)
 - (NSDictionary *)queryCoreTelephony;
@@ -131,21 +134,99 @@ static BOOL BLScanHasPower(NSDictionary *row) {
            [row[@"rssi"] isKindOfClass:NSNumber.class];
 }
 
-// On dual-line handsets a data-line change can otherwise silently redirect
-// a private modem call. Limit this initial experiment to one active service.
-static BOOL BLScanSingleActiveLine(NSDictionary *query) {
-    id technologies = query[@"ratRaw"];
-    if (![technologies isKindOfClass:NSDictionary.class] ||
-        [(NSDictionary *)technologies count] != 1) return NO;
+static NSNumber *BLRHSlotNumber(id context) {
+    if (!context || context == NSNull.null) return nil;
+    SEL slotSelector = NSSelectorFromString(@"slotID");
+    if (![context respondsToSelector:slotSelector]) return nil;
+    NSMethodSignature *signature = [context methodSignatureForSelector:slotSelector];
+    if (!signature || signature.numberOfArguments != 2) return nil;
+    const char *type = signature.methodReturnType;
+    // ObjC runtime type encodings can be qualified. Only signed and unsigned
+    // scalar slotIDs with an exactly matching return width are accepted.
+    while (type && strchr("rnNoORV", type[0])) type++;
+    if (!type) return nil;
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.selector = slotSelector;
+    invocation.target = context;
+    [invocation invoke];
+    unsigned long long result = ULLONG_MAX;
+    if (type[0] == 'i' && signature.methodReturnLength == sizeof(int32_t)) {
+        int32_t value = -1;
+        [invocation getReturnValue:&value];
+        if (value >= 0) result = (unsigned long long)value;
+    } else if (type[0] == 'I' && signature.methodReturnLength == sizeof(uint32_t)) {
+        uint32_t value = UINT32_MAX;
+        [invocation getReturnValue:&value];
+        result = value;
+    } else if (type[0] == 'q' && signature.methodReturnLength == sizeof(int64_t)) {
+        int64_t value = -1;
+        [invocation getReturnValue:&value];
+        if (value >= 0) result = (unsigned long long)value;
+    } else if (type[0] == 'Q' && signature.methodReturnLength == sizeof(uint64_t)) {
+        uint64_t value = UINT64_MAX;
+        [invocation getReturnValue:&value];
+        result = value;
+    }
+    // A real modem slot is small. Unknown ABI / out-of-range => fail closed.
+    return result <= 16 ? @(result) : nil;
+}
+
+// A carrier-provider dictionary lists plans, including disabled eSIMs.
+// It is NOT authoritative for how many lines are active. iPhone XS hardware
+// showed: 2 configured plans, 1 registered RAT, 1 ACTIVE CT context.
+// Require one actual active CTXPCContextInfo and SAME slot as data context.
+static NSDictionary *BLRHActiveLineCheck(NSDictionary *query) {
+    id client = query[@"client"];
+    id dataContext = query[@"context"];
+    NSDictionary *rat = [query[@"ratRaw"] isKindOfClass:NSDictionary.class] ? query[@"ratRaw"] : nil;
     Class infoClass = NSClassFromString(@"CTTelephonyNetworkInfo");
-    SEL providersSelector = NSSelectorFromString(@"serviceSubscriberCellularProviders");
-    if (!infoClass) return NO;
-    id info = [[infoClass alloc] init];
-    if (![info respondsToSelector:providersSelector]) return NO;
-    id providers = ((id (*)(id, SEL))objc_msgSend)(info, providersSelector);
-    // Fail closed: no proof of a single subscription means no scan.
-    return [providers isKindOfClass:NSDictionary.class] &&
-           [(NSDictionary *)providers count] == 1;
+    id info = infoClass ? [[infoClass alloc] init] : nil;
+    SEL dataSelector = NSSelectorFromString(@"dataServiceIdentifier");
+    id service = [info respondsToSelector:dataSelector]
+        ? ((id (*)(id, SEL))objc_msgSend)(info, dataSelector) : nil;
+    BOOL serviceInRAT = [service isKindOfClass:NSString.class] &&
+                         [service length] && rat[service] != nil;
+    BOOL singleRegistered = rat.count == 1;
+    NSNumber *dataSlot = BLRHSlotNumber(dataContext);
+    BOOL activeAPI = [client respondsToSelector:NSSelectorFromString(@"getActiveContexts:")];
+    BOOL singleActive = NO;
+    BOOL slotMatched = NO;
+    NSString *status = @"api_unavailable";
+    if (activeAPI) {
+        @try {
+            NSError *error = nil;
+            id contexts = ((id (*)(id, SEL, NSError **))objc_msgSend)(
+                client, NSSelectorFromString(@"getActiveContexts:"), &error);
+            SEL subscriptionsSelector = NSSelectorFromString(@"subscriptions");
+            id subscriptions = [contexts respondsToSelector:subscriptionsSelector]
+                ? ((id (*)(id, SEL))objc_msgSend)(contexts, subscriptionsSelector) : nil;
+            if (error) {
+                status = @"error";
+            } else if ([subscriptions isKindOfClass:NSArray.class]) {
+                status = @"array";
+                singleActive = [(NSArray *)subscriptions count] == 1;
+                if (singleActive && dataSlot) {
+                    NSNumber *activeSlot = BLRHSlotNumber([(NSArray *)subscriptions firstObject]);
+                    slotMatched = activeSlot && [activeSlot isEqualToNumber:dataSlot];
+                }
+            } else {
+                status = @"unsupported_container";
+            }
+        } @catch (__unused NSException *exception) {
+            status = @"exception";
+        }
+    }
+    return @{@"verified": @(singleRegistered && singleActive && serviceInRAT &&
+                            slotMatched && BLScanSubscriptionUUID(query).length == 64),
+             @"one_registered_rat": @(singleRegistered),
+             @"one_active_context": @(singleActive),
+             @"active_context_matches_data_slot": @(slotMatched),
+             @"data_service_matches_registered_rat": @(serviceInRAT),
+             @"active_context_check_status": status};
+}
+
+static BOOL BLScanSingleActiveLine(NSDictionary *query) {
+    return [BLRHActiveLineCheck(query)[@"verified"] boolValue];
 }
 
 // Privacy-preserving preflight: only counts, selector availability and
@@ -153,7 +234,7 @@ static BOOL BLScanSingleActiveLine(NSDictionary *query) {
 // subscription UUIDs or raw CoreTelephony object descriptions.
 static NSDictionary *BLRHLineDiagnostics(NSDictionary *query) {
     NSMutableDictionary *result = [@{@"success": @YES,
-      @"read_only": @YES, @"diagnostic_version": @1,
+      @"read_only": @YES, @"diagnostic_version": @2,
       @"message": @"Cellular service inventory (counts only; no radio changes)"} mutableCopy];
     id rawRAT = query[@"ratRaw"];
     BOOL ratValid = [rawRAT isKindOfClass:NSDictionary.class];
@@ -166,6 +247,7 @@ static NSDictionary *BLRHLineDiagnostics(NSDictionary *query) {
     result[@"subscription_fingerprint_available"] = @(BLScanSubscriptionUUID(query).length == 64);
     result[@"lte_mode"] = @([[query[@"ratSelection"] description] rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound);
     result[@"scan_gate_current"] = @(BLScanSingleActiveLine(query));
+    [result addEntriesFromDictionary:BLRHActiveLineCheck(query)];
 
     Class infoClass = NSClassFromString(@"CTTelephonyNetworkInfo");
     id info = infoClass ? [[infoClass alloc] init] : nil;

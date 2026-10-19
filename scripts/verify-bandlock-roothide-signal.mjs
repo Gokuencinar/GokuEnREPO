@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.5\.1~rhscan2$/m);
+assert.match(control, /^Version: 1\.5\.1~rhscan3$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -53,6 +53,12 @@ assert.match(scan, /getSubscriptionInfoWithError:/);
 assert.match(scan, /active_context_count/);
 assert.match(scan, /provider_inventory_count/);
 assert.match(scan, /data_service_in_rat/);
+assert.match(scan, /BLRHActiveLineCheck/);
+assert.match(scan, /NSInvocation invocationWithMethodSignature/);
+assert.match(scan, /active_context_matches_data_slot/);
+assert.match(scan, /getActiveContexts:/);
+assert.doesNotMatch(scan.slice(scan.indexOf('static BOOL BLScanSingleActiveLine'), scan.indexOf('static NSDictionary *BLRHLineDiagnostics')),
+  /providers count|serviceSubscriberCellularProviders/, 'Provisioned carrier plans must NOT count as active lines');
 assert.match(scan, /scan_gate_current/);
 assert.match(scan, /\[self isRunning\] \|\| \[self isRecovering\] \|\| \[self hasPendingRecovery\]/);
 assert.match(scan, /@"typed"/);
