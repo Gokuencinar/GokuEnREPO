@@ -234,8 +234,45 @@ static BOOL BLScanSingleActiveLine(NSDictionary *query) {
 // subscription UUIDs or raw CoreTelephony object descriptions.
 static NSDictionary *BLRHLineDiagnostics(NSDictionary *query) {
     NSMutableDictionary *result = [@{@"success": @YES,
-      @"read_only": @YES, @"diagnostic_version": @2,
+      @"read_only": @YES, @"diagnostic_version": @3,
       @"message": @"Cellular service inventory (counts only; no radio changes)"} mutableCopy];
+    // Selection categories and a numeric RAT bitmask are deliberately
+    // limited to allowlisted metadata. Raw CoreTelephony objects, selected
+    // strings, service identifiers and cell/SIM data NEVER leave the daemon.
+    for (NSString *key in @[@"ratReadSource", @"ratReadStatus",
+                            @"ratSelectionKind", @"ratSyncKind",
+                            @"ratSyncStatus", @"ratAsyncKind",
+                            @"ratAsyncStatus", @"ratMaskStatus"]) {
+        if ([query[key] isKindOfClass:NSString.class]) {
+            NSString *publicName = @{@"ratReadSource": @"rat_read_source",
+                  @"ratReadStatus": @"rat_read_status",
+                  @"ratSelectionKind": @"rat_selection_kind",
+                  @"ratSyncKind": @"rat_sync_kind",
+                  @"ratSyncStatus": @"rat_sync_status",
+                  @"ratAsyncKind": @"rat_async_kind",
+                  @"ratAsyncStatus": @"rat_async_status",
+                  @"ratMaskStatus": @"rat_mask_status"}[key];
+            // Explicit allowlist so raw SIM/service identifiers can never
+            // accidentally leak if a future change reuses a query field.
+            NSString *safe = query[key];
+            NSSet *allow = [NSSet setWithArray:@[
+                @"mask_sync", @"async_fallback", @"none", @"ok",
+                @"timeout", @"error", @"empty", @"unavailable",
+                @"explicit_unknown", @"unrecognized", @"unrecognized_or_missing",
+                @"unknown_selection", @"descriptor_unavailable", @"exception",
+                @"not_needed", @"missing", @"invalid_type", @"lte",
+                @"automatic", @"umts", @"gsm", @"nr", @"nr_sa", @"nr_nsa"
+            ]];
+            if (publicName) result[publicName] = [allow containsObject:safe] ? safe : @"unrecognized";
+        }
+    }
+    if ([query[@"ratMaskByte"] isKindOfClass:NSNumber.class] &&
+        [query[@"ratMaskByte"] integerValue] >= 0 &&
+        [query[@"ratMaskByte"] integerValue] <= 255) {
+        result[@"rat_mask_byte_diagnostic_only"] = query[@"ratMaskByte"];
+    }
+    result[@"rat_mode_code"] = [query[@"ratSelectionKind"] isEqualToString:@"lte"]
+        ? @"lte" : @"unknown_or_other";
     id rawRAT = query[@"ratRaw"];
     BOOL ratValid = [rawRAT isKindOfClass:NSDictionary.class];
     NSDictionary *rat = ratValid ? rawRAT : nil;

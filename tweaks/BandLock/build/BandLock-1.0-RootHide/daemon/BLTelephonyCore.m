@@ -6,6 +6,7 @@
 #import <dlfcn.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <math.h>
+#import <string.h>
 
 static NSString * const BLLTERAT = @"kCTRegistrationRadioAccessTechnologyLTE";
 static NSString * const BLNRRAT = @"kCTRegistrationRadioAccessTechnologyNR";
@@ -29,6 +30,28 @@ static BOOL BLMsgBoolObj(id object, SEL selector, id value) { return ((BOOL (*)(
 static void BLMsgObjBlock(id object, SEL selector, id value, void (^completion)(id, NSError *)) { ((void (*)(id, SEL, id, id))objc_msgSend)(object, selector, value, completion); }
 static void BLMsgGetRatSelection(id object, SEL selector, id context, void (^completion)(NSString *, NSString *, NSError *)) { ((void (*)(id, SEL, id, id))objc_msgSend)(object, selector, context, completion); }
 static void BLMsgSetRatSelection(id object, SEL selector, id context, id selection, id preferred, void (^completion)(NSError *)) { ((void (*)(id, SEL, id, id, id, id))objc_msgSend)(object, selector, context, selection, preferred, completion); }
+
+// Classify ONLY known CoreTelephony RAT selection constants; do not turn
+// registered LTE, an arbitrary string containing "LTE", or an API success
+// into proof that the user's selection is actually LTE-only.
+static NSString *BLRHRatSelectionKind(id selection) {
+    if (![selection isKindOfClass:NSString.class]) return selection ? @"invalid_type" : @"missing";
+    if (![selection length] || [selection isEqualToString:@"—"]) return @"empty";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionLTE"] ||
+        [selection isEqualToString:@"LTE"]) return @"lte";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionAutomatic"] ||
+        [selection isEqualToString:@"Automatic"]) return @"automatic";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionUMTS"] ||
+        [selection isEqualToString:@"UMTS"]) return @"umts";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionGSM"] ||
+        [selection isEqualToString:@"GSM"]) return @"gsm";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionNRStandAlone"]) return @"nr_sa";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionNRNonStandAlone"]) return @"nr_nsa";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionNR"]) return @"nr";
+    if ([selection isEqualToString:@"kCTRegistrationRATSelectionUnknown"] ||
+        [selection isEqualToString:@"Unknown"]) return @"explicit_unknown";
+    return @"unrecognized";
+}
 
 static NSMutableDictionary *BLReadState(void) {
     NSDictionary *existing = [NSUserDefaults.standardUserDefaults dictionaryForKey:BLStateDefaultsKey];
@@ -251,6 +274,8 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     Class descriptorClass = NSClassFromString(@"CTServiceDescriptor");
     SEL fromContext = NSSelectorFromString(@"descriptorWithSubscriptionContext:");
     NSString *syncStatus = @"unavailable";
+    NSString *syncKind = @"missing";
+    NSNumber *maskByte = nil;
     if ([client respondsToSelector:maskSelector] &&
         [descriptorClass respondsToSelector:fromContext]) {
         @try {
@@ -264,14 +289,31 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
                     ? BLMsg0(ratMask, selected) : nil;
                 id preferredValue = ratMask && [ratMask respondsToSelector:preferredSelector]
                     ? BLMsg0(ratMask, preferredSelector) : nil;
-                BOOL knownValue = [value isKindOfClass:NSString.class] && [value length] &&
-                                  [value rangeOfString:@"Unknown" options:NSCaseInsensitiveSearch].location == NSNotFound;
-                if (!error && knownValue) {
-                    return @{@"selection": value,
-                             @"preferred": [preferredValue isKindOfClass:NSString.class] ? preferredValue : @"—",
-                             @"source": @"mask_sync", @"status": @"ok"};
+                syncKind = BLRHRatSelectionKind(value);
+                SEL rawMaskSelector = NSSelectorFromString(@"mask");
+                NSMethodSignature *maskSignature = ratMask && [ratMask respondsToSelector:rawMaskSelector]
+                    ? [ratMask methodSignatureForSelector:rawMaskSelector] : nil;
+                // CTRatSelection.mask is a scalar unsigned char. Record the
+                // number for troubleshooting only; mask bits do NOT prove LTE.
+                if (maskSignature && strcmp(maskSignature.methodReturnType, "C") == 0 &&
+                    maskSignature.methodReturnLength == sizeof(unsigned char)) {
+                    unsigned char rawMask = ((unsigned char (*)(id, SEL))objc_msgSend)(ratMask, rawMaskSelector);
+                    maskByte = @(rawMask);
                 }
-                syncStatus = error ? @"error" : (value ? @"unknown_selection" : @"empty");
+                BOOL knownValue = [@[@"lte", @"automatic", @"umts", @"gsm", @"nr", @"nr_sa", @"nr_nsa"]
+                                    containsObject:syncKind];
+                if (!error && knownValue) {
+                    NSMutableDictionary *answer = [@{@"selection": value,
+                        @"preferred": [preferredValue isKindOfClass:NSString.class] ? preferredValue : @"—",
+                        @"source": @"mask_sync", @"status": @"ok",
+                        @"selection_kind": syncKind, @"sync_kind": syncKind,
+                        @"sync_status": @"ok", @"async_status": @"not_needed",
+                        @"async_kind": @"not_needed"} mutableCopy];
+                    if (maskByte) answer[@"mask_byte"] = maskByte;
+                    return answer;
+                }
+                syncStatus = error ? @"error" : ([syncKind isEqualToString:@"explicit_unknown"]
+                    ? @"explicit_unknown" : @"unrecognized_or_missing");
             } else {
                 syncStatus = @"descriptor_unavailable";
             }
@@ -283,17 +325,26 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     SEL selector = NSSelectorFromString(@"getRatSelection:completion:");
     if (![client respondsToSelector:selector]) {
         return @{@"selection": @"—", @"preferred": @"—",
-                 @"source": @"none", @"status": syncStatus};
+                 @"source": @"none", @"status": syncStatus,
+                 @"selection_kind": @"missing", @"sync_kind": syncKind,
+                 @"sync_status": syncStatus, @"async_status": @"unavailable",
+                 @"async_kind": @"missing"};
     }
     __block NSString *selection = nil;
     __block NSString *preferred = nil;
     __block NSString *callbackStatus = @"timeout";
+    __block NSString *callbackKind = @"missing";
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     BLMsgGetRatSelection(client, selector, context, ^(NSString *currentSelection, NSString *preferredSelection, NSError *error) {
         if (!error) {
             selection = [currentSelection isKindOfClass:NSString.class] ? [currentSelection copy] : nil;
             preferred = [preferredSelection isKindOfClass:NSString.class] ? [preferredSelection copy] : nil;
-            callbackStatus = selection.length ? @"ok" : @"empty";
+            callbackKind = BLRHRatSelectionKind(currentSelection);
+            callbackStatus = [callbackKind isEqualToString:@"explicit_unknown"]
+                ? @"explicit_unknown" : ([callbackKind isEqualToString:@"missing"] ||
+                   [callbackKind isEqualToString:@"empty"] ? @"empty" :
+                   ([callbackKind isEqualToString:@"unrecognized"] ||
+                    [callbackKind isEqualToString:@"invalid_type"] ? @"unrecognized" : @"ok"));
         } else {
             callbackStatus = @"error";
         }
@@ -305,12 +356,19 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         // captured variables or misclassify the modem state as changed.
         return @{@"selection": @"—", @"preferred": @"—",
                  @"source": @"async_fallback", @"status": @"timeout",
-                 @"mask_status": syncStatus};
+                 @"mask_status": syncStatus, @"sync_status": syncStatus,
+                 @"sync_kind": syncKind, @"async_status": @"timeout",
+                 @"async_kind": @"missing", @"selection_kind": @"missing"};
     }
-    return @{@"selection": selection ?: @"—",
+    NSMutableDictionary *answer = [@{@"selection": selection ?: @"—",
              @"preferred": preferred ?: @"—",
              @"source": @"async_fallback", @"status": callbackStatus,
-             @"mask_status": syncStatus};
+             @"mask_status": syncStatus, @"sync_status": syncStatus,
+             @"sync_kind": syncKind, @"async_status": callbackStatus,
+             @"async_kind": callbackKind,
+             @"selection_kind": callbackKind} mutableCopy];
+    if (maskByte) answer[@"mask_byte"] = maskByte;
+    return answer;
 }
 
 - (id)copyCellInfoFromClient:(id)client context:(id)context {
@@ -380,6 +438,12 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
              @"ratReadSource": ratSelection[@"source"] ?: @"none",
              @"ratReadStatus": ratSelection[@"status"] ?: @"unavailable",
              @"ratMaskStatus": ratSelection[@"mask_status"] ?: @"not_needed",
+             @"ratSelectionKind": ratSelection[@"selection_kind"] ?: @"missing",
+             @"ratSyncKind": ratSelection[@"sync_kind"] ?: @"missing",
+             @"ratSyncStatus": ratSelection[@"sync_status"] ?: @"unavailable",
+             @"ratAsyncKind": ratSelection[@"async_kind"] ?: @"missing",
+             @"ratAsyncStatus": ratSelection[@"async_status"] ?: @"unavailable",
+             @"ratMaskByte": ratSelection[@"mask_byte"] ?: NSNull.null,
              @"supports5G": @(supports5G)};
 }
 
@@ -393,21 +457,27 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     NSArray *activeLTE = BLSortedBands(active[BLLTERAT]);
     NSArray *supportedNR = BLNRBandsFromDictionary(supported);
     NSArray *activeNR = BLNRBandsFromDictionary(active);
-    NSString *selection = [query[@"ratSelection"] isKindOfClass:[NSString class]] ? query[@"ratSelection"] : @"—";
+    NSString *kind = BLRHRatSelectionKind(query[@"ratSelection"]);
     NSString *preferred = [query[@"ratPreferred"] isKindOfClass:[NSString class]] ? query[@"ratPreferred"] : @"—";
     BOOL supports5G = [query[@"supports5G"] boolValue] || supportedNR.count > 0;
     NSString *mode = BLT(@"No disponible", @"Unavailable");
     NSString *modeCode = @"unknown";
-    if ([selection rangeOfString:@"Unknown" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"No disponible", @"Unavailable"); modeCode = @"unknown"; }
-    else if ([selection rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound && supports5G && [preferred rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G Auto"; modeCode = @"5g-auto"; }
-    else if ([selection rangeOfString:@"Automatic" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Automático", @"Automatic"); modeCode = @"automatic"; }
-    else if (supports5G && [selection rangeOfString:@"NRStandAlone" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G Only (SA)"; modeCode = @"5g-only"; }
-    else if (supports5G && [selection rangeOfString:@"NRNonStandAlone" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On (NSA)"; modeCode = @"5g-on"; }
-    else if (supports5G && [selection rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = @"5G On"; modeCode = @"5g-on"; }
-    else if ([selection rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo LTE / 4G", @"LTE / 4G only"); modeCode = @"lte"; }
-    else if ([selection rangeOfString:@"UMTS" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo 3G", @"3G only"); modeCode = @"3g"; }
-    else if ([selection rangeOfString:@"GSM" options:NSCaseInsensitiveSearch].location != NSNotFound) { mode = BLT(@"Solo 2G", @"2G only"); modeCode = @"2g"; }
-    else if (![selection isEqualToString:@"—"]) { mode = selection; modeCode = @"other"; }
+    if ([kind isEqualToString:@"automatic"] && supports5G &&
+        [preferred rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+        mode = @"5G Auto"; modeCode = @"5g-auto";
+    } else if ([kind isEqualToString:@"automatic"]) {
+        mode = BLT(@"Automático", @"Automatic"); modeCode = @"automatic";
+    } else if ([kind isEqualToString:@"nr_sa"]) {
+        mode = @"5G Only (SA)"; modeCode = @"5g-only";
+    } else if ([kind isEqualToString:@"nr_nsa"] || [kind isEqualToString:@"nr"]) {
+        mode = @"5G On"; modeCode = @"5g-on";
+    } else if ([kind isEqualToString:@"lte"]) {
+        mode = BLT(@"Solo LTE / 4G", @"LTE / 4G only"); modeCode = @"lte";
+    } else if ([kind isEqualToString:@"umts"]) {
+        mode = BLT(@"Solo 3G", @"3G only"); modeCode = @"3g";
+    } else if ([kind isEqualToString:@"gsm"]) {
+        mode = BLT(@"Solo 2G", @"2G only"); modeCode = @"2g";
+    }
     id ratRaw = query[@"ratRaw"] == NSNull.null ? nil : query[@"ratRaw"];
     id cellInfo = query[@"cellInfo"] == NSNull.null ? nil : query[@"cellInfo"];
     return @{@"supported": supportedLTE,

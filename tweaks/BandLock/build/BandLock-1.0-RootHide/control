@@ -1,8 +1,8 @@
 Package: com.gokuencinar.bandlock
 Name: BandLock (RootHide LTE Scan Test)
-Version: 1.5.1~rhscan4
+Version: 1.5.1~rhscan5
 Architecture: iphoneos-arm64e
-Description: Experimental two-band LTE scanner for RootHide with synchronous RAT selection verification and explicit handling of unavailable network-mode readings, strict subscription gates and original-band recovery journal. Cellular and emergency service may be interrupted.
+Description: Experimental RootHide LTE scanner and read-only RAT selection diagnostics distinguishing successful CoreTelephony calls from explicitly unknown selections; retains original-band recovery and strict LTE-only gating. Cellular and emergency service may be interrupted.
 Maintainer: Gokuencinar
 Author: Gokuencinar
 Section: Tweaks

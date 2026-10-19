@@ -1,4 +1,4 @@
-# BandLock 1.5.1~rhscan4 — RootHide LTE two-band test
+# BandLock 1.5.1~rhscan5 — RootHide LTE two-band test
 
 **Experimental, hardware-unverified and deliberately disruptive.**
 This builds com.gokuencinar.bandlock for RootHide, iphoneos-arm64e.
@@ -85,3 +85,20 @@ real RSRP alone cannot authorize another band write.
 No software can guarantee restoration of cellular service on every
 modem, operating-system version, or network. RootHide 1.5 public release
 is unchanged.
+
+## Read-only RAT selection investigation (rhscan5)
+
+The rhscan4 hardware result reported mode_read_status=ok while a
+simultaneous status query gave mode_code=unknown. These fields are not
+equivalent: CoreTelephony can successfully return an explicit Unknown
+selection. rhscan5 recognizes only exact known selection constants;
+unrecognized, missing and explicit-Unknown selections NEVER authorize
+band writes. The existing scan still requires LTE-only mode confirmation.
+
+The scan_line_diagnostic IPC command now returns privacy-filtered
+rat_sync_kind, rat_async_kind, rat_read_status, rat_selection_kind and
+other *categories*, plus a numeric mask byte solely as a diagnostic.
+These report no raw subscription/SIM/cell identifiers. Mask bit
+semantics are not validated for this device and cannot be used to
+bypass LTE-only authorization. After installing, query this diagnostic
+via the daemon before attempting any further disruptive scan.
