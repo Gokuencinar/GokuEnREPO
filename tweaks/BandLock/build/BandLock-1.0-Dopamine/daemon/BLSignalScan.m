@@ -337,7 +337,7 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
                 } else if (![BLScanSubscriptionUUID(query) isEqualToString:subscription]) {
                     stopReason = @"Cellular subscription changed; restore requires original line";
                     row[@"status"] = @"subscription_changed";
-                } else if (![[manager snapshotFromQuery:query][@"mode_code"] description] isEqual:mode]) {
+                } else if (![[[manager snapshotFromQuery:query] objectForKey:@"mode_code"] isEqual:mode]) {
                     stopReason = @"Network mode changed externally; restoring";
                     row[@"status"] = @"mode_changed";
                 } else if (![manager writeLTEBands:@[band] usingQuery:query errorText:&errorText]) {
@@ -357,7 +357,7 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
                             stopReason = @"Cellular subscription changed; restore requires original line";
                             break;
                         }
-                        if (![[manager snapshotFromQuery:readback][@"mode_code"] description] isEqual:mode]) {
+                        if (![[[manager snapshotFromQuery:readback] objectForKey:@"mode_code"] isEqual:mode]) {
                             stopReason = @"Network mode changed externally; restoring";
                             break;
                         }
