@@ -1,4 +1,4 @@
-# BandLock 1.5.1~rhscan1 — RootHide LTE two-band test
+# BandLock 1.5.1~rhscan4 — RootHide LTE two-band test
 
 **Experimental, hardware-unverified and deliberately disruptive.**
 This builds com.gokuencinar.bandlock for RootHide, iphoneos-arm64e.
@@ -64,6 +64,23 @@ other radio failures.
 7. Return sanitized results with tested bands, RSRP/SNR, outage
    duration and the confirmation of restored band settings. Never
    share IMSI, IMEI, cell identifiers or subscription UUIDs.
+
+## RAT mode verification (rhscan4)
+
+In the first physical test of rhscan3, typed LTE serving readings
+remained available, but the old 2-second asynchronous RAT selection
+callback became unavailable during the B20 scan. The scanner stopped
+with an inaccurate report of an external network-mode change, then
+restored the original allowed LTE band selection.
+
+rhscan4 first queries getRatSelectionMask:error: synchronously for a
+descriptor created from the SAME current data subscription context.
+It uses getRatSelection:completion: only as a legacy fallback. A
+genuinely reported non-LTE selection aborts and restores immediately.
+An unknown/unavailable mode is now reported as mode_unverified, with
+bounded read-only retries. NO subsequent modem band write is allowed
+until LTE-only mode is explicitly verified. Observed LTE service or
+real RSRP alone cannot authorize another band write.
 
 No software can guarantee restoration of cellular service on every
 modem, operating-system version, or network. RootHide 1.5 public release

@@ -243,17 +243,74 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 }
 
 - (NSDictionary *)readRatSelectionFromClient:(id)client context:(id)context {
+    // On iOS 15/16 CoreTelephonyClient can synchronously fetch a
+    // CTRatSelection for the exact CTServiceDescriptor of this data
+    // subscription. Prefer this to an async callback that may be late
+    // during CommCenter re-registration following LTE band changes.
+    SEL maskSelector = NSSelectorFromString(@"getRatSelectionMask:error:");
+    Class descriptorClass = NSClassFromString(@"CTServiceDescriptor");
+    SEL fromContext = NSSelectorFromString(@"descriptorWithSubscriptionContext:");
+    NSString *syncStatus = @"unavailable";
+    if ([client respondsToSelector:maskSelector] &&
+        [descriptorClass respondsToSelector:fromContext]) {
+        @try {
+            id descriptor = ((id (*)(id, SEL, id))objc_msgSend)((id)descriptorClass, fromContext, context);
+            if (descriptor) {
+                NSError *error = nil;
+                id ratMask = BLMsgObjErr(client, maskSelector, descriptor, &error);
+                SEL selected = NSSelectorFromString(@"selection");
+                SEL preferredSelector = NSSelectorFromString(@"preferred");
+                id value = ratMask && [ratMask respondsToSelector:selected]
+                    ? BLMsg0(ratMask, selected) : nil;
+                id preferredValue = ratMask && [ratMask respondsToSelector:preferredSelector]
+                    ? BLMsg0(ratMask, preferredSelector) : nil;
+                BOOL knownValue = [value isKindOfClass:NSString.class] && [value length] &&
+                                  [value rangeOfString:@"Unknown" options:NSCaseInsensitiveSearch].location == NSNotFound;
+                if (!error && knownValue) {
+                    return @{@"selection": value,
+                             @"preferred": [preferredValue isKindOfClass:NSString.class] ? preferredValue : @"—",
+                             @"source": @"mask_sync", @"status": @"ok"};
+                }
+                syncStatus = error ? @"error" : (value ? @"unknown_selection" : @"empty");
+            } else {
+                syncStatus = @"descriptor_unavailable";
+            }
+        } @catch (__unused NSException *exception) {
+            syncStatus = @"exception";
+        }
+    }
+
     SEL selector = NSSelectorFromString(@"getRatSelection:completion:");
-    if (![client respondsToSelector:selector]) return @{@"selection": @"—", @"preferred": @"—"};
+    if (![client respondsToSelector:selector]) {
+        return @{@"selection": @"—", @"preferred": @"—",
+                 @"source": @"none", @"status": syncStatus};
+    }
     __block NSString *selection = nil;
     __block NSString *preferred = nil;
+    __block NSString *callbackStatus = @"timeout";
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     BLMsgGetRatSelection(client, selector, context, ^(NSString *currentSelection, NSString *preferredSelection, NSError *error) {
-        if (!error) { selection = [currentSelection copy]; preferred = [preferredSelection copy]; }
+        if (!error) {
+            selection = [currentSelection isKindOfClass:NSString.class] ? [currentSelection copy] : nil;
+            preferred = [preferredSelection isKindOfClass:NSString.class] ? [preferredSelection copy] : nil;
+            callbackStatus = selection.length ? @"ok" : @"empty";
+        } else {
+            callbackStatus = @"error";
+        }
         dispatch_semaphore_signal(semaphore);
     });
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)));
-    return @{@"selection": selection ?: @"—", @"preferred": preferred ?: @"—"};
+    long wait = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)));
+    if (wait != 0) {
+        // The callback may arrive after the timeout. Do not read its
+        // captured variables or misclassify the modem state as changed.
+        return @{@"selection": @"—", @"preferred": @"—",
+                 @"source": @"async_fallback", @"status": @"timeout",
+                 @"mask_status": syncStatus};
+    }
+    return @{@"selection": selection ?: @"—",
+             @"preferred": preferred ?: @"—",
+             @"source": @"async_fallback", @"status": callbackStatus,
+             @"mask_status": syncStatus};
 }
 
 - (id)copyCellInfoFromClient:(id)client context:(id)context {
@@ -320,6 +377,9 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
              @"cellInfo": cellInfo ?: NSNull.null,
              @"ratSelection": ratSelection[@"selection"] ?: @"—",
              @"ratPreferred": ratSelection[@"preferred"] ?: @"—",
+             @"ratReadSource": ratSelection[@"source"] ?: @"none",
+             @"ratReadStatus": ratSelection[@"status"] ?: @"unavailable",
+             @"ratMaskStatus": ratSelection[@"mask_status"] ?: @"not_needed",
              @"supports5G": @(supports5G)};
 }
 
@@ -804,7 +864,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         @"has_serving_power": @(hasPower),
         @"active_scan_available": @NO,
         @"message": hasPower
-            ? @"Serving LTE power detected. Active RootHide scanning is not enabled in this diagnostic."
+            ? @"Serving LTE power detected. Experimental scanning requires independently verified LTE-only mode and safe original-band recovery."
             : @"No valid serving LTE RSRP/RSSI. Active scan remains disabled; diagnostic reports available data."
     };
 }

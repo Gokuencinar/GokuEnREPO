@@ -314,6 +314,40 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
         ? probe[@"measurements"] : @[];
 }
 
+// A registered LTE serving cell is NOT proof of LTE-only selection. A
+// transiently unavailable selection may be retried, but absolutely no
+// further modem writes occur until an explicit LTE-only selection is read.
+static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
+                                       NSDictionary *initial,
+                                       NSString *subscription,
+                                       NSString *expectedMode,
+                                       NSString **failure) {
+    NSDictionary *candidate = initial;
+    for (NSUInteger attempt = 0; attempt < 3; attempt++) {
+        if (candidate[@"error"]) {
+            if (failure) *failure = @"Cellular query failed before a band write; restoring";
+            return nil;
+        }
+        if (!BLScanSingleActiveLine(candidate) ||
+            ![BLScanSubscriptionUUID(candidate) isEqualToString:subscription]) {
+            if (failure) *failure = @"Cellular subscription is no longer verified; restoring";
+            return nil;
+        }
+        NSString *mode = [manager snapshotFromQuery:candidate][@"mode_code"];
+        if ([mode isEqualToString:expectedMode]) return candidate;
+        if (![mode isEqualToString:@"unknown"]) {
+            if (failure) *failure = @"A different network mode was explicitly reported; restoring";
+            return nil;
+        }
+        if (attempt < 2) {
+            [NSThread sleepForTimeInterval:0.7];
+            candidate = [manager queryCoreTelephony];
+        }
+    }
+    if (failure) *failure = @"LTE-only mode could not be verified (CoreTelephony read unavailable); restoring";
+    return nil;
+}
+
 @interface BLRHSignalScan ()
 @property (nonatomic, strong) NSMutableDictionary *scanState;
 @property (nonatomic, assign) BOOL running;
@@ -559,9 +593,10 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
             }
         }
     }
-    else if (!servingBand || ![candidates.firstObject isEqual:servingBand])
+    if (!failure && (!servingBand || ![candidates.firstObject isEqual:servingBand]))
         failure = @"Serving LTE band is not identified; active scan disabled";
-    else if (candidates.count < 2) failure = @"Need serving band and one other LTE band for the two-band test";
+    if (!failure && candidates.count < 2)
+        failure = @"Need serving band and one other LTE band for the two-band test";
     // Require two consistent fresh samples before deliberately changing
     // service. This rejects a stale legacy B3 field or a line handover.
     if (!failure) {
@@ -648,20 +683,16 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
                 NSMutableDictionary *row = [@{@"band": band, @"rat": @"LTE", @"status": @"no_measurement"} mutableCopy];
                 NSDictionary *query = [manager queryCoreTelephony];
                 NSString *errorText = nil;
-                if (query[@"error"]) {
-                    row[@"status"] = @"query_failed";
-                    stopReason = @"CoreTelephony query failed; restoring";
-                } else if (!BLScanSingleActiveLine(query)) {
-                    stopReason = @"Multiple/unknown cellular lines; restoring";
-                    row[@"status"] = @"subscription_unverified";
-                } else if (![BLScanSubscriptionUUID(query) isEqualToString:subscription]) {
-                    stopReason = @"Cellular subscription changed; restore requires original line";
-                    row[@"status"] = @"subscription_changed";
-                } else if (![[[manager snapshotFromQuery:query] objectForKey:@"mode_code"] isEqual:mode]) {
-                    stopReason = @"Network mode changed externally; restoring";
-                    row[@"status"] = @"mode_changed";
+                query = BLRHWritableQuery(manager, query, subscription, mode, &stopReason);
+                if (!query) {
+                    row[@"status"] = [stopReason containsString:@"explicitly"]
+                        ? @"mode_changed" : @"mode_unverified";
+                } else if ([self shouldStop]) {
+                    stopReason = @"Cancelled";
+                    row[@"status"] = @"cancelled";
                 } else if (![manager writeLTEBands:@[band] usingQuery:query errorText:&errorText]) {
                     row[@"status"] = @"write_failed";
+                    stopReason = errorText ?: @"LTE band write failed; restoring";
                 } else {
                     // CommCenter changes can be asynchronous. Never equate
                     // allowed-band readback with cellular registration.
@@ -678,8 +709,18 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
                             stopReason = @"Cellular subscription changed; restore requires original line";
                             break;
                         }
-                        if (![[[manager snapshotFromQuery:readback] objectForKey:@"mode_code"] isEqual:mode]) {
-                            stopReason = @"Network mode changed externally; restoring";
+                        NSString *readbackMode = [manager snapshotFromQuery:readback][@"mode_code"];
+                        if (![readbackMode isEqualToString:mode]) {
+                            if ([readbackMode isEqualToString:@"unknown"]) {
+                                // The old async CoreTelephony getter sometimes
+                                // timed out after a band switch. Keep observing,
+                                // but do not accept a measurement or write the
+                                // next band without explicit LTE-only proof.
+                                row[@"status"] = @"mode_unverified";
+                                row[@"mode_read_status"] = readback[@"ratReadStatus"] ?: @"unavailable";
+                                continue;
+                            }
+                            stopReason = @"A different network mode was explicitly reported; restoring";
                             break;
                         }
                         if (!BLScanMatches([manager activeLTEFromQuery:readback], @[band])) continue;
