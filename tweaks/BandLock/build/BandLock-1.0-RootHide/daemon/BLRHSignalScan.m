@@ -148,6 +148,84 @@ static BOOL BLScanSingleActiveLine(NSDictionary *query) {
            [(NSDictionary *)providers count] == 1;
 }
 
+// Privacy-preserving preflight: only counts, selector availability and
+// consistency booleans. Never expose service IDs, provider names, SIM IDs,
+// subscription UUIDs or raw CoreTelephony object descriptions.
+static NSDictionary *BLRHLineDiagnostics(NSDictionary *query) {
+    NSMutableDictionary *result = [@{@"success": @YES,
+      @"read_only": @YES, @"diagnostic_version": @1,
+      @"message": @"Cellular service inventory (counts only; no radio changes)"} mutableCopy];
+    id rawRAT = query[@"ratRaw"];
+    BOOL ratValid = [rawRAT isKindOfClass:NSDictionary.class];
+    NSDictionary *rat = ratValid ? rawRAT : nil;
+    result[@"registered_rat_available"] = @(ratValid);
+    result[@"registered_rat_count"] = @(rat.count);
+    id client = query[@"client"];
+    id context = query[@"context"];
+    result[@"subscription_context_present"] = @(context && context != NSNull.null);
+    result[@"subscription_fingerprint_available"] = @(BLScanSubscriptionUUID(query).length == 64);
+    result[@"lte_mode"] = @([[query[@"ratSelection"] description] rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound);
+    result[@"scan_gate_current"] = @(BLScanSingleActiveLine(query));
+
+    Class infoClass = NSClassFromString(@"CTTelephonyNetworkInfo");
+    id info = infoClass ? [[infoClass alloc] init] : nil;
+    SEL providerSelector = NSSelectorFromString(@"serviceSubscriberCellularProviders");
+    id rawProviders = info && [info respondsToSelector:providerSelector]
+        ? ((id (*)(id, SEL))objc_msgSend)(info, providerSelector) : nil;
+    NSDictionary *providers = [rawProviders isKindOfClass:NSDictionary.class] ? rawProviders : nil;
+    result[@"provider_inventory_available"] = @(providers != nil);
+    result[@"provider_inventory_count"] = @(providers.count);
+    SEL dataSelector = NSSelectorFromString(@"dataServiceIdentifier");
+    id dataService = info && [info respondsToSelector:dataSelector]
+        ? ((id (*)(id, SEL))objc_msgSend)(info, dataSelector) : nil;
+    BOOL hasData = [dataService isKindOfClass:NSString.class] && [dataService length] > 0;
+    result[@"data_service_present"] = @(hasData);
+    result[@"data_service_in_rat"] = @(hasData && rat[dataService] != nil);
+    result[@"data_service_in_providers"] = @(hasData && providers[dataService] != nil);
+
+    // getActiveContexts: exists in iOS 16 CoreTelephonyClient headers.
+    // CTXPCContexts.subscriptions contains ACTUAL active CTXPCContextInfo,
+    // unlike serviceSubscriberCellularProviders (provisioned carriers).
+    SEL activeSelector = NSSelectorFromString(@"getActiveContexts:");
+    result[@"active_context_api_available"] = @([client respondsToSelector:activeSelector]);
+    if ([client respondsToSelector:activeSelector]) {
+        @try {
+            NSError *error = nil;
+            id active = ((id (*)(id, SEL, NSError **))objc_msgSend)(client, activeSelector, &error);
+            SEL subs = NSSelectorFromString(@"subscriptions");
+            id items = active && [active respondsToSelector:subs]
+                ? ((id (*)(id, SEL))objc_msgSend)(active, subs) : nil;
+            result[@"active_context_status"] = error ? @"error" :
+                ([items isKindOfClass:NSArray.class] ? @"array" : (active ? @"unsupported_container" : @"empty"));
+            if ([items isKindOfClass:NSArray.class]) {
+                result[@"active_context_count"] = @([(NSArray *)items count]);
+            }
+        } @catch (__unused NSException *exception) {
+            result[@"active_context_status"] = @"exception";
+        }
+    }
+
+    SEL subscriptionSelector = NSSelectorFromString(@"getSubscriptionInfoWithError:");
+    result[@"subscription_info_api_available"] = @([client respondsToSelector:subscriptionSelector]);
+    if ([client respondsToSelector:subscriptionSelector]) {
+        @try {
+            NSError *error = nil;
+            id subscriptions = ((id (*)(id, SEL, NSError **))objc_msgSend)(client, subscriptionSelector, &error);
+            SEL subs = NSSelectorFromString(@"subscriptions");
+            id items = subscriptions && [subscriptions respondsToSelector:subs]
+                ? ((id (*)(id, SEL))objc_msgSend)(subscriptions, subs) : nil;
+            result[@"subscription_info_status"] = error ? @"error" :
+                ([items isKindOfClass:NSArray.class] ? @"array" : (subscriptions ? @"unsupported_container" : @"empty"));
+            if ([items isKindOfClass:NSArray.class]) {
+                result[@"configured_context_count"] = @([(NSArray *)items count]);
+            }
+        } @catch (__unused NSException *exception) {
+            result[@"subscription_info_status"] = @"exception";
+        }
+    }
+    return result;
+}
+
 static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *query) {
     NSDictionary *probe = [manager signalProbeFromQuery:query];
     return [probe[@"success"] boolValue] && [probe[@"measurements"] isKindOfClass:NSArray.class]
@@ -200,6 +278,15 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
 - (NSDictionary *)probeWithManager:(BLTelephonyManager *)manager {
     NSDictionary *query = [manager queryCoreTelephony];
     return [manager signalProbeFromQuery:query];
+}
+
+- (NSDictionary *)lineDiagnosticsWithManager:(BLTelephonyManager *)manager {
+    if ([self isRunning] || [self isRecovering] || [self hasPendingRecovery])
+        return @{@"success": @NO, @"message": @"Wait for the original bands to be restored first"};
+    NSDictionary *query = [manager queryCoreTelephony];
+    if (query[@"error"])
+        return @{@"success": @NO, @"message": @"CoreTelephony read failed (no radio changes)"};
+    return BLRHLineDiagnostics(query);
 }
 
 - (NSDictionary *)cancel {

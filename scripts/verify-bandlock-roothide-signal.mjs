@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.5\.1~rhscan1$/m);
+assert.match(control, /^Version: 1\.5\.1~rhscan2$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -35,7 +35,7 @@ for (const metric of ['rsrp', 'rsrq', 'rssi', 'snr']) {
 }
 assert.match(main, /\[command isEqualToString:@"signal_probe"\]/);
 assert.match(main, /\[command isEqualToString:@"scan_start"\]/);
-for (const action of ['scan_start','scan_status','scan_cancel','scan_recover']) {
+for (const action of ['scan_start','scan_status','scan_cancel','scan_recover','scan_line_diagnostic']) {
   assert.match(main, new RegExp('@"' + action + '"'));
 }
 assert.match(main, /isRecovering/);
@@ -48,6 +48,13 @@ assert.match(scan, /@"initial_supported_lte"/);
 assert.match(scan, /jbroot\(@"\/var\/mobile/);
 assert.match(scan, /CC_SHA256/);
 assert.match(scan, /BLScanSingleActiveLine/);
+assert.match(scan, /getActiveContexts:/);
+assert.match(scan, /getSubscriptionInfoWithError:/);
+assert.match(scan, /active_context_count/);
+assert.match(scan, /provider_inventory_count/);
+assert.match(scan, /data_service_in_rat/);
+assert.match(scan, /scan_gate_current/);
+assert.match(scan, /\[self isRunning\] \|\| \[self isRecovering\] \|\| \[self hasPendingRecovery\]/);
 assert.match(scan, /@"typed"/);
 assert.match(scan, /servingRSRP\.doubleValue < -115\.0/);
 assert.match(scan, /original LTE bands|Restoring original LTE bands/i);

@@ -6,6 +6,7 @@
 @interface BLRHSignalScan : NSObject
 + (instancetype)sharedScan;
 - (NSDictionary *)probeWithManager:(BLTelephonyManager *)manager;
+- (NSDictionary *)lineDiagnosticsWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)startWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)status;
 - (NSDictionary *)cancel;

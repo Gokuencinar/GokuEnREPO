@@ -155,6 +155,9 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             return [manager signalProbeFromQuery:[manager queryCoreTelephony]];
         }
         if ([command isEqualToString:@"scan_status"]) return [BLRHSignalScan.sharedScan status];
+        if ([command isEqualToString:@"scan_line_diagnostic"]) {
+            return [BLRHSignalScan.sharedScan lineDiagnosticsWithManager:manager];
+        }
         if ([command isEqualToString:@"scan_cancel"]) return [BLRHSignalScan.sharedScan cancel];
         if ([command isEqualToString:@"scan_recover"]) {
             return [BLRHSignalScan.sharedScan requestRecoveryWithManager:manager];
