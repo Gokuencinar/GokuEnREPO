@@ -45,17 +45,35 @@ jobs:
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           deb='packages/com.gokuencinar.bandlock.dopamine_1.5.1~sigtest1_iphoneos-arm64.deb'
           test -s "$deb"
-          test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock.dopamine'
-          test "$(dpkg-deb -f "$deb" Version)" = '1.5.1~sigtest1'
-          test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64'
-          mkdir -p /tmp/bandlock-inspection
-          dpkg-deb -x "$deb" /tmp/bandlock-inspection
-          test -f /tmp/bandlock-inspection/var/jb/usr/libexec/BandLockDaemon
-          otool -L /tmp/bandlock-inspection/var/jb/usr/libexec/BandLockDaemon | grep -q Foundation
+          bin="$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
+          test -f "$bin"
+          otool -L "$bin" | grep -q Foundation
           command -v ldid
-          ldid -e /tmp/bandlock-inspection/var/jb/usr/libexec/BandLockDaemon > /tmp/daemon-entitlements.plist
+          ldid -e "$bin" > /tmp/daemon-entitlements.plist
           grep -q 'com.apple.private.memorystatus' /tmp/daemon-entitlements.plist
       - uses: actions/upload-artifact@v4
         with:
           name: BandLock-Dopamine-1.5-signaltest1
           path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.5.1~sigtest1_iphoneos-arm64.deb
+
+  verify-deb:
+    needs: build-dopamine-signal-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.5-signaltest1
+          path: /tmp/bandlock
+      - name: Verify Debian metadata and bundled components
+        run: |
+          set -euo pipefail
+          deb='/tmp/bandlock/com.gokuencinar.bandlock.dopamine_1.5.1~sigtest1_iphoneos-arm64.deb'
+          test -s "$deb"
+          test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock.dopamine'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.5.1~sigtest1'
+          test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64'
+          dpkg-deb -c "$deb" > /tmp/bandlock-content.txt
+          grep -q 'BandLockDaemon' /tmp/bandlock-content.txt
+          grep -q 'BandLock.app/BandLock' /tmp/bandlock-content.txt
+          grep -q 'BandLockCCModule' /tmp/bandlock-content.txt
+          sha256sum "$deb"
