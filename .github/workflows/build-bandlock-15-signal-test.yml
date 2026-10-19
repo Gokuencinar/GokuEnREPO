@@ -1,0 +1,61 @@
+name: Build BandLock 1.5 signal scan diagnostic
+
+on:
+  push:
+    branches: [bandlock-1.5-signal-test]
+    paths:
+      - 'tweaks/BandLock/build/BandLock-1.0-Dopamine/**'
+      - 'scripts/verify-bandlock-signal-test.mjs'
+      - '.github/workflows/build-bandlock-15-signal-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-dopamine-signal-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Check experimental safety gates
+        run: |
+          set -euo pipefail
+          node scripts/verify-bandlock-signal-test.mjs
+          d=tweaks/BandLock/build/BandLock-1.0-Dopamine
+          test "$(sed -n 's/^Version: //p' "$d/control")" = '1.5.1~sigtest1'
+          plutil -lint "$d/app/Resources/Info.plist"
+          plutil -lint "$d/daemon/Entitlements.plist"
+          grep -q 'BL_SIGNAL_SCAN_TEST=1' "$d/app/Makefile"
+          grep -q 'BL_SIGNAL_SCAN_TEST=1' "$d/daemon/Makefile"
+          grep -q 'BLSignalScan.m' "$d/daemon/Makefile"
+          grep -q 'BLScanWriteJournal' "$d/daemon/BLSignalScan.m"
+          grep -q 'BLScanClearJournal' "$d/daemon/BLSignalScan.m"
+          grep -q 'scan_cancel' "$d/daemon/main.m"
+      - name: Build installable Dopamine diagnostic
+        run: |
+          set -euo pipefail
+          cd tweaks/BandLock/build/BandLock-1.0-Dopamine
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          deb='packages/com.gokuencinar.bandlock.dopamine_1.5.1~sigtest1_iphoneos-arm64.deb'
+          test -s "$deb"
+          test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock.dopamine'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.5.1~sigtest1'
+          test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64'
+          mkdir -p /tmp/bandlock-inspection
+          dpkg-deb -x "$deb" /tmp/bandlock-inspection
+          test -f /tmp/bandlock-inspection/var/jb/usr/libexec/BandLockDaemon
+          otool -L /tmp/bandlock-inspection/var/jb/usr/libexec/BandLockDaemon | grep -q Foundation
+          command -v ldid
+          ldid -e /tmp/bandlock-inspection/var/jb/usr/libexec/BandLockDaemon > /tmp/daemon-entitlements.plist
+          grep -q 'com.apple.private.memorystatus' /tmp/daemon-entitlements.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.5-signaltest1
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.5.1~sigtest1_iphoneos-arm64.deb

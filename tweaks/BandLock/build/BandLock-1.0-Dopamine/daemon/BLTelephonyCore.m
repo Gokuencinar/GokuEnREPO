@@ -2,8 +2,10 @@
 #import "BLCommon.h"
 #import "BLGBandMetadata.h"
 #import <UIKit/UIKit.h>
+#import <CoreFoundation/CoreFoundation.h>
 #import <objc/message.h>
 #import <dlfcn.h>
+#import <math.h>
 
 static NSString * const BLLTERAT = @"kCTRegistrationRadioAccessTechnologyLTE";
 static NSString * const BLNRRAT = @"kCTRegistrationRadioAccessTechnologyNR";
@@ -143,6 +145,76 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSString *title = isNR ? BLGNRBandTitle(bandNumber) : BLGBandTitle(bandNumber);
     if ([rat isKindOfClass:[NSString class]] && rat.length) return [NSString stringWithFormat:@"%@ · %@", title, ([rat rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"LTE" : rat)];
     return title;
+}
+
+static NSString *BLSignalRoleFromLegacyRow(NSDictionary *row) {
+    id raw = row[@"kCTCellMonitorCellType"];
+    if (![raw isKindOfClass:[NSString class]]) return nil;
+    NSString *text = (NSString *)raw;
+    if ([text rangeOfString:@"Serving" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"serving";
+    if ([text rangeOfString:@"Neighbor" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+        [text rangeOfString:@"Neighbour" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"neighbor";
+    return nil;
+}
+
+static NSString *BLSignalRATFromLegacyRow(NSDictionary *row) {
+    id raw = row[@"kCTCellMonitorCellRadioAccessTechnology"];
+    if (![raw isKindOfClass:[NSString class]]) return nil;
+    NSString *text = (NSString *)raw;
+    if ([text rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"NR";
+    if ([text rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"LTE";
+    return nil;
+}
+
+static NSNumber *BLStrictSignalNumber(id value, double minimum, double maximum) {
+    if (![value isKindOfClass:[NSNumber class]]) return nil;
+    CFTypeRef object = (__bridge CFTypeRef)value;
+    if (CFGetTypeID(object) == CFBooleanGetTypeID()) return nil;
+    double number = [(NSNumber *)value doubleValue];
+    if (!isfinite(number) || number < minimum || number > maximum) return nil;
+    return @((double)number);
+}
+
+static NSNumber *BLStrictSignalBand(id value, NSString *rat) {
+    if (![value isKindOfClass:[NSNumber class]]) return nil;
+    CFTypeRef object = (__bridge CFTypeRef)value;
+    if (CFGetTypeID(object) == CFBooleanGetTypeID()) return nil;
+    double number = [(NSNumber *)value doubleValue];
+    if (!isfinite(number) || floor(number) != number || number <= 0.0) return nil;
+    double maximum = [rat isEqualToString:@"LTE"] ? 255.0 : 1024.0;
+    if (number > maximum) return nil;
+    return @((NSInteger)number);
+}
+
+static id BLFirstLegacyValueForKeys(NSDictionary *row, NSArray<NSString *> *keys) {
+    for (NSString *key in keys) {
+        id value = row[key];
+        if (value && value != NSNull.null) return value;
+    }
+    return nil;
+}
+
+static NSDictionary *BLSignalMeasurementFromLegacyRow(NSDictionary *row) {
+    if (![row isKindOfClass:[NSDictionary class]]) return nil;
+    NSString *role = BLSignalRoleFromLegacyRow(row);
+    NSString *rat = BLSignalRATFromLegacyRow(row);
+    if (!role.length || !rat.length) return nil;
+
+    NSNumber *band = BLStrictSignalBand(row[@"kCTCellMonitorBandInfo"], rat);
+
+    NSNumber *rsrp = BLStrictSignalNumber(BLFirstLegacyValueForKeys(row, @[@"kCTCellMonitorRSRP", @"RSRP"]), -200.0, -20.0);
+    NSNumber *rsrq = BLStrictSignalNumber(BLFirstLegacyValueForKeys(row, @[@"kCTCellMonitorRSRQ", @"RSRQ"]), -100.0, 0.0);
+    NSNumber *rssi = BLStrictSignalNumber(BLFirstLegacyValueForKeys(row, @[@"kCTCellMonitorRSSI", @"RSSI"]), -200.0, 0.0);
+    NSNumber *sinr = BLStrictSignalNumber(BLFirstLegacyValueForKeys(row, @[@"kCTCellMonitorSINR", @"SINR"]), -100.0, 100.0);
+    if (!rsrp && !rsrq && !rssi && !sinr) return nil;
+
+    NSMutableDictionary *measurement = [@{@"role": role, @"rat": rat} mutableCopy];
+    if (band) measurement[@"band"] = band;
+    if (rsrp) measurement[@"rsrp"] = rsrp;
+    if (rsrq) measurement[@"rsrq"] = rsrq;
+    if (rssi) measurement[@"rssi"] = rssi;
+    if (sinr) measurement[@"sinr"] = sinr;
+    return measurement;
 }
 
 @interface BLTelephonyManager ()
@@ -652,6 +724,22 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
         return;
     }
     [self applyNRBands:self.supportedNRBands savePrevious:YES completion:completion];
+}
+
+- (NSArray<NSDictionary *> *)signalMeasurementsFromCellInfo:(id)cellInfo {
+    if (!cellInfo || cellInfo == NSNull.null) return @[];
+    SEL legacySelector = NSSelectorFromString(@"legacyInfo");
+    if (![cellInfo respondsToSelector:legacySelector]) return @[];
+    id legacyInfo = BLMsg0(cellInfo, legacySelector);
+    if (![legacyInfo isKindOfClass:[NSArray class]]) return @[];
+
+    NSMutableArray<NSDictionary *> *measurements = [NSMutableArray array];
+    for (id candidate in (NSArray *)legacyInfo) {
+        if (![candidate isKindOfClass:[NSDictionary class]]) continue;
+        NSDictionary *measurement = BLSignalMeasurementFromLegacyRow((NSDictionary *)candidate);
+        if (measurement) [measurements addObject:measurement];
+    }
+    return [measurements copy];
 }
 
 - (void)writeLogAction:(NSString *)action detail:(NSString *)detail {

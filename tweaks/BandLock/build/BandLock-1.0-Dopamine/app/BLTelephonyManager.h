@@ -39,5 +39,12 @@ typedef void (^BLActionCompletion)(BOOL success, NSString *message);
 - (void)restoreAllSupportedBandsWithCompletion:(BLActionCompletion)completion;
 - (void)restoreAllSupportedNRBandsWithCompletion:(BLActionCompletion)completion;
 - (void)openFieldTestWithCompletion:(BLActionCompletion)completion;
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+- (void)signalProbeWithCompletion:(void (^)(NSDictionary *result))completion;
+- (void)startSignalScanWithCompletion:(void (^)(NSDictionary *result))completion;
+- (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *result))completion;
+- (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *result))completion;
+- (void)recoverSignalScanWithCompletion:(void (^)(NSDictionary *result))completion;
+#endif
 
 @end

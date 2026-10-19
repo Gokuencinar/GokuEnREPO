@@ -22,6 +22,9 @@ BandLock_FILES = \
 	../shared/BLGBandMetadata.m
 BandLock_FRAMEWORKS = UIKit Foundation
 BandLock_CFLAGS = -fobjc-arc -I../shared -DBL_APP_LOCALIZATION=1 $(BANDLOCK_VARIANT_CFLAGS)
+ifneq ($(BANDLOCK_VARIANT_CFLAGS),-DBL_VARIANT_ROOTFUL=1)
+BandLock_CFLAGS += -DBL_SIGNAL_SCAN_TEST=1
+endif
 BandLock_RESOURCE_DIRS = Resources
 BandLock_INSTALL_PATH = /Applications
 BandLock_CODESIGN_FLAGS = -SEntitlements.plist

@@ -547,4 +547,22 @@ static NSString *BLDaemonSocketPath(void) {
     }];
 }
 
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+- (void)signalProbeWithCompletion:(void (^)(NSDictionary *))completion {
+    [self sendRequest:@{@"cmd": @"signal_probe"} completion:completion];
+}
+- (void)startSignalScanWithCompletion:(void (^)(NSDictionary *))completion {
+    [self sendRequest:@{@"cmd": @"scan_start"} completion:completion];
+}
+- (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *))completion {
+    [self sendRequest:@{@"cmd": @"scan_status"} completion:completion];
+}
+- (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *))completion {
+    [self sendRequest:@{@"cmd": @"scan_cancel"} completion:completion];
+}
+- (void)recoverSignalScanWithCompletion:(void (^)(NSDictionary *))completion {
+    [self sendRequest:@{@"cmd": @"scan_recover"} completion:completion];
+}
+#endif
+
 @end

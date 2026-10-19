@@ -13,6 +13,9 @@
 #import <sys/time.h>
 #import <string.h>
 #import <stdint.h>
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+#import "BLSignalScan.h"
+#endif
 
 #if !BL_VARIANT_ROOTFUL
 // Use the same 64 MB per-process limit as the validated Dopamine iOS 17 test.
@@ -154,6 +157,23 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         NSString *command = [request[@"cmd"] isKindOfClass:[NSString class]] ? request[@"cmd"] : @"";
         BLDaemonLog([[NSString stringWithFormat:@"handle command=%@", command] UTF8String]);
         BLTelephonyManager *manager = BLTelephonyManager.sharedManager;
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+        BLSignalScan *scan = BLSignalScan.sharedScan;
+        if ([command isEqualToString:@"scan_status"]) return [scan status];
+        if ([command isEqualToString:@"scan_cancel"]) return [scan cancel];
+        if ([command isEqualToString:@"scan_recover"]) return [scan requestRecoveryWithManager:manager];
+        if ([command isEqualToString:@"signal_probe"]) {
+            if ([scan isRunning]) return @{@"success": @NO, @"message": @"Scan in progress"};
+            return [scan probeWithManager:manager];
+        }
+        if ([command isEqualToString:@"scan_start"]) return [scan startWithManager:manager];
+        if (([command isEqualToString:@"apply"] ||
+             [command isEqualToString:@"apply_nr"] ||
+             [command isEqualToString:@"rat"]) &&
+            ([scan isRunning] || [scan hasPendingRecovery])) {
+            return @{@"success": @NO, @"message": @"Signal scan/recovery active. Restore LTE bands before other modem changes."};
+        }
+#endif
 
         if ([command isEqualToString:@"status"]) {
             BLDaemonLog("status query begin");
@@ -374,6 +394,13 @@ int main(int argc, char *argv[]) {
         chmod(path, 0600);
         if (listen(serverFD, 8) != 0) { close(serverFD); unlink(path); return 73; }
         BLDaemonLog("daemon listening");
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+        if ([BLSignalScan.sharedScan hasPendingRecovery]) {
+            // Listen first so the app can query recovery status without
+            // blocking on CoreTelephony during reboot or daemon restart.
+            (void)[BLSignalScan.sharedScan requestRecoveryWithManager:BLTelephonyManager.sharedManager];
+        }
+#endif
 
         while (1) {
             int clientFD = accept(serverFD, NULL, NULL);

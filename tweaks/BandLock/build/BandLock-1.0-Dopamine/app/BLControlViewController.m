@@ -25,6 +25,13 @@
 @property (nonatomic, strong) UIButton *countryManageButton;
 @property (nonatomic, strong) UIButton *fiveGModeButton;
 @property (nonatomic, strong) UIView *nrBandsCard;
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+@property (nonatomic, strong) UILabel *signalScanValue;
+@property (nonatomic, strong) UIButton *signalScanButton;
+@property (nonatomic, strong) UIButton *signalCancelButton;
+@property (nonatomic, strong) NSTimer *signalScanTimer;
+@property (nonatomic, assign) BOOL signalScanRunning;
+#endif
 @end
 
 @implementation BLControlViewController
@@ -65,6 +72,17 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [self refreshDisplay];
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+    [self startSignalPolling];
+#endif
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+    [self.signalScanTimer invalidate];
+    self.signalScanTimer = nil;
+#endif
 }
 
 - (UILabel *)valueLabel {
@@ -236,6 +254,25 @@
     UIView *toolsCard = [self cardWithTitle:BLT(@"HERRAMIENTAS", @"TOOLS") content:@[field]];
     [self.stackView addArrangedSubview:toolsCard];
 
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+    UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad (sin interrupción)", @"Read signal (no interruption)")
+                                   symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
+    self.signalScanButton = [self buttonWithTitle:BLT(@"Medir señal de bandas (PRUEBA)", @"Measure band signal (TEST)")
+                                         symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanTapped:) destructive:NO];
+    self.signalCancelButton = [self buttonWithTitle:BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore")
+                                           symbol:@"xmark.circle" selector:@selector(signalCancelTapped:) destructive:YES];
+    UIButton *recover = [self buttonWithTitle:BLT(@"Recuperar bandas originales", @"Recover original bands")
+                                      symbol:@"arrow.uturn.backward.circle" selector:@selector(signalRecoverTapped:) destructive:NO];
+    UILabel *signalSummary = [self valueLabel];
+    signalSummary.textAlignment = NSTextAlignmentLeft;
+    signalSummary.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
+    signalSummary.text = BLT(@"Solo pruebas. El barrido puede interrumpir las llamadas y los datos móviles.",
+                             @"Experimental only. Scanning may interrupt calls and mobile data.");
+    self.signalScanValue = signalSummary;
+    [self.stackView addArrangedSubview:[self cardWithTitle:BLT(@"ANALIZADOR DE SEÑAL EXPERIMENTAL", @"EXPERIMENTAL SIGNAL ANALYZER")
+                                                      content:@[probe, self.signalScanButton, self.signalCancelButton, recover, signalSummary]]];
+#endif
+
     UILabel *version = [[UILabel alloc] init];
     NSString *bundleVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
     version.text = [NSString stringWithFormat:@"BandLock Global %@", bundleVersion];
@@ -266,6 +303,10 @@
     }
     self.refreshButton.enabled = !self.manager.busy;
     [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar estado", @"Refresh status")) forState:UIControlStateNormal];
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+    self.signalScanButton.enabled = !self.manager.busy && !self.signalScanRunning;
+    self.signalCancelButton.enabled = self.signalScanRunning && !self.manager.busy;
+#endif
 }
 
 - (void)showAlert:(NSString *)message {
@@ -456,5 +497,115 @@
         [weakSelf handleCompletion:@"field-test" success:success message:message];
     }];
 }
+
+#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
+- (NSString *)signalRowText:(NSDictionary *)row {
+    NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"LTE";
+    NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
+    NSString *label = band ? [NSString stringWithFormat:@"%@ %@%@",
+                         rat, [rat isEqual:@"NR"] ? @"n" : @"B", band] : rat;
+    NSString *state = row[@"status"] ?: row[@"role"] ?: @"";
+    NSMutableArray *values = [NSMutableArray array];
+    for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"sinr"]) {
+        NSNumber *value = row[metric];
+        if (![value isKindOfClass:NSNumber.class]) continue;
+        [values addObject:[NSString stringWithFormat:@"%@ %.1f %@", metric.uppercaseString, value.doubleValue,
+                           ([metric isEqual:@"rssi"] || [metric isEqual:@"rsrp"]) ? @"dBm" : @"dB"]];
+    }
+    return [NSString stringWithFormat:@"%@ · %@%@", label, state,
+            values.count ? [NSString stringWithFormat:@"\n%@", [values componentsJoinedByString:@" · "]] : @""];
+}
+
+- (void)renderSignalResponse:(NSDictionary *)response passive:(BOOL)passive {
+    NSArray *rows = response[passive ? @"measurements" : @"rows"];
+    NSString *message = [response[@"message"] isKindOfClass:NSString.class] ? response[@"message"] : @"";
+    NSMutableArray *lines = [NSMutableArray array];
+    if (message.length) [lines addObject:message];
+    if ([rows isKindOfClass:NSArray.class]) {
+        for (id value in rows) {
+            if ([value isKindOfClass:NSDictionary.class]) [lines addObject:[self signalRowText:value]];
+        }
+    }
+    if (!rows.count) [lines addObject:BLT(@"Sin mediciones utilizables. No se inventan valores.",
+                                           @"No usable measurements; values are never estimated.")];
+    self.signalScanValue.text = [lines componentsJoinedByString:@"\n\n"];
+    if (!passive) self.signalScanRunning = [response[@"running"] boolValue];
+    [self refreshDisplay];
+}
+
+- (void)signalProbeTapped:(UIButton *)sender {
+    if (self.manager.busy || self.signalScanRunning) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager signalProbeWithCompletion:^(NSDictionary *response) {
+        [weakSelf renderSignalResponse:response passive:YES];
+        if (![response[@"success"] boolValue]) [weakSelf showAlert:response[@"message"]];
+    }];
+}
+
+- (void)signalScanTapped:(UIButton *)sender {
+    if (self.manager.busy || self.signalScanRunning) return;
+    NSString *warning = BLT(
+       @"EXPERIMENTAL: activa primero el modo «Solo LTE / 4G». El teléfono cambiará temporalmente entre dos bandas LTE (la conectada y una compatible). Puede perder llamadas, datos móviles y acceso a servicios de emergencia. No lo ejecutes durante llamadas ni situaciones de emergencia. Solo una SIM activa; las pruebas 5G no están habilitadas. Las bandas originales se guardarán y se restaurarán automáticamente, aunque la recuperación no está garantizada si falla el módem. ¿Continuar?",
+       @"EXPERIMENTAL: first select LTE / 4G only. The phone will temporarily switch between two LTE bands (serving and one supported). Calls, mobile data and emergency service can be interrupted. Do not use during calls or emergencies. Single active SIM only; 5G scanning is disabled. Original bands are saved and automatically restored, but modem failure may prevent recovery. Continue?");
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Posible pérdida de servicio", @"Service interruption risk")
+                                                                 message:warning preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    __weak typeof(self) weakSelf = self;
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Iniciar prueba", @"Start test") style:UIAlertActionStyleDestructive
+                                               handler:^(__unused UIAlertAction *action) {
+        [weakSelf.manager startSignalScanWithCompletion:^(NSDictionary *response) {
+            if ([response[@"success"] boolValue]) {
+                weakSelf.signalScanRunning = YES;
+                weakSelf.signalScanValue.text = response[@"message"];
+                [weakSelf refreshDisplay];
+                [weakSelf startSignalPolling];
+            } else {
+                [weakSelf showAlert:response[@"message"]];
+            }
+        }];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)signalCancelTapped:(UIButton *)sender {
+    if (self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager cancelSignalScanWithCompletion:^(NSDictionary *response) {
+        weakSelf.signalScanValue.text = response[@"message"] ?: @"";
+        [weakSelf startSignalPolling];
+    }];
+}
+
+- (void)signalRecoverTapped:(UIButton *)sender {
+    if (self.manager.busy || self.signalScanRunning) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager recoverSignalScanWithCompletion:^(NSDictionary *response) {
+        weakSelf.signalScanValue.text = response[@"message"] ?: @"";
+        [weakSelf startSignalPolling];
+    }];
+}
+
+- (void)startSignalPolling {
+    if (!self.signalScanTimer) {
+        self.signalScanTimer = [NSTimer scheduledTimerWithTimeInterval:3.0 target:self
+            selector:@selector(signalPollTimer:) userInfo:nil repeats:YES];
+    }
+    [self signalPollTimer:nil];
+}
+
+- (void)signalPollTimer:(NSTimer *)timer {
+    if (self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager signalScanStatusWithCompletion:^(NSDictionary *response) {
+        if ([response[@"phase"] isKindOfClass:NSString.class]) {
+            [weakSelf renderSignalResponse:response passive:NO];
+            if (![response[@"running"] boolValue] && ![response[@"recovery_required"] boolValue]) {
+                [weakSelf.signalScanTimer invalidate];
+                weakSelf.signalScanTimer = nil;
+            }
+        }
+    }];
+}
+#endif
 
 @end
