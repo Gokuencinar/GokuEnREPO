@@ -442,11 +442,109 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     return BLRHLineDiagnostics(query);
 }
 
+- (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager {
+    @synchronized(self) {
+        if (self.running || self.recovering || BLScanJournalExists()) {
+            return @{@"success": @NO,
+                     @"message": @"Finish the current scan/recovery before passive observation"};
+        }
+        self.running = YES; // Share the lock with active scanning and all modem writes.
+        self.cancelRequested = NO;
+        self.scanState = [@{@"success": @YES, @"running": @YES,
+            @"read_only": @YES, @"phase": @"observing",
+            @"rows": @[], @"total": @2, @"completed": @0,
+            @"message": @"Watching naturally selected LTE bands; no radio changes"} mutableCopy];
+    }
+    dispatch_async(self.scanQueue, ^{
+        NSMutableArray *rows = [NSMutableArray array];
+        NSString *stop = nil;
+        NSString *subscription = nil;
+        @try {
+            // 12 bounded observations; one per slot, no retry can ever
+            // write bands or change RAT. Only typed serving LTE power.
+            for (NSUInteger sample = 0; sample < 12; sample++) {
+                if ([self shouldStop]) { stop = @"Observation cancelled"; break; }
+                NSDictionary *query = [manager queryCoreTelephony];
+                if (query[@"error"]) {
+                    stop = @"CoreTelephony temporarily unavailable; observation stopped";
+                    break;
+                }
+                NSString *fingerprint = BLScanSubscriptionUUID(query);
+                if (!fingerprint || !BLScanSingleActiveLine(query)) {
+                    stop = @"Unable to verify a single active data line; observation stopped";
+                    break;
+                }
+                if (!subscription) subscription = fingerprint;
+                if (![subscription isEqualToString:fingerprint]) {
+                    stop = @"The data subscription changed; observation stopped";
+                    break;
+                }
+                for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
+                    if (![measurement[@"role"] isEqualToString:@"serving"] ||
+                        ![measurement[@"rat"] isEqualToString:@"LTE"] ||
+                        ![measurement[@"source"] isEqualToString:@"typed"] ||
+                        !BLScanHasPower(measurement) ||
+                        ![measurement[@"band"] isKindOfClass:NSNumber.class]) continue;
+                    NSNumber *band = measurement[@"band"];
+                    if (band.integerValue < 1 || band.integerValue > 255) continue;
+                    BOOL seen = NO;
+                    for (NSDictionary *previous in rows) {
+                        if ([previous[@"band"] isEqual:band]) { seen = YES; break; }
+                    }
+                    if (!seen) {
+                        NSMutableDictionary *record = [@{
+                            @"band": band, @"rat": @"LTE",
+                            @"role": @"serving", @"source": @"typed",
+                            @"status": @"measured", @"read_only": @YES
+                        } mutableCopy];
+                        for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+                            id value = measurement[metric];
+                            if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
+                        }
+                        [rows addObject:record];
+                    }
+                    break; // Exactly one serving measurement per sample.
+                }
+                @synchronized(self) {
+                    self.scanState[@"rows"] = [rows copy];
+                    self.scanState[@"completed"] = @(rows.count);
+                    self.scanState[@"message"] = [NSString stringWithFormat:
+                        @"Read-only observation %lu/12; %lu natural LTE bands",
+                        (unsigned long)(sample + 1), (unsigned long)rows.count];
+                }
+                if (rows.count >= 2) break;
+                if (sample < 11) [NSThread sleepForTimeInterval:2.0];
+            }
+        } @catch (__unused NSException *exception) {
+            stop = @"Read-only observation failed; no modem settings were changed";
+        } @finally {
+            @synchronized(self) {
+                self.running = NO;
+                self.cancelRequested = NO;
+                self.scanState[@"running"] = @NO;
+                self.scanState[@"rows"] = [rows copy];
+                self.scanState[@"completed"] = @(rows.count);
+                self.scanState[@"success"] = @YES;
+                self.scanState[@"phase"] = @"observation_complete";
+                self.scanState[@"message"] = stop ? stop :
+                    (rows.count >= 2
+                     ? @"Two naturally observed LTE bands; no modem settings changed"
+                     : @"Only naturally observed bands recorded; no modem settings changed");
+                self.scanState[@"recovery_required"] = @NO;
+            }
+        }
+    });
+    return @{@"success": @YES, @"read_only": @YES,
+             @"message": @"Passive LTE signal observation started; no bands will be changed"};
+}
+
 - (NSDictionary *)cancel {
     @synchronized(self) {
         if (self.running) {
             self.cancelRequested = YES;
-            self.scanState[@"message"] = @"Cancellation requested; restoring original bands";
+            self.scanState[@"message"] = [self.scanState[@"read_only"] boolValue]
+                ? @"Stopping passive observation; no band restoration needed"
+                : @"Cancellation requested; restoring original bands";
             return @{@"success": @YES, @"message": @"Cancel requested", @"running": @YES};
         }
     }

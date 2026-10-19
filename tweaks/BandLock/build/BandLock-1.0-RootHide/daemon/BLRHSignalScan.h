@@ -8,6 +8,7 @@
 - (NSDictionary *)probeWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)lineDiagnosticsWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)startWithManager:(BLTelephonyManager *)manager;
+- (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)status;
 - (NSDictionary *)cancel;
 - (NSDictionary *)requestRecoveryWithManager:(BLTelephonyManager *)manager;

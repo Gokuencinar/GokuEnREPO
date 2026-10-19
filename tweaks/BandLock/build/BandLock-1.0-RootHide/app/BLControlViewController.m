@@ -27,6 +27,7 @@
 @property (nonatomic, strong) UIView *nrBandsCard;
 @property (nonatomic, strong) UILabel *signalValue;
 @property (nonatomic, strong) UIButton *signalStartButton;
+@property (nonatomic, strong) UIButton *signalObserveButton;
 @property (nonatomic, strong) UIButton *signalCancelButton;
 @property (nonatomic, strong) NSTimer *signalTimer;
 @property (nonatomic, assign) BOOL signalRunning;
@@ -253,6 +254,8 @@
                                      symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
     self.signalStartButton = [self buttonWithTitle:BLT(@"Medir señal de bandas (2 LTE, PRUEBA)", @"Measure band signal (2 LTE, TEST)")
                                               symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanStartTapped:) destructive:NO];
+    self.signalObserveButton = [self buttonWithTitle:BLT(@"Observar bandas LTE (sin desconectar)", @"Observe LTE bands (no disconnection)")
+                                               symbol:@"waveform.path" selector:@selector(signalObserveTapped:) destructive:NO];
     self.signalCancelButton = [self buttonWithTitle:BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore")
                                                symbol:@"xmark.circle" selector:@selector(signalScanCancelTapped:) destructive:YES];
     UIButton *restore = [self buttonWithTitle:BLT(@"Recuperar bandas originales", @"Recover original bands")
@@ -264,7 +267,8 @@
                                 @"Experimental scan requires LTE-only, a single active line and RSRP of at least −115 dBm. Calls may be interrupted.");
     [self.stackView addArrangedSubview:[self cardWithTitle:BLT(@"ANALIZADOR DE SEÑAL · ROOTHIDE (PRUEBA)",
                                                              @"SIGNAL ANALYZER · ROOTHIDE (TEST)")
-                                                      content:@[probe, self.signalStartButton, self.signalCancelButton, restore, self.signalValue]]];
+                                                      content:@[probe, self.signalObserveButton, self.signalStartButton,
+                                                                self.signalCancelButton, restore, self.signalValue]]];
 
     UILabel *version = [[UILabel alloc] init];
     NSString *bundleVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
@@ -297,6 +301,7 @@
     self.refreshButton.enabled = !self.manager.busy;
     [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar estado", @"Refresh status")) forState:UIControlStateNormal];
     self.signalStartButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
+    self.signalObserveButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
     self.signalCancelButton.enabled = self.signalRunning;
 }
 
@@ -560,6 +565,24 @@
     [self presentViewController:alert animated:YES completion:nil];
 }
 
+- (void)signalObserveTapped:(UIButton *)sender {
+    if (self.signalRunning || self.signalRecoveryRequired || self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager startPassiveSignalObservationWithCompletion:^(NSDictionary *result) {
+        if (![result[@"success"] boolValue]) {
+            [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
+                ? result[@"message"] : @"Observation did not start"];
+            return;
+        }
+        weakSelf.signalRunning = YES;
+        weakSelf.signalValue.text = BLT(
+            @"Observando LTE sin cambiar bandas. Solo aparecerán las bandas usadas naturalmente por el iPhone.",
+            @"Watching LTE without changing bands. Only naturally used bands will be measured.");
+        [weakSelf refreshDisplay];
+        [weakSelf startSignalPolling];
+    }];
+}
+
 - (void)signalScanCancelTapped:(UIButton *)sender {
     if (!self.signalRunning) return;
     __weak typeof(self) weakSelf = self;
@@ -594,6 +617,11 @@
         weakSelf.signalRunning = [status[@"running"] boolValue];
         weakSelf.signalRecoveryRequired = [status[@"recovery_required"] boolValue];
         [weakSelf refreshDisplay];
+        BOOL passive = [status[@"read_only"] boolValue];
+        [weakSelf.signalCancelButton setTitle:(passive
+            ? BLT(@"Detener observación", @"Stop observation")
+            : BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore"))
+            forState:UIControlStateNormal];
         if ([status[@"phase"] isEqualToString:@"idle"]) return; // Keep read-only probe visible.
         NSMutableArray *lines = [NSMutableArray array];
         NSString *message = [status[@"message"] isKindOfClass:NSString.class] ? status[@"message"] : @"";

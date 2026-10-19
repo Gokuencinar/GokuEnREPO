@@ -41,6 +41,7 @@ typedef void (^BLActionCompletion)(BOOL success, NSString *message);
 - (void)openFieldTestWithCompletion:(BLActionCompletion)completion;
 - (void)signalProbeWithCompletion:(void (^)(NSDictionary *result))completion;
 - (void)startSignalScanWithCompletion:(void (^)(NSDictionary *result))completion;
+- (void)startPassiveSignalObservationWithCompletion:(void (^)(NSDictionary *result))completion;
 - (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *result))completion;
 - (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *result))completion;
 - (void)recoverSignalScanWithCompletion:(void (^)(NSDictionary *result))completion;

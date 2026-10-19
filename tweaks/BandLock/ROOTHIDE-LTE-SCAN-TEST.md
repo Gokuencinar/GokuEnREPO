@@ -1,4 +1,4 @@
-# BandLock 1.5.1~rhscan5 — RootHide LTE two-band test
+# BandLock 1.5.1~rhscan6 — RootHide LTE signal test
 
 **Experimental, hardware-unverified and deliberately disruptive.**
 This builds com.gokuencinar.bandlock for RootHide, iphoneos-arm64e.
@@ -85,6 +85,28 @@ real RSRP alone cannot authorize another band write.
 No software can guarantee restoration of cellular service on every
 modem, operating-system version, or network. RootHide 1.5 public release
 is unchanged.
+
+## Passive LTE observation (rhscan6)
+
+Physical rhscan5 telemetry proved **both** public and private RAT selection
+reads return explicit_unknown, with a diagnostic mask byte of 0, while
+LTE registration, typed signal and the single active data subscription
+remain healthy. It is **not safe** to infer LTE-only selection or disable
+the protective RAT preflight based on signal readings alone.
+
+Therefore the separate button **Observar bandas LTE (sin desconectar)**
+starts read-only samples of the modem's naturally serving LTE cell.
+The daemon collects at most two *distinct* naturally serving LTE
+bands over 12 bounded observations at 2-second spacing. Each record
+must have a typed serving LTE band and physical power. It does not
+force a band, change RAT, write LTE/NR masks or create a recovery
+journal. If only one LTE band serves throughout, **one** observation
+is the correct result, not invented data for an unobserved band.
+The shared Cancel button stops the passive observation.
+
+The original disruptive two-band scan remains separately labeled,
+strictly requires explicit LTE-only mode verification and can refuse
+to start on this iPhone until the system provides trustworthy data.
 
 ## Read-only RAT selection investigation (rhscan5)
 

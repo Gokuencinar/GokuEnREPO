@@ -165,6 +165,9 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         if ([command isEqualToString:@"scan_start"]) {
             return [BLRHSignalScan.sharedScan startWithManager:manager];
         }
+        if ([command isEqualToString:@"scan_observe_start"]) {
+            return [BLRHSignalScan.sharedScan startPassiveObservationWithManager:manager];
+        }
         if (([command isEqualToString:@"rat"] ||
              [command isEqualToString:@"apply"] ||
              [command isEqualToString:@"apply_nr"]) &&

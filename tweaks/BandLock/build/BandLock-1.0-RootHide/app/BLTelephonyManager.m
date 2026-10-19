@@ -554,6 +554,10 @@ static NSString *BLDaemonSocketPath(void) {
     [self sendRequest:@{@"cmd": @"scan_start"} completion:completion];
 }
 
+- (void)startPassiveSignalObservationWithCompletion:(void (^)(NSDictionary *result))completion {
+    [self sendRequest:@{@"cmd": @"scan_observe_start"} completion:completion];
+}
+
 - (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"scan_status"} completion:completion];
 }
