@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.5\.1~rhscan6$/m);
+assert.match(control, /^Version: 1\.5\.1~rhscan7$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -33,7 +33,13 @@ const passiveStart = scan.indexOf('- (NSDictionary *)startPassiveObservationWith
 const passiveEnd = scan.indexOf('- (NSDictionary *)cancel {', passiveStart);
 assert.ok(passiveStart > 0 && passiveEnd > passiveStart, 'Passive observation must be isolated');
 const passive = scan.slice(passiveStart, passiveEnd);
-assert.match(passive, /\[manager queryCoreTelephony\]/);
+assert.match(passive, /\[manager queryCoreTelephonyForPassiveObservation\]/);
+assert.doesNotMatch(passive, /\[manager queryCoreTelephony\]/,
+  'Passive sampling must avoid the slow RAT getter');
+assert.match(passive, /@autoreleasepool/);
+assert.match(passive, /observation_cancelled/);
+assert.match(passive, /observation_stopped/);
+assert.match(passive, /self\.scanState\[@"success"\] = @\(!stop \|\| cancelled\)/);
 assert.match(passive, /BLScanSingleActiveLine\(query\)/);
 assert.match(passive, /BLScanSubscriptionUUID\(query\)/);
 assert.match(passive, /@"source"\] isEqualToString:@"typed"/);
@@ -55,6 +61,15 @@ assert.match(core, /@"sync_kind": syncKind/);
 assert.match(core, /@"ratSyncStatus"/);
 assert.match(core, /@"ratAsyncStatus"/);
 assert.match(core, /@"ratSelectionKind"/);
+assert.match(core, /queryCoreTelephonyForPassiveObservation \{/);
+assert.match(core, /return \[self queryCoreTelephonyWithRatSelection:NO\]/);
+assert.match(core, /return \[self queryCoreTelephonyWithRatSelection:YES\]/);
+assert.match(core, /NSDictionary \*ratSelection = includeRatSelection\s*\? \[self readRatSelectionFromClient:client context:context\]/);
+const typedSource = core.slice(core.indexOf('if (typed) {'), core.indexOf('NSMutableArray *available ='));
+assert.match(typedSource, /NSMutableDictionary \*typedServing/);
+assert.match(typedSource, /\[items insertObject:typedServing atIndex:0\]/);
+assert.doesNotMatch(typedSource, /serving\[@"(?:rsrp|rsrq|rssi|snr)"\]\s*=/,
+  'Typed signal must not relabel leftover legacy metrics as typed');
 assert.match(core, /strcmp\(maskSignature\.methodReturnType, "C"\)/);
 assert.match(core, /@\[@"lte", @"automatic"/);
 assert.doesNotMatch(core.slice(core.indexOf('- (NSDictionary *)snapshotFromQuery:'), core.indexOf('- (void)consumeSnapshotOnMain:')),

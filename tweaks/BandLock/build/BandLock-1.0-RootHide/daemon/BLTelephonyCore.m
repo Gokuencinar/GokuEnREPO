@@ -209,6 +209,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 }
 
 @interface BLTelephonyManager ()
+- (NSDictionary *)queryCoreTelephonyWithRatSelection:(BOOL)includeRatSelection;
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *supportedBands;
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *activeBands;
 @property (nonatomic, copy, readwrite) NSArray<NSNumber *> *pendingBands;
@@ -385,6 +386,18 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 }
 
 - (NSDictionary *)queryCoreTelephony {
+    return [self queryCoreTelephonyWithRatSelection:YES];
+}
+
+// Passive observation needs the active data context, band/cell information
+// and typed signal, but not the configured RAT selection. On the test iPhone
+// both RAT getters report Unknown; calling the async fallback on each sample
+// needlessly stalls observation without strengthening its read-only gate.
+- (NSDictionary *)queryCoreTelephonyForPassiveObservation {
+    return [self queryCoreTelephonyWithRatSelection:NO];
+}
+
+- (NSDictionary *)queryCoreTelephonyWithRatSelection:(BOOL)includeRatSelection {
     void *handle = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony", RTLD_NOW | RTLD_LOCAL);
     if (!handle) return @{@"error": BLT(@"No se pudo cargar CoreTelephony.", @"Could not load CoreTelephony.")};
 
@@ -426,7 +439,13 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     id bandInfo = BLMsgObjErr(client, bandSelector, context, &bandError);
     if (!bandInfo) return @{@"error": bandError ? bandError.description : @"getBandInfo:error: returned nil"};
 
-    NSDictionary *ratSelection = [self readRatSelectionFromClient:client context:context];
+    NSDictionary *ratSelection = includeRatSelection
+        ? [self readRatSelectionFromClient:client context:context]
+        : @{@"selection": @"—", @"preferred": @"—",
+            @"source": @"none", @"status": @"not_needed",
+            @"selection_kind": @"missing", @"sync_kind": @"not_needed",
+            @"sync_status": @"not_needed", @"async_kind": @"not_needed",
+            @"async_status": @"not_needed"};
     id cellInfo = [self copyCellInfoFromClient:client context:context];
     return @{@"client": client,
              @"context": context,
@@ -890,20 +909,24 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
                 if ([item[@"role"] isEqual:@"serving"]) { serving = item; break; }
             }
         }
-        if (!serving) {
-            serving = [@{@"rat": @"unknown", @"role": @"serving", @"source": @"typed"} mutableCopy];
-            [items insertObject:serving atIndex:0];
-        }
+        // Typed metrics and legacy band metadata come from distinct APIs.
+        // Never overwrite a legacy row and mark its remaining legacy metrics
+        // as typed: a missing typed RSRP must not inherit a legacy RSRP.
+        NSMutableDictionary *typedServing = [@{
+            @"rat": serving[@"rat"] ?: @"unknown",
+            @"role": @"serving", @"source": @"typed"
+        } mutableCopy];
+        if (serving[@"band"]) typedServing[@"band"] = serving[@"band"];
         NSNumber *rsrp = BLRHMetric(typed, @"rsrp", -200, -20, YES);
         NSNumber *rsrq = BLRHMetric(typed, @"rsrq", -60, 0, YES);
         NSNumber *rssi = BLRHMetric(typed, @"rssi", -200, -20, YES);
         NSNumber *snr = BLRHMetric(typed, @"snr", -100, 100, NO);
-        if (rsrp) serving[@"rsrp"] = rsrp;
-        if (rsrq) serving[@"rsrq"] = rsrq;
-        if (rssi) serving[@"rssi"] = rssi;
-        if (snr) serving[@"snr"] = snr;
+        if (rsrp) typedServing[@"rsrp"] = rsrp;
+        if (rsrq) typedServing[@"rsrq"] = rsrq;
+        if (rssi) typedServing[@"rssi"] = rssi;
+        if (snr) typedServing[@"snr"] = snr;
         if (rsrp || rsrq || rssi || snr) {
-            serving[@"source"] = @"typed";
+            [items insertObject:typedServing atIndex:0];
             typedStatus = @"values_available";
         } else {
             typedStatus = @"no_valid_values";

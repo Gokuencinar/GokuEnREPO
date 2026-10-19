@@ -1,6 +1,6 @@
-# BandLock 1.5.1~rhscan6 — RootHide LTE signal test
+# BandLock 1.5.1~rhscan7 — RootHide LTE signal test
 
-**Experimental, hardware-unverified and deliberately disruptive.**
+**Experimental. The active scan is not hardware-validated and can disrupt service.**
 This builds com.gokuencinar.bandlock for RootHide, iphoneos-arm64e.
 It must not be published as a stable release and must not be installed
 automatically during development. Replaces the previous RootHide signal
@@ -103,6 +103,19 @@ force a band, change RAT, write LTE/NR masks or create a recovery
 journal. If only one LTE band serves throughout, **one** observation
 is the correct result, not invented data for an unobserved band.
 The shared Cancel button stops the passive observation.
+
+rhscan6 was physically verified on iPhone XS with one naturally observed
+LTE B3 (typed RSRP -123 dBm, SNR -8 dB), unchanged allowed bands and no
+recovery journal. The later B20 serving status was outside the sample
+window and does NOT constitute a measured second band.
+
+rhscan7 improves the **passive** implementation without relaxing active
+scan protections: it skips redundant RAT-selection calls that returned
+Unknown and could delay each sample, releases temporary CoreTelephony
+objects between samples, keeps typed signal values separate from legacy
+metrics, and distinguishes successful completion from interruption or
+cancellation. These changes require fresh on-device validation; do not
+assume the previous rhscan6 physical test validates rhscan7.
 
 The original disruptive two-band scan remains separately labeled,
 strictly requires explicit LTE-only mode verification and can refuse
