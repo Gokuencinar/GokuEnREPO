@@ -2,6 +2,7 @@
 #import "BLTelephonyManager.h"
 #import "BLCommon.h"
 #import "BLGBandMetadata.h"
+#import "BLRHSignalScan.h"
 #import <roothide.h>
 #import <sys/socket.h>
 #import <sys/un.h>
@@ -148,12 +149,27 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         BLTelephonyManager *manager = BLTelephonyManager.sharedManager;
 
         if ([command isEqualToString:@"signal_probe"]) {
-            // Read-only: do not alter LTE/NR permissions or trigger band selection.
+            if ([BLRHSignalScan.sharedScan isRunning]) {
+                return @{@"success": @NO, @"message": @"A scan is already running; query scan_status"};
+            }
             return [manager signalProbeFromQuery:[manager queryCoreTelephony]];
         }
+        if ([command isEqualToString:@"scan_status"]) return [BLRHSignalScan.sharedScan status];
+        if ([command isEqualToString:@"scan_cancel"]) return [BLRHSignalScan.sharedScan cancel];
+        if ([command isEqualToString:@"scan_recover"]) {
+            return [BLRHSignalScan.sharedScan requestRecoveryWithManager:manager];
+        }
         if ([command isEqualToString:@"scan_start"]) {
+            return [BLRHSignalScan.sharedScan startWithManager:manager];
+        }
+        if (([command isEqualToString:@"rat"] ||
+             [command isEqualToString:@"apply"] ||
+             [command isEqualToString:@"apply_nr"]) &&
+            ([BLRHSignalScan.sharedScan isRunning] ||
+             [BLRHSignalScan.sharedScan isRecovering] ||
+             [BLRHSignalScan.sharedScan hasPendingRecovery])) {
             return @{@"success": @NO,
-                     @"message": @"RootHide active LTE scanning is disabled pending validated RSRP/RSSI and crash-safe rollback."};
+                     @"message": @"LTE scan or recovery in progress. Complete the original-band restore first."};
         }
 
         if ([command isEqualToString:@"status"]) {
@@ -360,6 +376,11 @@ int main(int argc, char *argv[]) {
         chmod(path, 0600);
         if (listen(serverFD, 8) != 0) { close(serverFD); unlink(path); return 73; }
         BLDaemonLog("daemon listening");
+        if ([BLRHSignalScan.sharedScan hasPendingRecovery]) {
+            // The recovery queue is single-flight. Set 'recovering'
+            // synchronously before accepting any other modem commands.
+            (void)[BLRHSignalScan.sharedScan requestRecoveryWithManager:BLTelephonyManager.sharedManager];
+        }
 
         while (1) {
             int clientFD = accept(serverFD, NULL, NULL);

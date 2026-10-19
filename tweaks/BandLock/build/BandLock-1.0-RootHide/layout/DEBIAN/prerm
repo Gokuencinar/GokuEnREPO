@@ -1,0 +1,18 @@
+#!/bin/sh
+# Do not boot out the only process that can restore bands changed by a scan.
+# Reject package upgrades/removal while the recovery journal still exists.
+set -eu
+if ! command -v jbroot >/dev/null 2>&1; then
+    echo "BandLock: jbroot tool unavailable. Cannot prove scan recovery state." >&2
+    exit 1
+fi
+JOURNAL="$(jbroot '/var/mobile/Library/Application Support/BandLockGlobal/signal-scan-recovery.plist')"
+if [ -z "$JOURNAL" ]; then
+    echo "BandLock: unknown RootHide recovery journal path." >&2
+    exit 1
+fi
+if [ -e "$JOURNAL" ]; then
+    echo "BandLock: scan recovery pending. Open BandLock and restore original LTE bands before uninstalling or upgrading." >&2
+    exit 1
+fi
+exit 0

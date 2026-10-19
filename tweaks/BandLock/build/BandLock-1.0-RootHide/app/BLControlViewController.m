@@ -26,6 +26,11 @@
 @property (nonatomic, strong) UIButton *fiveGModeButton;
 @property (nonatomic, strong) UIView *nrBandsCard;
 @property (nonatomic, strong) UILabel *signalValue;
+@property (nonatomic, strong) UIButton *signalStartButton;
+@property (nonatomic, strong) UIButton *signalCancelButton;
+@property (nonatomic, strong) NSTimer *signalTimer;
+@property (nonatomic, assign) BOOL signalRunning;
+@property (nonatomic, assign) BOOL signalRecoveryRequired;
 @end
 
 @implementation BLControlViewController
@@ -66,6 +71,13 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [self refreshDisplay];
+    [self startSignalPolling];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [self.signalTimer invalidate];
+    self.signalTimer = nil;
 }
 
 - (UILabel *)valueLabel {
@@ -239,16 +251,20 @@
 
     UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad (RootHide)", @"Read signal (RootHide)")
                                      symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
-    UIButton *scan = [self buttonWithTitle:BLT(@"Medir señal de bandas (diagnóstico)", @"Measure band signal (diagnostic)")
-                                    symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanInfoTapped:) destructive:NO];
+    self.signalStartButton = [self buttonWithTitle:BLT(@"Medir señal de bandas (2 LTE, PRUEBA)", @"Measure band signal (2 LTE, TEST)")
+                                              symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanStartTapped:) destructive:NO];
+    self.signalCancelButton = [self buttonWithTitle:BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore")
+                                               symbol:@"xmark.circle" selector:@selector(signalScanCancelTapped:) destructive:YES];
+    UIButton *restore = [self buttonWithTitle:BLT(@"Recuperar bandas originales", @"Recover original bands")
+                                       symbol:@"arrow.uturn.backward.circle" selector:@selector(signalScanRecoverTapped:) destructive:NO];
     self.signalValue = [self valueLabel];
     self.signalValue.textAlignment = NSTextAlignmentLeft;
     self.signalValue.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
-    self.signalValue.text = BLT(@"Solo lectura. Primero comprobaremos RSRP/RSSI reales; no se cambiarán bandas.",
-                                @"Read-only. First validate real RSRP/RSSI readings; no bands are changed.");
+    self.signalValue.text = BLT(@"El barrido experimental exige Solo LTE/4G, una sola línea activa y RSRP mínimo de −115 dBm. Puede interrumpir todas las llamadas.",
+                                @"Experimental scan requires LTE-only, a single active line and RSRP of at least −115 dBm. Calls may be interrupted.");
     [self.stackView addArrangedSubview:[self cardWithTitle:BLT(@"ANALIZADOR DE SEÑAL · ROOTHIDE (PRUEBA)",
                                                              @"SIGNAL ANALYZER · ROOTHIDE (TEST)")
-                                                      content:@[probe, scan, self.signalValue]]];
+                                                      content:@[probe, self.signalStartButton, self.signalCancelButton, restore, self.signalValue]]];
 
     UILabel *version = [[UILabel alloc] init];
     NSString *bundleVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
@@ -280,6 +296,8 @@
     }
     self.refreshButton.enabled = !self.manager.busy;
     [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar estado", @"Refresh status")) forState:UIControlStateNormal];
+    self.signalStartButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
+    self.signalCancelButton.enabled = self.signalRunning;
 }
 
 - (void)showAlert:(NSString *)message {
@@ -508,8 +526,8 @@
             [lines addObject:[NSString stringWithFormat:@"legacy %@: %@", field.uppercaseString, diagnostics[key] ?: @"unknown"]];
         }
         NSString *power = [result[@"has_serving_power"] boolValue] ?
-            BLT(@"Potencia LTE disponible (barrido aún deshabilitado en RootHide).",
-                @"LTE power available (active RootHide scan remains disabled).") :
+            BLT(@"Potencia LTE disponible. El barrido requiere cobertura suficiente y confirmación.",
+                @"LTE power is available. Scanning requires sufficient coverage and explicit confirmation.") :
             BLT(@"RSRP/RSSI aún no disponibles: no se cortará la cobertura.",
                 @"RSRP/RSSI still unavailable: cellular service will not be interrupted.");
         [lines addObject:power];
@@ -517,9 +535,83 @@
     }];
 }
 
-- (void)signalScanInfoTapped:(UIButton *)sender {
-    [self showAlert:BLT(@"El barrido que desconecta y reconecta bandas está deshabilitado en esta compilación RootHide. Primero necesitamos validar RSRP/RSSI mediante «Consultar intensidad». El RSRQ 0,0 dB de la prueba Dopamine era un valor no fiable.",
-                        @"The disruptive band scan is disabled in this RootHide diagnostic. First validate RSRP/RSSI with Read signal. The previous Dopamine RSRQ 0.0 dB was an unreliable placeholder.")];
+- (void)signalScanStartTapped:(UIButton *)sender {
+    if (self.signalRunning || self.signalRecoveryRequired || self.manager.busy) return;
+    NSString *warning = BLT(
+        @"PRUEBA NO VALIDADA EN HARDWARE. Las dos bandas LTE se limitarán temporalmente una por una. Las llamadas, los datos y los servicios de emergencia pueden quedar sin cobertura. Debes tener otro teléfono disponible. No lo ejecutes durante llamadas o situaciones de emergencia. Selecciona «Solo LTE/4G» con una única SIM activa y buena cobertura (RSRP ≥ −115 dBm). La app intentará restaurar la configuración automáticamente, pero un fallo del módem puede impedirlo. ¿Iniciar?",
+        @"HARDWARE-UNVALIDATED TEST. Two LTE bands will temporarily be permitted one at a time. Calls, mobile data and emergency services may lose coverage. Have a second phone available. Never test during calls or emergencies. Select LTE/4G only, one active SIM and strong signal (RSRP ≥ −115 dBm). Automatic restoration will be attempted but cannot be guaranteed. Start?");
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Posible pérdida total de cobertura", @"Possible total loss of service")
+        message:warning preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    __weak typeof(self) weakSelf = self;
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Iniciar prueba LTE", @"Start LTE test")
+        style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+        [weakSelf.manager startSignalScanWithCompletion:^(NSDictionary *result) {
+            if (![result[@"success"] boolValue]) {
+                [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"Scan not started"];
+                return;
+            }
+            weakSelf.signalRunning = YES;
+            weakSelf.signalValue.text = result[@"message"] ?: @"Scan started";
+            [weakSelf refreshDisplay];
+            [weakSelf startSignalPolling];
+        }];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)signalScanCancelTapped:(UIButton *)sender {
+    if (!self.signalRunning) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager cancelSignalScanWithCompletion:^(NSDictionary *result) {
+        weakSelf.signalValue.text = result[@"message"] ?: @"Cancellation requested";
+        [weakSelf startSignalPolling];
+    }];
+}
+
+- (void)signalScanRecoverTapped:(UIButton *)sender {
+    if (self.signalRunning) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager recoverSignalScanWithCompletion:^(NSDictionary *result) {
+        weakSelf.signalValue.text = result[@"message"] ?: @"Recovery requested";
+        [weakSelf startSignalPolling];
+    }];
+}
+
+- (void)startSignalPolling {
+    if (!self.signalTimer) {
+        self.signalTimer = [NSTimer scheduledTimerWithTimeInterval:3.0 target:self
+            selector:@selector(signalPoll:) userInfo:nil repeats:YES];
+    }
+    [self signalPoll:nil];
+}
+
+- (void)signalPoll:(NSTimer *)timer {
+    if (self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager signalScanStatusWithCompletion:^(NSDictionary *status) {
+        if (![status[@"phase"] isKindOfClass:NSString.class]) return;
+        weakSelf.signalRunning = [status[@"running"] boolValue];
+        weakSelf.signalRecoveryRequired = [status[@"recovery_required"] boolValue];
+        [weakSelf refreshDisplay];
+        if ([status[@"phase"] isEqualToString:@"idle"]) return; // Keep read-only probe visible.
+        NSMutableArray *lines = [NSMutableArray array];
+        NSString *message = [status[@"message"] isKindOfClass:NSString.class] ? status[@"message"] : @"";
+        [lines addObject:[NSString stringWithFormat:@"%@ · %@",
+                            status[@"phase"], message]];
+        NSArray *rows = [status[@"rows"] isKindOfClass:NSArray.class] ? status[@"rows"] : @[];
+        for (NSDictionary *row in rows) {
+            if (![row isKindOfClass:NSDictionary.class]) continue;
+            NSMutableString *line = [NSMutableString stringWithFormat:@"LTE B%@: %@",
+                row[@"band"] ?: @"—", row[@"status"] ?: @"no_measurement"];
+            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+                NSNumber *value = row[metric];
+                if ([value isKindOfClass:NSNumber.class]) [line appendFormat:@" · %@ %.1f", metric.uppercaseString, value.doubleValue];
+            }
+            [lines addObject:line];
+        }
+        weakSelf.signalValue.text = [lines componentsJoinedByString:@"\n"];
+    }];
 }
 
 @end

@@ -724,17 +724,12 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     id typed = nil;
     if (client && context) {
         @try {
-            SEL currentDescriptor = NSSelectorFromString(@"getCurrentDataServiceDescriptorSync:");
-            NSError *descriptorError = nil;
-            if ([client respondsToSelector:currentDescriptor]) {
-                descriptor = BLMsgErr(client, currentDescriptor, &descriptorError);
-            }
-            if (!descriptor) {
-                Class descriptorClass = NSClassFromString(@"CTServiceDescriptor");
-                SEL fromContext = NSSelectorFromString(@"descriptorWithSubscriptionContext:");
-                if ([descriptorClass respondsToSelector:fromContext]) {
-                    descriptor = ((id (*)(id, SEL, id))objc_msgSend)((id)descriptorClass, fromContext, context);
-                }
+            // Bound to the SAME subscription context used to fetch band
+            // info. Do not silently use a different data-line descriptor.
+            Class descriptorClass = NSClassFromString(@"CTServiceDescriptor");
+            SEL fromContext = NSSelectorFromString(@"descriptorWithSubscriptionContext:");
+            if ([descriptorClass respondsToSelector:fromContext]) {
+                descriptor = ((id (*)(id, SEL, id))objc_msgSend)((id)descriptorClass, fromContext, context);
             }
             SEL signalSelector = NSSelectorFromString(@"getSignalStrengthMeasurements:error:");
             if (descriptor && [client respondsToSelector:signalSelector]) {

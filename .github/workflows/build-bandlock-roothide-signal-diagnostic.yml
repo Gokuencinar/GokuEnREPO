@@ -1,4 +1,4 @@
-name: Build BandLock RootHide signal diagnostic
+name: Build BandLock RootHide experimental LTE scan
 
 on:
   push:
@@ -31,22 +31,23 @@ jobs:
           d=tweaks/BandLock/build/BandLock-1.0-RootHide
           plutil -lint "$d/app/Resources/Info.plist"
           plutil -lint "$d/daemon/Entitlements.plist"
-          grep -q '^Version: 1.5.1~rhsigdiag1$' "$d/control"
+          grep -q '^Version: 1.5.1~rhscan1$' "$d/control"
           grep -q '<key>CFBundleShortVersionString</key><string>1.5.1</string>' "$d/app/Resources/Info.plist"
-      - name: Build RootHide diagnostic
+          test -x "$d/layout/DEBIAN/prerm"
+      - name: Build RootHide LTE scan experiment
         run: |
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-RootHide
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
-          deb='packages/com.gokuencinar.bandlock_1.5.1~rhsigdiag1_iphoneos-arm64e.deb'
+          deb='packages/com.gokuencinar.bandlock_1.5.1~rhscan1_iphoneos-arm64e.deb'
           test -s "$deb"
           test -f "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
           file "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)" | grep -q Mach-O
-          ! grep -q 'BLSignalScan.m' daemon/Makefile
+          grep -q 'BLRHSignalScan.m' daemon/Makefile
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-RootHide-1.5.1-sigdiag1
-          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.5.1~rhsigdiag1_iphoneos-arm64e.deb
+          name: BandLock-RootHide-1.5.1-rhscan1
+          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.5.1~rhscan1_iphoneos-arm64e.deb
 
   verify-deb:
     needs: build-roothide
@@ -54,18 +55,19 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-RootHide-1.5.1-sigdiag1
+          name: BandLock-RootHide-1.5.1-rhscan1
           path: /tmp/bandlock
       - name: Check RootHide DEB metadata
         run: |
           set -euo pipefail
-          deb='/tmp/bandlock/com.gokuencinar.bandlock_1.5.1~rhsigdiag1_iphoneos-arm64e.deb'
+          deb='/tmp/bandlock/com.gokuencinar.bandlock_1.5.1~rhscan1_iphoneos-arm64e.deb'
           test -s "$deb"
           test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock'
-          test "$(dpkg-deb -f "$deb" Version)" = '1.5.1~rhsigdiag1'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.5.1~rhscan1'
           test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64e'
           dpkg-deb -c "$deb" > /tmp/bandlock-contents
           grep -q 'BandLockDaemon' /tmp/bandlock-contents
           grep -q 'BandLock.app/BandLock' /tmp/bandlock-contents
           grep -q 'BandLockCCModule' /tmp/bandlock-contents
+          dpkg-deb --ctrl-tarfile "$deb" | tar -tvf - | grep -q './prerm'
           sha256sum "$deb"

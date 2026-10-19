@@ -550,4 +550,20 @@ static NSString *BLDaemonSocketPath(void) {
     [self sendRequest:@{@"cmd": @"signal_probe"} completion:completion];
 }
 
+- (void)startSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {
+    [self sendRequest:@{@"cmd": @"scan_start"} completion:completion];
+}
+
+- (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *result))completion {
+    [self sendRequest:@{@"cmd": @"scan_status"} completion:completion];
+}
+
+- (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {
+    [self sendRequest:@{@"cmd": @"scan_cancel"} completion:completion];
+}
+
+- (void)recoverSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {
+    [self sendRequest:@{@"cmd": @"scan_recover"} completion:completion];
+}
+
 @end
