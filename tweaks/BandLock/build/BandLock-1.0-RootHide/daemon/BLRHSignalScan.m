@@ -11,6 +11,7 @@
 #import <roothide.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <stdlib.h>
+#import <dlfcn.h>
 
 @interface BLTelephonyManager (BLRHSignalScanPrivate)
 - (NSDictionary *)queryCoreTelephony;
@@ -104,9 +105,20 @@ static NSString *BLScanSubscriptionUUID(NSDictionary *query) {
     else if ([value isKindOfClass:NSString.class]) identifier = value;
     if (!identifier.length || identifier.length > 128) return nil;
     // Journal must not contain the private subscription UUID verbatim.
+    typedef unsigned char *(*BLHashFunction)(const void *, CC_LONG, unsigned char *);
+    static BLHashFunction hashFunction = NULL;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        hashFunction = (BLHashFunction)dlsym(RTLD_DEFAULT, "CC_SHA256");
+        if (!hashFunction) {
+            void *library = dlopen("/usr/lib/system/libcommonCrypto.dylib", RTLD_NOW | RTLD_LOCAL);
+            if (library) hashFunction = (BLHashFunction)dlsym(library, "CC_SHA256");
+        }
+    });
+    if (!hashFunction) return nil; // No stable hash, no modem changes.
     unsigned char digest[CC_SHA256_DIGEST_LENGTH];
     NSData *data = [identifier dataUsingEncoding:NSUTF8StringEncoding];
-    CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
+    if (!hashFunction(data.bytes, (CC_LONG)data.length, digest)) return nil;
     NSMutableString *fingerprint = [NSMutableString stringWithCapacity:64];
     for (NSUInteger i = 0; i < sizeof(digest); i++) {
         [fingerprint appendFormat:@"%02x", digest[i]];

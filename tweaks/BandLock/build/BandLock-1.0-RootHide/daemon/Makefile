@@ -9,7 +9,6 @@ BandLockDaemon_FILES = \
 	../shared/BLGBandMetadata.m
 BandLockDaemon_FRAMEWORKS = Foundation UIKit
 BandLockDaemon_CFLAGS = -fobjc-arc -I. -I../app -I../shared
-BandLockDaemon_LIBRARIES = commonCrypto
 BandLockDaemon_INSTALL_PATH = /usr/libexec
 BandLockDaemon_CODESIGN_FLAGS = -SEntitlements.plist
 
