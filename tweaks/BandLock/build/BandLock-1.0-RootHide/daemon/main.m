@@ -147,6 +147,15 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         BLDaemonLog([[NSString stringWithFormat:@"handle command=%@", command] UTF8String]);
         BLTelephonyManager *manager = BLTelephonyManager.sharedManager;
 
+        if ([command isEqualToString:@"signal_probe"]) {
+            // Read-only: do not alter LTE/NR permissions or trigger band selection.
+            return [manager signalProbeFromQuery:[manager queryCoreTelephony]];
+        }
+        if ([command isEqualToString:@"scan_start"]) {
+            return @{@"success": @NO,
+                     @"message": @"RootHide active LTE scanning is disabled pending validated RSRP/RSSI and crash-safe rollback."};
+        }
+
         if ([command isEqualToString:@"status"]) {
             BLDaemonLog("status query begin");
             NSDictionary *payload = BLStatusPayload(manager, [manager queryCoreTelephony]);

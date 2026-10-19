@@ -546,4 +546,8 @@ static NSString *BLDaemonSocketPath(void) {
     }];
 }
 
+- (void)signalProbeWithCompletion:(void (^)(NSDictionary *result))completion {
+    [self sendRequest:@{@"cmd": @"signal_probe"} completion:completion];
+}
+
 @end

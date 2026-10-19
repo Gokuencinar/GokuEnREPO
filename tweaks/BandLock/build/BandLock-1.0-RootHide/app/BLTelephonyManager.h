@@ -39,5 +39,6 @@ typedef void (^BLActionCompletion)(BOOL success, NSString *message);
 - (void)restoreAllSupportedBandsWithCompletion:(BLActionCompletion)completion;
 - (void)restoreAllSupportedNRBandsWithCompletion:(BLActionCompletion)completion;
 - (void)openFieldTestWithCompletion:(BLActionCompletion)completion;
+- (void)signalProbeWithCompletion:(void (^)(NSDictionary *result))completion;
 
 @end

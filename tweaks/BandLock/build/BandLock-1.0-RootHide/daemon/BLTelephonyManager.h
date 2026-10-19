@@ -38,5 +38,7 @@ typedef void (^BLActionCompletion)(BOOL success, NSString *message);
 - (void)restoreAllSupportedBandsWithCompletion:(BLActionCompletion)completion;
 - (void)restoreAllSupportedNRBandsWithCompletion:(BLActionCompletion)completion;
 - (BOOL)openFieldTestWithError:(NSString **)errorText;
+// Read-only signal diagnostic; never exports raw cell/SIM identifiers.
+- (NSDictionary *)signalProbeFromQuery:(NSDictionary *)query;
 
 @end

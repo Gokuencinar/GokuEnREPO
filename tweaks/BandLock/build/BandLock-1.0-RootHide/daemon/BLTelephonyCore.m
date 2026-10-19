@@ -4,6 +4,8 @@
 #import <UIKit/UIKit.h>
 #import <objc/message.h>
 #import <dlfcn.h>
+#import <CoreFoundation/CoreFoundation.h>
+#import <math.h>
 
 static NSString * const BLLTERAT = @"kCTRegistrationRadioAccessTechnologyLTE";
 static NSString * const BLNRRAT = @"kCTRegistrationRadioAccessTechnologyNR";
@@ -115,6 +117,72 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSString *title = isNR ? BLGNRBandTitle(bandNumber) : BLGBandTitle(bandNumber);
     if ([rat isKindOfClass:[NSString class]] && rat.length) return [NSString stringWithFormat:@"%@ · %@", title, ([rat rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"LTE" : rat)];
     return title;
+}
+
+// RootHide signal diagnostic: never export raw CoreTelephony dictionaries,
+// SIM identifiers, cell identifiers, tower IDs or subscription UUIDs.
+// Legacy RSRP/RSRQ/RSSI equal to zero are known placeholder values.
+static NSNumber *BLRHSignalNumber(id raw, double lower, double upper, BOOL rejectZero) {
+    if (![raw isKindOfClass:NSNumber.class] ||
+        CFGetTypeID((__bridge CFTypeRef)raw) == CFBooleanGetTypeID()) return nil;
+    double value = [raw doubleValue];
+    if (!isfinite(value) || value < lower || value > upper ||
+        (rejectZero && value == 0.0)) return nil;
+    return @(value);
+}
+
+static NSNumber *BLRHMetric(id container, NSString *key, double lower, double upper, BOOL rejectZero) {
+    if (!container || ![container respondsToSelector:NSSelectorFromString(key)]) return nil;
+    id raw = BLMsg0(container, NSSelectorFromString(key));
+    return BLRHSignalNumber(raw, lower, upper, rejectZero);
+}
+
+static NSNumber *BLRHLegacyMetric(NSDictionary *row, NSArray<NSString *> *keys,
+                                  double lower, double upper, BOOL rejectZero) {
+    for (NSString *key in keys) {
+        NSNumber *value = BLRHSignalNumber(row[key], lower, upper, rejectZero);
+        if (value) return value; // An invalid earlier alias cannot hide a valid later one.
+    }
+    return nil;
+}
+
+static NSString *BLRHMetricPresence(NSDictionary *row, NSArray<NSString *> *keys) {
+    for (NSString *key in keys) {
+        id value = row[key];
+        if (!value || value == NSNull.null) continue;
+        if ([value isKindOfClass:NSNumber.class]) {
+            if (CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID()) return @"boolean";
+            if ([value doubleValue] == 0) return @"zero_placeholder";
+            return @"reported";
+        }
+        return @"unsupported_type";
+    }
+    return @"missing";
+}
+
+static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
+    if (![row isKindOfClass:NSDictionary.class]) return nil;
+    NSString *rawRAT = row[@"kCTCellMonitorCellRadioAccessTechnology"];
+    NSString *rat = [rawRAT isKindOfClass:NSString.class] ?
+        ([rawRAT rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"NR" :
+         ([rawRAT rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"LTE" : nil)) : nil;
+    NSString *type = row[@"kCTCellMonitorCellType"];
+    NSString *role = [type isKindOfClass:NSString.class] ?
+        ([type rangeOfString:@"Serving" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"serving" :
+         ([type rangeOfString:@"Neighbor" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"neighbor" : nil)) : nil;
+    if (!rat || !role) return nil;
+    NSMutableDictionary *item = [@{@"rat": rat, @"role": role, @"source": @"legacy"} mutableCopy];
+    NSNumber *band = BLRHSignalNumber(row[@"kCTCellMonitorBandInfo"], 1, 1024, YES);
+    if (band && floor(band.doubleValue) == band.doubleValue) item[@"band"] = band;
+    NSNumber *rsrp = BLRHLegacyMetric(row, @[@"kCTCellMonitorRSRP", @"RSRP", @"rsrp"], -200, -20, YES);
+    NSNumber *rsrq = BLRHLegacyMetric(row, @[@"kCTCellMonitorRSRQ", @"RSRQ", @"rsrq"], -60, 0, YES);
+    NSNumber *rssi = BLRHLegacyMetric(row, @[@"kCTCellMonitorRSSI", @"RSSI", @"rssi"], -200, -20, YES);
+    NSNumber *snr = BLRHLegacyMetric(row, @[@"kCTCellMonitorSNR", @"SNR", @"snr"], -100, 100, NO);
+    if (rsrp) item[@"rsrp"] = rsrp;
+    if (rsrq) item[@"rsrq"] = rsrq;
+    if (rssi) item[@"rssi"] = rssi;
+    if (snr) item[@"snr"] = snr;
+    return item;
 }
 
 @interface BLTelephonyManager ()
@@ -625,6 +693,125 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     NSString *text = [NSString stringWithFormat:@"BandLock-Version: 1.5\nTimestamp: %@\nAction: %@\nRAT: %@\nServing-Band: %@\nSupported-LTE: %@\nActive-LTE: %@\nPending-LTE: %@\nSupported-NR: %@\nActive-NR: %@\nPending-NR: %@\nDetail: %@\n",
                       NSDate.date, action ?: @"—", self.radioAccessTechnology ?: @"—", self.servingBand ?: @"—", BLBandList(self.supportedBands), BLBandList(self.activeBands), BLBandList(self.pendingBands), BLNRBandList(self.supportedNRBands), BLNRBandList(self.activeNRBands), BLNRBandList(self.pendingNRBands), detail ?: @"—"];
     [text writeToFile:BLLastLogPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+}
+
+- (NSDictionary *)signalProbeFromQuery:(NSDictionary *)query {
+    if (query[@"error"]) return @{@"success": @NO, @"message": [query[@"error"] description] ?: @"CoreTelephony error"};
+    id cellInfo = query[@"cellInfo"];
+    NSArray *legacyInfo = nil;
+    SEL legacySelector = NSSelectorFromString(@"legacyInfo");
+    if (cellInfo && cellInfo != NSNull.null && [cellInfo respondsToSelector:legacySelector]) {
+        id raw = BLMsg0(cellInfo, legacySelector);
+        if ([raw isKindOfClass:NSArray.class]) legacyInfo = raw;
+    }
+
+    NSMutableArray *items = [NSMutableArray array];
+    NSDictionary *servingLegacy = nil;
+    for (id raw in legacyInfo) {
+        if (![raw isKindOfClass:NSDictionary.class]) continue;
+        NSDictionary *legacy = BLRHLegacySignalRow(raw);
+        if (!legacy) continue;
+        if ([legacy[@"role"] isEqual:@"serving"] && [legacy[@"rat"] isEqual:@"LTE"] && !servingLegacy) {
+            servingLegacy = raw;
+        }
+        [items addObject:legacy];
+    }
+
+    NSString *typedStatus = @"api_unavailable";
+    id client = query[@"client"];
+    id context = query[@"context"];
+    id descriptor = nil;
+    id typed = nil;
+    if (client && context) {
+        @try {
+            SEL currentDescriptor = NSSelectorFromString(@"getCurrentDataServiceDescriptorSync:");
+            NSError *descriptorError = nil;
+            if ([client respondsToSelector:currentDescriptor]) {
+                descriptor = BLMsgErr(client, currentDescriptor, &descriptorError);
+            }
+            if (!descriptor) {
+                Class descriptorClass = NSClassFromString(@"CTServiceDescriptor");
+                SEL fromContext = NSSelectorFromString(@"descriptorWithSubscriptionContext:");
+                if ([descriptorClass respondsToSelector:fromContext]) {
+                    descriptor = ((id (*)(id, SEL, id))objc_msgSend)((id)descriptorClass, fromContext, context);
+                }
+            }
+            SEL signalSelector = NSSelectorFromString(@"getSignalStrengthMeasurements:error:");
+            if (descriptor && [client respondsToSelector:signalSelector]) {
+                typedStatus = @"queried";
+                NSError *signalError = nil;
+                typed = BLMsgObjErr(client, signalSelector, descriptor, &signalError);
+                if (signalError) typedStatus = @"query_error";
+                else if (!typed) typedStatus = @"empty";
+            } else {
+                typedStatus = descriptor ? @"api_unavailable" : @"descriptor_unavailable";
+            }
+        } @catch (__unused NSException *exception) {
+            typedStatus = @"exception";
+            typed = nil;
+        }
+    }
+
+    if (typed) {
+        NSMutableDictionary *serving = nil;
+        for (NSMutableDictionary *item in items) {
+            if ([item[@"role"] isEqual:@"serving"] && [item[@"rat"] isEqual:@"LTE"]) {
+                serving = item;
+                break;
+            }
+        }
+        if (!serving) {
+            for (NSMutableDictionary *item in items) {
+                if ([item[@"role"] isEqual:@"serving"]) { serving = item; break; }
+            }
+        }
+        if (!serving) {
+            serving = [@{@"rat": @"unknown", @"role": @"serving", @"source": @"typed"} mutableCopy];
+            [items insertObject:serving atIndex:0];
+        }
+        NSNumber *rsrp = BLRHMetric(typed, @"rsrp", -200, -20, YES);
+        NSNumber *rsrq = BLRHMetric(typed, @"rsrq", -60, 0, YES);
+        NSNumber *rssi = BLRHMetric(typed, @"rssi", -200, -20, YES);
+        NSNumber *snr = BLRHMetric(typed, @"snr", -100, 100, NO);
+        if (rsrp) serving[@"rsrp"] = rsrp;
+        if (rsrq) serving[@"rsrq"] = rsrq;
+        if (rssi) serving[@"rssi"] = rssi;
+        if (snr) serving[@"snr"] = snr;
+        if (rsrp || rsrq || rssi || snr) {
+            serving[@"source"] = @"typed";
+            typedStatus = @"values_available";
+        } else {
+            typedStatus = @"no_valid_values";
+        }
+    }
+
+    NSMutableArray *available = [NSMutableArray array];
+    for (NSDictionary *row in items) {
+        if (row[@"rsrp"] || row[@"rsrq"] || row[@"rssi"] || row[@"snr"]) [available addObject:row];
+    }
+    NSDictionary *diagnostics = @{
+        @"typed_api": typedStatus,
+        @"legacy_rows": @(legacyInfo.count),
+        @"legacy_serving_rsrp": servingLegacy ? BLRHMetricPresence(servingLegacy, @[@"kCTCellMonitorRSRP", @"RSRP", @"rsrp"]) : @"no_serving_row",
+        @"legacy_serving_rsrq": servingLegacy ? BLRHMetricPresence(servingLegacy, @[@"kCTCellMonitorRSRQ", @"RSRQ", @"rsrq"]) : @"no_serving_row",
+        @"legacy_serving_rssi": servingLegacy ? BLRHMetricPresence(servingLegacy, @[@"kCTCellMonitorRSSI", @"RSSI", @"rssi"]) : @"no_serving_row",
+        @"legacy_serving_snr": servingLegacy ? BLRHMetricPresence(servingLegacy, @[@"kCTCellMonitorSNR", @"SNR", @"snr"]) : @"no_serving_row"
+    };
+    BOOL hasPower = NO;
+    for (NSDictionary *item in available) {
+        if ([item[@"role"] isEqual:@"serving"] && [item[@"rat"] isEqual:@"LTE"] &&
+            (item[@"rsrp"] || item[@"rssi"])) hasPower = YES;
+    }
+    return @{
+        @"success": @YES,
+        @"measurements": available,
+        @"diagnostics": diagnostics,
+        @"has_serving_power": @(hasPower),
+        @"active_scan_available": @NO,
+        @"message": hasPower
+            ? @"Serving LTE power detected. Active RootHide scanning is not enabled in this diagnostic."
+            : @"No valid serving LTE RSRP/RSSI. Active scan remains disabled; diagnostic reports available data."
+    };
 }
 
 - (BOOL)openFieldTestWithError:(NSString **)errorText {

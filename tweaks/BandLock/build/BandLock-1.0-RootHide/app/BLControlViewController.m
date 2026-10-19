@@ -25,6 +25,7 @@
 @property (nonatomic, strong) UIButton *countryManageButton;
 @property (nonatomic, strong) UIButton *fiveGModeButton;
 @property (nonatomic, strong) UIView *nrBandsCard;
+@property (nonatomic, strong) UILabel *signalValue;
 @end
 
 @implementation BLControlViewController
@@ -235,6 +236,19 @@
     UIButton *field = [self buttonWithTitle:BLT(@"Abrir Field Test", @"Open Field Test") symbol:@"wave.3.right.circle" selector:@selector(fieldTestTapped:) destructive:NO];
     UIView *toolsCard = [self cardWithTitle:BLT(@"HERRAMIENTAS", @"TOOLS") content:@[field]];
     [self.stackView addArrangedSubview:toolsCard];
+
+    UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad (RootHide)", @"Read signal (RootHide)")
+                                     symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
+    UIButton *scan = [self buttonWithTitle:BLT(@"Medir señal de bandas (diagnóstico)", @"Measure band signal (diagnostic)")
+                                    symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanInfoTapped:) destructive:NO];
+    self.signalValue = [self valueLabel];
+    self.signalValue.textAlignment = NSTextAlignmentLeft;
+    self.signalValue.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
+    self.signalValue.text = BLT(@"Solo lectura. Primero comprobaremos RSRP/RSSI reales; no se cambiarán bandas.",
+                                @"Read-only. First validate real RSRP/RSSI readings; no bands are changed.");
+    [self.stackView addArrangedSubview:[self cardWithTitle:BLT(@"ANALIZADOR DE SEÑAL · ROOTHIDE (PRUEBA)",
+                                                             @"SIGNAL ANALYZER · ROOTHIDE (TEST)")
+                                                      content:@[probe, scan, self.signalValue]]];
 
     UILabel *version = [[UILabel alloc] init];
     NSString *bundleVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
@@ -455,6 +469,57 @@
     [self.manager openFieldTestWithCompletion:^(BOOL success, NSString *message) {
         [weakSelf handleCompletion:@"field-test" success:success message:message];
     }];
+}
+
+- (void)signalProbeTapped:(UIButton *)sender {
+    if (self.manager.busy) return;
+    self.signalValue.text = BLT(@"Consultando CoreTelephony sin cambiar la conexión…",
+                                @"Reading CoreTelephony without changing the network…");
+    __weak typeof(self) weakSelf = self;
+    [self.manager signalProbeWithCompletion:^(NSDictionary *result) {
+        if (![result[@"success"] boolValue]) {
+            [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"CoreTelephony error"];
+            return;
+        }
+        NSMutableArray *lines = [NSMutableArray array];
+        NSArray *measurements = [result[@"measurements"] isKindOfClass:NSArray.class] ? result[@"measurements"] : @[];
+        for (NSDictionary *row in measurements) {
+            if (![row isKindOfClass:NSDictionary.class]) continue;
+            NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"—";
+            NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
+            NSString *role = [row[@"role"] isKindOfClass:NSString.class] ? row[@"role"] : @"";
+            NSString *label = band ? [NSString stringWithFormat:@"%@ %@%@", rat, [rat isEqual:@"NR"] ? @"n" : @"B", band] : rat;
+            [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %@", label, role, row[@"source"] ?: @"unknown"]];
+            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+                id v = row[metric];
+                if (![v isKindOfClass:NSNumber.class]) continue;
+                NSString *unit = ([metric isEqual:@"rsrp"] || [metric isEqual:@"rssi"]) ? @"dBm" : @"dB";
+                [lines addObject:[NSString stringWithFormat:@"  %@ %.1f %@", metric.uppercaseString, [v doubleValue], unit]];
+            }
+        }
+        if (!measurements.count) {
+            [lines addObject:BLT(@"Sin mediciones válidas. No se muestran ceros ficticios.",
+                                  @"No validated metrics. Placeholder zeros are not displayed.")];
+        }
+        NSDictionary *diagnostics = [result[@"diagnostics"] isKindOfClass:NSDictionary.class] ? result[@"diagnostics"] : @{};
+        [lines addObject:[NSString stringWithFormat:@"API: %@", diagnostics[@"typed_api"] ?: @"unknown"]];
+        for (NSString *field in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+            NSString *key = [@"legacy_serving_" stringByAppendingString:field];
+            [lines addObject:[NSString stringWithFormat:@"legacy %@: %@", field.uppercaseString, diagnostics[key] ?: @"unknown"]];
+        }
+        NSString *power = [result[@"has_serving_power"] boolValue] ?
+            BLT(@"Potencia LTE disponible (barrido aún deshabilitado en RootHide).",
+                @"LTE power available (active RootHide scan remains disabled).") :
+            BLT(@"RSRP/RSSI aún no disponibles: no se cortará la cobertura.",
+                @"RSRP/RSSI still unavailable: cellular service will not be interrupted.");
+        [lines addObject:power];
+        weakSelf.signalValue.text = [lines componentsJoinedByString:@"\n"];
+    }];
+}
+
+- (void)signalScanInfoTapped:(UIButton *)sender {
+    [self showAlert:BLT(@"El barrido que desconecta y reconecta bandas está deshabilitado en esta compilación RootHide. Primero necesitamos validar RSRP/RSSI mediante «Consultar intensidad». El RSRQ 0,0 dB de la prueba Dopamine era un valor no fiable.",
+                        @"The disruptive band scan is disabled in this RootHide diagnostic. First validate RSRP/RSSI with Read signal. The previous Dopamine RSRQ 0.0 dB was an unreliable placeholder.")];
 }
 
 @end
