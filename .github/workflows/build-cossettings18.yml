@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          package=$(find COSSettings18/packages -maxdepth 1 -type f -name 'com.gokuencinar.cossettings18_0.1.5_*.deb' -print -quit)
+          package=$(find COSSettings18/packages -maxdepth 1 -type f -name 'com.gokuencinar.cossettings18_0.1.6_*.deb' -print -quit)
           test -n "$package"
           # macOS runners have 'ar' and BSD tar, but not necessarily dpkg-deb.
           mkdir -p "$RUNNER_TEMP/cossettings18-verify/archive" "$RUNNER_TEMP/cossettings18-verify/root"

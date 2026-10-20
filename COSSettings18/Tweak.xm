@@ -178,6 +178,9 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
 }
 
 static void COSApplyGrouping(id controller) {
+    // The SwiftUI root on iOS 18 is handled by the dedicated PreferenceLoader
+    // root integration. Do not create an additional group in General.
+    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) return;
     if (objc_getAssociatedObject(controller, &COSGroupingBusyKey) ||
         ![controller respondsToSelector:@selector(setSpecifiers:)] ||
         ![controller respondsToSelector:@selector(specifiers)]) return;

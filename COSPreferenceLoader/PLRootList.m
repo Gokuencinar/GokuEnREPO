@@ -248,7 +248,21 @@ static const char *const kPLIdentityPrefix = "PLTweak:";
 // PSListController that contains all PreferenceLoader entries.
 static NSString *const kPLGroupIdentity = @"PLGroup:all-tweaks";
 static NSString *const kPLGroupRoute = @"__PL_GROUP_ALL_TWEAKS__";
-static NSString *const kPLGroupTitle = @"Tweaks";
+static id PLCOSReadPreference(NSString *key) {
+    CFPropertyListRef value = CFPreferencesCopyAppValue((CFStringRef)key,
+        CFSTR("com.gokuencinar.cossettings18"));
+    return value ? [(id)value autorelease] : nil;
+}
+
+static BOOL PLCOSBoolean(NSString *key, BOOL fallback) {
+    id value = PLCOSReadPreference(key);
+    return [value respondsToSelector:@selector(boolValue)] ? [value boolValue] : fallback;
+}
+
+static NSString *PLCOSGroupTitle(void) {
+    id value = PLCOSReadPreference(@"tweaksTitle");
+    return [value isKindOfClass:NSString.class] && [value length] ? value : @"Tweaks";
+}
 
 static NSString *PLIdentityKeyForTitle(NSString *title) {
     return [@(kPLIdentityPrefix) stringByAppendingString:title];
@@ -774,10 +788,11 @@ static const void *PLTemplateSection(PLRootContext *ctx, const void **itemOut) {
 // Insert an entire section, never within an Apple section or between its rows.
 // If the root is still loading, the next Apple snapshot will be injected again.
 static NSInteger PLSectionInsertIndex(PLRootContext *ctx) {
-    return MIN((NSInteger)2, ctx->sectionCount);
+    return MIN((NSInteger)(PLCOSBoolean(@"groupAtTop", YES) ? 1 : 2), ctx->sectionCount);
 }
 
 void PLRootListInjectTweakSection(void) {
+    if (!PLCOSBoolean(@"enabled", YES) || !PLCOSBoolean(@"groupTweaks", YES)) return;
     PLRootContext ctx;
     if (!PLResolve(&ctx)) { PLRootLog(@"[inject] model not reachable"); return; }
 
@@ -824,7 +839,7 @@ void PLRootListInjectTweakSection(void) {
     PLSwiftValueInitializeWithCopy(item, templateItem, ctx.itemMeta);
     PLSetItemIdentity(&ctx, item, kPLGroupIdentity);
     UIImage *icon = [UIImage systemImageNamed:@"square.grid.2x2.fill"];
-    if (!PLSetItemAppearance(&ctx, item, kPLGroupTitle, icon)) {
+    if (!PLSetItemAppearance(&ctx, item, PLCOSGroupTitle(), icon)) {
         PLRootLog(@"[inject] Tweaks template is not a link; aborting");
         return;
     }
@@ -1351,6 +1366,7 @@ static UIViewController *PLControllerForTweakGroup(void) {
         if (order != NSOrderedSame) return order;
         return [a[@"source"] localizedCaseInsensitiveCompare:b[@"source"]];
     }];
+    if (!PLCOSBoolean(@"alphabetizeTweaks", YES)) records = PLEntryRecords();
     NSMutableArray *items = [NSMutableArray arrayWithObject:[PSSpecifier emptyGroupSpecifier]];
     for (NSDictionary *record in records) {
         NSDictionary *entry = record[@"entry"];
@@ -1420,7 +1436,7 @@ UIViewController *PLRootListPaneForCurrentSelection(void) {
         // Set once at build time, not on every lookup: the detail path asks for the pane on every
         // runloop turn, and a tweak that manages navigationItem.title itself -- hiding it at the
         // top of its scroll and revealing it further down -- would have it pinned visible.
-        NSString *displayTitle = [title isEqualToString:kPLGroupRoute] ? kPLGroupTitle : title;
+        NSString *displayTitle = [title isEqualToString:kPLGroupRoute] ? PLCOSGroupTitle() : title;
         pane.title = displayTitle;
         pane.navigationItem.title = displayTitle;
         // Marked so the pop refusal can tell this pane apart from anything else on the stack.

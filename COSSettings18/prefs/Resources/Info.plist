@@ -4,7 +4,7 @@
  <key>CFBundleIdentifier</key><string>com.gokuencinar.cossettings18.prefs</string>
  <key>CFBundleExecutable</key><string>COSSettings18Prefs</string>
  <key>CFBundlePackageType</key><string>BNDL</string>
- <key>CFBundleVersion</key><string>0.1.5</string>
- <key>CFBundleShortVersionString</key><string>0.1.5</string>
+ <key>CFBundleVersion</key><string>0.1.6</string>
+ <key>CFBundleShortVersionString</key><string>0.1.6</string>
  <key>NSPrincipalClass</key><string>COSRootListController</string>
 </dict></plist>

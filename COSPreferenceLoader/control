@@ -1,8 +1,8 @@
 Package: preferenceloader
-Name: PreferenceLoader
-Version: 2.3.3
+Name: COS PreferenceLoader (experimental)
+Version: 2.3.3+cos1
 Architecture: iphoneos-arm
-Description: A MobileSubstrate-based utility that allows developers to add entries to the Settings application
+Description: Experimental iOS 18 root-level Tweaks category and grouped preference navigation, based on PreferenceLoader 2.3.3 (LGPL-3.0).
 Maintainer: Dhinak G <dhinak@dhinak.net>
 Author: Dustin Howett <dustin@howett.net>
 Section: System
