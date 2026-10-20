@@ -16,13 +16,17 @@ static BOOL COSBoolean(NSString *key, BOOL fallback);
 // Bounded device diagnostics, without collecting preference names, bundle IDs,
 // phone data or tweak titles. Useful for verifying iOS 18's actual controllers.
 static void COSDiagnostic(NSString *stage, id controller, NSUInteger count) {
-    if (!COSBoolean(@"enabled", NO) || COSDiagnosticCount++ >= 24) return;
+    if (COSDiagnosticCount++ >= 24) return;
     CFStringRef domain = (__bridge CFStringRef)COSDomain;
+    // Always record the constructor even if Preferences cannot read the
+    // switch: otherwise lack of a record cannot distinguish injection failure.
+    BOOL enabledHere = COSBoolean(@"enabled", NO);
     CFPreferencesSetAppValue(CFSTR("diagStage"), (__bridge CFStringRef)stage, domain);
     CFPreferencesSetAppValue(CFSTR("diagClass"), (__bridge CFStringRef)
         (controller ? NSStringFromClass([controller class]) : @"startup"), domain);
     CFPreferencesSetAppValue(CFSTR("diagSpecifierCount"), (__bridge CFPropertyListRef)@(count), domain);
     CFPreferencesSetAppValue(CFSTR("diagHookCalls"), (__bridge CFPropertyListRef)@(COSDiagnosticCount), domain);
+    CFPreferencesSetAppValue(CFSTR("diagEnabledSeen"), enabledHere ? kCFBooleanTrue : kCFBooleanFalse, domain);
     CFPreferencesAppSynchronize(domain);
 }
 
