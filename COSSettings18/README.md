@@ -1,6 +1,8 @@
 # COS Settings 18 (beta experimental)
 
-**Revision 0.1.1:** El panel 0.1.0 no se cargaba en Ajustes de iOS 18.7.1: dyld identificó `have 'arm64', need 'arm64e'`. La arquitectura Mach-O del tweak y de su panel pasa a `arm64e`; el formato del paquete Debian rootless sigue siendo `iphoneos-arm64`. Esta revisión requiere nueva compilación y prueba física antes de considerarse resuelta.
+**Revision 0.1.1:** El panel 0.1.0 no se cargaba en Ajustes de iOS 18.7.1: dyld identificó `have 'arm64', need 'arm64e'`. Se compilaron ambos Mach-O para `arm64e`, se verificaron las arquitecturas en CI y se instalo 0.1.1 por SSH. El formato Debian rootless sigue siendo `iphoneos-arm64`. La apertura del panel sigue pendiente de comprobacion visual tras cerrar y volver a abrir Ajustes.
+
+**Revision 0.1.2 (diagnostico):** tras confirmar el usuario que el panel se abre y los interruptores de ordenacion se guardan, se agrega el controlador `PSGGeneralController` usado por PreferenceLoader en iOS 18. Se guarda un diagnostico acotado en las claves `diagStage`, `diagClass`, `diagSpecifierCount` y `diagHookCalls` del dominio del tweak para medir el resultado sin recoger nombres de tweaks ni datos del telefono. El estado visual requiere prueba tras instalar y cerrar/abrir Ajustes.
 
 Tweak Theos/Logos para organizar las preferencias de jailbreak y personalizar el fondo de Ajustes en iOS 18. El proyecto surge de un estudio funcional de Shuffle 1.6.2, SettingsRevamp 3.0.1 y April 3.1. Todo el codigo es nuevo; no distribuye binarios, iconos ni recursos de esos paquetes.
 

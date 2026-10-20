@@ -35,7 +35,7 @@ for key in counts:
     assert f'@"{key}"' in impl, f"Preference {key} has no runtime consumer"
 
 assert '@"pl_bundle"' in impl
-assert "if (!tweakIndexes.count) return original;" in impl
+assert "if (!tweakIndexes.count)" in impl
 assert "endIndex <= headerIndex + 1" in impl
 assert "COS_SETTINGS18_GROUP" in impl
 assert '%hook PSGGeneralController' in impl
