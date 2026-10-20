@@ -145,7 +145,7 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
     return result;
 }
 
-static void COSApplyGrouping(PSListController *controller) {
+static void COSApplyGrouping(id controller) {
     if (objc_getAssociatedObject(controller, &COSGroupingBusyKey) ||
         ![controller respondsToSelector:@selector(setSpecifiers:)]) return;
     NSArray *current = [controller specifiers];
@@ -170,12 +170,12 @@ static void COSApplyGrouping(PSListController *controller) {
         return;
     }
     objc_setAssociatedObject(controller, &COSGroupingBusyKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    [controller setSpecifiers:grouped];
+    [controller setSpecifiers:[grouped mutableCopy]];
     objc_setAssociatedObject(controller, &COSGroupingBusyKey, nil, OBJC_ASSOCIATION_ASSIGN);
     objc_setAssociatedObject(controller, &COSLastGroupingConfigKey, configuration, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
-static void COSApplyAppearance(PSListController *controller) {
+static void COSApplyAppearance(id controller) {
     if (!COSIsRootController(controller)) return;
     SEL tableSelector = [controller respondsToSelector:@selector(tableView)] ?
         @selector(tableView) : ([controller respondsToSelector:@selector(table)] ? @selector(table) : NULL);
@@ -192,8 +192,8 @@ static void COSApplyAppearance(PSListController *controller) {
     BOOL gradient = enabled && COSBoolean(@"gradientEnabled", YES);
     BOOL useImage = enabled && COSBoolean(@"backgroundImageEnabled", NO);
     BOOL hideSeparators = enabled && COSBoolean(@"hideSeparators", NO);
-    table.separatorStyle = hideSeparators ? UITableViewCellSeparatorStyleNone :
-        ([objc_getAssociatedObject(table, &COSOriginalSeparatorKey) integerValue] - 1);
+    table.separatorStyle = (UITableViewCellSeparatorStyle)(hideSeparators ? UITableViewCellSeparatorStyleNone :
+        ([objc_getAssociatedObject(table, &COSOriginalSeparatorKey) integerValue] - 1));
 
     UIImage *image = useImage ? [UIImage imageWithContentsOfFile:COSBackgroundPath()] : nil;
     if (image) {
