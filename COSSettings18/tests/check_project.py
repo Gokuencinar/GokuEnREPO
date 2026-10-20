@@ -44,6 +44,8 @@ assert 'COSBoolean(@"appearanceEnabled", NO)' in impl
 assert 'com.gokuencinar.cossettings18' in pref_impl
 
 control = (ROOT / "control").read_text(encoding="utf-8")
+makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+assert re.search(r"^export ARCHS := arm64e$", makefile, re.M)
 assert re.search(r"^Architecture: iphoneos-arm64$", control, re.M)
 assert re.search(r"^Package: com\.gokuencinar\.cossettings18$", control, re.M)
 print(f"PASS: {len(entries)} preference keys, 4 XML plists, rootless metadata, scoped hooks")

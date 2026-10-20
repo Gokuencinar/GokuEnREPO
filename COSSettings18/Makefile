@@ -1,5 +1,7 @@
 export TARGET := iphone:clang:latest:16.0
-export ARCHS := arm64
+# Preferences is an arm64e system process on iOS 18.7.1 (verified by dyld).
+# The injected tweak and its preference bundle must contain the arm64e slice.
+export ARCHS := arm64e
 export THEOS_PACKAGE_SCHEME := rootless
 INSTALL_TARGET_PROCESSES = Preferences
 

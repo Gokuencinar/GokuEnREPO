@@ -1,5 +1,7 @@
 # COS Settings 18 (beta experimental)
 
+**Revision 0.1.1:** El panel 0.1.0 no se cargaba en Ajustes de iOS 18.7.1: dyld identificó `have 'arm64', need 'arm64e'`. La arquitectura Mach-O del tweak y de su panel pasa a `arm64e`; el formato del paquete Debian rootless sigue siendo `iphoneos-arm64`. Esta revisión requiere nueva compilación y prueba física antes de considerarse resuelta.
+
 Tweak Theos/Logos para organizar las preferencias de jailbreak y personalizar el fondo de Ajustes en iOS 18. El proyecto surge de un estudio funcional de Shuffle 1.6.2, SettingsRevamp 3.0.1 y April 3.1. Todo el codigo es nuevo; no distribuye binarios, iconos ni recursos de esos paquetes.
 
 ## Funciones implementadas en 0.1.0
@@ -16,7 +18,7 @@ Las pantallas de ajustes de apps del sistema y de App Store, la transparencia de
 - iPhone 11 Pro `iPhone12,3`; iOS 18.7.1 (22H31)
 - Dopamine rootless, ElleKit 1.2, PreferenceLoader 2.2.8
 - SSH operativo como usuario `mobile`
-- Windows sin distribucion WSL ni Theos/SDK iOS local. **No existe aun un .deb compilado ni se ha hecho prueba de inyeccion.**
+- Windows sin distribucion WSL ni Theos/SDK iOS local. El .deb 0.1.0 se compilo en GitHub Actions macOS y se instalo en el iPhone el 21/10/2026. El arranque de Ajustes fue verificado, pero el funcionamiento visual del agrupador y de los fondos aun requiere una prueba en pantalla.
 
 ## Compilar cuando haya toolchain
 
@@ -26,7 +28,7 @@ En macOS o Linux con Theos, SDK iOS y toolchain compatibles:
 make package FINALPACKAGE=1
 ```
 
-El proyecto incluye `.github/workflows/build.yml` para compilar automaticamente en un runner macOS al alojarlo en un repositorio GitHub. No se ha ejecutado aun esa compilacion.
+La variante integrada en `Gokuencinar/GokuEnREPO`, rama `feature/cossettings18-ios18-ci`, compilo correctamente mediante GitHub Actions run `39507496424` (commit `22dea6c`). Artefacto `COSSettings18-rootless`, SHA-256 del ZIP: `59dfe32b2e8a5ef91dc7e0df9ccf8a75f64a29eeb10a5a1e15aae61ff180be5f`.
 
 Ejecutar la validacion previa independiente del SDK:
 
@@ -36,10 +38,12 @@ python3 tests/check_project.py
 
 No se necesita reiniciar SpringBoard para restaurar estos cambios visuales, aunque puede ser necesario cerrar/reabrir Ajustes para refrescar la pantalla principal. El paquete usa el esquema rootless de Theos. Antes de instalar una beta conviene desactivar temporalmente los otros tweaks que modifiquen Ajustes, para evitar hooks de interfaz enfrentados.
 
-## Validacion pendiente antes de instalar
+## Pruebas pendientes tras la instalacion experimental
 
 1. Confirmar en iOS 18.7.1 el selector `specifiers` de `PSUIPrefsListController` o `PrefsListController` (solo se dispone de indicadores estaticos, no de la firma ABI del runtime).
 2. Confirmar en el runtime que los specifiers de PreferenceLoader 2.2.8 exponen el metadato `pl_bundle` y que la pagina de agrupacion conserva la navegacion hacia cada tweak.
-3. Revisar el `.deb` compilado y probar primero ambos interruptores apagados. Activar una funcion por vez, comprobar la navegacion y revisar Cr4shed.
+3. Probar visualmente ambos interruptores, una funcion por vez, comprobar la navegacion y revisar Cr4shed. La instalacion y el arranque de Ajustes ya estan verificados; el resultado visual aun no.
 
 La version experimental no toca el rootfs, no edita preferencias de otras aplicaciones y no instala servicios persistentes. Para revertir una instalacion, desactivar desde el panel o desinstalar `com.gokuencinar.cossettings18` desde Sileo.
+
+Ver [registro de instalacion y recuperacion](INSTALLATION-2026-10-21.md).

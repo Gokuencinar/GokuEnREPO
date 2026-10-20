@@ -20,6 +20,20 @@ jobs:
         run: python3 COSSettings18/tests/check_project.py
       - name: Compile and package
         run: make -C COSSettings18 clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+      - name: Verify Preferences can load arm64e binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          package=$(find COSSettings18/packages -maxdepth 1 -type f -name 'com.gokuencinar.cossettings18_0.1.1_*.deb' -print -quit)
+          test -n "$package"
+          dpkg-deb -x "$package" "$RUNNER_TEMP/cossettings18-verify"
+          for binary in \
+            "$RUNNER_TEMP/cossettings18-verify/var/jb/Library/MobileSubstrate/DynamicLibraries/COSSettings18.dylib" \
+            "$RUNNER_TEMP/cossettings18-verify/var/jb/Library/PreferenceBundles/COSSettings18Prefs.bundle/COSSettings18Prefs"; do
+            test -f "$binary"
+            file "$binary"
+            lipo -archs "$binary" | tr ' ' '\n' | grep -Fx arm64e
+          done
       - name: Upload experimental package
         uses: actions/upload-artifact@v4
         with:
