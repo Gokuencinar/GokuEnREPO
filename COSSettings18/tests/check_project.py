@@ -38,6 +38,7 @@ assert '@"pl_bundle"' in impl
 assert "if (!tweakIndexes.count) return original;" in impl
 assert "endIndex <= headerIndex + 1" in impl
 assert "COS_SETTINGS18_GROUP" in impl
+assert '%hook PSGGeneralController' in impl
 assert "COSIsRootController(controller)" in impl
 assert 'COSBoolean(@"enabled", NO)' in impl
 assert 'COSBoolean(@"appearanceEnabled", NO)' in impl

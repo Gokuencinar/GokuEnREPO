@@ -10,6 +10,21 @@ static NSString *const COSDomain = @"com.gokuencinar.cossettings18";
 static NSString *const COSGroupItemsKey = @"COSSettings18GroupItems";
 static char COSOriginalBackgroundKey, COSOriginalSeparatorKey, COSGroupingBusyKey;
 static char COSOriginalSpecifiersKey, COSLastGroupingConfigKey;
+static NSUInteger COSDiagnosticCount;
+static BOOL COSBoolean(NSString *key, BOOL fallback);
+
+// Bounded device diagnostics, without collecting preference names, bundle IDs,
+// phone data or tweak titles. Useful for verifying iOS 18's actual controllers.
+static void COSDiagnostic(NSString *stage, id controller, NSUInteger count) {
+    if (!COSBoolean(@"enabled", NO) || COSDiagnosticCount++ >= 24) return;
+    CFStringRef domain = (__bridge CFStringRef)COSDomain;
+    CFPreferencesSetAppValue(CFSTR("diagStage"), (__bridge CFStringRef)stage, domain);
+    CFPreferencesSetAppValue(CFSTR("diagClass"), (__bridge CFStringRef)
+        (controller ? NSStringFromClass([controller class]) : @"startup"), domain);
+    CFPreferencesSetAppValue(CFSTR("diagSpecifierCount"), (__bridge CFPropertyListRef)@(count), domain);
+    CFPreferencesSetAppValue(CFSTR("diagHookCalls"), (__bridge CFPropertyListRef)@(COSDiagnosticCount), domain);
+    CFPreferencesAppSynchronize(domain);
+}
 
 static id COSValue(NSString *key, id fallback) {
     id value = CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key,
@@ -100,23 +115,35 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
         if (s.cellType != PSGroupCell && [[s propertyForKey:@"pl_bundle"] isKindOfClass:[NSBundle class]])
             [tweakIndexes addIndex:i];
     }
-    if (!tweakIndexes.count) return original;
+    if (!tweakIndexes.count) {
+        COSDiagnostic(@"no-pl-bundle", controller, original.count);
+        return original;
+    }
     // PreferenceLoader adds an *unnamed group* followed by its consecutive
     // rows. Some PSBundleController entries have no pl_bundle property: use
     // the identifiable entries only as anchors and take the complete group.
     NSUInteger firstIndex = tweakIndexes.firstIndex;
-    if (firstIndex == 0) return original;
+    if (firstIndex == 0) {
+        COSDiagnostic(@"first-index-zero", controller, original.count);
+        return original;
+    }
     NSUInteger headerIndex = NSNotFound;
     for (NSUInteger i = firstIndex; i > 0; --i) {
         PSSpecifier *candidate = original[i - 1];
         if (candidate.cellType == PSGroupCell) { headerIndex = i - 1; break; }
     }
-    if (headerIndex == NSNotFound || ((PSSpecifier *)original[headerIndex]).name.length != 0) return original;
+    if (headerIndex == NSNotFound || ((PSSpecifier *)original[headerIndex]).name.length != 0) {
+        COSDiagnostic(@"missing-pl-header", controller, original.count);
+        return original;
+    }
     NSUInteger endIndex = original.count;
     for (NSUInteger i = headerIndex + 1; i < original.count; ++i) {
         if (((PSSpecifier *)original[i]).cellType == PSGroupCell) { endIndex = i; break; }
     }
-    if (endIndex <= headerIndex + 1 || tweakIndexes.lastIndex >= endIndex) return original;
+    if (endIndex <= headerIndex + 1 || tweakIndexes.lastIndex >= endIndex) {
+        COSDiagnostic(@"invalid-pl-section", controller, original.count);
+        return original;
+    }
 
     NSMutableArray *items = [NSMutableArray new];
     for (NSUInteger i = headerIndex + 1; i < endIndex; ++i) [items addObject:original[i]];
@@ -142,6 +169,7 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
         insertion = (result.count > 0 && ((PSSpecifier *)result[0]).cellType == PSGroupCell) ? 1 : 0;
     }
     [result insertObject:group atIndex:insertion];
+    COSDiagnostic(@"group-built", controller, result.count);
     return result;
 }
 
@@ -172,6 +200,7 @@ static void COSApplyGrouping(id controller) {
     objc_setAssociatedObject(controller, &COSGroupingBusyKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [controller setSpecifiers:[grouped mutableCopy]];
     objc_setAssociatedObject(controller, &COSGroupingBusyKey, nil, OBJC_ASSOCIATION_ASSIGN);
+    COSDiagnostic(@"group-applied", controller, grouped.count);
     objc_setAssociatedObject(controller, &COSLastGroupingConfigKey, configuration, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
@@ -229,6 +258,7 @@ static void COSApplyAppearance(id controller) {
 
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
+    COSDiagnostic(@"modern-view", self, [[self specifiers] count]);
     COSApplyGrouping(self);
     COSApplyAppearance(self);
 }
@@ -241,6 +271,7 @@ static void COSApplyAppearance(id controller) {
 
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
+    COSDiagnostic(@"legacy-view", self, [[self specifiers] count]);
     COSApplyGrouping(self);
     COSApplyAppearance(self);
 }
@@ -248,13 +279,29 @@ static void COSApplyAppearance(id controller) {
 %end
 %end
 
+%group GeneralSettings
+%hook PSGGeneralController
+- (void)viewWillAppear:(BOOL)animated {
+    %orig;
+    COSDiagnostic(@"general-view", self, [[self specifiers] count]);
+    COSApplyGrouping(self);
+    COSApplyAppearance(self);
+}
+%end
+%end
+
 %ctor {
     @autoreleasepool {
         Class modern = objc_getClass("PSUIPrefsListController");
         Class legacy = objc_getClass("PrefsListController");
+        Class general = objc_getClass("PSGGeneralController");
+        COSDiagnostic([NSString stringWithFormat:@"ctor-m%d-l%d-g%d", modern != Nil, legacy != Nil, general != Nil], nil, 0);
         if (modern && class_getInstanceMethod(modern, @selector(viewWillAppear:)) &&
             class_getInstanceMethod(modern, @selector(setSpecifiers:))) %init(ModernSettings);
         if (legacy && legacy != modern && class_getInstanceMethod(legacy, @selector(viewWillAppear:)) &&
             class_getInstanceMethod(legacy, @selector(setSpecifiers:))) %init(LegacySettings);
+        if (general && general != modern && general != legacy &&
+            class_getInstanceMethod(general, @selector(viewWillAppear:)) &&
+            class_getInstanceMethod(general, @selector(setSpecifiers:))) %init(GeneralSettings);
     }
 }
