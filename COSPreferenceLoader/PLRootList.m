@@ -338,7 +338,7 @@ static NSArray<NSString *> *PLTweakTitles(void) {
 }
 
 // The image a PreferenceLoader entry names, looked up the way PreferenceLoader looks it up.
-static UIImage *PLIconForEntry(NSDictionary *record) {
+__attribute__((unused)) static UIImage *PLIconForEntry(NSDictionary *record) {
     NSDictionary *entry = record[@"entry"];
     if (![entry isKindOfClass:NSDictionary.class]) return nil;
     NSString *name = entry[@"icon"];
@@ -388,7 +388,7 @@ static UIImage *PLIconForEntry(NSDictionary *record) {
 
 // Read from the plist rather than from a specifier: the injection runs at launch, and building
 // specifiers for every installed tweak then is what the entry cache exists to avoid.
-static BOOL PLEntryIsInlineSwitch(NSDictionary *entry) {
+__attribute__((unused)) static BOOL PLEntryIsInlineSwitch(NSDictionary *entry) {
     if (![entry isKindOfClass:NSDictionary.class]) return NO;
     // A bundle is a page whatever cell the row is drawn with.
     if (entry[@"bundle"]) return NO;
@@ -602,7 +602,7 @@ static void *PLMakeToggleState(PLRootContext *ctx, BOOL isOn, PLToggleBinding *b
 
 // Turns a copied link row into a switch row. Returns NO without having touched the item when
 // anything needed is missing, so the caller can still make it a link.
-static BOOL PLSetItemToggle(PLRootContext *ctx, void *item, NSString *title, UIImage *icon,
+__attribute__((unused)) static BOOL PLSetItemToggle(PLRootContext *ctx, void *item, NSString *title, UIImage *icon,
                             NSDictionary *entry) {
     if (ctx->toggleTag == UINT32_MAX || !ctx->toggleMeta ||
         ctx->toggleIcon < 0 || ctx->toggleTitle < 0 || ctx->toggleState < 0 ||
