@@ -3,6 +3,7 @@
 #import <Preferences/PSSpecifier.h>
 #import <UIKit/UIKit.h>
 #import <PhotosUI/PhotosUI.h>
+#import <QuartzCore/QuartzCore.h>
 #import <math.h>
 
 static CFStringRef const COSDomain = CFSTR("com.gokuencinar.cossettings18");
@@ -11,6 +12,52 @@ static CFStringRef const COSDomain = CFSTR("com.gokuencinar.cossettings18");
 @end
 
 @implementation COSRootListController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.title = @"COS Settings";
+    if (![self respondsToSelector:@selector(tableView)]) return;
+    UITableView *table = [(id)self tableView];
+    if (![table isKindOfClass:[UITableView class]]) return;
+    UIView *header = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 154)];
+    UIView *panel = [[UIView alloc] initWithFrame:CGRectMake(16, 12, 288, 128)];
+    panel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    panel.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    panel.layer.cornerRadius = 18;
+    panel.layer.masksToBounds = YES;
+    [header addSubview:panel];
+
+    UILabel *symbol = [[UILabel alloc] initWithFrame:CGRectMake(18, 14, 46, 46)];
+    symbol.text = @"⚙︎";
+    symbol.textAlignment = NSTextAlignmentCenter;
+    symbol.font = [UIFont systemFontOfSize:30 weight:UIFontWeightSemibold];
+    symbol.textColor = [UIColor whiteColor];
+    symbol.backgroundColor = [UIColor systemIndigoColor];
+    symbol.layer.cornerRadius = 13;
+    symbol.clipsToBounds = YES;
+    [panel addSubview:symbol];
+
+    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(76, 14, 195, 33)];
+    title.text = @"COS Settings 18";
+    title.adjustsFontSizeToFitWidth = YES;
+    title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightBold];
+    title.textColor = [UIColor labelColor];
+    [panel addSubview:title];
+
+    UILabel *subtitle = [[UILabel alloc] initWithFrame:CGRectMake(76, 46, 195, 20)];
+    subtitle.text = @"Personaliza tus Ajustes";
+    subtitle.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+    subtitle.textColor = [UIColor secondaryLabelColor];
+    [panel addSubview:subtitle];
+
+    UILabel *caption = [[UILabel alloc] initWithFrame:CGRectMake(18, 78, 255, 36)];
+    caption.text = @"ORGANIZACIÓN   •   APARIENCIA   •   iOS 18";
+    caption.font = [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold];
+    caption.textColor = [UIColor tertiaryLabelColor];
+    caption.adjustsFontSizeToFitWidth = YES;
+    [panel addSubview:caption];
+    table.tableHeaderView = header;
+}
 
 - (NSArray *)specifiers {
     if (!_specifiers) {
