@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>title</key><string>COS Settings 18</string><key>items</key><array>
+ <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Organizacion</string><key>footerText</key><string>Los cambios de orden se muestran al volver a la raiz de Ajustes. Solo se agrupan secciones reconocidas.</string></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Activar organizacion</string><key>key</key><string>enabled</string><key>default</key><false/></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Agrupar tweaks</string><key>key</key><string>groupTweaks</string><key>default</key><true/></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Ordenar alfabeticamente</string><key>key</key><string>alphabetizeTweaks</string><key>default</key><true/></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Situar tweaks al principio</string><key>key</key><string>groupAtTop</string><key>default</key><false/></dict>
+ <dict><key>cell</key><string>PSEditTextCell</string><key>label</key><string>Nombre del grupo</string><key>key</key><string>tweaksTitle</string><key>default</key><string>Mis tweaks</string></dict>
+ <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Apariencia</string><key>footerText</key><string>Gradiente en el fondo de la pagina principal. Colores hexadecimales de 6 cifras, por ejemplo #15263A.</string></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Activar apariencia</string><key>key</key><string>appearanceEnabled</string><key>default</key><false/></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Fondo degradado</string><key>key</key><string>gradientEnabled</string><key>default</key><true/></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Usar imagen de fondo</string><key>key</key><string>backgroundImageEnabled</string><key>default</key><false/></dict>
+ <dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Elegir imagen...</string><key>action</key><string>chooseBackground</string></dict>
+ <dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Eliminar imagen</string><key>action</key><string>clearBackground</string></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Desenfocar imagen</string><key>key</key><string>backgroundBlurEnabled</string><key>default</key><false/></dict>
+ <dict><key>cell</key><string>PSEditTextCell</string><key>label</key><string>Color superior</string><key>key</key><string>gradientTop</string><key>default</key><string>#15263A</string></dict>
+ <dict><key>cell</key><string>PSEditTextCell</string><key>label</key><string>Color inferior</string><key>key</key><string>gradientBottom</string><key>default</key><string>#536A85</string></dict>
+ <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Ocultar separadores</string><key>key</key><string>hideSeparators</string><key>default</key><false/></dict>
+ <dict><key>cell</key><string>PSGroupCell</string><key>footerText</key><string>Version experimental. Para desactivar el cambio, apaga ambos interruptores principales y vuelve a abrir Ajustes.</string></dict>
+</array></dict></plist>

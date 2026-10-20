@@ -1,0 +1,28 @@
+name: Build COS Settings 18 (rootless)
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  rootless:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Theos toolchain
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate preferences and packaging
+        run: python3 COSSettings18/tests/check_project.py
+      - name: Compile and package
+        run: make -C COSSettings18 clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+      - name: Upload experimental package
+        uses: actions/upload-artifact@v4
+        with:
+          name: COSSettings18-rootless
+          path: COSSettings18/packages/*.deb
+          if-no-files-found: error
