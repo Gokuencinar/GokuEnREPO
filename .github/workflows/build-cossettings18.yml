@@ -26,10 +26,16 @@ jobs:
           set -euo pipefail
           package=$(find COSSettings18/packages -maxdepth 1 -type f -name 'com.gokuencinar.cossettings18_0.1.1_*.deb' -print -quit)
           test -n "$package"
-          dpkg-deb -x "$package" "$RUNNER_TEMP/cossettings18-verify"
+          # macOS runners have 'ar' and BSD tar, but not necessarily dpkg-deb.
+          mkdir -p "$RUNNER_TEMP/cossettings18-verify/archive" "$RUNNER_TEMP/cossettings18-verify/root"
+          cd "$RUNNER_TEMP/cossettings18-verify/archive"
+          ar -x "$GITHUB_WORKSPACE/$package"
+          data_tar=$(find . -maxdepth 1 -name 'data.tar.*' -print -quit)
+          test -n "$data_tar"
+          tar -xf "$data_tar" -C "$RUNNER_TEMP/cossettings18-verify/root"
           for binary in \
-            "$RUNNER_TEMP/cossettings18-verify/var/jb/Library/MobileSubstrate/DynamicLibraries/COSSettings18.dylib" \
-            "$RUNNER_TEMP/cossettings18-verify/var/jb/Library/PreferenceBundles/COSSettings18Prefs.bundle/COSSettings18Prefs"; do
+            "$RUNNER_TEMP/cossettings18-verify/root/var/jb/Library/MobileSubstrate/DynamicLibraries/COSSettings18.dylib" \
+            "$RUNNER_TEMP/cossettings18-verify/root/var/jb/Library/PreferenceBundles/COSSettings18Prefs.bundle/COSSettings18Prefs"; do
             test -f "$binary"
             file "$binary"
             lipo -archs "$binary" | tr ' ' '\n' | grep -Fx arm64e
