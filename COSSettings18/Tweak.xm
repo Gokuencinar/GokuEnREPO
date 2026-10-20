@@ -258,37 +258,13 @@ static void COSApplyAppearance(id controller) {
     }
 }
 
-%group ModernSettings
-%hook PSUIPrefsListController
-
-- (void)viewWillAppear:(BOOL)animated {
-    %orig;
-    COSDiagnostic(@"modern-view", self, [[(id)self specifiers] count]);
-    COSApplyGrouping(self);
-    COSApplyAppearance(self);
-}
-
-%end
-%end
-
-%group LegacySettings
+// Use the same runtime target selection as PreferenceLoader 2.2.8. On iOS 18
+// the only preloaded target is often PSGGeneralController, not either root class.
+%group SettingsHost
 %hook PrefsListController
-
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    COSDiagnostic(@"legacy-view", self, [[(id)self specifiers] count]);
-    COSApplyGrouping(self);
-    COSApplyAppearance(self);
-}
-
-%end
-%end
-
-%group GeneralSettings
-%hook PSGGeneralController
-- (void)viewWillAppear:(BOOL)animated {
-    %orig;
-    COSDiagnostic(@"general-view", self, [[(id)self specifiers] count]);
+    COSDiagnostic(@"host-view", self, 0);
     COSApplyGrouping(self);
     COSApplyAppearance(self);
 }
@@ -300,13 +276,14 @@ static void COSApplyAppearance(id controller) {
         Class modern = objc_getClass("PSUIPrefsListController");
         Class legacy = objc_getClass("PrefsListController");
         Class general = objc_getClass("PSGGeneralController");
-        COSDiagnostic([NSString stringWithFormat:@"ctor-m%d-l%d-g%d", modern != Nil, legacy != Nil, general != Nil], nil, 0);
-        if (modern && class_getInstanceMethod(modern, @selector(viewWillAppear:)) &&
-            class_getInstanceMethod(modern, @selector(setSpecifiers:))) %init(ModernSettings);
-        if (legacy && legacy != modern && class_getInstanceMethod(legacy, @selector(viewWillAppear:)) &&
-            class_getInstanceMethod(legacy, @selector(setSpecifiers:))) %init(LegacySettings);
-        if (general && general != modern && general != legacy &&
-            class_getInstanceMethod(general, @selector(viewWillAppear:)) &&
-            class_getInstanceMethod(general, @selector(setSpecifiers:))) %init(GeneralSettings);
+        Class host = modern ?: legacy ?: general;
+        COSDiagnostic([NSString stringWithFormat:@"ctor-m%d-l%d-g%d-h%d-v%d-s%d-w%d",
+            modern != Nil, legacy != Nil, general != Nil, host != Nil,
+            host && class_getInstanceMethod(host, @selector(viewWillAppear:)) != NULL,
+            host && class_getInstanceMethod(host, @selector(specifiers)) != NULL,
+            host && class_getInstanceMethod(host, @selector(setSpecifiers:)) != NULL], nil, 0);
+        if (host && class_getInstanceMethod(host, @selector(viewWillAppear:))) {
+            %init(SettingsHost, PrefsListController = host);
+        }
     }
 }
