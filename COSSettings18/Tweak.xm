@@ -175,7 +175,8 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
 
 static void COSApplyGrouping(id controller) {
     if (objc_getAssociatedObject(controller, &COSGroupingBusyKey) ||
-        ![controller respondsToSelector:@selector(setSpecifiers:)]) return;
+        ![controller respondsToSelector:@selector(setSpecifiers:)] ||
+        ![controller respondsToSelector:@selector(specifiers)]) return;
     NSArray *current = [controller specifiers];
     BOOL containsOurLink = NO;
     for (PSSpecifier *s in current) {
@@ -258,7 +259,7 @@ static void COSApplyAppearance(id controller) {
 
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    COSDiagnostic(@"modern-view", self, [[self specifiers] count]);
+    COSDiagnostic(@"modern-view", self, [[(id)self specifiers] count]);
     COSApplyGrouping(self);
     COSApplyAppearance(self);
 }
@@ -271,7 +272,7 @@ static void COSApplyAppearance(id controller) {
 
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    COSDiagnostic(@"legacy-view", self, [[self specifiers] count]);
+    COSDiagnostic(@"legacy-view", self, [[(id)self specifiers] count]);
     COSApplyGrouping(self);
     COSApplyAppearance(self);
 }
@@ -283,7 +284,7 @@ static void COSApplyAppearance(id controller) {
 %hook PSGGeneralController
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    COSDiagnostic(@"general-view", self, [[self specifiers] count]);
+    COSDiagnostic(@"general-view", self, [[(id)self specifiers] count]);
     COSApplyGrouping(self);
     COSApplyAppearance(self);
 }
