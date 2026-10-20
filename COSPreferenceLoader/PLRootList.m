@@ -243,6 +243,13 @@ static NSString *PLEntrySourceDirectory(NSDictionary *record) {
 // tap and to recognise a section this tweak has already injected.
 static const char *const kPLIdentityPrefix = "PLTweak:";
 
+// A separate identity from every real tweak (including one literally named "Tweaks").
+// Only this row is injected into the SwiftUI root. Its destination is a normal
+// PSListController that contains all PreferenceLoader entries.
+static NSString *const kPLGroupIdentity = @"PLGroup:all-tweaks";
+static NSString *const kPLGroupRoute = @"__PL_GROUP_ALL_TWEAKS__";
+static NSString *const kPLGroupTitle = @"Tweaks";
+
 static NSString *PLIdentityKeyForTitle(NSString *title) {
     return [@(kPLIdentityPrefix) stringByAppendingString:title];
 }
@@ -256,6 +263,15 @@ static NSMutableDictionary<NSString *, NSDictionary *> *PLEntriesByTitle(void) {
     // stored in a static dangles once the runloop turn drains.
     dispatch_once(&once, ^{ entries = [[NSMutableDictionary alloc] init]; });
     return entries;
+}
+
+// The historical title-keyed dictionary is retained for legacy code, but it
+// overwrites entries with duplicate labels. The grouped pane needs every entry.
+static NSMutableArray<NSDictionary *> *PLEntryRecords(void) {
+    static NSMutableArray *records;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ records = [[NSMutableArray alloc] init]; });
+    return records;
 }
 
 // Read once per launch, not on every rebuild.
@@ -294,9 +310,12 @@ static NSArray<NSString *> *PLTweakTitles(void) {
             // turns an entry into specifiers, and a bundle without an explicit label falls back
             // to it. Its directory is kept because libprefs wants that too, as the bundle the
             // entry's strings come out of, and because the icon sits beside the plist.
-            PLEntriesByTitle()[label] = @{ @"entry": entry,
-                                          @"name": item.lastPathComponent.stringByDeletingPathExtension,
-                                          @"source": path.stringByDeletingLastPathComponent };
+            NSDictionary *record = @{ @"entry": entry,
+                                      @"label": label,
+                                      @"name": item.lastPathComponent.stringByDeletingPathExtension,
+                                      @"source": path.stringByDeletingLastPathComponent };
+            PLEntriesByTitle()[label] = record;
+            [PLEntryRecords() addObject:record];
         }
         [found sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
         titles = [found copy];
@@ -751,20 +770,11 @@ static const void *PLTemplateSection(PLRootContext *ctx, const void **itemOut) {
     return NULL;
 }
 
-// Where the injected section goes: above the accessory sections at the foot of the list, at the
-// very end when there are none.
-//
-// Only a trailing run is stepped over, so an accessory-named section in the body of the list
-// cannot pull the tweak section up with it. The tweaks stay last of Settings' own sections, as on
-// iOS 17 and earlier, with the accessory sections underneath.
+// Put the single Tweaks link near the top, after the first two native sections.
+// Insert an entire section, never within an Apple section or between its rows.
+// If the root is still loading, the next Apple snapshot will be injected again.
 static NSInteger PLSectionInsertIndex(PLRootContext *ctx) {
-    NSInteger index = ctx->sectionCount;
-    while (index > 0) {
-        const void *section = PLSwiftArrayElement(ctx->snapshot, index - 1, ctx->sectionStride);
-        if (!section || !PLIsAccessorySection(PLSectionIdentityName(ctx, section))) break;
-        index--;
-    }
-    return index;
+    return MIN((NSInteger)2, ctx->sectionCount);
 }
 
 void PLRootListInjectTweakSection(void) {
@@ -799,26 +809,24 @@ void PLRootListInjectTweakSection(void) {
     }
     const void *templateItems = (const uint8_t *)templateSection + ctx.sectionItems;
 
-    void *items = PLSwiftArrayAllocate(templateItems, (NSInteger)titles.count, ctx.itemStride, 7);
+    // No multi-row injection into the SwiftUI root. The complete list lives
+    // behind one link, resolved by PLControllerForTweakGroup below.
+    if (!ctx.itemIDMeta || ctx.itemID < 0 ||
+        PLSwiftEnumTagNamed(ctx.itemIDMeta, kPLIdentifierCarrierCase) == UINT32_MAX)
+        return;
+    uint32_t sectionTag = PLSectionIdentityTag(&ctx);
+    if (sectionTag == UINT32_MAX) return; // Never give SwiftUI duplicate section identities.
+
+    void *items = PLSwiftArrayAllocate(templateItems, 1, ctx.itemStride, 7);
     if (!items) { PLRootLog(@"[inject] item array allocation failed"); return; }
     uint8_t *itemBase = (uint8_t *)items + PLSwiftArrayElementOffset();
-    for (NSUInteger i = 0; i < titles.count; i++) {
-        void *item = itemBase + i * ctx.itemStride;
-        PLSwiftValueInitializeWithCopy(item, templateItem, ctx.itemMeta);
-        PLSetItemIdentity(&ctx, item, PLIdentityKeyForTitle(titles[i]));
-        NSDictionary *record = PLEntriesByTitle()[titles[i]];
-        UIImage *image = PLIconForEntry(record);
-        NSDictionary *entry = record[@"entry"];
-        // A switch entry becomes a switch row where the model allows it, a link row where not.
-        BOOL inlineSwitch = PLEntryIsInlineSwitch(entry);
-        if (inlineSwitch) PLRootLog(@"[inject] %@ is an inline switch entry", titles[i]);
-        BOOL placed = inlineSwitch && PLSetItemToggle(&ctx, item, titles[i], image, entry);
-        if (placed) {
-            PLRootLog(@"[inject] row %lu (%@) is a switch", (unsigned long)i, titles[i]);
-        } else if (!PLSetItemAppearance(&ctx, item, titles[i], image)) {
-            PLRootLog(@"[inject] row %lu is not a link; aborting", (unsigned long)i);
-            return;
-        }
+    void *item = itemBase;
+    PLSwiftValueInitializeWithCopy(item, templateItem, ctx.itemMeta);
+    PLSetItemIdentity(&ctx, item, kPLGroupIdentity);
+    UIImage *icon = [UIImage systemImageNamed:@"square.grid.2x2.fill"];
+    if (!PLSetItemAppearance(&ctx, item, kPLGroupTitle, icon)) {
+        PLRootLog(@"[inject] Tweaks template is not a link; aborting");
+        return;
     }
 
     // Written into the array's spare capacity when the section belongs at the end and there is
@@ -838,7 +846,6 @@ void PLRootListInjectTweakSection(void) {
     // Both read the list as Apple left it, so they are settled before the rebuild below moves
     // any section out from under the context's count and indices.
     NSInteger index = PLSectionInsertIndex(&ctx);
-    uint32_t sectionTag = PLSectionIdentityTag(&ctx);
 
     if (capacity <= ctx.sectionCount || index < ctx.sectionCount) {
         void *grown = PLSwiftArrayAllocate(ctx.snapshot, ctx.sectionCount + 1, ctx.sectionStride, 7);
@@ -863,7 +870,7 @@ void PLRootListInjectTweakSection(void) {
 
     void *slot = (void *)(storage + PLSwiftArrayElementOffset() + (size_t)index * ctx.sectionStride);
     PLSwiftValueInitializeWithCopy(slot, templateSection, ctx.sectionMeta);
-    if (ctx.sectionID >= 0 && sectionTag != UINT32_MAX) {
+    if (ctx.sectionID >= 0) {
         // The template's identifier is an empty case, so it holds nothing to release.
         void *identifier = (uint8_t *)slot + ctx.sectionID;
         memset(identifier, 0, PLSwiftTypeSize(ctx.sectionIDMeta));
@@ -872,10 +879,6 @@ void PLRootListInjectTweakSection(void) {
                   PLSwiftEnumCaseName(ctx.sectionIDMeta,
                                       PLSwiftEnumTag(identifier, ctx.sectionIDMeta)) ?: "?",
                   sectionTag);
-    } else {
-        // No empty case is free, so the copy keeps the template's identity and SwiftUI draws only
-        // one of the two. Injected anyway: a section that may not appear is no worse than none.
-        PLRootLog(@"[inject] no free section identity; the copy keeps the template's");
     }
     // The copy retained the template's item array; overwriting the field drops that reference
     // without releasing it, for the same reason as above.
@@ -883,7 +886,7 @@ void PLRootListInjectTweakSection(void) {
 
     // Raising the count is the last step, so the slot is complete before the list can see it.
     *(NSInteger *)(storage + kPLArrayCountOffset) = ctx.sectionCount + 1;
-    PLRootLog(@"[inject] section %td of %td holds %lu row(s)",
+    PLRootLog(@"[inject] section %td of %td holds one Tweaks link (%lu entries in pane)",
               index, capacity, (unsigned long)titles.count);
 }
 
@@ -1331,6 +1334,50 @@ static UIViewController *PLControllerForEntry(NSDictionary *record) {
     return controller;
 }
 
+// One regular PSListController presents every valid PreferenceLoader entry,
+// retaining the original entry metadata, targets and lazy bundle loading.
+// Unlike the old title-keyed root router, sorting records preserves duplicate
+// display labels (different tweaks can have the same human-readable name).
+static UIViewController *PLControllerForTweakGroup(void) {
+    PLTweakTitles(); // Populates the once-per-launch records before reading them.
+    PLEntryPaneController *pane = [[PLEntryPaneController alloc] init];
+    if (![pane respondsToSelector:@selector(specifiersFromEntry:sourcePreferenceLoaderBundlePath:title:)]) {
+        [pane release];
+        return nil;
+    }
+
+    NSArray *records = [PLEntryRecords() sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+        NSComparisonResult order = [a[@"label"] localizedCaseInsensitiveCompare:b[@"label"]];
+        if (order != NSOrderedSame) return order;
+        return [a[@"source"] localizedCaseInsensitiveCompare:b[@"source"]];
+    }];
+    NSMutableArray *items = [NSMutableArray arrayWithObject:[PSSpecifier emptyGroupSpecifier]];
+    for (NSDictionary *record in records) {
+        NSDictionary *entry = record[@"entry"];
+        if (![entry isKindOfClass:NSDictionary.class]) continue;
+        @try {
+            NSArray *specifiers = [pane specifiersFromEntry:entry
+                          sourcePreferenceLoaderBundlePath:PLEntrySourceDirectory(record)
+                                                     title:record[@"name"]];
+            for (id specifier in specifiers) {
+                if ([specifier isKindOfClass:PSSpecifier.class] &&
+                    ((PSSpecifier *)specifier).cellType != PSGroupCell)
+                    [items addObject:specifier];
+            }
+        } @catch (NSException *exception) {
+            PLRootLog(@"[group] skipped invalid entry (%@)", exception.name);
+        }
+    }
+    if (items.count <= 1) {
+        [pane release];
+        return nil;
+    }
+    [pane setPaneSpecifiers:items];
+    [pane setRootController:(id)pane]; // Navigation hook assigns the actual stack on push.
+    [pane setParentController:nil];
+    return [pane autorelease];
+}
+
 static const void *kPLFilledKey = &kPLFilledKey;
 
 BOOL PLRootListIsFilledContainer(UIViewController *controller) {
@@ -1364,16 +1411,18 @@ UIViewController *PLRootListPaneForCurrentSelection(void) {
 
     UIViewController *pane = PLPaneCache()[title];
     if (!pane) {
-        NSDictionary *record = PLEntriesByTitle()[title];
-        pane = record ? PLControllerForEntry(record) : nil;
+        NSDictionary *record = [title isEqualToString:kPLGroupRoute] ? nil : PLEntriesByTitle()[title];
+        pane = [title isEqualToString:kPLGroupRoute] ? PLControllerForTweakGroup() :
+               (record ? PLControllerForEntry(record) : nil);
         if (!pane) { PLRootLog(@"[open] no controller for %@", title); return nil; }
         PLPaneCache()[title] = pane;
 
         // Set once at build time, not on every lookup: the detail path asks for the pane on every
         // runloop turn, and a tweak that manages navigationItem.title itself -- hiding it at the
         // top of its scroll and revealing it further down -- would have it pinned visible.
-        pane.title = title;
-        pane.navigationItem.title = title;
+        NSString *displayTitle = [title isEqualToString:kPLGroupRoute] ? kPLGroupTitle : title;
+        pane.title = displayTitle;
+        pane.navigationItem.title = displayTitle;
         // Marked so the pop refusal can tell this pane apart from anything else on the stack.
         objc_setAssociatedObject(pane, kPLFilledKey, pane, OBJC_ASSOCIATION_ASSIGN);
         PLRootLog(@"[open] built the pane for %@", title);
@@ -1409,7 +1458,9 @@ static void PLReassertSelectionForPane(UIViewController *pane) {
     // through its own witness rather than overwritten -- what Swift itself does on assignment.
     PLSwiftValueDestroy(selection, ctx.itemIDMeta);
     memset(selection, 0, size);
-    PLSwiftStringInitialize(PLIdentityKeyForTitle(title).UTF8String, selection);
+    NSString *identity = [title isEqualToString:kPLGroupRoute] ?
+        kPLGroupIdentity : PLIdentityKeyForTitle(title);
+    PLSwiftStringInitialize(identity.UTF8String, selection);
     PLSwiftEnumInject(selection, tag, ctx.itemIDMeta);
 
     if (!gPLReassertLogged) {
@@ -1463,6 +1514,7 @@ static NSString *PLSelectedTweakTitle(PLRootContext *ctx) {
     NSString *identity = @(key);
     free(key);
 
+    if ([identity isEqualToString:kPLGroupIdentity]) return kPLGroupRoute;
     for (NSString *title in PLEntriesByTitle()) {
         if ([PLIdentityKeyForTitle(title) isEqualToString:identity]) return title;
     }

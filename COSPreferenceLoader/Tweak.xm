@@ -134,8 +134,8 @@ static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context
 
 /* {{{ iOS 18+ root list
    From iOS 18 the Settings root is a SwiftUI list and both classes hooked above are gone, so
-   the specifier injection never runs. The entries are written into the SwiftUI model instead,
-   as their own section at the bottom of the list. See PLRootList.h. */
+   the specifier injection never runs. One link near the top of the SwiftUI root
+   opens a grouped PSListController with all entries. See PLRootList.h. */
 %group RootList
 
 %hook _TtC11SettingsApp24SettingsAppSceneDelegate

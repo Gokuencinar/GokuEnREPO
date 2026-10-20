@@ -1,11 +1,11 @@
 #import <UIKit/UIKit.h>
 
-// Puts the PreferenceLoader entries into the Settings root list on iOS 18 and later.
+// Puts one "Tweaks" link in the Settings root list on iOS 18 and later.
 //
 // From iOS 18 the root is a SwiftUI list driven by SettingsApp.PrimarySettingsListModel.
 // PSUIPrefsListController and PrefsListController are gone, so the specifier injection in
-// Tweak.xm has nothing left to hook. The entries are written into that model instead, as
-// their own section at the bottom of the list -- where they also sit on iOS 17 and earlier.
+// Tweak.xm has nothing left to hook. A single SwiftUI row is inserted near the
+// beginning of the root; its destination is a PSListController with every tweak.
 //
 // Offsets and enum tags are resolved through the Swift runtime rather than written down, so
 // a layout change in a future release fails to resolve instead of corrupting the model. See
@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-// Installs a runloop observer that appends the section to each snapshot Apple publishes.
+// Installs a runloop observer that inserts the link section into each new snapshot.
 //
 // The model is rebuilt several times while Settings launches, and every rebuild is published
 // through the observation machinery that makes SwiftUI evaluate the list. Injecting into a new
@@ -23,7 +23,7 @@ extern "C" {
 // would need a way to make SwiftUI look again, and there is none reachable from here.
 void PLRootListInstallInjector(void);
 
-// Appends the section to the current snapshot. Called by the observer. Nothing is written to
+// Inserts the section into the current snapshot. Called by the observer. Nothing is written to
 // disk and nothing survives a relaunch of Settings.
 void PLRootListInjectTweakSection(void);
 
