@@ -1,6 +1,6 @@
 Package: preferenceloader
 Name: COS PreferenceLoader (experimental)
-Version: 2.3.3+cos1
+Version: 2.3.3+cos2
 Architecture: iphoneos-arm
 Description: Experimental iOS 18 root-level Tweaks category and grouped preference navigation, based on PreferenceLoader 2.3.3 (LGPL-3.0).
 Maintainer: Dhinak G <dhinak@dhinak.net>

@@ -10,6 +10,8 @@ static NSString *const COSDomain = @"com.gokuencinar.cossettings18";
 static NSString *const COSGroupItemsKey = @"COSSettings18GroupItems";
 static char COSOriginalBackgroundKey, COSOriginalSeparatorKey, COSGroupingBusyKey;
 static char COSOriginalSpecifiersKey, COSLastGroupingConfigKey;
+static char COSOriginalCellColorKey, COSOriginalContentColorKey, COSOriginalCellConfigurationKey;
+static char COSCellStyledKey;
 static NSUInteger COSDiagnosticCount;
 static BOOL COSBoolean(NSString *key, BOOL fallback);
 
@@ -212,14 +214,73 @@ static void COSApplyGrouping(id controller) {
     objc_setAssociatedObject(controller, &COSLastGroupingConfigKey, configuration, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
-static void COSApplyAppearance(id controller) {
-    if (!COSIsRootController(controller)) return;
+// The Settings root is SwiftUI on iOS 18. Its list does not use this
+// PSListController's UITableView. Apply appearance only to the real UIKit
+// pages we own or to PreferenceLoader's grouped tweak destination.
+static BOOL COSCanStyleController(id controller) {
+    NSString *name = NSStringFromClass([controller class]);
+    if ([name isEqualToString:@"PLEntryPaneController"] ||
+        [name isEqualToString:@"COSGroupedListController"] ||
+        [name isEqualToString:@"COSRootListController"] ||
+        [name isEqualToString:@"COSOrganizationListController"] ||
+        [name isEqualToString:@"COSAppearanceListController"] ||
+        [name isEqualToString:@"COSStatusListController"]) return YES;
+    if (@available(iOS 18.0, *)) return NO;
+    return COSIsRootController(controller);
+}
+
+static UITableView *COSTableForController(id controller) {
+    if (!COSCanStyleController(controller) || ![controller isViewLoaded]) return nil;
     SEL tableSelector = [controller respondsToSelector:@selector(tableView)] ?
         @selector(tableView) : ([controller respondsToSelector:@selector(table)] ? @selector(table) : NULL);
-    if (!tableSelector) return;
+    if (!tableSelector) return nil;
     UITableView *(*getTable)(id, SEL) = (UITableView *(*)(id, SEL))objc_msgSend;
     UITableView *table = getTable(controller, tableSelector);
-    if (![table isKindOfClass:[UITableView class]]) return;
+    return [table isKindOfClass:[UITableView class]] ? table : nil;
+}
+
+static void COSStyleVisibleCells(UITableView *table) {
+    BOOL enabled = COSBoolean(@"appearanceEnabled", NO);
+    BOOL hasBackground = enabled && (COSBoolean(@"gradientEnabled", YES) ||
+        COSBoolean(@"backgroundImageEnabled", NO));
+    for (UITableViewCell *cell in table.visibleCells) {
+        NSNumber *applied = objc_getAssociatedObject(cell, &COSCellStyledKey);
+        if (applied && applied.boolValue == hasBackground) continue;
+        if (!objc_getAssociatedObject(cell, &COSOriginalCellColorKey)) {
+            objc_setAssociatedObject(cell, &COSOriginalCellColorKey,
+                cell.backgroundColor ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(cell, &COSOriginalContentColorKey,
+                cell.contentView.backgroundColor ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            if (@available(iOS 14.0, *))
+                objc_setAssociatedObject(cell, &COSOriginalCellConfigurationKey,
+                    cell.backgroundConfiguration ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        }
+        id originalCell = objc_getAssociatedObject(cell, &COSOriginalCellColorKey);
+        id originalContent = objc_getAssociatedObject(cell, &COSOriginalContentColorKey);
+        if (hasBackground) {
+            // A translucent system surface preserves readable controls over a photo.
+            cell.backgroundColor = [[UIColor secondarySystemGroupedBackgroundColor] colorWithAlphaComponent:0.82];
+            cell.contentView.backgroundColor = UIColor.clearColor;
+            if (@available(iOS 14.0, *)) {
+                UIBackgroundConfiguration *config = [UIBackgroundConfiguration clearConfiguration];
+                config.backgroundColor = [[UIColor secondarySystemGroupedBackgroundColor] colorWithAlphaComponent:0.82];
+                cell.backgroundConfiguration = config;
+            }
+        } else {
+            cell.backgroundColor = originalCell == [NSNull null] ? nil : originalCell;
+            cell.contentView.backgroundColor = originalContent == [NSNull null] ? nil : originalContent;
+            if (@available(iOS 14.0, *)) {
+                id originalConfig = objc_getAssociatedObject(cell, &COSOriginalCellConfigurationKey);
+                cell.backgroundConfiguration = originalConfig == [NSNull null] ? nil : originalConfig;
+            }
+        }
+        objc_setAssociatedObject(cell, &COSCellStyledKey, @(hasBackground), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+}
+
+static void COSApplyAppearance(id controller) {
+    UITableView *table = COSTableForController(controller);
+    if (!table) return;
 
     if (!objc_getAssociatedObject(table, &COSOriginalSeparatorKey)) {
         objc_setAssociatedObject(table, &COSOriginalSeparatorKey, @(table.separatorStyle + 1), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -259,7 +320,22 @@ static void COSApplyAppearance(id controller) {
         id original = objc_getAssociatedObject(table, &COSOriginalBackgroundKey);
         table.backgroundView = original == [NSNull null] ? nil : original;
     }
+    COSStyleVisibleCells(table);
 }
+
+%group AppearancePages
+%hook PSListController
+- (void)viewWillAppear:(BOOL)animated {
+    %orig;
+    if (COSCanStyleController(self)) COSApplyAppearance(self);
+}
+- (void)viewDidLayoutSubviews {
+    %orig;
+    UITableView *table = COSTableForController(self);
+    if (table) COSStyleVisibleCells(table);
+}
+%end
+%end
 
 // Use the same runtime target selection as PreferenceLoader 2.2.8. On iOS 18
 // the only preloaded target is often PSGGeneralController, not either root class.
@@ -287,6 +363,11 @@ static void COSApplyAppearance(id controller) {
             host && class_getInstanceMethod(host, @selector(setSpecifiers:)) != NULL], nil, 0);
         if (host && class_getInstanceMethod(host, @selector(viewWillAppear:))) {
             %init(SettingsHost, PrefsListController = host);
+        }
+        Class list = objc_getClass("PSListController");
+        if (list && class_getInstanceMethod(list, @selector(viewWillAppear:)) &&
+            class_getInstanceMethod(list, @selector(viewDidLayoutSubviews))) {
+            %init(AppearancePages);
         }
     }
 }

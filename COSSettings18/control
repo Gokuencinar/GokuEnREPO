@@ -1,6 +1,6 @@
 Package: com.gokuencinar.cossettings18
 Name: COS Settings 18 (experimental)
-Version: 0.1.6
+Version: 0.1.7
 Architecture: iphoneos-arm64
 Description: Agrupacion de tweaks y personalizacion reversible de Ajustes, preparada para probar en iOS 18.
 Maintainer: Gokuencinar
