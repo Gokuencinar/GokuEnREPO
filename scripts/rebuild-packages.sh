@@ -64,6 +64,16 @@ for block in blocks:
             rewritten.append("Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depiction.html")
         block = "\n".join(rewritten)
 
+    if package == "com.ps.cconandoff":
+        rewritten = []
+        for line in block.splitlines():
+            if line.startswith("Description: "):
+                line = "Description: Toggle Wi-Fi and Bluetooth On/Off from Control Center (iOS 11+, including iOS 18)."
+            elif line.startswith("Depiction: "):
+                line = "Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/CC-On-Off/depiction.html"
+            rewritten.append(line)
+        block = "\n".join(rewritten)
+
     out.append(block)
 
 path.write_text("\n\n".join(out) + ("\n" if out else ""))

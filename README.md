@@ -26,6 +26,12 @@ BetterWiFi RH expands the stock Wi-Fi settings with more useful network informat
 
 [Details](tweaks/BetterWiFi-RH/README.md) · [Changelog](tweaks/BetterWiFi-RH/CHANGELOG.md)
 
+### CC On & Off
+
+Toggle Wi-Fi and Bluetooth On/Off from Control Center (iOS 11+, including iOS 18).
+
+[Details](tweaks/CC-On-Off/README.md)
+
 ### Nuke Wireless
 
 Nuke Wireless is a Wi-Fi management toolkit focused on discovering and controlling devices on the local network. It is still under development and does not have a public release yet.
