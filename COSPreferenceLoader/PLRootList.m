@@ -264,6 +264,43 @@ static NSString *PLCOSGroupTitle(void) {
     return [value isKindOfClass:NSString.class] && [value length] ? value : @"Tweaks";
 }
 
+// The SettingsApp SwiftUI bridge accepts UIImage for Icon.IconType.image.
+// A bare SF Symbol is a template image: on iOS 18 it can inherit a dark tint
+// and nearly disappear against the dark Settings background. Render an opaque,
+// Settings-style colored tile so the white glyph is legible in either theme.
+// Keep the image alive: this file is compiled with manual reference counting.
+static UIImage *PLCOSTweaksIcon(void) {
+    static UIImage *icon;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        const CGFloat side = 30.0;
+        UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat preferredFormat];
+        // Transparent corners; only the rounded tile itself is opaque.
+        format.opaque = NO;
+        UIGraphicsImageRenderer *renderer =
+            [[[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(side, side) format:format] autorelease];
+        UIImage *rendered = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+            [[UIColor colorWithRed:0.22 green:0.36 blue:0.82 alpha:1.0] setFill];
+            [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, side, side)
+                                       cornerRadius:7.0] fill];
+
+            // Four filled rounded squares instead of a template SF Symbol:
+            // they retain their white color without relying on SwiftUI tint.
+            [UIColor.whiteColor setFill];
+            for (NSUInteger row = 0; row < 2; ++row) {
+                for (NSUInteger column = 0; column < 2; ++column) {
+                    CGRect square = CGRectMake(7.5 + column * 9.0,
+                                               7.5 + row * 9.0, 6.0, 6.0);
+                    [[UIBezierPath bezierPathWithRoundedRect:square
+                                               cornerRadius:1.3] fill];
+                }
+            }
+        }];
+        icon = [[rendered imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal] retain];
+    });
+    return icon;
+}
+
 static NSString *PLIdentityKeyForTitle(NSString *title) {
     return [@(kPLIdentityPrefix) stringByAppendingString:title];
 }
@@ -838,7 +875,7 @@ void PLRootListInjectTweakSection(void) {
     void *item = itemBase;
     PLSwiftValueInitializeWithCopy(item, templateItem, ctx.itemMeta);
     PLSetItemIdentity(&ctx, item, kPLGroupIdentity);
-    UIImage *icon = [UIImage systemImageNamed:@"square.grid.2x2.fill"];
+    UIImage *icon = PLCOSTweaksIcon();
     if (!PLSetItemAppearance(&ctx, item, PLCOSGroupTitle(), icon)) {
         PLRootLog(@"[inject] Tweaks template is not a link; aborting");
         return;
