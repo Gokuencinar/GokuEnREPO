@@ -1420,3 +1420,37 @@ SHA256: f5915acce67168998c895e184eaf69e6d5396454c7dbc350490d1f15a7da926c
 Section: Networking
 Priority: important
 Description: arp, ndp, traceroute, mnc, mtest, traceroute6, ifconfig, ip6addrctl, netstat, ping6, route, rtsol
+
+Package: com.gokuencinar.cossettings18
+Name: COS Settings 18 (experimental)
+Maintainer: Gokuencinar
+Author: Gokuencinar
+Section: Tweaks
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+cos2), ellekit | mobilesubstrate
+Architecture: iphoneos-arm64
+Version: 0.1.8
+Installed-Size: 220
+Description: Una manera cómoda de ordenar tus tweaks como hacía Shuffle en versiones anteriores de iOS.
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/COSSettings18/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/COSSettings18/depiction.html
+Filename: tweaks/COSSettings18/debs/com.gokuencinar.cossettings18_0.1.8_iphoneos-arm64.deb
+Size: 24978
+MD5sum: 801825c710ca1af99cdeb16b11e578ed
+SHA256: 734babc71972794927aea34ce491d2325b5a66583a6d17a94ddc9dd6f03af22e
+
+Package: preferenceloader
+Name: COS PreferenceLoader (experimental)
+Description: Experimental iOS 18 root-level Tweaks category and grouped preference navigation, based on PreferenceLoader 2.3.3 (LGPL-3.0).
+Maintainer: Dhinak G <dhinak@dhinak.net>
+Author: Dustin Howett <dustin@howett.net>
+Section: System
+Depends: mobilesubstrate, firmware (>= 15.0)
+Conflicts: preferenceloader-legacy
+Replaces: preferenceloader-legacy
+Architecture: iphoneos-arm64
+Version: 2.3.3+cos2
+Installed-Size: 416
+Filename: tweaks/COSSettings18/debs/preferenceloader_2.3.3+cos2_iphoneos-arm64.deb
+Size: 36124
+MD5sum: 96ca43a1314efd75fdde817540d55460
+SHA256: 6bee9ee36a4c36b37f9f900199aaf44fa0b334ed6d975916dfa8ee2e76ff52d4

@@ -1,0 +1,9 @@
+Package: com.gokuencinar.cossettings18
+Name: COS Settings 18 (experimental)
+Version: 0.1.8
+Architecture: iphoneos-arm64
+Description: Una manera cómoda de ordenar tus tweaks como hacía Shuffle en versiones anteriores de iOS.
+Maintainer: Gokuencinar
+Author: Gokuencinar
+Section: Tweaks
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+cos2), ellekit | mobilesubstrate

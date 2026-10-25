@@ -14,6 +14,12 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 
 ## Tweaks
 
+### COS Settings 18
+
+Una manera cómoda de ordenar tus tweaks como hacía Shuffle en versiones anteriores de iOS.
+
+[Detalles](tweaks/COSSettings18/depiction.html)
+
 ### BandLock Global
 
 BandLock lets you manually control supported mobile network modes and LTE/5G bands on jailbroken iPhones. It also includes country band profiles, Field Test access and a Control Center module for quick network-mode switching.
