@@ -22,4 +22,4 @@ jobs:
       - name: Build and inspect package
         run: |
           bash tweaks/RootHidePatcher-FIX/build.sh
-          dpkg-deb --info tweaks/RootHidePatcher-FIX/debs/com.gokuencinar.roothidepatcherfix_1.0.0_iphoneos-arm64e.deb
+          dpkg-deb --info tweaks/RootHidePatcher-FIX/debs/com.gokuencinar.roothidepatcherfix_1.0.1_iphoneos-arm64e.deb
