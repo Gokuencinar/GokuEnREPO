@@ -74,6 +74,13 @@ for block in blocks:
             rewritten.append(line)
         block = "\n".join(rewritten)
 
+    if package == "com.gokuencinar.cossettings18":
+        rewritten = [line for line in block.splitlines()
+                     if not line.startswith(("Icon: ", "Depiction: "))]
+        rewritten.append("Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/COSSettings18/assets/icon.png")
+        rewritten.append("Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/COSSettings18/depiction.html")
+        block = "\n".join(rewritten)
+
     out.append(block)
 
 path.write_text("\n\n".join(out) + ("\n" if out else ""))
