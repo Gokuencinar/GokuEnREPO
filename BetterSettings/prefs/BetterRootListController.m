@@ -455,7 +455,7 @@ static NSMutableArray *BSSettingsSection(PSListController *controller, BOOL appe
     [coffee addTarget:self action:@selector(openCoffee) forControlEvents:UIControlEventTouchUpInside];
     [stack addArrangedSubview:coffee];
     [coffee.heightAnchor constraintEqualToConstant:51].active = YES;
-    [coffee.widthAnchor constraintEqualTo:stack.widthAnchor].active = YES;
+    [coffee.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
 }
 - (void)openCoffee {
     NSURL *url = [NSURL URLWithString:@"https://buymeacoffee.com/gokuen"];
