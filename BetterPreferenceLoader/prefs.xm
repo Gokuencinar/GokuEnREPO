@@ -1,0 +1,516 @@
+#import <Preferences/PSSpecifier.h>
+#import <Preferences/PSListController.h>
+#import <Preferences/PSBundleController.h>
+#import <Preferences/PSTableCell.h>
+#import <substrate.h>
+
+#import <dlfcn.h>
+// jbroot(): roothide's own path resolver under that scheme, and libroot's runtime lookup under
+// every other one. It is what lets a single build find its bundles on rootful (no prefix),
+// rootless (/var/jb) and roothide (a per-install random path).
+#import <roothide.h>
+
+#import "prefs.h"
+
+#define DEBUG_TAG "libprefs"
+#import "debug.h"
+
+/* {{{ Imports (Preferences.framework) */
+extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
+					PSSpecifier* prevSpec,
+					id target,
+					NSString* plistName,
+					NSBundle* curBundle,
+					NSString** pTitle,
+					NSString** pSpecifierID,
+					PSListController* callerList,
+					NSMutableArray** pBundleControllers);
+
+
+extern NSString *const PSBundlePathKey;
+extern NSString *const PSLazilyLoadedBundleKey;
+extern NSString *const PSBundleIsControllerKey;
+extern NSString *const PSActionKey;
+extern NSString *const PSTitleKey;
+
+// Weak (3.2+, dlsym)
+static NSString **pPSFooterTextGroupKey = NULL;
+static NSString **pPSStaticTextGroupKey = NULL;
+/* }}} */
+
+/* {{{ PSSpecifier 3.2 Additions */
+@interface PSSpecifier (OS32)
+- (Class)detailControllerClass;
+@end
+/* }}} */
+
+/* {{{ PSViewController 3.2 Additions */
+@interface PSViewController (OS32)
+- (void)setSpecifier:(PSSpecifier *)specifier;
+@end
+/* }}} */
+
+/* {{{ Prototypes */
+static NSArray *generateErrorSpecifiersWithText(id self, NSString *errorText, NSString *errorDetailText);
+/* }}} */
+
+/* {{{ Constants */
+static NSString *const PLBundleKey = @"pl_bundle";
+NSString *const PLFilterKey = @"pl_filter";
+static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
+/* }}} */
+
+/* {{{ Locals */
+static BOOL _Firmware_lt_60 = NO;
+/* }}} */
+
+/* {{{ Preferences Controllers */
+@implementation PLCustomListController
+- (id)bundle {
+	return [[self specifier] preferenceLoaderBundle];
+}
+
+- (id)specifiers {
+	if(!_specifiers) {
+		PLLog(@"loading specifiers for a custom bundle.");
+		PSSpecifier *specifier = [self specifier];
+		if(!specifier) {
+			NSString *errorText = @"There appears to have been an error restoring these preferences!";
+			return _specifiers = [[NSMutableArray alloc] initWithArray:generateErrorSpecifiersWithText(self, errorText, nil)];
+		}
+		NSString *alternatePlistName = [specifier propertyForKey:PLAlternatePlistNameKey];
+		if(alternatePlistName)
+			_specifiers = [[self loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
+		else
+			_specifiers = [super specifiers];
+		if(!_specifiers || [_specifiers count] == 0) {
+			[_specifiers release];
+			NSString *errorText = @"There appears to be an error with these preferences!";
+			_specifiers = [[NSMutableArray alloc] initWithArray:generateErrorSpecifiersWithText(self, errorText, nil)];
+		} else {
+			if([self respondsToSelector:@selector(setTitle:)]) {
+				[self setTitle:specifier.name];
+			}
+			NSMutableArray *removals = [NSMutableArray array];
+			for(PSSpecifier *spec in _specifiers) {
+				if(MSHookIvar<int>(spec, "cellType") == PSLinkCell && ![spec propertyForKey:PSBundlePathKey]) {
+					MSHookIvar<Class>(spec, "detailControllerClass") = [self class];
+					[spec setProperty:[[self specifier] propertyForKey:PLBundleKey] forKey:PLBundleKey];
+				}
+
+				if(![PSSpecifier environmentPassesPreferenceLoaderFilter:[spec propertyForKey:PLFilterKey]])
+					[removals addObject:spec];
+
+				if(removals.count > 0) {
+					NSMutableArray *newSpecifiers = [_specifiers mutableCopy];
+					[_specifiers release];
+					[newSpecifiers removeObjectsInArray:removals];
+					_specifiers = newSpecifiers;
+				}
+			}
+		}
+	}
+	return _specifiers;
+}
+
+- (id)navigationTitle {
+	return self.specifier.name;
+}
+
+@end
+
+@implementation PLLocalizedListController
+- (id)navigationTitle {
+	NSString *original = [super navigationTitle];
+	return [[self bundle] localizedStringForKey:original value:original table:nil];
+}
+
+- (id)specifiers {
+	if(!_specifiers) {
+		PLLog(@"Localizing specifiers for a localized bundle.");
+		_specifiers = [super specifiers];
+		for(PSSpecifier *spec in _specifiers) {
+			if([spec name]) [spec setName:[[self bundle] localizedStringForKey:[spec name] value:[spec name] table:nil]];
+			if([spec titleDictionary]) {
+				NSMutableDictionary *newTitles = [NSMutableDictionary dictionary];
+				for(NSString *key in [spec titleDictionary]) {
+					NSString *value = [[spec titleDictionary] objectForKey:key];
+					[newTitles setObject:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:key];
+				}
+				[spec setTitleDictionary:newTitles];
+			}
+			if([spec shortTitleDictionary]) {
+				NSMutableDictionary *newTitles = [NSMutableDictionary dictionary];
+				for(NSString *key in [spec shortTitleDictionary]) {
+					NSString *value = [[spec shortTitleDictionary] objectForKey:key];
+					[newTitles setObject:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:key];
+				}
+				[spec setShortTitleDictionary:newTitles];
+			}
+			static NSString *localizableKeys[] = { @"headerDetailText", @"placeholder", @"staticTextMessage" };
+			for (size_t i = 0; i < sizeof(localizableKeys) / sizeof(NSString *); i++) {
+				NSString *value = [spec propertyForKey:localizableKeys[i]];
+				if(value)
+					[spec setProperty:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:localizableKeys[i]];
+			}
+			if(pPSFooterTextGroupKey) {
+				NSString *value = [spec propertyForKey:*pPSFooterTextGroupKey];
+				if(value)
+					[spec setProperty:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:*pPSFooterTextGroupKey];
+			}
+		}
+	}
+	return _specifiers;
+}
+@end
+
+@interface PLFailedBundleListController: PSListController { }
+@property (retain) NSArray *errorSpecifiers;
+@end
+@implementation PLFailedBundleListController
+- (id)navigationTitle {
+	return @"Error";
+}
+
+- (id)specifiers {
+	if(!_specifiers) {
+		NSString *name = [[self specifier] name];
+		PLLog(@"Generating error specifiers for a failed bundle %@ :(", name);
+		NSString *const errorText = [NSString stringWithFormat:@"There was an error loading the preference bundle for %@: %@", name, [[self specifier] propertyForKey:@"errorText"]];
+		NSString *errorDetailText = [[self specifier] propertyForKey:@"errorDetailText"];
+		_specifiers = [[NSMutableArray alloc] initWithArray:generateErrorSpecifiersWithText(self, errorText, errorDetailText)];
+	}
+	return _specifiers;
+}
+
+- (void)showErrorDetails:(PSSpecifier *)spec {
+	NSString *errorDetailText = [spec propertyForKey:@"errorDetailText"];
+	spec.name = @"Hide Details";
+	spec->action = @selector(hideErrorDetails:);
+	[self performSelectorOnMainThread:@selector(reloadSpecifier:) withObject:spec waitUntilDone:YES];
+	if (_errorSpecifiers == nil) {
+		NSMutableArray *errorSpecs = [NSMutableArray array];
+		if (pPSFooterTextGroupKey) {
+			PSSpecifier *newSpec = [PSSpecifier emptyGroupSpecifier];
+			[newSpec setProperty:errorDetailText forKey:*pPSFooterTextGroupKey];
+			[newSpec setIdentifier:@"ERROR_DETAIL_TEXT"];
+			[errorSpecs addObject:newSpec];
+		} else if (pPSStaticTextGroupKey) {
+			PSSpecifier *newSpec = [PSSpecifier emptyGroupSpecifier];
+			[newSpec setProperty:[NSNumber numberWithBool:YES] forKey:*pPSStaticTextGroupKey];
+			[errorSpecs addObject:newSpec];
+			newSpec = [PSSpecifier preferenceSpecifierNamed:errorDetailText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
+			[errorSpecs addObject:newSpec];
+		}
+		_errorSpecifiers = [errorSpecs copy];
+	}
+	[self addSpecifiersFromArray:_errorSpecifiers animated:YES];
+	Class $UIPasteboard = NSClassFromString(@"UIPasteboard");
+	if ($UIPasteboard != NULL) {
+		[$UIPasteboard generalPasteboard].string = errorDetailText;
+	}
+}
+
+- (void)hideErrorDetails:(PSSpecifier *)spec {
+	spec.name = @"Show Details";
+	spec->action = @selector(showErrorDetails:);
+	[self reloadSpecifier:spec];
+	[self removeContiguousSpecifiers:_errorSpecifiers animated:YES];
+}
+@end
+/* }}} */
+
+/* {{{ Helper Functions */
+static NSArray *generateErrorSpecifiersWithText(id self, NSString *errorText, NSString *errorDetailText) {
+	NSMutableArray *errorSpecifiers = [NSMutableArray array];
+	if(pPSFooterTextGroupKey) {
+		PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
+		[spec setProperty:errorText forKey:*pPSFooterTextGroupKey];
+		[errorSpecifiers addObject:spec];
+	} else {
+		if(pPSStaticTextGroupKey) {
+			PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
+			[spec setProperty:[NSNumber numberWithBool:YES] forKey:*pPSStaticTextGroupKey];
+			[errorSpecifiers addObject:spec];
+			spec = [PSSpecifier preferenceSpecifierNamed:errorText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
+			[errorSpecifiers addObject:spec];
+		}
+	}
+	if (errorDetailText != nil && self != nil) {
+		[errorSpecifiers addObject:[PSSpecifier emptyGroupSpecifier]];
+		PSSpecifier *spec = [PSSpecifier preferenceSpecifierNamed:@"Show Details" target:self set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSButtonCell"] edit:nil];
+		spec->action = @selector(showErrorDetails:);
+		[spec setProperty:errorDetailText forKey:@"errorDetailText"];
+		[errorSpecifiers addObject:spec];
+	}
+	return errorSpecifiers;
+}
+
+@implementation PSSpecifier (libprefs)
++ (BOOL)environmentPassesPreferenceLoaderFilter:(NSDictionary *)filter {
+	PLLog(@"Checking filter %@", filter);
+
+	if(!filter) return YES;
+	bool valid = YES;
+
+	NSArray *coreFoundationVersion = [filter objectForKey:@"CoreFoundationVersion"];
+	if(coreFoundationVersion && coreFoundationVersion.count > 0) {
+		NSNumber *lowerBound = [coreFoundationVersion objectAtIndex:0];
+		NSNumber *upperBound = coreFoundationVersion.count > 1 ? [coreFoundationVersion objectAtIndex:1] : nil;
+		PLLog(@"%@ <= CF Version (%f) < %@", lowerBound, kCFCoreFoundationVersionNumber, upperBound);
+		valid = valid && (kCFCoreFoundationVersionNumber >= lowerBound.floatValue);
+
+		if(upperBound)
+			valid = valid && (kCFCoreFoundationVersionNumber < upperBound.floatValue);
+	}
+	PLLog(valid ? @"Filter matched" : @"Filter did not match");
+	return valid;
+}
+
+- (NSBundle *)preferenceLoaderBundle {
+	return [self propertyForKey:PLBundleKey];
+}
+
+@end
+/* }}} */
+
+/* {{{ Hooks */
+static void pl_loadFailedBundle(NSString *bundlePath, PSSpecifier *specifier, NSError *error) {
+	PLLog(@"lazyLoadBundle:%@ (bundle path %@) failed.", specifier, bundlePath);
+	NSLog(@"Failed to load PreferenceBundle at %@: %@", bundlePath, [error description]);
+	[specifier setProperty:[error localizedDescription] forKey:@"errorText"];
+	NSDictionary *errorInfo = [error userInfo];
+	[specifier setProperty:[errorInfo objectForKey:@"NSDebugDescription"]?:[errorInfo description] forKey:@"errorDetailText"];
+	MSHookIvar<Class>(specifier, "detailControllerClass") = [PLFailedBundleListController class];
+	[specifier removePropertyForKey:PSBundleIsControllerKey];
+	[specifier removePropertyForKey:PSActionKey];
+	[specifier removePropertyForKey:PSBundlePathKey];
+	[specifier removePropertyForKey:PSLazilyLoadedBundleKey];
+}
+
+static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, void(*_orig)(id, SEL, PSSpecifier *)) {
+	NSString *bundlePath = [[specifier propertyForKey:PSLazilyLoadedBundleKey] retain];
+	PLLog(@"In pl_lazyLoadBundleCore for %@ (%s), specifier %@", self, sel_getName(_cmd), specifier);
+	PLLog(@"%%orig is %p.", _orig);
+
+	_orig(self, _cmd, specifier); // NB: This removes the PSLazilyLoadedBundleKey property.
+	NSBundle *bundle = [NSBundle bundleWithPath:bundlePath];
+	NSError *error = nil;
+	if(![bundle isLoaded] && ![bundle loadAndReturnError:&error]) {
+		PLLog(@"error loading %@: %@", bundlePath, [error description]);
+		pl_loadFailedBundle(bundlePath, specifier, error);
+	}
+	[bundlePath release];
+}
+
+%group Firmware_lt_60
+%hook PrefsRootController
+- (void)lazyLoadBundle:(PSSpecifier *)specifier {
+	pl_lazyLoadBundleCore(self, _cmd, specifier, (void(*)(id, SEL, PSSpecifier *))&%orig);
+
+}
+%end
+%end
+
+%group Firmware_ge_60
+%hook PSListController
+- (void)lazyLoadBundle:(PSSpecifier *)specifier {
+	pl_lazyLoadBundleCore(self, _cmd, specifier, (void(*)(id, SEL, PSSpecifier *))&%orig);
+}
+%end
+%end
+
+%hook PSListController
+%new
+- (PSViewController *)controllerForSpecifier:(PSSpecifier *)specifier
+{
+	%log();
+	Class detailClass = [specifier respondsToSelector:@selector(detailControllerClass)] ? [specifier detailControllerClass] : MSHookIvar<Class>(specifier, "detailControllerClass");
+	if (!detailClass)
+		detailClass = [PLCustomListController class];
+	if (![detailClass isSubclassOfClass:[PSViewController class]])
+		return nil;
+	id result = [detailClass alloc];
+	if ([result respondsToSelector:@selector(initForContentSize:)])
+		result = [result initForContentSize:[[self view] bounds].size];
+	else
+		result = [result init];
+	[result setRootController:self.rootController];
+	[result setParentController:self];
+	if ([result respondsToSelector:@selector(setSpecifier:)])
+		[result setSpecifier:specifier];
+	else if ([result isKindOfClass:[PSListController class]]) {
+		PSSpecifier *&_specifierIvar = MSHookIvar<PSSpecifier *>(result, "_specifier");
+		[_specifierIvar release];
+		_specifierIvar = [specifier retain];
+	}
+	return [result autorelease];
+}
+%end
+
+%group Rootful
+%hook PSListController
+
+// This hook does not seem to be needed on modern iOS, and actually breaks some things
+// (Safari settings after entering a subpane, blank titles on Phone > Mute Unknown Calls
+// and Phone > Call Blocking and Identification). 
+// However, I'm not sure what iOS versions need it (and we want to still support rootful),
+// so I'm leaving it here but gated.
+
+- (NSArray *)loadSpecifiersFromPlistName:(NSString *)plistName target:(id)target {
+	PLLog(@"Loading specifiers from plist %@.", plistName);
+	NSArray *result = %orig();
+	if([result count] > 0)
+		return result;
+
+	NSDictionary *properties = self.specifier.properties;
+	if(!properties)
+		return nil;
+
+	PLLog(@"Loading specifiers from PSListController's specifier's properties.");
+	NSMutableArray *&bundleControllers = MSHookIvar<NSMutableArray *>(self, "_bundleControllers");
+	// if (bundleControllers == nil)
+	// 	bundleControllers = [[NSMutableArray alloc] init];
+	PLLog(@"bundleControllers is %p.", bundleControllers);
+	NSString *title = nil;
+	NSString *specifierID = nil;
+	result = SpecifiersFromPlist(properties, [self specifier], target, plistName, [self bundle], &title, &specifierID, self, &bundleControllers);
+
+	if(title)
+		[self setTitle:title];
+		// [self setTitle:self.specifier.name];
+
+	if(specifierID)
+		[self setSpecifierID:specifierID];
+
+	return result;
+}
+%end
+%end
+
+%hook NSBundle
++ (NSBundle *)bundleWithPath:(NSString *)path {
+	NSString *newPath = nil;
+	// This path shouldn't be used, but...
+	#if SIMULATOR
+	NSRange sysRange = [path rangeOfString:@"/opt/simject/PreferenceBundles" options:0];
+	#else
+	NSRange sysRange = [path rangeOfString:jbroot(@"/System/Library/PreferenceBundles") options:0];
+	#endif
+	if(sysRange.location != NSNotFound) {
+		#if SIMULATOR
+		newPath = [path stringByReplacingCharactersInRange:sysRange withString:@"/opt/simject/PreferenceBundles"];
+		#else
+		newPath = [path stringByReplacingCharactersInRange:sysRange withString:jbroot(@"/Library/PreferenceBundles")];
+		#endif
+	}
+	if(newPath && [[NSFileManager defaultManager] fileExistsAtPath:newPath]) {
+		path = newPath;
+	}
+	return %orig;
+}
+%end
+/* }}} */
+
+@implementation PSListController (libprefs)
+
+- (NSArray *)specifiersFromEntry:(NSDictionary *)entry sourcePreferenceLoaderBundlePath:(NSString *)sourceBundlePath title:(NSString *)title {
+	NSDictionary *specifierPlist = [NSDictionary dictionaryWithObjectsAndKeys:[NSArray arrayWithObjects:entry, nil], @"items", nil];
+
+	BOOL isBundle = [entry objectForKey:@"bundle"] != nil;
+	BOOL isLocalizedBundle = ![[sourceBundlePath lastPathComponent] isEqualToString:@"Preferences"];
+
+	NSBundle *prefBundle;
+	NSString *bundleName = [entry objectForKey:@"bundle"];
+	NSString *bundlePath = [entry objectForKey:@"bundlePath"];
+
+	if(isBundle) {
+		// Second Try (bundlePath key failed)
+		if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
+			#if SIMULATOR
+			bundlePath = [NSString stringWithFormat:@"/opt/simject/PreferenceBundles/%@.bundle", bundleName];
+			#else
+			bundlePath = [NSString stringWithFormat:@"%@/%@.bundle", jbroot(@"/Library/PreferenceBundles"), bundleName];
+			#endif
+
+		// Third Try (/Library failed)
+		// This path shouldn't be used, but...
+		if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
+			#if SIMULATOR
+			bundlePath = [NSString stringWithFormat:@"/opt/simject/PreferenceBundles/%@.bundle", bundleName];
+			#else
+			bundlePath = [NSString stringWithFormat:@"%@/%@.bundle", jbroot(@"/System/Library/PreferenceBundles"), bundleName];
+			#endif
+
+		// Really? (/System/Library failed...)
+		if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
+			NSLog(@"Discarding specifier for missing isBundle bundle %@.", bundleName);
+			return nil;
+		}
+		prefBundle = [NSBundle bundleWithPath:bundlePath];
+		PLLog(@"is a bundle: %@!", prefBundle);
+	} else {
+		prefBundle = [NSBundle bundleWithPath:sourceBundlePath];
+		PLLog(@"is NOT a bundle, so we're giving it %@!", prefBundle);
+	}
+
+	PLLog(@"loading specifiers!");
+	NSMutableArray *&bundleControllers = MSHookIvar<NSMutableArray *>(self, "_bundleControllers");
+	NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, _Firmware_lt_60 ? [self rootController] : self, title, prefBundle, NULL, NULL, (PSListController*)self, &bundleControllers);
+	PLLog(@"loaded specifiers!");
+
+	if([specs count] == 0) return nil;
+	PLLog(@"It's confirmed! There are Specifiers here, Captain!");
+
+	if(isBundle) {
+		 // Only set lazy-bundle for isController specifiers.
+		if([[entry objectForKey:@"isController"] boolValue]) {
+			for(PSSpecifier *specifier in specs) {
+				[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
+				[specifier setProperty:[NSBundle bundleWithPath:sourceBundlePath] forKey:PLBundleKey];
+				if(!specifier.name) {
+					specifier.name = title;
+				}
+			}
+		}
+	} else {
+		// There really should only be one specifier.
+		PSSpecifier *specifier = [specs objectAtIndex:0];
+		MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
+		[specifier setProperty:prefBundle forKey:PLBundleKey];
+
+		if(![[specifier propertyForKey:PSTitleKey] isEqualToString:title]) {
+			[specifier setProperty:title forKey:PLAlternatePlistNameKey];
+			if(!specifier.name) {
+				specifier.name = title;
+			}
+		}
+	}
+
+	return specs;
+}
+
+@end
+
+%ctor {
+	PLLog(@"libprefs loaded!");
+	_Firmware_lt_60 = kCFCoreFoundationVersionNumber < 793.00;
+	%init;
+
+	if(_Firmware_lt_60) {
+		%init(Firmware_lt_60);
+	} else {
+		%init(Firmware_ge_60);
+	}
+
+	if (!ROOTLESS) {
+		%init(Rootful);
+	}
+
+	void *preferencesHandle = dlopen("/System/Library/PrivateFrameworks/Preferences.framework/Preferences", RTLD_LAZY | RTLD_NOLOAD);
+	if(preferencesHandle) {
+		pPSFooterTextGroupKey = (NSString **)dlsym(preferencesHandle, "PSFooterTextGroupKey");
+		pPSStaticTextGroupKey = (NSString **)dlsym(preferencesHandle, "PSStaticTextGroupKey");
+		dlclose(preferencesHandle);
+	}
+}

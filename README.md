@@ -14,6 +14,12 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 
 ## Tweaks
 
+### Better Settings
+
+A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+
+[Detalles](tweaks/BetterSettings/depiction.html)
+
 ### BandLock Global
 
 BandLock lets you manually control supported mobile network modes and LTE/5G bands on jailbroken iPhones. It also includes country band profiles, Field Test access and a Control Center module for quick network-mode switching.
