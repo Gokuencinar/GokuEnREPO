@@ -1,6 +1,6 @@
 Package: preferenceloader
 Name: PreferenceLoader
-Version: 2.3.3+better1
+Version: 2.3.3+zbetter1
 Architecture: iphoneos-arm
 Description: PreferenceLoader
 Maintainer: Dhinak G <dhinak@dhinak.net>
