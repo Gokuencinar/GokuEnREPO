@@ -46,7 +46,7 @@ Prevents duplicate library search paths when converting tweaks with RootHidePatc
 
 ### NukeWireless
 
-NukeWireless is a Wi-Fi management toolkit focused on discovering and controlling devices on the local network. It is still under development and does not have a public release yet.
+NukeWireless is a Wi-Fi and Bluetooth management toolkit. Discover and manage network devices, block connections, scan Bluetooth devices, and send Bluetooth advertisements.
 
 [Details](tweaks/Nuke-Wireless/README.md)
 
