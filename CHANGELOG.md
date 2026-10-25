@@ -6,6 +6,7 @@ Historial de los paquetes publicados en este repositorio APT.
 
 - [BandLock](tweaks/BandLock/CHANGELOG.md) — bloqueo/selección de bandas LTE y control del modo de red.
 - [BetterWiFi RH](tweaks/BetterWiFi-RH/CHANGELOG.md) — herramientas avanzadas de información, monitorización y diagnóstico Wi‑Fi.
+- [RootHidePatcher FIX](tweaks/RootHidePatcher-FIX/CHANGELOG.md) — evita rutas de carga duplicadas al convertir paquetes.
 
 ## Estado actual
 

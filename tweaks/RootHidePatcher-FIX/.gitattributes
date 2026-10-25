@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.deb binary
+# These files preserve unified-diff context and the script insertion separator.
+src/patch.diff -whitespace
+src/functions.sh whitespace=-blank-at-eof
