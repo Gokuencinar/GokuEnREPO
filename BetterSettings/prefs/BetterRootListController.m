@@ -414,8 +414,11 @@ static NSMutableArray *BSSettingsSection(PSListController *controller, BOOL appe
         [stack.bottomAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.bottomAnchor constant:-30],
         [stack.widthAnchor constraintEqualToAnchor:scroll.frameLayoutGuide.widthAnchor constant:-48]
     ]];
-    UIImageView *logo = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon-large"]];
-    if (!logo.image) logo.image = [UIImage imageNamed:@"icon"];
+    NSBundle *bundle = [NSBundle bundleForClass:[BetterRootListController class]];
+    NSString *logoPath = [bundle pathForResource:@"icon-large" ofType:@"png"];
+    if (!logoPath) logoPath = [bundle pathForResource:@"icon" ofType:@"png"];
+    UIImageView *logo = [[UIImageView alloc] initWithImage:logoPath ?
+        [UIImage imageWithContentsOfFile:logoPath] : [UIImage systemImageNamed:@"slider.horizontal.3"]];
     logo.contentMode = UIViewContentModeScaleAspectFit;
     logo.layer.cornerRadius = 20;
     logo.clipsToBounds = YES;
