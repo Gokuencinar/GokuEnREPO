@@ -24,7 +24,7 @@ jobs:
           a=root/'BetterSettingsRH'
           b=root/'BetterPreferenceLoaderRH'
           make=a/'Makefile'
-          make.write_text(make.read_text().replace('export THEOS_PACKAGE_SCHEME := rootless','export THEOS_PACKAGE_SCHEME := roothide'))
+          make.write_text(make.read_text().replace('export THEOS_PACKAGE_SCHEME := rootless','export THEOS_PACKAGE_SCHEME := roothide').replace('export ARCHS := arm64e','export ARCHS := arm64 arm64e'))
           ctrl=a/'control'
           ctrl.write_text(ctrl.read_text().replace('Architecture: iphoneos-arm64','Architecture: iphoneos-arm64e'))
           # Runtime paths must use the RootHide jbroot resolver rather than /var/jb.
