@@ -572,6 +572,154 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.ht
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
 Name: BandLock (Rootful)
 
+Package: com.gokuencinar.bettersettings
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Installed-Size: 220
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter1), ellekit | mobilesubstrate
+Conflicts: com.gokuencinar.cossettings18
+Replaces: com.gokuencinar.cossettings18
+Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.0_iphoneos-arm64.deb
+Size: 27158
+MD5sum: 1d3ded49c967b8790bd72a07ead3e306
+SHA1: 922ea024dc5477af2bfb66b5e582f50abd507b22
+SHA256: 99169f54456315019bf039f488568b91b76c22474e774ee02df13e513a0f0da9
+Section: Tweaks
+Author: Gokuencinar
+Name: Better Settings
+Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
+
+Package: com.gokuencinar.bettersettings
+Version: 1.0.0
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 444
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter1), ellekit | mobilesubstrate
+Conflicts: com.gokuencinar.cossettings18
+Replaces: com.gokuencinar.cossettings18
+Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.0_iphoneos-arm64e.deb
+Size: 39112
+MD5sum: fdd7f415730cf1d4bde79136fd470fb7
+SHA1: 2c4c952c49aeb42d941c8ae1c5d3c0c42a115dd7
+SHA256: 14ac3908131103165f2d749712e81719094a49cf6eab84f74606b4680619a88b
+Section: Tweaks
+Author: Gokuencinar
+Name: Better Settings (RootHide)
+Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
+
+Package: com.gokuencinar.bettersettings
+Version: 1.0.1
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 500
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter2), ellekit | mobilesubstrate
+Conflicts: com.gokuencinar.cossettings18
+Replaces: com.gokuencinar.cossettings18
+Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.1_iphoneos-arm64e.deb
+Size: 95052
+MD5sum: d6139dbe49e7d18e32200d7f178f9c8b
+SHA1: 23c644b6d7b107247182e11156c48a32268703a3
+SHA256: 0418754cbc5ac3dc880d5df4da6c97e0942dbeabf2a78c48608f30dc360d8164
+Section: Tweaks
+Author: Gokuencinar
+Name: Better Settings (RootHide)
+Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
+
+Package: com.gokuencinar.bettersettings
+Version: 1.0.1
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Installed-Size: 276
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter2), ellekit | mobilesubstrate
+Conflicts: com.gokuencinar.cossettings18
+Replaces: com.gokuencinar.cossettings18
+Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.1_iphoneos-arm64.deb
+Size: 83290
+MD5sum: 63b76d39fa550762203048bb3f17c2af
+SHA1: 4a04d8199e5a52a515d5cb73fe39d7346cb2a6d1
+SHA256: ec88feb24a3f3c8c09015c294b06f5fe16e4656f2bb65c1b7bdbb2e48be02a94
+Section: Tweaks
+Author: Gokuencinar
+Name: Better Settings
+Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
+
+Package: preferenceloader
+Version: 2.3.3+zbetter1
+Architecture: iphoneos-arm64
+Maintainer: Dhinak G <dhinak@dhinak.net>
+Installed-Size: 416
+Depends: mobilesubstrate, firmware (>= 15.0)
+Conflicts: preferenceloader-legacy
+Replaces: preferenceloader-legacy
+Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter1_iphoneos-arm64.deb
+Size: 36112
+MD5sum: 56207384682e5b7828ebf359ce491112
+SHA1: 581ae2eef56bbf50a1b0eb12bf852a07c244d149
+SHA256: 5a329ea12becee7a5a187d216ac1bd3ddff043dc69e5f572724a1008a2f18ebd
+Section: System
+Author: Dustin Howett <dustin@howett.net>
+Name: PreferenceLoader
+
+Package: preferenceloader
+Version: 2.3.3+zbetter1
+Architecture: iphoneos-arm64e
+Maintainer: Dhinak G <dhinak@dhinak.net>
+Installed-Size: 416
+Depends: mobilesubstrate, firmware (>= 15.0)
+Conflicts: preferenceloader-legacy
+Replaces: preferenceloader-legacy
+Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter1_iphoneos-arm64e.deb
+Size: 35850
+MD5sum: 11f860a8e1b22945ea4236f03890d5ac
+SHA1: c5f549912cb1334744c51d95c1f3b5c23f301d27
+SHA256: 8f8f064dc79c00e66da6135723b73fc6bc0c5792a0020774c40ead5327db451d
+Section: System
+Author: Dustin Howett <dustin@howett.net>
+Name: PreferenceLoader (RootHide)
+
+Package: preferenceloader
+Version: 2.3.3+zbetter2
+Architecture: iphoneos-arm64
+Maintainer: Dhinak G <dhinak@dhinak.net>
+Installed-Size: 416
+Depends: mobilesubstrate, firmware (>= 15.0)
+Conflicts: preferenceloader-legacy
+Replaces: preferenceloader-legacy
+Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter2_iphoneos-arm64.deb
+Size: 36910
+MD5sum: 06bff152cf2d663f645b98170c711205
+SHA1: cad6beaa4cfbe5ef6f5b0223fe85f64691cd736d
+SHA256: 566a9f12399bb8a4a5cee3827037e4d9b0cb08bfb42bce9594b18623d94fa1ea
+Section: System
+Author: Dustin Howett <dustin@howett.net>
+Name: PreferenceLoader
+
+Package: preferenceloader
+Version: 2.3.3+zbetter2
+Architecture: iphoneos-arm64e
+Maintainer: Dhinak G <dhinak@dhinak.net>
+Installed-Size: 416
+Depends: mobilesubstrate, firmware (>= 15.0)
+Conflicts: preferenceloader-legacy
+Replaces: preferenceloader-legacy
+Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter2_iphoneos-arm64e.deb
+Size: 36658
+MD5sum: 400a5bec0b25d92ff6cf2c7b2cb01bef
+SHA1: c2199f598307f25b966bfc4a046cd87ae03710cc
+SHA256: 3623bae6e8f81b90d036fb78b53322b6292b8b1924e8456bafdc973fd322606d
+Section: System
+Author: Dustin Howett <dustin@howett.net>
+Name: PreferenceLoader (RootHide)
+
 Package: com.betterwifirh.tweak.dopamine
 Version: 0.3.15
 Architecture: iphoneos-arm64
@@ -1007,6 +1155,70 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/CC-On-Off/depiction.h
 Name: CC On & Off
 Sileodepiction: https://poomsmart.github.io/repo/sileodepictions/cconoff.json
 
+Package: com.gokuencinar.nukewireless
+Version: 2.0.0~release1+bundle1
+Architecture: iphoneos-arm
+Maintainer: GokuEn
+Depends: ldid, arpoison, network-cmds, mobilesubstrate
+Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
+Filename: tweaks/Nuke-Wireless/debs/NukeWireless-1.0-Rootful.deb
+Size: 9187308
+MD5sum: ffdae2d28d597cfc54466763ee182728
+SHA1: 0a22385c907c8d1e3605447e42c90fa41e3d6749
+SHA256: 21643099e9f5ed7e6ea16205c83720e9b1c987e0f33234bb594efff68c650222
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (Rootful)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
+
+Package: com.gokuencinar.nukewireless
+Version: 2.0.0~release1+bundle1
+Architecture: iphoneos-arm64e
+Maintainer: GokuEn
+Pre-Depends: rootless-compat (>= 0.9)
+Depends: ldid, arpoison, network-cmds, ellekit, rootless-compat
+Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
+Filename: tweaks/Nuke-Wireless/debs/NukeWireless-1.0-RootHide.deb
+Size: 9187406
+MD5sum: 2033bd0a49cb9e9a4a90c37d65ba381b
+SHA1: 5cab6d258bc8223210cfb74accfb3891e6bf77c5
+SHA256: 02198814f12599e35f399f4231bfd893e73f8f9a2a1f5018f0cf8222fd854fe6
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (RootHide)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
+
+Package: com.gokuencinar.nukewireless
+Version: 2.0.0~release1+bundle1
+Architecture: iphoneos-arm64
+Maintainer: GokuEn
+Depends: ldid, arpoison, network-cmds, mobilesubstrate
+Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
+Filename: tweaks/Nuke-Wireless/debs/NukeWireless-1.0-Dopamine.deb
+Size: 9187296
+MD5sum: 73f18dcadf7d647d3a002a2524263060
+SHA1: 9c9b7fc028970eeeda742a07a06c521ee704f3ce
+SHA256: 9f41adfa8ab096ddc7fce76890b07526591a6933fba91fe6f1248d89fbc663f7
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (Dopamine)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
+
 Package: arpoison
 Version: 0.7
 Architecture: iphoneos-arm64
@@ -1440,207 +1652,3 @@ Author: Gokuencinar
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/RootHidePatcher-FIX/depiction.html
 Icon: https://gokuencinar.github.io/GokuEnREPO/CydiaIcon.png
 Name: RootHidePatcher FIX
-
-Package: com.gokuencinar.bettersettings
-Name: Better Settings
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter1), ellekit | mobilesubstrate
-Conflicts: com.gokuencinar.cossettings18
-Replaces: com.gokuencinar.cossettings18
-Architecture: iphoneos-arm64
-Version: 1.0.0
-Installed-Size: 220
-Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
-Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.0_iphoneos-arm64.deb
-Size: 27158
-MD5sum: 1d3ded49c967b8790bd72a07ead3e306
-SHA256: 99169f54456315019bf039f488568b91b76c22474e774ee02df13e513a0f0da9
-
-Package: com.gokuencinar.bettersettings
-Name: Better Settings (RootHide)
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter1), ellekit | mobilesubstrate
-Conflicts: com.gokuencinar.cossettings18
-Replaces: com.gokuencinar.cossettings18
-Architecture: iphoneos-arm64e
-Version: 1.0.0
-Installed-Size: 444
-Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
-Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.0_iphoneos-arm64e.deb
-Size: 39112
-MD5sum: fdd7f415730cf1d4bde79136fd470fb7
-SHA256: 14ac3908131103165f2d749712e81719094a49cf6eab84f74606b4680619a88b
-
-Package: com.gokuencinar.bettersettings
-Name: Better Settings
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter2), ellekit | mobilesubstrate
-Conflicts: com.gokuencinar.cossettings18
-Replaces: com.gokuencinar.cossettings18
-Architecture: iphoneos-arm64
-Version: 1.0.1
-Installed-Size: 276
-Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
-Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.1_iphoneos-arm64.deb
-Size: 83290
-MD5sum: 63b76d39fa550762203048bb3f17c2af
-SHA256: ec88feb24a3f3c8c09015c294b06f5fe16e4656f2bb65c1b7bdbb2e48be02a94
-
-Package: com.gokuencinar.bettersettings
-Name: Better Settings (RootHide)
-Maintainer: Gokuencinar
-Author: Gokuencinar
-Section: Tweaks
-Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter2), ellekit | mobilesubstrate
-Conflicts: com.gokuencinar.cossettings18
-Replaces: com.gokuencinar.cossettings18
-Architecture: iphoneos-arm64e
-Version: 1.0.1
-Installed-Size: 500
-Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
-Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.1_iphoneos-arm64e.deb
-Size: 95052
-MD5sum: d6139dbe49e7d18e32200d7f178f9c8b
-SHA256: 0418754cbc5ac3dc880d5df4da6c97e0942dbeabf2a78c48608f30dc360d8164
-
-Package: preferenceloader
-Name: PreferenceLoader
-Maintainer: Dhinak G <dhinak@dhinak.net>
-Author: Dustin Howett <dustin@howett.net>
-Section: System
-Depends: mobilesubstrate, firmware (>= 15.0)
-Conflicts: preferenceloader-legacy
-Replaces: preferenceloader-legacy
-Architecture: iphoneos-arm64
-Version: 2.3.3+zbetter1
-Installed-Size: 416
-Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter1_iphoneos-arm64.deb
-Size: 36112
-MD5sum: 56207384682e5b7828ebf359ce491112
-SHA256: 5a329ea12becee7a5a187d216ac1bd3ddff043dc69e5f572724a1008a2f18ebd
-
-Package: preferenceloader
-Name: PreferenceLoader (RootHide)
-Maintainer: Dhinak G <dhinak@dhinak.net>
-Author: Dustin Howett <dustin@howett.net>
-Section: System
-Depends: mobilesubstrate, firmware (>= 15.0)
-Conflicts: preferenceloader-legacy
-Replaces: preferenceloader-legacy
-Architecture: iphoneos-arm64e
-Version: 2.3.3+zbetter1
-Installed-Size: 416
-Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter1_iphoneos-arm64e.deb
-Size: 35850
-MD5sum: 11f860a8e1b22945ea4236f03890d5ac
-SHA256: 8f8f064dc79c00e66da6135723b73fc6bc0c5792a0020774c40ead5327db451d
-
-Package: preferenceloader
-Name: PreferenceLoader
-Maintainer: Dhinak G <dhinak@dhinak.net>
-Author: Dustin Howett <dustin@howett.net>
-Section: System
-Depends: mobilesubstrate, firmware (>= 15.0)
-Conflicts: preferenceloader-legacy
-Replaces: preferenceloader-legacy
-Architecture: iphoneos-arm64
-Version: 2.3.3+zbetter2
-Installed-Size: 416
-Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter2_iphoneos-arm64.deb
-Size: 36910
-MD5sum: 06bff152cf2d663f645b98170c711205
-SHA256: 566a9f12399bb8a4a5cee3827037e4d9b0cb08bfb42bce9594b18623d94fa1ea
-
-Package: preferenceloader
-Name: PreferenceLoader (RootHide)
-Maintainer: Dhinak G <dhinak@dhinak.net>
-Author: Dustin Howett <dustin@howett.net>
-Section: System
-Depends: mobilesubstrate, firmware (>= 15.0)
-Conflicts: preferenceloader-legacy
-Replaces: preferenceloader-legacy
-Architecture: iphoneos-arm64e
-Version: 2.3.3+zbetter2
-Installed-Size: 416
-Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter2_iphoneos-arm64e.deb
-Size: 36658
-MD5sum: 400a5bec0b25d92ff6cf2c7b2cb01bef
-SHA256: 3623bae6e8f81b90d036fb78b53322b6292b8b1924e8456bafdc973fd322606d
-
-Package: com.gokuencinar.nukewireless
-Version: 2.0.0~release1+bundle1
-Architecture: iphoneos-arm64
-Author: GokuEn
-Maintainer: GokuEn
-Section: Utilities
-Depends: ldid, arpoison, network-cmds, mobilesubstrate
-Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
-Filename: tweaks/Nuke-Wireless/debs/NukeWireless-1.0-Dopamine.deb
-Size: 9187296
-MD5sum: 73f18dcadf7d647d3a002a2524263060
-SHA1: 9c9b7fc028970eeeda742a07a06c521ee704f3ce
-SHA256: 9f41adfa8ab096ddc7fce76890b07526591a6933fba91fe6f1248d89fbc663f7
-Name: NukeWireless (Dopamine)
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
-
-Package: com.gokuencinar.nukewireless
-Version: 2.0.0~release1+bundle1
-Architecture: iphoneos-arm64e
-Author: GokuEn
-Maintainer: GokuEn
-Section: Utilities
-Pre-Depends: rootless-compat (>= 0.9)
-Depends: ldid, arpoison, network-cmds, ellekit, rootless-compat
-Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
-Filename: tweaks/Nuke-Wireless/debs/NukeWireless-1.0-RootHide.deb
-Size: 9187406
-MD5sum: 2033bd0a49cb9e9a4a90c37d65ba381b
-SHA1: 5cab6d258bc8223210cfb74accfb3891e6bf77c5
-SHA256: 02198814f12599e35f399f4231bfd893e73f8f9a2a1f5018f0cf8222fd854fe6
-Name: NukeWireless (RootHide)
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
-
-Package: com.gokuencinar.nukewireless
-Version: 2.0.0~release1+bundle1
-Architecture: iphoneos-arm
-Author: GokuEn
-Maintainer: GokuEn
-Section: Utilities
-Depends: ldid, arpoison, network-cmds, mobilesubstrate
-Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
-Filename: tweaks/Nuke-Wireless/debs/NukeWireless-1.0-Rootful.deb
-Size: 9187308
-MD5sum: ffdae2d28d597cfc54466763ee182728
-SHA1: 0a22385c907c8d1e3605447e42c90fa41e3d6749
-SHA256: 21643099e9f5ed7e6ea16205c83720e9b1c987e0f33234bb594efff68c650222
-Name: NukeWireless (Rootful)
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
