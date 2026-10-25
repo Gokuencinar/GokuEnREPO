@@ -1,8 +1,0 @@
-obj
-_
-.theos
-.luz
-debs
-*.deb
-packages/
-.DS_Store
