@@ -1,0 +1,48 @@
+name: Build Better Settings (rootless)
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  rootless:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Theos toolchain
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate preferences and packaging
+        run: python3 BetterSettings/tests/check_project.py
+      - name: Compile and package
+        run: make -C BetterSettings clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+      - name: Verify Preferences can load arm64e binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          package=$(find BetterSettings/packages -maxdepth 1 -type f -name 'com.gokuencinar.bettersettings_1.0.0_*.deb' -print -quit)
+          test -n "$package"
+          # macOS runners have 'ar' and BSD tar, but not necessarily dpkg-deb.
+          mkdir -p "$RUNNER_TEMP/bettersettings-verify/archive" "$RUNNER_TEMP/bettersettings-verify/root"
+          cd "$RUNNER_TEMP/bettersettings-verify/archive"
+          ar -x "$GITHUB_WORKSPACE/$package"
+          data_tar=$(find . -maxdepth 1 -name 'data.tar.*' -print -quit)
+          test -n "$data_tar"
+          tar -xf "$data_tar" -C "$RUNNER_TEMP/bettersettings-verify/root"
+          for binary in \
+            "$RUNNER_TEMP/bettersettings-verify/root/var/jb/Library/MobileSubstrate/DynamicLibraries/BetterSettings.dylib" \
+            "$RUNNER_TEMP/bettersettings-verify/root/var/jb/Library/PreferenceBundles/BetterSettingsPrefs.bundle/BetterSettingsPrefs"; do
+            test -f "$binary"
+            file "$binary"
+            lipo -archs "$binary" | tr ' ' '\n' | grep -Fx arm64e
+          done
+      - name: Upload experimental package
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetterSettings-rootless
+          path: BetterSettings/packages/*.deb
+          if-no-files-found: error
