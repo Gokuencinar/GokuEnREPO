@@ -1458,21 +1458,21 @@ Priority: important
 Description: arp, ndp, traceroute, mnc, mtest, traceroute6, ifconfig, ip6addrctl, netstat, ping6, route, rtsol
 
 Package: com.gokuencinar.roothidepatcherfix
-Name: RootHidePatcher FIX
 Version: 1.0.0
 Architecture: iphoneos-arm64e
-Section: Addons
-Priority: optional
 Maintainer: Gokuencinar
-Author: Gokuencinar
 Depends: firmware (>= 15.0), com.roothide.patcher (>= 2.1.4), com.roothide.patcher (<< 2.1.5), bash, gawk, coreutils
-Description: Prevent duplicate LC_RPATH entries when converting tweaks with RootHidePatcher 2.1.4.
- Restores the original converter script when removed. RootHide bootstrap only.
-Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/RootHidePatcher-FIX
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/RootHidePatcher-FIX/depiction.html
-Icon: https://gokuencinar.github.io/GokuEnREPO/CydiaIcon.png
 Filename: tweaks/RootHidePatcher-FIX/debs/com.gokuencinar.roothidepatcherfix_1.0.0_iphoneos-arm64e.deb
 Size: 4612
 MD5sum: dfcbedeccb38b730971c56bacecfe981
 SHA1: 261ebd53556440dbf563e9bace124b79c495b5f4
 SHA256: dc2c33f73c6cebf3d5b51e47540d7709c85aa9b75f3104258d86b943e6ca08b6
+Section: Addons
+Priority: optional
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/RootHidePatcher-FIX
+Description: Prevent duplicate LC_RPATH entries when converting tweaks with RootHidePatcher 2.1.4.
+ Restores the original converter script when removed. RootHide bootstrap only.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/RootHidePatcher-FIX/depiction.html
+Icon: https://gokuencinar.github.io/GokuEnREPO/CydiaIcon.png
+Name: RootHidePatcher FIX
