@@ -14,11 +14,11 @@ https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
 
 ## Tweaks
 
-### COS Settings 18
+### Better Settings
 
-Una manera cómoda de ordenar tus tweaks como hacía Shuffle en versiones anteriores de iOS.
+A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
 
-[Detalles](tweaks/COSSettings18/depiction.html)
+[Detalles](tweaks/BetterSettings/depiction.html)
 
 ### BandLock Global
 

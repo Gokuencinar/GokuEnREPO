@@ -6,50 +6,50 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-static NSString *const COSDomain = @"com.gokuencinar.cossettings18";
-static NSString *const COSGroupItemsKey = @"COSSettings18GroupItems";
-static char COSOriginalBackgroundKey, COSOriginalSeparatorKey, COSGroupingBusyKey;
-static char COSOriginalSpecifiersKey, COSLastGroupingConfigKey;
-static char COSOriginalCellColorKey, COSOriginalContentColorKey, COSOriginalCellConfigurationKey;
-static char COSCellStyledKey;
-static NSUInteger COSDiagnosticCount;
-static BOOL COSBoolean(NSString *key, BOOL fallback);
+static NSString *const BSDomain = @"com.gokuencinar.bettersettings";
+static NSString *const BSGroupItemsKey = @"BetterSettingsGroupItems";
+static char BSOriginalBackgroundKey, BSOriginalSeparatorKey, BSGroupingBusyKey;
+static char BSOriginalSpecifiersKey, BSLastGroupingConfigKey;
+static char BSOriginalCellColorKey, BSOriginalContentColorKey, BSOriginalCellConfigurationKey;
+static char BSCellStyledKey;
+static NSUInteger BSDiagnosticCount;
+static BOOL BSBoolean(NSString *key, BOOL fallback);
 
 // Bounded device diagnostics, without collecting preference names, bundle IDs,
 // phone data or tweak titles. Useful for verifying iOS 18's actual controllers.
-static void COSDiagnostic(NSString *stage, id controller, NSUInteger count) {
-    if (COSDiagnosticCount++ >= 24) return;
-    CFStringRef domain = (__bridge CFStringRef)COSDomain;
+static void BSDiagnostic(NSString *stage, id controller, NSUInteger count) {
+    if (BSDiagnosticCount++ >= 24) return;
+    CFStringRef domain = (__bridge CFStringRef)BSDomain;
     // Always record the constructor even if Preferences cannot read the
     // switch: otherwise lack of a record cannot distinguish injection failure.
-    BOOL enabledHere = COSBoolean(@"enabled", NO);
+    BOOL enabledHere = BSBoolean(@"enabled", NO);
     CFPreferencesSetAppValue(CFSTR("diagStage"), (__bridge CFStringRef)stage, domain);
     CFPreferencesSetAppValue(CFSTR("diagClass"), (__bridge CFStringRef)
         (controller ? NSStringFromClass([controller class]) : @"startup"), domain);
     CFPreferencesSetAppValue(CFSTR("diagSpecifierCount"), (__bridge CFPropertyListRef)@(count), domain);
-    CFPreferencesSetAppValue(CFSTR("diagHookCalls"), (__bridge CFPropertyListRef)@(COSDiagnosticCount), domain);
+    CFPreferencesSetAppValue(CFSTR("diagHookCalls"), (__bridge CFPropertyListRef)@(BSDiagnosticCount), domain);
     CFPreferencesSetAppValue(CFSTR("diagEnabledSeen"), enabledHere ? kCFBooleanTrue : kCFBooleanFalse, domain);
     CFPreferencesAppSynchronize(domain);
 }
 
-static id COSValue(NSString *key, id fallback) {
+static id BSValue(NSString *key, id fallback) {
     id value = CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key,
-        (__bridge CFStringRef)COSDomain));
+        (__bridge CFStringRef)BSDomain));
     return value ?: fallback;
 }
 
-static BOOL COSBoolean(NSString *key, BOOL fallback) {
-    id value = COSValue(key, @(fallback));
+static BOOL BSBoolean(NSString *key, BOOL fallback) {
+    id value = BSValue(key, @(fallback));
     return [value respondsToSelector:@selector(boolValue)] ? [value boolValue] : fallback;
 }
 
-static NSString *COSString(NSString *key, NSString *fallback) {
-    id value = COSValue(key, fallback);
+static NSString *BSString(NSString *key, NSString *fallback) {
+    id value = BSValue(key, fallback);
     return [value isKindOfClass:[NSString class]] && [value length] ? value : fallback;
 }
 
-static UIColor *COSColor(NSString *key, NSString *fallback) {
-    NSString *s = COSString(key, fallback);
+static UIColor *BSColor(NSString *key, NSString *fallback) {
+    NSString *s = BSString(key, fallback);
     NSCharacterSet *hex = [NSCharacterSet characterSetWithCharactersInString:@"0123456789abcdefABCDEF"];
     if (s.length != 7 || ![s hasPrefix:@"#"] ||
         [[s substringFromIndex:1] rangeOfCharacterFromSet:[hex invertedSet]].location != NSNotFound) {
@@ -61,13 +61,13 @@ static UIColor *COSColor(NSString *key, NSString *fallback) {
         green:((rgb >> 8) & 255) / 255.0 blue:(rgb & 255) / 255.0 alpha:1];
 }
 
-static NSString *COSBackgroundPath(void) {
+static NSString *BSBackgroundPath(void) {
     NSString *library = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject;
     return [[library stringByAppendingPathComponent:@"Preferences"]
-        stringByAppendingPathComponent:@"com.gokuencinar.cossettings18-background.jpg"];
+        stringByAppendingPathComponent:@"com.gokuencinar.bettersettings-background.jpg"];
 }
 
-static BOOL COSIsRootController(UIViewController *controller) {
+static BOOL BSIsRootController(UIViewController *controller) {
     if (!controller || !controller.isViewLoaded) return NO;
     UINavigationController *nav = controller.navigationController;
     if (nav.viewControllers.count && nav.viewControllers.firstObject == controller) return YES;
@@ -76,12 +76,12 @@ static BOOL COSIsRootController(UIViewController *controller) {
     return parent && [NSStringFromClass(parent.class) isEqualToString:@"PSUIPrefsRootController"];
 }
 
-@interface COSGradientView : UIView
+@interface BSGradientView : UIView
 @property (nonatomic, strong) UIColor *top;
 @property (nonatomic, strong) UIColor *bottom;
 @end
 
-@implementation COSGradientView
+@implementation BSGradientView
 + (Class)layerClass { return [CAGradientLayer class]; }
 - (void)layoutSubviews {
     [super layoutSubviews];
@@ -95,13 +95,13 @@ static BOOL COSIsRootController(UIViewController *controller) {
 
 // This controller shows the original preference specifiers. Loading and
 // navigation need physical testing with PreferenceLoader on iOS 18.
-@interface COSGroupedListController : PSListController
+@interface BSGroupedListController : PSListController
 @end
 
-@implementation COSGroupedListController
+@implementation BSGroupedListController
 - (NSArray *)specifiers {
     if (!_specifiers) {
-        NSArray *items = [self.specifier propertyForKey:COSGroupItemsKey];
+        NSArray *items = [self.specifier propertyForKey:BSGroupItemsKey];
         NSMutableArray *groupItems = [[NSMutableArray alloc] initWithObjects:[PSSpecifier emptyGroupSpecifier], nil];
         if ([items isKindOfClass:[NSArray class]]) [groupItems addObjectsFromArray:items];
         _specifiers = groupItems;
@@ -110,19 +110,19 @@ static BOOL COSIsRootController(UIViewController *controller) {
 }
 @end
 
-static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *controller) {
-    if (!COSBoolean(@"enabled", NO) || !COSBoolean(@"groupTweaks", YES) || original.count == 0) return original;
+static NSArray *BSGroupedSpecifiers(NSArray *original, PSListController *controller) {
+    if (!BSBoolean(@"enabled", NO) || !BSBoolean(@"groupTweaks", YES) || original.count == 0) return original;
     // PreferenceLoader 2.2.8 stamps its own rows with pl_bundle. It does NOT
     // use the PREFERENCELOADER_GROUP ID found in some third-party forks.
     NSMutableIndexSet *tweakIndexes = [NSMutableIndexSet indexSet];
     for (NSUInteger i = 0; i < original.count; ++i) {
         PSSpecifier *s = original[i];
-        if ([[s propertyForKey:@"id"] isEqual:@"COS_SETTINGS18_GROUP"]) return original;
+        if ([[s propertyForKey:@"id"] isEqual:@"BS_SETTINGS18_GROUP"]) return original;
         if (s.cellType != PSGroupCell && [[s propertyForKey:@"pl_bundle"] isKindOfClass:[NSBundle class]])
             [tweakIndexes addIndex:i];
     }
     if (!tweakIndexes.count) {
-        COSDiagnostic(@"no-pl-bundle", controller, original.count);
+        BSDiagnostic(@"no-pl-bundle", controller, original.count);
         return original;
     }
     // PreferenceLoader adds an *unnamed group* followed by its consecutive
@@ -130,7 +130,7 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
     // the identifiable entries only as anchors and take the complete group.
     NSUInteger firstIndex = tweakIndexes.firstIndex;
     if (firstIndex == 0) {
-        COSDiagnostic(@"first-index-zero", controller, original.count);
+        BSDiagnostic(@"first-index-zero", controller, original.count);
         return original;
     }
     NSUInteger headerIndex = NSNotFound;
@@ -139,7 +139,7 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
         if (candidate.cellType == PSGroupCell) { headerIndex = i - 1; break; }
     }
     if (headerIndex == NSNotFound || ((PSSpecifier *)original[headerIndex]).name.length != 0) {
-        COSDiagnostic(@"missing-pl-header", controller, original.count);
+        BSDiagnostic(@"missing-pl-header", controller, original.count);
         return original;
     }
     NSUInteger endIndex = original.count;
@@ -147,90 +147,90 @@ static NSArray *COSGroupedSpecifiers(NSArray *original, PSListController *contro
         if (((PSSpecifier *)original[i]).cellType == PSGroupCell) { endIndex = i; break; }
     }
     if (endIndex <= headerIndex + 1 || tweakIndexes.lastIndex >= endIndex) {
-        COSDiagnostic(@"invalid-pl-section", controller, original.count);
+        BSDiagnostic(@"invalid-pl-section", controller, original.count);
         return original;
     }
 
     NSMutableArray *items = [NSMutableArray new];
     for (NSUInteger i = headerIndex + 1; i < endIndex; ++i) [items addObject:original[i]];
 
-    if (COSBoolean(@"alphabetizeTweaks", YES)) {
+    if (BSBoolean(@"alphabetizeTweaks", YES)) {
         [items sortUsingComparator:^NSComparisonResult(PSSpecifier *a, PSSpecifier *b) {
             return [(a.name ?: @"") localizedStandardCompare:(b.name ?: @"")];
         }];
     }
 
-    PSSpecifier *group = [PSSpecifier preferenceSpecifierNamed:COSString(@"tweaksTitle", @"Mis tweaks")
-        target:controller set:NULL get:NULL detail:[COSGroupedListController class]
+    PSSpecifier *group = [PSSpecifier preferenceSpecifierNamed:BSString(@"tweaksTitle", @"Mis tweaks")
+        target:controller set:NULL get:NULL detail:[BSGroupedListController class]
         cell:PSLinkCell edit:nil];
-    [group setProperty:items forKey:COSGroupItemsKey];
-    [group setProperty:@"COS_SETTINGS18_GROUP" forKey:@"id"];
+    [group setProperty:items forKey:BSGroupItemsKey];
+    [group setProperty:@"BS_SETTINGS18_GROUP" forKey:@"id"];
     [group setProperty:@YES forKey:@"enabled"];
     NSMutableArray *result = [original mutableCopy];
     // Preserve the source group marker. Replacing only its rows keeps every
     // other Settings group/index untouched.
     [result removeObjectsInRange:NSMakeRange(headerIndex + 1, endIndex - headerIndex - 1)];
     NSUInteger insertion = headerIndex + 1;
-    if (COSBoolean(@"groupAtTop", NO)) {
+    if (BSBoolean(@"groupAtTop", NO)) {
         insertion = (result.count > 0 && ((PSSpecifier *)result[0]).cellType == PSGroupCell) ? 1 : 0;
     }
     [result insertObject:group atIndex:insertion];
-    COSDiagnostic(@"group-built", controller, result.count);
+    BSDiagnostic(@"group-built", controller, result.count);
     return result;
 }
 
-static void COSApplyGrouping(id controller) {
+static void BSApplyGrouping(id controller) {
     // The SwiftUI root on iOS 18 is handled by the dedicated PreferenceLoader
     // root integration. Do not create an additional group in General.
     if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) return;
-    if (objc_getAssociatedObject(controller, &COSGroupingBusyKey) ||
+    if (objc_getAssociatedObject(controller, &BSGroupingBusyKey) ||
         ![controller respondsToSelector:@selector(setSpecifiers:)] ||
         ![controller respondsToSelector:@selector(specifiers)]) return;
     NSArray *current = [controller specifiers];
     BOOL containsOurLink = NO;
     for (PSSpecifier *s in current) {
-        if ([[s propertyForKey:@"id"] isEqual:@"COS_SETTINGS18_GROUP"]) { containsOurLink = YES; break; }
+        if ([[s propertyForKey:@"id"] isEqual:@"BS_SETTINGS18_GROUP"]) { containsOurLink = YES; break; }
     }
-    NSArray *original = objc_getAssociatedObject(controller, &COSOriginalSpecifiersKey);
+    NSArray *original = objc_getAssociatedObject(controller, &BSOriginalSpecifiersKey);
     if (!original || !containsOurLink) {
         original = [current copy];
-        objc_setAssociatedObject(controller, &COSOriginalSpecifiersKey, original, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(controller, &BSOriginalSpecifiersKey, original, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
-    BOOL enabled = COSBoolean(@"enabled", NO) && COSBoolean(@"groupTweaks", YES);
+    BOOL enabled = BSBoolean(@"enabled", NO) && BSBoolean(@"groupTweaks", YES);
     NSString *configuration = [NSString stringWithFormat:@"%d:%d:%@",
-        enabled, COSBoolean(@"alphabetizeTweaks", YES), COSString(@"tweaksTitle", @"Mis tweaks")];
-    configuration = [configuration stringByAppendingFormat:@":%d", COSBoolean(@"groupAtTop", NO)];
-    NSString *lastConfiguration = objc_getAssociatedObject(controller, &COSLastGroupingConfigKey);
+        enabled, BSBoolean(@"alphabetizeTweaks", YES), BSString(@"tweaksTitle", @"Mis tweaks")];
+    configuration = [configuration stringByAppendingFormat:@":%d", BSBoolean(@"groupAtTop", NO)];
+    NSString *lastConfiguration = objc_getAssociatedObject(controller, &BSLastGroupingConfigKey);
     if ([configuration isEqualToString:lastConfiguration] && (containsOurLink == enabled)) return;
-    NSArray *grouped = enabled ? COSGroupedSpecifiers(original, controller) : original;
+    NSArray *grouped = enabled ? BSGroupedSpecifiers(original, controller) : original;
     if (grouped == original && !containsOurLink) {
-        objc_setAssociatedObject(controller, &COSLastGroupingConfigKey, configuration, OBJC_ASSOCIATION_COPY_NONATOMIC);
+        objc_setAssociatedObject(controller, &BSLastGroupingConfigKey, configuration, OBJC_ASSOCIATION_COPY_NONATOMIC);
         return;
     }
-    objc_setAssociatedObject(controller, &COSGroupingBusyKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(controller, &BSGroupingBusyKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [controller setSpecifiers:[grouped mutableCopy]];
-    objc_setAssociatedObject(controller, &COSGroupingBusyKey, nil, OBJC_ASSOCIATION_ASSIGN);
-    COSDiagnostic(@"group-applied", controller, grouped.count);
-    objc_setAssociatedObject(controller, &COSLastGroupingConfigKey, configuration, OBJC_ASSOCIATION_COPY_NONATOMIC);
+    objc_setAssociatedObject(controller, &BSGroupingBusyKey, nil, OBJC_ASSOCIATION_ASSIGN);
+    BSDiagnostic(@"group-applied", controller, grouped.count);
+    objc_setAssociatedObject(controller, &BSLastGroupingConfigKey, configuration, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
 // The Settings root is SwiftUI on iOS 18. Its list does not use this
 // PSListController's UITableView. Apply appearance only to the real UIKit
 // pages we own or to PreferenceLoader's grouped tweak destination.
-static BOOL COSCanStyleController(id controller) {
+static BOOL BSCanStyleController(id controller) {
     NSString *name = NSStringFromClass([controller class]);
     if ([name isEqualToString:@"PLEntryPaneController"] ||
-        [name isEqualToString:@"COSGroupedListController"] ||
-        [name isEqualToString:@"COSRootListController"] ||
-        [name isEqualToString:@"COSOrganizationListController"] ||
-        [name isEqualToString:@"COSAppearanceListController"] ||
-        [name isEqualToString:@"COSStatusListController"]) return YES;
+        [name isEqualToString:@"BSGroupedListController"] ||
+        [name isEqualToString:@"BetterRootListController"] ||
+        [name isEqualToString:@"BSOrganizationListController"] ||
+        [name isEqualToString:@"BSAppearanceListController"] ||
+        [name isEqualToString:@"BSStatusListController"]) return YES;
     if (@available(iOS 18.0, *)) return NO;
-    return COSIsRootController(controller);
+    return BSIsRootController(controller);
 }
 
-static UITableView *COSTableForController(id controller) {
-    if (!COSCanStyleController(controller) || ![controller isViewLoaded]) return nil;
+static UITableView *BSTableForController(id controller) {
+    if (!BSCanStyleController(controller) || ![controller isViewLoaded]) return nil;
     SEL tableSelector = [controller respondsToSelector:@selector(tableView)] ?
         @selector(tableView) : ([controller respondsToSelector:@selector(table)] ? @selector(table) : NULL);
     if (!tableSelector) return nil;
@@ -239,24 +239,24 @@ static UITableView *COSTableForController(id controller) {
     return [table isKindOfClass:[UITableView class]] ? table : nil;
 }
 
-static void COSStyleVisibleCells(UITableView *table) {
-    BOOL enabled = COSBoolean(@"appearanceEnabled", NO);
-    BOOL hasBackground = enabled && (COSBoolean(@"gradientEnabled", YES) ||
-        COSBoolean(@"backgroundImageEnabled", NO));
+static void BSStyleVisibleCells(UITableView *table) {
+    BOOL enabled = BSBoolean(@"appearanceEnabled", NO);
+    BOOL hasBackground = enabled && (BSBoolean(@"gradientEnabled", YES) ||
+        BSBoolean(@"backgroundImageEnabled", NO));
     for (UITableViewCell *cell in table.visibleCells) {
-        NSNumber *applied = objc_getAssociatedObject(cell, &COSCellStyledKey);
+        NSNumber *applied = objc_getAssociatedObject(cell, &BSCellStyledKey);
         if (applied && applied.boolValue == hasBackground) continue;
-        if (!objc_getAssociatedObject(cell, &COSOriginalCellColorKey)) {
-            objc_setAssociatedObject(cell, &COSOriginalCellColorKey,
+        if (!objc_getAssociatedObject(cell, &BSOriginalCellColorKey)) {
+            objc_setAssociatedObject(cell, &BSOriginalCellColorKey,
                 cell.backgroundColor ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-            objc_setAssociatedObject(cell, &COSOriginalContentColorKey,
+            objc_setAssociatedObject(cell, &BSOriginalContentColorKey,
                 cell.contentView.backgroundColor ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             if (@available(iOS 14.0, *))
-                objc_setAssociatedObject(cell, &COSOriginalCellConfigurationKey,
+                objc_setAssociatedObject(cell, &BSOriginalCellConfigurationKey,
                     cell.backgroundConfiguration ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         }
-        id originalCell = objc_getAssociatedObject(cell, &COSOriginalCellColorKey);
-        id originalContent = objc_getAssociatedObject(cell, &COSOriginalContentColorKey);
+        id originalCell = objc_getAssociatedObject(cell, &BSOriginalCellColorKey);
+        id originalContent = objc_getAssociatedObject(cell, &BSOriginalContentColorKey);
         if (hasBackground) {
             // A translucent system surface preserves readable controls over a photo.
             cell.backgroundColor = [[UIColor secondarySystemGroupedBackgroundColor] colorWithAlphaComponent:0.82];
@@ -270,30 +270,30 @@ static void COSStyleVisibleCells(UITableView *table) {
             cell.backgroundColor = originalCell == [NSNull null] ? nil : originalCell;
             cell.contentView.backgroundColor = originalContent == [NSNull null] ? nil : originalContent;
             if (@available(iOS 14.0, *)) {
-                id originalConfig = objc_getAssociatedObject(cell, &COSOriginalCellConfigurationKey);
+                id originalConfig = objc_getAssociatedObject(cell, &BSOriginalCellConfigurationKey);
                 cell.backgroundConfiguration = originalConfig == [NSNull null] ? nil : originalConfig;
             }
         }
-        objc_setAssociatedObject(cell, &COSCellStyledKey, @(hasBackground), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(cell, &BSCellStyledKey, @(hasBackground), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 }
 
-static void COSApplyAppearance(id controller) {
-    UITableView *table = COSTableForController(controller);
+static void BSApplyAppearance(id controller) {
+    UITableView *table = BSTableForController(controller);
     if (!table) return;
 
-    if (!objc_getAssociatedObject(table, &COSOriginalSeparatorKey)) {
-        objc_setAssociatedObject(table, &COSOriginalSeparatorKey, @(table.separatorStyle + 1), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        objc_setAssociatedObject(table, &COSOriginalBackgroundKey, table.backgroundView ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    if (!objc_getAssociatedObject(table, &BSOriginalSeparatorKey)) {
+        objc_setAssociatedObject(table, &BSOriginalSeparatorKey, @(table.separatorStyle + 1), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(table, &BSOriginalBackgroundKey, table.backgroundView ?: [NSNull null], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
-    BOOL enabled = COSBoolean(@"appearanceEnabled", NO);
-    BOOL gradient = enabled && COSBoolean(@"gradientEnabled", YES);
-    BOOL useImage = enabled && COSBoolean(@"backgroundImageEnabled", NO);
-    BOOL hideSeparators = enabled && COSBoolean(@"hideSeparators", NO);
+    BOOL enabled = BSBoolean(@"appearanceEnabled", NO);
+    BOOL gradient = enabled && BSBoolean(@"gradientEnabled", YES);
+    BOOL useImage = enabled && BSBoolean(@"backgroundImageEnabled", NO);
+    BOOL hideSeparators = enabled && BSBoolean(@"hideSeparators", NO);
     table.separatorStyle = (UITableViewCellSeparatorStyle)(hideSeparators ? UITableViewCellSeparatorStyleNone :
-        ([objc_getAssociatedObject(table, &COSOriginalSeparatorKey) integerValue] - 1));
+        ([objc_getAssociatedObject(table, &BSOriginalSeparatorKey) integerValue] - 1));
 
-    UIImage *image = useImage ? [UIImage imageWithContentsOfFile:COSBackgroundPath()] : nil;
+    UIImage *image = useImage ? [UIImage imageWithContentsOfFile:BSBackgroundPath()] : nil;
     if (image) {
         UIView *background = [[UIView alloc] initWithFrame:table.bounds];
         background.clipsToBounds = YES;
@@ -303,7 +303,7 @@ static void COSApplyAppearance(id controller) {
         imageView.contentMode = UIViewContentModeScaleAspectFill;
         imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [background addSubview:imageView];
-        if (COSBoolean(@"backgroundBlurEnabled", NO) && !UIAccessibilityIsReduceTransparencyEnabled()) {
+        if (BSBoolean(@"backgroundBlurEnabled", NO) && !UIAccessibilityIsReduceTransparencyEnabled()) {
             UIVisualEffectView *blur = [[UIVisualEffectView alloc] initWithEffect:
                 [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial]];
             blur.frame = background.bounds;
@@ -312,27 +312,27 @@ static void COSApplyAppearance(id controller) {
         }
         table.backgroundView = background;
     } else if (gradient) {
-        COSGradientView *view = [[COSGradientView alloc] initWithFrame:table.bounds];
-        view.top = COSColor(@"gradientTop", @"#15263A");
-        view.bottom = COSColor(@"gradientBottom", @"#536A85");
+        BSGradientView *view = [[BSGradientView alloc] initWithFrame:table.bounds];
+        view.top = BSColor(@"gradientTop", @"#15263A");
+        view.bottom = BSColor(@"gradientBottom", @"#536A85");
         table.backgroundView = view;
     } else {
-        id original = objc_getAssociatedObject(table, &COSOriginalBackgroundKey);
+        id original = objc_getAssociatedObject(table, &BSOriginalBackgroundKey);
         table.backgroundView = original == [NSNull null] ? nil : original;
     }
-    COSStyleVisibleCells(table);
+    BSStyleVisibleCells(table);
 }
 
 %group AppearancePages
 %hook PSListController
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    if (COSCanStyleController(self)) COSApplyAppearance(self);
+    if (BSCanStyleController(self)) BSApplyAppearance(self);
 }
 - (void)viewDidLayoutSubviews {
     %orig;
-    UITableView *table = COSTableForController(self);
-    if (table) COSStyleVisibleCells(table);
+    UITableView *table = BSTableForController(self);
+    if (table) BSStyleVisibleCells(table);
 }
 %end
 %end
@@ -343,9 +343,9 @@ static void COSApplyAppearance(id controller) {
 %hook PrefsListController
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    COSDiagnostic(@"host-view", self, 0);
-    COSApplyGrouping(self);
-    COSApplyAppearance(self);
+    BSDiagnostic(@"host-view", self, 0);
+    BSApplyGrouping(self);
+    BSApplyAppearance(self);
 }
 %end
 %end
@@ -356,7 +356,7 @@ static void COSApplyAppearance(id controller) {
         Class legacy = objc_getClass("PrefsListController");
         Class general = objc_getClass("PSGGeneralController");
         Class host = modern ?: legacy ?: general;
-        COSDiagnostic([NSString stringWithFormat:@"ctor-m%d-l%d-g%d-h%d-v%d-s%d-w%d",
+        BSDiagnostic([NSString stringWithFormat:@"ctor-m%d-l%d-g%d-h%d-v%d-s%d-w%d",
             modern != Nil, legacy != Nil, general != Nil, host != Nil,
             host && class_getInstanceMethod(host, @selector(viewWillAppear:)) != NULL,
             host && class_getInstanceMethod(host, @selector(specifiers)) != NULL,

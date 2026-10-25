@@ -1,4 +1,4 @@
-"""Add COS Settings 18 packages to the repository index without touching other entries."""
+"""Add Better Settings packages to the repository index without touching other entries."""
 from __future__ import annotations
 
 import gzip
@@ -8,10 +8,10 @@ import tarfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE_DIR = ROOT / "tweaks" / "COSSettings18" / "debs"
-DESCRIPTION = "Una manera cómoda de ordenar tus tweaks como hacía Shuffle en versiones anteriores de iOS."
-ICON = "https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/COSSettings18/assets/icon.png"
-DEPICTION = "https://gokuencinar.github.io/GokuEnREPO/tweaks/COSSettings18/depiction.html"
+PACKAGE_DIR = ROOT / "tweaks" / "BetterSettings" / "debs"
+DESCRIPTION = "A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS."
+ICON = "https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png"
+DEPICTION = "https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html"
 
 
 def ar_members(data: bytes) -> dict[str, bytes]:
@@ -37,11 +37,13 @@ def control_fields(package: Path) -> list[str]:
         control = next(item for item in archive if item.name.lstrip("./") == "control")
         raw = archive.extractfile(control).read().decode("utf-8").strip()
     fields = [line for line in raw.splitlines() if line.strip()]
-    if package.name.startswith("com.gokuencinar.cossettings18_"):
+    if package.name.startswith("com.gokuencinar.bettersettings_"):
         fields = [line for line in fields if not line.startswith("Description:")]
         fields.append("Description: " + DESCRIPTION)
         fields.append("Icon: " + ICON)
         fields.append("Depiction: " + DEPICTION)
+    elif package.name.startswith("preferenceloader_"):
+        fields = [line for line in fields if not line.startswith("Description:")]
     fields += [
         "Filename: " + package.relative_to(ROOT).as_posix(),
         "Size: " + str(len(blob)),
@@ -58,7 +60,7 @@ stanzas = [
     stanza
     for stanza in stanzas
     if not any(line.startswith("Package: " + name) for name in
-               ("com.gokuencinar.cossettings18", "preferenceloader")
+               ("com.gokuencinar.bettersettings", "com.gokuencinar.cossettings18", "preferenceloader")
                for line in stanza.splitlines())
 ]
 stanzas += ["\n".join(control_fields(package)) for package in sorted(PACKAGE_DIR.glob("*.deb"))]
@@ -67,4 +69,4 @@ index_path.write_text(result, encoding="utf-8", newline="\n")
 with (ROOT / "Packages.gz").open("wb") as stream:
     with gzip.GzipFile(filename="", mode="wb", compresslevel=9, mtime=0, fileobj=stream) as gz:
         gz.write(result.encode("utf-8"))
-print("Updated Packages / Packages.gz with", len(list(PACKAGE_DIR.glob("*.deb"))), "COS packages")
+print("Updated Packages / Packages.gz with", len(list(PACKAGE_DIR.glob("*.deb"))), "Better Settings packages")

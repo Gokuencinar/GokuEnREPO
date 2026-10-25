@@ -1,4 +1,4 @@
-name: Build COS Settings 18 (rootless)
+name: Build Better Settings (rootless)
 on:
   push:
   workflow_dispatch:
@@ -17,25 +17,25 @@ jobs:
           sdks-src: 'theos/sdks'
           sdks-branch: 'master'
       - name: Validate preferences and packaging
-        run: python3 COSSettings18/tests/check_project.py
+        run: python3 BetterSettings/tests/check_project.py
       - name: Compile and package
-        run: make -C COSSettings18 clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+        run: make -C BetterSettings clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
       - name: Verify Preferences can load arm64e binaries
         shell: bash
         run: |
           set -euo pipefail
-          package=$(find COSSettings18/packages -maxdepth 1 -type f -name 'com.gokuencinar.cossettings18_0.1.8_*.deb' -print -quit)
+          package=$(find BetterSettings/packages -maxdepth 1 -type f -name 'com.gokuencinar.bettersettings_1.0.0_*.deb' -print -quit)
           test -n "$package"
           # macOS runners have 'ar' and BSD tar, but not necessarily dpkg-deb.
-          mkdir -p "$RUNNER_TEMP/cossettings18-verify/archive" "$RUNNER_TEMP/cossettings18-verify/root"
-          cd "$RUNNER_TEMP/cossettings18-verify/archive"
+          mkdir -p "$RUNNER_TEMP/bettersettings-verify/archive" "$RUNNER_TEMP/bettersettings-verify/root"
+          cd "$RUNNER_TEMP/bettersettings-verify/archive"
           ar -x "$GITHUB_WORKSPACE/$package"
           data_tar=$(find . -maxdepth 1 -name 'data.tar.*' -print -quit)
           test -n "$data_tar"
-          tar -xf "$data_tar" -C "$RUNNER_TEMP/cossettings18-verify/root"
+          tar -xf "$data_tar" -C "$RUNNER_TEMP/bettersettings-verify/root"
           for binary in \
-            "$RUNNER_TEMP/cossettings18-verify/root/var/jb/Library/MobileSubstrate/DynamicLibraries/COSSettings18.dylib" \
-            "$RUNNER_TEMP/cossettings18-verify/root/var/jb/Library/PreferenceBundles/COSSettings18Prefs.bundle/COSSettings18Prefs"; do
+            "$RUNNER_TEMP/bettersettings-verify/root/var/jb/Library/MobileSubstrate/DynamicLibraries/BetterSettings.dylib" \
+            "$RUNNER_TEMP/bettersettings-verify/root/var/jb/Library/PreferenceBundles/BetterSettingsPrefs.bundle/BetterSettingsPrefs"; do
             test -f "$binary"
             file "$binary"
             lipo -archs "$binary" | tr ' ' '\n' | grep -Fx arm64e
@@ -43,6 +43,6 @@ jobs:
       - name: Upload experimental package
         uses: actions/upload-artifact@v4
         with:
-          name: COSSettings18-rootless
-          path: COSSettings18/packages/*.deb
+          name: BetterSettings-rootless
+          path: BetterSettings/packages/*.deb
           if-no-files-found: error

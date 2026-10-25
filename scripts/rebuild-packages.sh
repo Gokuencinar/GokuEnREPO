@@ -74,11 +74,16 @@ for block in blocks:
             rewritten.append(line)
         block = "\n".join(rewritten)
 
-    if package == "com.gokuencinar.cossettings18":
+    if package == "com.gokuencinar.bettersettings":
         rewritten = [line for line in block.splitlines()
-                     if not line.startswith(("Icon: ", "Depiction: "))]
-        rewritten.append("Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/COSSettings18/assets/icon.png")
-        rewritten.append("Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/COSSettings18/depiction.html")
+                     if not line.startswith(("Icon: ", "Depiction: ", "Description: "))]
+        rewritten.append("Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.")
+        rewritten.append("Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png")
+        rewritten.append("Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html")
+        block = "\n".join(rewritten)
+
+    if package == "preferenceloader":
+        rewritten = [line for line in block.splitlines() if not line.startswith("Description:")]
         block = "\n".join(rewritten)
 
     out.append(block)

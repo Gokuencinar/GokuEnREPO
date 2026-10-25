@@ -13,14 +13,14 @@ def load_plist(path: Path):
 
 
 for relative in (
-    "COSSettings18.plist",
+    "BetterSettings.plist",
     "prefs/Resources/Root.plist",
     "prefs/Resources/Info.plist",
-    "layout/Library/PreferenceLoader/Preferences/COSSettings18Prefs.plist",
+    "layout/Library/PreferenceLoader/Preferences/BetterSettingsPrefs.plist",
 ):
     assert isinstance(load_plist(ROOT / relative), dict), relative
 
-filter_bundles = load_plist(ROOT / "COSSettings18.plist")["Filter"]["Bundles"]
+filter_bundles = load_plist(ROOT / "BetterSettings.plist")["Filter"]["Bundles"]
 assert filter_bundles == ["com.apple.Preferences"], filter_bundles
 
 pane = load_plist(ROOT / "prefs/Resources/Root.plist")
@@ -30,24 +30,24 @@ assert counts and all(count == 1 for count in counts.values()), counts
 assert all("default" in item for item in entries)
 
 impl = (ROOT / "Tweak.xm").read_text(encoding="utf-8")
-pref_impl = (ROOT / "prefs/COSRootListController.m").read_text(encoding="utf-8")
+pref_impl = (ROOT / "prefs/BetterRootListController.m").read_text(encoding="utf-8")
 for key in counts:
     assert f'@"{key}"' in impl, f"Preference {key} has no runtime consumer"
 
 assert '@"pl_bundle"' in impl
 assert "if (!tweakIndexes.count)" in impl
 assert "endIndex <= headerIndex + 1" in impl
-assert "COS_SETTINGS18_GROUP" in impl
+assert "BS_SETTINGS18_GROUP" in impl
 assert 'objc_getClass("PSGGeneralController")' in impl
 assert '%init(SettingsHost, PrefsListController = host)' in impl
-assert "COSIsRootController(controller)" in impl
-assert 'COSBoolean(@"enabled", NO)' in impl
-assert 'COSBoolean(@"appearanceEnabled", NO)' in impl
-assert 'com.gokuencinar.cossettings18' in pref_impl
+assert "BSIsRootController(controller)" in impl
+assert 'BSBoolean(@"enabled", NO)' in impl
+assert 'BSBoolean(@"appearanceEnabled", NO)' in impl
+assert 'com.gokuencinar.bettersettings' in pref_impl
 
 control = (ROOT / "control").read_text(encoding="utf-8")
 makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
 assert re.search(r"^export ARCHS := arm64e$", makefile, re.M)
 assert re.search(r"^Architecture: iphoneos-arm64$", control, re.M)
-assert re.search(r"^Package: com\.gokuencinar\.cossettings18$", control, re.M)
+assert re.search(r"^Package: com\.gokuencinar\.bettersettings$", control, re.M)
 print(f"PASS: {len(entries)} preference keys, 4 XML plists, rootless metadata, scoped hooks")
