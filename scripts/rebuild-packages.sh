@@ -2,10 +2,9 @@
 set -euo pipefail
 
 : > Packages
-for package_dir in tweaks/*/debs; do
-  [ -d "$package_dir" ] || continue
+while IFS= read -r -d '' package_dir; do
   dpkg-scanpackages -m "$package_dir" /dev/null >> Packages
-done
+done < <(find tweaks -type d -name debs -print0 | sort -z)
 
 python3 - <<'PY'
 from pathlib import Path
