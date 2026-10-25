@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_DIR = ROOT / "tweaks" / "BetterSettings" / "debs"
+ROOTHIDE_DIR = ROOT / "tweaks" / "BetterSettings" / "roothide" / "debs"
 DESCRIPTION = "A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS."
 ICON = "https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png"
 DEPICTION = "https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html"
@@ -37,13 +38,18 @@ def control_fields(package: Path) -> list[str]:
         control = next(item for item in archive if item.name.lstrip("./") == "control")
         raw = archive.extractfile(control).read().decode("utf-8").strip()
     fields = [line for line in raw.splitlines() if line.strip()]
+    roothide = package.parent == ROOTHIDE_DIR
     if package.name.startswith("com.gokuencinar.bettersettings_"):
         fields = [line for line in fields if not line.startswith("Description:")]
         fields.append("Description: " + DESCRIPTION)
         fields.append("Icon: " + ICON)
         fields.append("Depiction: " + DEPICTION)
+        if roothide:
+            fields = ["Name: Better Settings (RootHide)" if line.startswith("Name:") else line for line in fields]
     elif package.name.startswith("preferenceloader_"):
         fields = [line for line in fields if not line.startswith("Description:")]
+        if roothide:
+            fields = ["Name: PreferenceLoader (RootHide)" if line.startswith("Name:") else line for line in fields]
     fields += [
         "Filename: " + package.relative_to(ROOT).as_posix(),
         "Size: " + str(len(blob)),
@@ -63,10 +69,11 @@ stanzas = [
                ("com.gokuencinar.bettersettings", "com.gokuencinar.cossettings18", "preferenceloader")
                for line in stanza.splitlines())
 ]
-stanzas += ["\n".join(control_fields(package)) for package in sorted(PACKAGE_DIR.glob("*.deb"))]
+packages = sorted(PACKAGE_DIR.glob("*.deb")) + sorted(ROOTHIDE_DIR.glob("*.deb"))
+stanzas += ["\n".join(control_fields(package)) for package in packages]
 result = "\n\n".join(stanzas) + "\n"
 index_path.write_text(result, encoding="utf-8", newline="\n")
 with (ROOT / "Packages.gz").open("wb") as stream:
     with gzip.GzipFile(filename="", mode="wb", compresslevel=9, mtime=0, fileobj=stream) as gz:
         gz.write(result.encode("utf-8"))
-print("Updated Packages / Packages.gz with", len(list(PACKAGE_DIR.glob("*.deb"))), "Better Settings packages")
+print("Updated Packages / Packages.gz with", len(packages), "Better Settings packages")

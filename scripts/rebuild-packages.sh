@@ -80,10 +80,14 @@ for block in blocks:
         rewritten.append("Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.")
         rewritten.append("Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png")
         rewritten.append("Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html")
+        if fields.get("Architecture") == "iphoneos-arm64e":
+            rewritten = ["Name: Better Settings (RootHide)" if line.startswith("Name:") else line for line in rewritten]
         block = "\n".join(rewritten)
 
     if package == "preferenceloader":
         rewritten = [line for line in block.splitlines() if not line.startswith("Description:")]
+        if fields.get("Architecture") == "iphoneos-arm64e":
+            rewritten = ["Name: PreferenceLoader (RootHide)" if line.startswith("Name:") else line for line in rewritten]
         block = "\n".join(rewritten)
 
     out.append(block)
