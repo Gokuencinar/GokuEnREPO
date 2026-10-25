@@ -44,9 +44,9 @@ Prevents duplicate library search paths when converting tweaks with RootHidePatc
 
 [Details](tweaks/RootHidePatcher-FIX/README.md) · [Changelog](tweaks/RootHidePatcher-FIX/CHANGELOG.md)
 
-### Nuke Wireless
+### NukeWireless
 
-Nuke Wireless is a Wi-Fi management toolkit focused on discovering and controlling devices on the local network. It is still under development and does not have a public release yet.
+NukeWireless is a Wi-Fi management toolkit focused on discovering and controlling devices on the local network. It is still under development and does not have a public release yet.
 
 [Details](tweaks/Nuke-Wireless/README.md)
 
