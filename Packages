@@ -609,6 +609,43 @@ Section: System
 Author: Dustin Howett <dustin@howett.net>
 Name: PreferenceLoader
 
+Package: com.gokuencinar.bettersettings
+Version: 1.0.0
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 444
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter1), ellekit | mobilesubstrate
+Conflicts: com.gokuencinar.cossettings18
+Replaces: com.gokuencinar.cossettings18
+Filename: tweaks/BetterSettings/roothide/debs/com.gokuencinar.bettersettings_1.0.0_iphoneos-arm64e.deb
+Size: 39112
+MD5sum: fdd7f415730cf1d4bde79136fd470fb7
+SHA1: 2c4c952c49aeb42d941c8ae1c5d3c0c42a115dd7
+SHA256: 14ac3908131103165f2d749712e81719094a49cf6eab84f74606b4680619a88b
+Section: Tweaks
+Author: Gokuencinar
+Name: Better Settings (RootHide)
+Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
+
+Package: preferenceloader
+Version: 2.3.3+zbetter1
+Architecture: iphoneos-arm64e
+Maintainer: Dhinak G <dhinak@dhinak.net>
+Installed-Size: 416
+Depends: mobilesubstrate, firmware (>= 15.0)
+Conflicts: preferenceloader-legacy
+Replaces: preferenceloader-legacy
+Filename: tweaks/BetterSettings/roothide/debs/preferenceloader_2.3.3+zbetter1_iphoneos-arm64e.deb
+Size: 35850
+MD5sum: 11f860a8e1b22945ea4236f03890d5ac
+SHA1: c5f549912cb1334744c51d95c1f3b5c23f301d27
+SHA256: 8f8f064dc79c00e66da6135723b73fc6bc0c5792a0020774c40ead5327db451d
+Section: System
+Author: Dustin Howett <dustin@howett.net>
+Name: PreferenceLoader (RootHide)
+
 Package: com.betterwifirh.tweak.dopamine
 Version: 0.3.15
 Architecture: iphoneos-arm64
