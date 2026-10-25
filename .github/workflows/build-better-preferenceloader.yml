@@ -1,9 +1,9 @@
-name: Build COS PreferenceLoader experimental
+name: Build Better PreferenceLoader experimental
 on:
   push:
     paths:
-      - 'COSPreferenceLoader/**'
-      - '.github/workflows/build-cos-preferenceloader.yml'
+      - 'BetterPreferenceLoader/**'
+      - '.github/workflows/build-better-preferenceloader.yml'
   workflow_dispatch:
 
 jobs:
@@ -19,12 +19,12 @@ jobs:
           sdks-src: 'theos/sdks'
           sdks-branch: 'master'
       - name: Build rootless fork
-        run: make -C COSPreferenceLoader package FINALPACKAGE=1 SCHEME=rootless
+        run: make -C BetterPreferenceLoader package FINALPACKAGE=1 SCHEME=rootless
       - name: Verify rootless package and Mach-O slices
         shell: bash
         run: |
           set -euo pipefail
-          package=$(find COSPreferenceLoader/packages -maxdepth 1 -type f -name 'preferenceloader_*_iphoneos-arm64.deb' -print -quit)
+          package=$(find BetterPreferenceLoader/packages -maxdepth 1 -type f -name 'preferenceloader_*_iphoneos-arm64.deb' -print -quit)
           test -n "$package"
           mkdir -p "$RUNNER_TEMP/pl-archive" "$RUNNER_TEMP/pl-root"
           cd "$RUNNER_TEMP/pl-archive"
@@ -41,6 +41,6 @@ jobs:
           done
       - uses: actions/upload-artifact@v4
         with:
-          name: COSPreferenceLoader-rootless-experimental
-          path: COSPreferenceLoader/packages/*_iphoneos-arm64.deb
+          name: BetterPreferenceLoader-rootless-experimental
+          path: BetterPreferenceLoader/packages/*_iphoneos-arm64.deb
           if-no-files-found: error

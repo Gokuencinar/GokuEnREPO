@@ -1,4 +1,4 @@
-# COS Settings 18 (beta experimental)
+# Better Settings (beta experimental)
 
 **Revision 0.1.1:** El panel 0.1.0 no se cargaba en Ajustes de iOS 18.7.1: dyld identificó `have 'arm64', need 'arm64e'`. Se compilaron ambos Mach-O para `arm64e`, se verificaron las arquitecturas en CI y se instalo 0.1.1 por SSH. El formato Debian rootless sigue siendo `iphoneos-arm64`. La apertura del panel sigue pendiente de comprobacion visual tras cerrar y volver a abrir Ajustes.
 
@@ -30,7 +30,7 @@ En macOS o Linux con Theos, SDK iOS y toolchain compatibles:
 make package FINALPACKAGE=1
 ```
 
-La variante integrada en `Gokuencinar/GokuEnREPO`, rama `feature/cossettings18-ios18-ci`, compilo correctamente mediante GitHub Actions run `39507496424` (commit `22dea6c`). Artefacto `COSSettings18-rootless`, SHA-256 del ZIP: `59dfe32b2e8a5ef91dc7e0df9ccf8a75f64a29eeb10a5a1e15aae61ff180be5f`.
+La variante integrada en `Gokuencinar/GokuEnREPO`, rama `feature/bettersettings-ios18-ci`, compilo correctamente mediante GitHub Actions run `39507496424` (commit `22dea6c`). Artefacto `BetterSettings-rootless`, SHA-256 del ZIP: `59dfe32b2e8a5ef91dc7e0df9ccf8a75f64a29eeb10a5a1e15aae61ff180be5f`.
 
 Ejecutar la validacion previa independiente del SDK:
 
@@ -46,6 +46,6 @@ No se necesita reiniciar SpringBoard para restaurar estos cambios visuales, aunq
 2. Confirmar en el runtime que los specifiers de PreferenceLoader 2.2.8 exponen el metadato `pl_bundle` y que la pagina de agrupacion conserva la navegacion hacia cada tweak.
 3. Probar visualmente ambos interruptores, una funcion por vez, comprobar la navegacion y revisar Cr4shed. La instalacion y el arranque de Ajustes ya estan verificados; el resultado visual aun no.
 
-La version experimental no toca el rootfs, no edita preferencias de otras aplicaciones y no instala servicios persistentes. Para revertir una instalacion, desactivar desde el panel o desinstalar `com.gokuencinar.cossettings18` desde Sileo.
+La version experimental no toca el rootfs, no edita preferencias de otras aplicaciones y no instala servicios persistentes. Para revertir una instalacion, desactivar desde el panel o desinstalar `com.gokuencinar.bettersettings` desde Sileo.
 
 Ver [registro de instalacion y recuperacion](INSTALLATION-2026-10-21.md).

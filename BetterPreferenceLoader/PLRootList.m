@@ -248,19 +248,19 @@ static const char *const kPLIdentityPrefix = "PLTweak:";
 // PSListController that contains all PreferenceLoader entries.
 static NSString *const kPLGroupIdentity = @"PLGroup:all-tweaks";
 static NSString *const kPLGroupRoute = @"__PL_GROUP_ALL_TWEAKS__";
-static id PLCOSReadPreference(NSString *key) {
+static id PLBSReadPreference(NSString *key) {
     CFPropertyListRef value = CFPreferencesCopyAppValue((CFStringRef)key,
-        CFSTR("com.gokuencinar.cossettings18"));
+        CFSTR("com.gokuencinar.bettersettings"));
     return value ? [(id)value autorelease] : nil;
 }
 
-static BOOL PLCOSBoolean(NSString *key, BOOL fallback) {
-    id value = PLCOSReadPreference(key);
+static BOOL PLBSBoolean(NSString *key, BOOL fallback) {
+    id value = PLBSReadPreference(key);
     return [value respondsToSelector:@selector(boolValue)] ? [value boolValue] : fallback;
 }
 
-static NSString *PLCOSGroupTitle(void) {
-    id value = PLCOSReadPreference(@"tweaksTitle");
+static NSString *PLBSGroupTitle(void) {
+    id value = PLBSReadPreference(@"tweaksTitle");
     return [value isKindOfClass:NSString.class] && [value length] ? value : @"Tweaks";
 }
 
@@ -269,7 +269,7 @@ static NSString *PLCOSGroupTitle(void) {
 // and nearly disappear against the dark Settings background. Render an opaque,
 // Settings-style colored tile so the white glyph is legible in either theme.
 // Keep the image alive: this file is compiled with manual reference counting.
-static UIImage *PLCOSTweaksIcon(void) {
+static UIImage *PLBSTweaksIcon(void) {
     static UIImage *icon;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
@@ -825,11 +825,11 @@ static const void *PLTemplateSection(PLRootContext *ctx, const void **itemOut) {
 // Insert an entire section, never within an Apple section or between its rows.
 // If the root is still loading, the next Apple snapshot will be injected again.
 static NSInteger PLSectionInsertIndex(PLRootContext *ctx) {
-    return MIN((NSInteger)(PLCOSBoolean(@"groupAtTop", YES) ? 1 : 2), ctx->sectionCount);
+    return MIN((NSInteger)(PLBSBoolean(@"groupAtTop", YES) ? 1 : 2), ctx->sectionCount);
 }
 
 void PLRootListInjectTweakSection(void) {
-    if (!PLCOSBoolean(@"enabled", YES) || !PLCOSBoolean(@"groupTweaks", YES)) return;
+    if (!PLBSBoolean(@"enabled", YES) || !PLBSBoolean(@"groupTweaks", YES)) return;
     PLRootContext ctx;
     if (!PLResolve(&ctx)) { PLRootLog(@"[inject] model not reachable"); return; }
 
@@ -875,8 +875,8 @@ void PLRootListInjectTweakSection(void) {
     void *item = itemBase;
     PLSwiftValueInitializeWithCopy(item, templateItem, ctx.itemMeta);
     PLSetItemIdentity(&ctx, item, kPLGroupIdentity);
-    UIImage *icon = PLCOSTweaksIcon();
-    if (!PLSetItemAppearance(&ctx, item, PLCOSGroupTitle(), icon)) {
+    UIImage *icon = PLBSTweaksIcon();
+    if (!PLSetItemAppearance(&ctx, item, PLBSGroupTitle(), icon)) {
         PLRootLog(@"[inject] Tweaks template is not a link; aborting");
         return;
     }
@@ -1403,7 +1403,7 @@ static UIViewController *PLControllerForTweakGroup(void) {
         if (order != NSOrderedSame) return order;
         return [a[@"source"] localizedCaseInsensitiveCompare:b[@"source"]];
     }];
-    if (!PLCOSBoolean(@"alphabetizeTweaks", YES)) records = PLEntryRecords();
+    if (!PLBSBoolean(@"alphabetizeTweaks", YES)) records = PLEntryRecords();
     NSMutableArray *items = [NSMutableArray arrayWithObject:[PSSpecifier emptyGroupSpecifier]];
     for (NSDictionary *record in records) {
         NSDictionary *entry = record[@"entry"];
@@ -1473,7 +1473,7 @@ UIViewController *PLRootListPaneForCurrentSelection(void) {
         // Set once at build time, not on every lookup: the detail path asks for the pane on every
         // runloop turn, and a tweak that manages navigationItem.title itself -- hiding it at the
         // top of its scroll and revealing it further down -- would have it pinned visible.
-        NSString *displayTitle = [title isEqualToString:kPLGroupRoute] ? PLCOSGroupTitle() : title;
+        NSString *displayTitle = [title isEqualToString:kPLGroupRoute] ? PLBSGroupTitle() : title;
         pane.title = displayTitle;
         pane.navigationItem.title = displayTitle;
         // Marked so the pop refusal can tell this pane apart from anything else on the stack.

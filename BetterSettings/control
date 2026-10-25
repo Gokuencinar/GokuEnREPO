@@ -1,0 +1,11 @@
+Package: com.gokuencinar.bettersettings
+Name: Better Settings
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Author: Gokuencinar
+Section: Tweaks
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+better1), ellekit | mobilesubstrate
+Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+Conflicts: com.gokuencinar.cossettings18
+Replaces: com.gokuencinar.cossettings18

@@ -6,29 +6,29 @@
 #import <UIKit/UIKit.h>
 #import <math.h>
 
-static CFStringRef const COSDomain = CFSTR("com.gokuencinar.cossettings18");
-static NSString *const COSChangedNotification = @"com.gokuencinar.cossettings18/preferences-changed";
+static CFStringRef const BSDomain = CFSTR("com.gokuencinar.bettersettings");
+static NSString *const BSChangedNotification = @"com.gokuencinar.bettersettings/preferences-changed";
 
-static id COSRead(NSString *key) {
-    return CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key, COSDomain));
+static id BSRead(NSString *key) {
+    return CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key, BSDomain));
 }
 
-static BOOL COSReadBool(NSString *key, BOOL defaultValue) {
-    id value = COSRead(key);
+static BOOL BSReadBool(NSString *key, BOOL defaultValue) {
+    id value = BSRead(key);
     return [value respondsToSelector:@selector(boolValue)] ? [value boolValue] : defaultValue;
 }
 
-static void COSWrite(NSString *key, id value) {
-    CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)value, COSDomain);
+static void BSWrite(NSString *key, id value) {
+    CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)value, BSDomain);
 }
 
-static void COSCommit(void) {
-    CFPreferencesAppSynchronize(COSDomain);
+static void BSCommit(void) {
+    CFPreferencesAppSynchronize(BSDomain);
     CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
-        (__bridge CFStringRef)COSChangedNotification, NULL, NULL, YES);
+        (__bridge CFStringRef)BSChangedNotification, NULL, NULL, YES);
 }
 
-static NSString *COSValidatedHex(NSString *text) {
+static NSString *BSValidatedHex(NSString *text) {
     if (![text isKindOfClass:[NSString class]]) return nil;
     NSString *s = [[text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
     if (s.length != 7 || ![s hasPrefix:@"#"]) return nil;
@@ -36,23 +36,23 @@ static NSString *COSValidatedHex(NSString *text) {
     return [[s substringFromIndex:1] rangeOfCharacterFromSet:invalid].location == NSNotFound ? s : nil;
 }
 
-static UIColor *COSColor(NSString *key, NSString *fallback) {
-    NSString *s = COSValidatedHex(COSRead(key)) ?: fallback;
+static UIColor *BSColor(NSString *key, NSString *fallback) {
+    NSString *s = BSValidatedHex(BSRead(key)) ?: fallback;
     unsigned int rgb = 0;
     [[NSScanner scannerWithString:[s substringFromIndex:1]] scanHexInt:&rgb];
     return [UIColor colorWithRed:((rgb >> 16) & 255) / 255.0
         green:((rgb >> 8) & 255) / 255.0 blue:(rgb & 255) / 255.0 alpha:1];
 }
 
-static NSString *COSBackgroundPath(void) {
+static NSString *BSBackgroundPath(void) {
     NSString *library = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject;
     return [[library stringByAppendingPathComponent:@"Preferences"]
-        stringByAppendingPathComponent:@"com.gokuencinar.cossettings18-background.jpg"];
+        stringByAppendingPathComponent:@"com.gokuencinar.bettersettings-background.jpg"];
 }
 
-// The preview belongs to COS Settings' own panel. It does not depend on an
+// The preview belongs to BS Settings' own panel. It does not depend on an
 // unverified iOS 18 Settings-root hook and never touches Apple's views.
-@interface COSBannerView : UIView
+@interface BSBannerView : UIView
 @property (nonatomic) BOOL appearancePreview;
 @property (nonatomic, strong) UIView *card;
 @property (nonatomic, strong) UIImageView *iconView;
@@ -65,7 +65,7 @@ static NSString *COSBackgroundPath(void) {
 - (void)refresh;
 @end
 
-@implementation COSBannerView
+@implementation BSBannerView
 - (instancetype)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
         self.backgroundColor = UIColor.clearColor;
@@ -118,20 +118,20 @@ static NSString *COSBackgroundPath(void) {
         self.heading.text = @"Vista previa";
         self.subtitle.text = @"Imagen o degradado elegido";
         self.iconView.image = [UIImage systemImageNamed:@"paintpalette.fill"];
-        self.gradient.colors = @[(__bridge id)COSColor(@"gradientTop", @"#15263A").CGColor,
-            (__bridge id)COSColor(@"gradientBottom", @"#536A85").CGColor];
+        self.gradient.colors = @[(__bridge id)BSColor(@"gradientTop", @"#15263A").CGColor,
+            (__bridge id)BSColor(@"gradientBottom", @"#536A85").CGColor];
         self.gradient.startPoint = CGPointMake(0.5, 0);
         self.gradient.endPoint = CGPointMake(0.5, 1);
-        BOOL usePhoto = COSReadBool(@"backgroundImageEnabled", NO);
-        UIImage *image = usePhoto ? [UIImage imageWithContentsOfFile:COSBackgroundPath()] : nil;
+        BOOL usePhoto = BSReadBool(@"backgroundImageEnabled", NO);
+        UIImage *image = usePhoto ? [UIImage imageWithContentsOfFile:BSBackgroundPath()] : nil;
         self.photo.image = image;
         self.caption.text = image ? @"IMAGEN SELECCIONADA" : @"DEGRADADO PERSONALIZADO";
-        if (!COSReadBool(@"appearanceEnabled", NO)) self.caption.text = @"VISTA PREVIA · APARIENCIA DESACTIVADA";
+        if (!BSReadBool(@"appearanceEnabled", NO)) self.caption.text = @"VISTA PREVIA · APARIENCIA DESACTIVADA";
         self.accessibilityLabel = [NSString stringWithFormat:@"%@. %@", self.heading.text, self.caption.text];
     } else {
-        self.heading.text = @"COS Settings 18";
+        self.heading.text = @"Better Settings";
         self.subtitle.text = @"Organiza y personaliza tus Ajustes";
-        self.caption.text = COSReadBool(@"enabled", NO)
+        self.caption.text = BSReadBool(@"enabled", NO)
             ? @"CATEGORÍA TWEAKS ACTIVADA · BETA iOS 18" : @"CATEGORÍA TWEAKS DESACTIVADA · BETA iOS 18";
         self.iconView.image = [UIImage systemImageNamed:@"slider.horizontal.3"];
         self.accessibilityLabel = [NSString stringWithFormat:@"%@. %@", self.heading.text, self.caption.text];
@@ -160,24 +160,25 @@ static NSString *COSBackgroundPath(void) {
 }
 @end
 
-@interface COSSettingsBaseController : PSListController <PHPickerViewControllerDelegate>
-@property (nonatomic, strong) COSBannerView *cosBanner;
+@interface BSSettingsBaseController : PSListController <PHPickerViewControllerDelegate>
+@property (nonatomic, strong) BSBannerView *cosBanner;
 - (void)refreshBanner;
 - (void)showError:(NSString *)message;
 @end
 
-@interface COSRootListController : COSSettingsBaseController @end
-@interface COSOrganizationListController : COSSettingsBaseController @end
-@interface COSAppearanceListController : COSSettingsBaseController @end
-@interface COSStatusListController : COSSettingsBaseController @end
+@interface BetterRootListController : BSSettingsBaseController @end
+@interface BSOrganizationListController : BSSettingsBaseController @end
+@interface BSAppearanceListController : BSSettingsBaseController @end
+@interface BSStatusListController : BSSettingsBaseController @end
+@interface BSInformationController : UIViewController @end
 
-static PSSpecifier *COSGroup(NSString *name, NSString *footer) {
+static PSSpecifier *BSGroup(NSString *name, NSString *footer) {
     PSSpecifier *group = [PSSpecifier groupSpecifierWithName:name];
     if (footer.length) [group setProperty:footer forKey:@"footerText"];
     return group;
 }
 
-static PSSpecifier *COSLink(NSString *name, NSString *identifier, Class controller, id target) {
+static PSSpecifier *BSLink(NSString *name, NSString *identifier, Class controller, id target) {
     PSSpecifier *link = [PSSpecifier preferenceSpecifierNamed:name target:target
         set:NULL get:NULL detail:controller cell:PSLinkCell edit:nil];
     [link setProperty:identifier forKey:@"id"];
@@ -191,7 +192,7 @@ static PSSpecifier *COSLink(NSString *name, NSString *identifier, Class controll
 
 // Root.plist remains the single source of the 12 runtime preference keys.
 // Split its existing sections when presenting the two settings pages.
-static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL appearance) {
+static NSMutableArray *BSSettingsSection(PSListController *controller, BOOL appearance) {
     NSArray *all = [controller loadSpecifiersFromPlistName:@"Root" target:controller];
     NSMutableArray *selection = [NSMutableArray array];
     BOOL collecting = !appearance;
@@ -206,16 +207,16 @@ static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL app
     return selection;
 }
 
-@implementation COSSettingsBaseController
+@implementation BSSettingsBaseController
 - (void)viewDidLoad {
     [super viewDidLoad];
-    if (![self isKindOfClass:[COSRootListController class]] &&
-        ![self isKindOfClass:[COSAppearanceListController class]]) return;
+    if (![self isKindOfClass:[BetterRootListController class]] &&
+        ![self isKindOfClass:[BSAppearanceListController class]]) return;
     if (![self respondsToSelector:@selector(tableView)]) return;
     UITableView *table = self.tableView;
     if (![table isKindOfClass:[UITableView class]]) return;
-    BOOL appearance = [self isKindOfClass:[COSAppearanceListController class]];
-    self.cosBanner = [[COSBannerView alloc] initWithFrame:CGRectMake(0, 0,
+    BOOL appearance = [self isKindOfClass:[BSAppearanceListController class]];
+    self.cosBanner = [[BSBannerView alloc] initWithFrame:CGRectMake(0, 0,
         CGRectGetWidth(table.bounds), appearance ? 225 : 155)];
     self.cosBanner.appearancePreview = appearance;
     [self refreshBanner];
@@ -247,7 +248,7 @@ static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL app
 - (id)readPreferenceValue:(PSSpecifier *)specifier {
     NSString *key = [specifier propertyForKey:@"key"];
     if (![key isKindOfClass:[NSString class]]) return nil;
-    id saved = COSRead(key);
+    id saved = BSRead(key);
     return saved ?: [specifier propertyForKey:@"default"];
 }
 
@@ -255,7 +256,7 @@ static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL app
     NSString *key = [specifier propertyForKey:@"key"];
     if (![key isKindOfClass:[NSString class]] || !value) return;
     if ([key isEqualToString:@"gradientTop"] || [key isEqualToString:@"gradientBottom"]) {
-        NSString *hex = COSValidatedHex(value);
+        NSString *hex = BSValidatedHex(value);
         if (!hex) {
             [self showError:@"Escribe un color hexadecimal de seis cifras, por ejemplo #15263A."];
             [self reloadSpecifier:specifier];
@@ -263,25 +264,25 @@ static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL app
         }
         value = hex;
     }
-    COSWrite(key, value);
-    COSCommit();
+    BSWrite(key, value);
+    BSCommit();
     [self refreshBanner];
 }
 
 - (void)showError:(NSString *)message {
     if (!self.view.window) return;
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"COS Settings"
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"BS Settings"
         message:message preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"Aceptar" style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)applyPaletteTop:(NSString *)top bottom:(NSString *)bottom {
-    COSWrite(@"gradientTop", top);
-    COSWrite(@"gradientBottom", bottom);
-    COSWrite(@"gradientEnabled", @YES);
-    COSWrite(@"backgroundImageEnabled", @NO);
-    COSCommit();
+    BSWrite(@"gradientTop", top);
+    BSWrite(@"gradientBottom", bottom);
+    BSWrite(@"gradientEnabled", @YES);
+    BSWrite(@"backgroundImageEnabled", @NO);
+    BSCommit();
     [self reloadSpecifiers];
     [self refreshBanner];
 }
@@ -330,13 +331,13 @@ static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL app
             UIImage *scaled = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
             NSData *jpeg = scaled ? UIImageJPEGRepresentation(scaled, 0.85) : nil;
-            if (!jpeg || jpeg.length > 8000000 || ![jpeg writeToFile:COSBackgroundPath() atomically:YES]) {
+            if (!jpeg || jpeg.length > 8000000 || ![jpeg writeToFile:BSBackgroundPath() atomically:YES]) {
                 [self showError:@"No se pudo guardar la imagen. Prueba otra foto."];
                 return;
             }
-            COSWrite(@"backgroundImageEnabled", @YES);
-            COSWrite(@"appearanceEnabled", @YES);
-            COSCommit();
+            BSWrite(@"backgroundImageEnabled", @YES);
+            BSWrite(@"appearanceEnabled", @YES);
+            BSCommit();
             [self reloadSpecifiers];
             [self refreshBanner];
         });
@@ -344,7 +345,7 @@ static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL app
 }
 
 - (void)clearBackground {
-    NSString *path = COSBackgroundPath();
+    NSString *path = BSBackgroundPath();
     if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
         NSError *error = nil;
         if (![[NSFileManager defaultManager] removeItemAtPath:path error:&error]) {
@@ -352,74 +353,159 @@ static NSMutableArray *COSSettingsSection(PSListController *controller, BOOL app
             return;
         }
     }
-    COSWrite(@"backgroundImageEnabled", @NO);
-    COSCommit();
+    BSWrite(@"backgroundImageEnabled", @NO);
+    BSCommit();
     [self reloadSpecifiers];
     [self refreshBanner];
 }
 @end
 
-@implementation COSRootListController
+@implementation BetterRootListController
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"COS Settings 18";
+    self.title = @"Better Settings";
+    UIBarButtonItem *information = [[UIBarButtonItem alloc]
+        initWithImage:[UIImage systemImageNamed:@"info.circle"]
+        style:UIBarButtonItemStylePlain target:self action:@selector(openBetterSettingsInfo)];
+    information.accessibilityLabel = @"About Better Settings";
+    self.navigationItem.rightBarButtonItem = information;
+}
+- (void)openBetterSettingsInfo {
+    BSInformationController *details = [BSInformationController new];
+    [self.navigationController pushViewController:details animated:YES];
 }
 - (NSArray *)specifiers {
     if (!_specifiers) {
         _specifiers = [NSMutableArray arrayWithObjects:
-            COSGroup(@"COS SETTINGS", @"Configura cada función desde su propia pantalla."),
-            COSLink(@"Organización", @"cos.organize", [COSOrganizationListController class], self),
-            COSLink(@"Apariencia", @"cos.appearance", [COSAppearanceListController class], self),
-            COSGroup(@"INFORMACIÓN", @"COS Settings 18 · Beta experimental para iOS 18. La categoría Tweaks aparece en la pantalla principal con el motor COS PreferenceLoader."),
-            COSLink(@"Estado y compatibilidad", @"cos.status", [COSStatusListController class], self), nil];
+            BSGroup(@"BETTER SETTINGS", @"Configura cada función desde su propia pantalla."),
+            BSLink(@"Organización", @"cos.organize", [BSOrganizationListController class], self),
+            BSLink(@"Apariencia", @"cos.appearance", [BSAppearanceListController class], self),
+            BSGroup(@"INFORMACIÓN", @"La categoría Tweaks aparece en la pantalla principal de Ajustes."),
+            BSLink(@"Estado y compatibilidad", @"cos.status", [BSStatusListController class], self), nil];
     }
     return _specifiers;
 }
 @end
 
-@implementation COSOrganizationListController
+@implementation BSInformationController
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.title = @"Information";
+    self.view.backgroundColor = UIColor.systemGroupedBackgroundColor;
+    UIScrollView *scroll = [UIScrollView new];
+    scroll.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:scroll];
+    [NSLayoutConstraint activateConstraints:@[
+        [scroll.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+        [scroll.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+        [scroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [scroll.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
+    ]];
+    UIStackView *stack = [[UIStackView alloc] init];
+    stack.axis = UILayoutConstraintAxisVertical;
+    stack.alignment = UIStackViewAlignmentCenter;
+    stack.spacing = 18;
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    [scroll addSubview:stack];
+    [NSLayoutConstraint activateConstraints:@[
+        [stack.leadingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.leadingAnchor constant:24],
+        [stack.trailingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.trailingAnchor constant:-24],
+        [stack.topAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.topAnchor constant:30],
+        [stack.bottomAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.bottomAnchor constant:-30],
+        [stack.widthAnchor constraintEqualToAnchor:scroll.frameLayoutGuide.widthAnchor constant:-48]
+    ]];
+    UIImageView *logo = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon-large"]];
+    if (!logo.image) logo.image = [UIImage imageNamed:@"icon"];
+    logo.contentMode = UIViewContentModeScaleAspectFit;
+    logo.layer.cornerRadius = 20;
+    logo.clipsToBounds = YES;
+    [stack addArrangedSubview:logo];
+    [logo.widthAnchor constraintEqualToConstant:90].active = YES;
+    [logo.heightAnchor constraintEqualToConstant:90].active = YES;
+    UILabel *heading = [UILabel new];
+    heading.text = @"Better Settings";
+    heading.font = [UIFont systemFontOfSize:27 weight:UIFontWeightBold];
+    heading.textColor = UIColor.labelColor;
+    [stack addArrangedSubview:heading];
+    UILabel *version = [UILabel new];
+    version.text = @"Version 1.0.0";
+    version.textColor = UIColor.secondaryLabelColor;
+    version.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+    [stack addArrangedSubview:version];
+    UILabel *credits = [UILabel new];
+    credits.text = @"Developed by Gokuencinar · GokuEn";
+    credits.textAlignment = NSTextAlignmentCenter;
+    credits.textColor = UIColor.labelColor;
+    credits.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
+    credits.numberOfLines = 0;
+    [stack addArrangedSubview:credits];
+    UILabel *description = [UILabel new];
+    description.text = @"A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.";
+    description.numberOfLines = 0;
+    description.textAlignment = NSTextAlignmentCenter;
+    description.textColor = UIColor.secondaryLabelColor;
+    description.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+    [stack addArrangedSubview:description];
+    UIButton *coffee = [UIButton buttonWithType:UIButtonTypeSystem];
+    [coffee setTitle:@"☕ Buy Me a Coffee" forState:UIControlStateNormal];
+    coffee.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+    coffee.backgroundColor = UIColor.systemIndigoColor;
+    [coffee setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    coffee.layer.cornerRadius = 14;
+    [coffee addTarget:self action:@selector(openCoffee) forControlEvents:UIControlEventTouchUpInside];
+    [stack addArrangedSubview:coffee];
+    [coffee.heightAnchor constraintEqualToConstant:51].active = YES;
+    [coffee.widthAnchor constraintEqualTo:stack.widthAnchor].active = YES;
+}
+- (void)openCoffee {
+    NSURL *url = [NSURL URLWithString:@"https://buymeacoffee.com/gokuen"];
+    [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+}
+@end
+
+@implementation BSOrganizationListController
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"Organización";
 }
 - (NSArray *)specifiers {
-    if (!_specifiers) _specifiers = COSSettingsSection(self, NO);
+    if (!_specifiers) _specifiers = BSSettingsSection(self, NO);
     return _specifiers;
 }
 @end
 
-@implementation COSAppearanceListController
+@implementation BSAppearanceListController
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"Apariencia";
 }
 - (NSArray *)specifiers {
-    if (!_specifiers) _specifiers = COSSettingsSection(self, YES);
+    if (!_specifiers) _specifiers = BSSettingsSection(self, YES);
     return _specifiers;
 }
 @end
 
-@implementation COSStatusListController
+@implementation BSStatusListController
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"Estado";
 }
 - (NSArray *)specifiers {
     if (!_specifiers) {
-        BOOL active = COSReadBool(@"enabled", NO) && COSReadBool(@"groupTweaks", YES);
-        NSString *stage = COSRead(@"diagStage");
-        NSString *host = COSRead(@"diagClass");
-        id count = COSRead(@"diagSpecifierCount");
+        BOOL active = BSReadBool(@"enabled", NO) && BSReadBool(@"groupTweaks", YES);
+        NSString *stage = BSRead(@"diagStage");
+        NSString *host = BSRead(@"diagClass");
+        id count = BSRead(@"diagSpecifierCount");
         BOOL found = [stage isKindOfClass:[NSString class]] && stage.length;
         NSString *detail = found ? [NSString stringWithFormat:@"Última etapa: %@. Controlador: %@. Specifiers observados: %@.",
             stage, [host isKindOfClass:[NSString class]] ? host : @"desconocido",
             [count respondsToSelector:@selector(stringValue)] ? [count stringValue] : @"sin datos"]
             : @"Aún no hay diagnóstico. Abre Ajustes > General y vuelve a esta pantalla.";
         _specifiers = [NSMutableArray arrayWithObjects:
-            COSGroup(@"ORGANIZACIÓN", active ? @"La organización está activada en las preferencias." : @"La organización está desactivada en las preferencias."),
-            COSGroup(@"DIAGNÓSTICO DEL HOOK", detail),
-            COSGroup(@"COMPATIBILIDAD", @"COS PreferenceLoader experimental coloca Tweaks en la portada SwiftUI de Ajustes. Los ajustes de organización se aplican al volver a abrir Ajustes. Las opciones visuales muestran una vista previa local; su efecto sobre el fondo de la portada no está verificado."),
-            COSGroup(@"AYUDA", @"Después de cambiar la organización, cierra Ajustes desde el selector de aplicaciones y vuelve a abrirlo. Comprueba los accesos a los tweaks antes de activar modificaciones adicionales."), nil];
+            BSGroup(@"ORGANIZACIÓN", active ? @"La organización está activada en las preferencias." : @"La organización está desactivada en las preferencias."),
+            BSGroup(@"DIAGNÓSTICO DEL HOOK", detail),
+            BSGroup(@"COMPATIBILIDAD", @"Better PreferenceLoader experimental coloca Tweaks en la portada SwiftUI de Ajustes. Los ajustes de organización se aplican al volver a abrir Ajustes. Las opciones visuales muestran una vista previa local; su efecto sobre el fondo de la portada no está verificado."),
+            BSGroup(@"AYUDA", @"Después de cambiar la organización, cierra Ajustes desde el selector de aplicaciones y vuelve a abrirlo. Comprueba los accesos a los tweaks antes de activar modificaciones adicionales."), nil];
     }
     return _specifiers;
 }
