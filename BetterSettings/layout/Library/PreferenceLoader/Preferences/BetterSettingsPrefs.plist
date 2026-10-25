@@ -6,6 +6,6 @@
 <key>detail</key><string>BetterRootListController</string>
 <key>isController</key><true/>
 <key>label</key><string>Better Settings</string>
-<key>icon</key><string>/Library/PreferenceBundles/BetterSettingsPrefs.bundle/icon.png</string>
+<key>icon</key><string>icon.png</string>
 <key>hasIcon</key><true/>
 </dict></dict></plist>

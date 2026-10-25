@@ -1,0 +1,148 @@
+name: Build and publish Better Settings packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'BetterSettings/**'
+      - 'BetterPreferenceLoader/**'
+      - '.github/workflows/publish-better-settings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: better-settings-sileo-publish
+  cancel-in-progress: false
+
+jobs:
+  rootless:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Validate source and build both rootless packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 BetterSettings/tests/check_project.py
+          make -C BetterPreferenceLoader clean package SCHEME=rootless FINALPACKAGE=1
+          make -C BetterSettings clean package FINALPACKAGE=1
+          mkdir -p "$RUNNER_TEMP/release-rootless"
+          cp BetterSettings/packages/com.gokuencinar.bettersettings_1.0.1_iphoneos-arm64.deb "$RUNNER_TEMP/release-rootless/"
+          cp BetterPreferenceLoader/packages/preferenceloader_2.3.3+zbetter2_iphoneos-arm64.deb "$RUNNER_TEMP/release-rootless/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: better-settings-rootless-publish
+          path: ${{ runner.temp }}/release-rootless/*.deb
+          if-no-files-found: error
+
+  roothide:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare isolated RootHide build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -R BetterSettings "$RUNNER_TEMP/BetterSettingsRH"
+          cp -R BetterPreferenceLoader "$RUNNER_TEMP/BetterPreferenceLoaderRH"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])
+          settings=root/'BetterSettingsRH'
+          loader=root/'BetterPreferenceLoaderRH'
+          make=settings/'Makefile'
+          content=make.read_text().replace('export THEOS_PACKAGE_SCHEME := rootless', 'export THEOS_PACKAGE_SCHEME := roothide').replace('export ARCHS := arm64e','export ARCHS := arm64 arm64e')
+          make.write_text(content)
+          control=settings/'control'
+          control.write_text(control.read_text().replace('Architecture: iphoneos-arm64', 'Architecture: iphoneos-arm64e'))
+          (loader/'roothide.h').unlink()
+          control=loader/'control'
+          control.write_text(control.read_text().replace('Architecture: iphoneos-arm', 'Architecture: iphoneos-arm64e'))
+          PY
+      - uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'roothide/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Build both RootHide packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C "$RUNNER_TEMP/BetterPreferenceLoaderRH" clean package SCHEME=roothide FINALPACKAGE=1
+          make -C "$RUNNER_TEMP/BetterSettingsRH" clean package FINALPACKAGE=1
+          mkdir -p "$RUNNER_TEMP/release-roothide"
+          cp "$RUNNER_TEMP/BetterSettingsRH/packages/com.gokuencinar.bettersettings_1.0.1_iphoneos-arm64e.deb" "$RUNNER_TEMP/release-roothide/"
+          cp "$RUNNER_TEMP/BetterPreferenceLoaderRH/packages/preferenceloader_2.3.3+zbetter2_iphoneos-arm64e.deb" "$RUNNER_TEMP/release-roothide/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: better-settings-roothide-publish
+          path: ${{ runner.temp }}/release-roothide/*.deb
+          if-no-files-found: error
+
+  publish:
+    needs: [rootless, roothide]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: better-settings-rootless-publish
+          path: ${{ runner.temp }}/rootless
+      - uses: actions/download-artifact@v4
+        with:
+          name: better-settings-roothide-publish
+          path: ${{ runner.temp }}/roothide
+      - name: Verify Debian metadata and bundled artwork
+        shell: bash
+        run: |
+          set -euo pipefail
+          for architecture in iphoneos-arm64 iphoneos-arm64e; do
+            directory=rootless
+            if [ "$architecture" = iphoneos-arm64e ]; then directory=roothide; fi
+            for file in \
+              "$RUNNER_TEMP/$directory/com.gokuencinar.bettersettings_1.0.1_${architecture}.deb" \
+              "$RUNNER_TEMP/$directory/preferenceloader_2.3.3+zbetter2_${architecture}.deb"; do
+              test -s "$file"
+              test "$(dpkg-deb -f "$file" Architecture)" = "$architecture"
+            done
+            settings="$RUNNER_TEMP/$directory/com.gokuencinar.bettersettings_1.0.1_${architecture}.deb"
+            test "$(dpkg-deb -f "$settings" Version)" = 1.0.1
+            dpkg-deb -f "$settings" Depends | grep -F 'preferenceloader (>= 2.3.3+zbetter2)'
+            dpkg-deb --contents "$settings" | grep -F 'BetterSettingsPrefs.bundle/icon.png'
+            dpkg-deb --contents "$settings" | grep -F 'BetterSettingsPrefs.bundle/CreditsAvatar.jpg'
+          done
+      - name: Publish only matching source revision and rebuild APT index
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            # Never publish an older compiled package after newer sources have landed.
+            if ! git diff --quiet "$GITHUB_SHA" origin/main -- BetterSettings BetterPreferenceLoader; then
+              echo 'Sources changed while building; newer workflow must publish instead' >&2
+              exit 1
+            fi
+            git reset --hard origin/main
+            cp "$RUNNER_TEMP"/rootless/*.deb tweaks/BetterSettings/debs/
+            cp "$RUNNER_TEMP"/roothide/*.deb tweaks/BetterSettings/debs/
+            python3 scripts/publish-better-settings-index.py
+            git add tweaks/BetterSettings/debs Packages Packages.gz
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'Publish Better Settings 1.0.1 and PreferenceLoader zbetter2'
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          exit 1

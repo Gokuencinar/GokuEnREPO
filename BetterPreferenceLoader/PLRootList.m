@@ -375,7 +375,7 @@ static NSArray<NSString *> *PLTweakTitles(void) {
 }
 
 // The image a PreferenceLoader entry names, looked up the way PreferenceLoader looks it up.
-__attribute__((unused)) static UIImage *PLIconForEntry(NSDictionary *record) {
+static UIImage *PLIconForEntry(NSDictionary *record) {
     NSDictionary *entry = record[@"entry"];
     if (![entry isKindOfClass:NSDictionary.class]) return nil;
     NSString *name = entry[@"icon"];
@@ -394,6 +394,8 @@ __attribute__((unused)) static UIImage *PLIconForEntry(NSDictionary *record) {
     [directories addObject:source];
     if (![source isEqualToString:PLPreferencesDirectory()]) [directories addObject:PLPreferencesDirectory()];
 
+    // PreferenceLoader bundles are rooted under the active jailbreak prefix;
+    // relative icon names are resolved against that bundle, never /var/jb.
     for (NSString *directory in directories) {
         NSString *path = [directory stringByAppendingPathComponent:name];
         UIImage *image = [UIImage imageWithContentsOfFile:path];
@@ -1412,10 +1414,20 @@ static UIViewController *PLControllerForTweakGroup(void) {
             NSArray *specifiers = [pane specifiersFromEntry:entry
                           sourcePreferenceLoaderBundlePath:PLEntrySourceDirectory(record)
                                                      title:record[@"name"]];
+            UIImage *icon = PLIconForEntry(record);
+            // SpecifiersFromPlist does not reliably resolve icon paths for
+            // entries hosted in our grouped pane. Pass an actual UIImage to
+            // the Preferences cell rather than a path from another bootstrap.
+            if (icon) icon = [icon imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
             for (id specifier in specifiers) {
                 if ([specifier isKindOfClass:PSSpecifier.class] &&
-                    ((PSSpecifier *)specifier).cellType != PSGroupCell)
+                    ((PSSpecifier *)specifier).cellType != PSGroupCell) {
+                    if (icon) {
+                        [(PSSpecifier *)specifier setProperty:icon forKey:@"iconImage"];
+                        [(PSSpecifier *)specifier setProperty:@YES forKey:@"hasIcon"];
+                    }
                     [items addObject:specifier];
+                }
             }
         } @catch (NSException *exception) {
             PLRootLog(@"[group] skipped invalid entry (%@)", exception.name);

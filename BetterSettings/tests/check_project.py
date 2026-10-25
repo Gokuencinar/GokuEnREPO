@@ -24,6 +24,11 @@ filter_bundles = load_plist(ROOT / "BetterSettings.plist")["Filter"]["Bundles"]
 assert filter_bundles == ["com.apple.Preferences"], filter_bundles
 
 pane = load_plist(ROOT / "prefs/Resources/Root.plist")
+entry = load_plist(ROOT / "layout/Library/PreferenceLoader/Preferences/BetterSettingsPrefs.plist")["entry"]
+assert entry["icon"] == "icon.png" and entry["hasIcon"] is True
+assert (ROOT / "prefs/Resources/icon.png").is_file()
+assert (ROOT / "prefs/Resources/CreditsAvatar.jpg").is_file()
+assert 'pathForResource:@"CreditsAvatar"' in (ROOT / "prefs/BetterRootListController.m").read_text(encoding="utf-8")
 entries = [item for item in pane["items"] if item.get("key")]
 counts = Counter(item["key"] for item in entries)
 assert counts and all(count == 1 for count in counts.values()), counts
@@ -50,4 +55,6 @@ makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
 assert re.search(r"^export ARCHS := arm64e$", makefile, re.M)
 assert re.search(r"^Architecture: iphoneos-arm64$", control, re.M)
 assert re.search(r"^Package: com\.gokuencinar\.bettersettings$", control, re.M)
+assert re.search(r"^Version: 1\.0\.1$", control, re.M)
+assert "preferenceloader (>= 2.3.3+zbetter2)" in control
 print(f"PASS: {len(entries)} preference keys, 4 XML plists, rootless metadata, scoped hooks")

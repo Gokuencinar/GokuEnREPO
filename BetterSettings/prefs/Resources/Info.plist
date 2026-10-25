@@ -4,7 +4,7 @@
  <key>CFBundleIdentifier</key><string>com.gokuencinar.bettersettings.prefs</string>
  <key>CFBundleExecutable</key><string>BetterSettingsPrefs</string>
  <key>CFBundlePackageType</key><string>BNDL</string>
- <key>CFBundleVersion</key><string>1.0.0</string>
- <key>CFBundleShortVersionString</key><string>1.0.0</string>
+ <key>CFBundleVersion</key><string>1.0.1</string>
+ <key>CFBundleShortVersionString</key><string>1.0.1</string>
  <key>NSPrincipalClass</key><string>BetterRootListController</string>
 </dict></plist>

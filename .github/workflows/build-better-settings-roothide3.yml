@@ -58,6 +58,10 @@ jobs:
             tar -xf "$(find . -name 'control.tar.*' -print -quit)"
             grep -Fx 'Architecture: iphoneos-arm64e' control
             tar -tf "$(find . -name 'data.tar.*' -print -quit)" | grep -E '(PreferenceLoader|BetterSettings)'
+            if [ "$project" = BetterSettingsRH ]; then
+              tar -tf "$(find . -name 'data.tar.*' -print -quit)" | grep -F 'BetterSettingsPrefs.bundle/CreditsAvatar.jpg'
+              tar -tf "$(find . -name 'data.tar.*' -print -quit)" | grep -F 'BetterSettingsPrefs.bundle/icon.png'
+            fi
           done
       - uses: actions/upload-artifact@v4
         with:

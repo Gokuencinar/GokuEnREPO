@@ -431,10 +431,25 @@ static NSMutableArray *BSSettingsSection(PSListController *controller, BOOL appe
     heading.textColor = UIColor.labelColor;
     [stack addArrangedSubview:heading];
     UILabel *version = [UILabel new];
-    version.text = @"Version 1.0.0";
+    version.text = @"Version 1.0.1";
     version.textColor = UIColor.secondaryLabelColor;
     version.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
     [stack addArrangedSubview:version];
+    // Reuse the exact credits avatar bundled in GokuEnREPO's other tweaks.
+    // It is an offline resource, so Information also works without network.
+    NSString *avatarPath = [bundle pathForResource:@"CreditsAvatar" ofType:@"jpg"];
+    UIImage *avatarImage = avatarPath ? [UIImage imageWithContentsOfFile:avatarPath] : nil;
+    if (avatarImage) {
+        UIImageView *avatar = [[UIImageView alloc] initWithImage:avatarImage];
+        avatar.contentMode = UIViewContentModeScaleAspectFill;
+        avatar.clipsToBounds = YES;
+        avatar.layer.cornerRadius = 37;
+        avatar.isAccessibilityElement = YES;
+        avatar.accessibilityLabel = @"Gokuencinar · GokuEn";
+        [stack addArrangedSubview:avatar];
+        [avatar.widthAnchor constraintEqualToConstant:74].active = YES;
+        [avatar.heightAnchor constraintEqualToConstant:74].active = YES;
+    }
     UILabel *credits = [UILabel new];
     credits.text = @"Developed by Gokuencinar · GokuEn";
     credits.textAlignment = NSTextAlignmentCenter;
