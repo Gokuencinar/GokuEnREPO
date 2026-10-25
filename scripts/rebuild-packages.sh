@@ -40,6 +40,19 @@ for block in blocks:
 
     package = fields.get("Package")
 
+    if package == "com.gokuencinar.nukewireless":
+        variant = {"iphoneos-arm64":"Dopamine", "iphoneos-arm64e":"RootHide", "iphoneos-arm":"Rootful"}[fields["Architecture"]]
+        rewritten = [line for line in block.splitlines()
+                     if not line.startswith(("Name: ", "Description: ", "Depiction: ", "Homepage: ", "Icon: "))]
+        rewritten.extend([
+            f"Name: NukeWireless ({variant})",
+            "Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.",
+            "Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html",
+            "Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html",
+            "Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png",
+        ])
+        block = "\n".join(rewritten)
+
     if package == "com.betterwifirh.tweak":
         continue
 
