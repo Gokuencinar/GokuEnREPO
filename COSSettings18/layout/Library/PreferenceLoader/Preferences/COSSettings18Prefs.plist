@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>entry</key><dict>
+<key>cell</key><string>PSLinkCell</string>
+<key>bundle</key><string>COSSettings18Prefs</string>
+<key>detail</key><string>COSRootListController</string>
+<key>isController</key><true/>
+<key>label</key><string>COS Settings 18</string>
+<key>icon</key><string>/Library/PreferenceBundles/COSSettings18Prefs.bundle/icon.png</string>
+<key>hasIcon</key><true/>
+</dict></dict></plist>
