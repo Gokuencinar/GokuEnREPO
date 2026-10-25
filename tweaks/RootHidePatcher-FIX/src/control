@@ -1,0 +1,14 @@
+Package: com.gokuencinar.roothidepatcherfix
+Name: RootHidePatcher FIX
+Version: 1.0.0
+Architecture: iphoneos-arm64e
+Section: Addons
+Priority: optional
+Maintainer: Gokuencinar
+Author: Gokuencinar
+Depends: firmware (>= 15.0), com.roothide.patcher (>= 2.1.4), com.roothide.patcher (<< 2.1.5), bash, gawk, coreutils
+Description: Prevent duplicate LC_RPATH entries when converting tweaks with RootHidePatcher 2.1.4.
+ Restores the original converter script when removed. RootHide bootstrap only.
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/tree/main/tweaks/RootHidePatcher-FIX
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/RootHidePatcher-FIX/depiction.html
+Icon: https://gokuencinar.github.io/GokuEnREPO/CydiaIcon.png

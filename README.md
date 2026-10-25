@@ -38,6 +38,12 @@ Toggle Wi-Fi and Bluetooth On/Off from Control Center (iOS 11+, including iOS 18
 
 [Details](tweaks/CC-On-Off/README.md)
 
+### RootHidePatcher FIX
+
+Prevents duplicate library search paths when converting tweaks with RootHidePatcher 2.1.4. RootHide bootstrap only, with backup and restoration on removal.
+
+[Details](tweaks/RootHidePatcher-FIX/README.md) · [Changelog](tweaks/RootHidePatcher-FIX/CHANGELOG.md)
+
 ### Nuke Wireless
 
 Nuke Wireless is a Wi-Fi management toolkit focused on discovering and controlling devices on the local network. It is still under development and does not have a public release yet.

@@ -1,0 +1,47 @@
+--- a/patch.sh
++++ b/patch.sh
+@@ -109,6 +109,28 @@
+         return $?
+     fi
+     return 0
++}
++
++# Local fix: normalize final LC_RPATH entries independently in every slice.
++# Run after all path rewrites and before signing; keep the first occurrence.
++RPATH_DEDUP="$(dirname "$(realpath "$0")")/rpath_dedup.awk"
++if [ ! -r "$RPATH_DEDUP" ]; then
++    $ECHO "*** Missing rpath_dedup helper: $RPATH_DEDUP"
++    exit 1
++fi
++
++dedup_rpaths() {
++    local temporary
++    temporary=$(mktemp "$1.rpath.XXXXXX") || return 1
++    if ! RH_RPATH_INPUT="$1" LC_ALL=C awk -f "$RPATH_DEDUP" > "$temporary"; then
++        rm -f "$temporary"
++        return 1
++    fi
++    if ! cat "$temporary" > "$1"; then
++        rm -f "$temporary"
++        return 1
++    fi
++    rm -f "$temporary"
+ }
+ 
+ exclude_files=(
+@@ -160,6 +182,7 @@
+         I_N_T -add_rpath "/Library/Frameworks" "$file" >/dev/null
+         I_N_T -add_rpath "@loader_path/.jbroot/Library/Frameworks" "$file"
+ 
++        dedup_rpaths "$file"
+         $ECHO -n "resign..."
+         if echo $ftype | grep -q "executable"; then
+             $LDID -M "-S$(dirname $(realpath $0))/roothide.entitlements" "$file"
+@@ -277,6 +300,7 @@
+             I_N_T -change "$line" "$newlib" "$file"
+         fi
+     done
++    dedup_rpaths "$file"
+     $ECHO -n "resign..."
+     if echo $ftype | grep -q "executable"; then
+         $LDID -M "-S$(dirname $(realpath $0))/roothide.entitlements" "$file"

@@ -1,0 +1,25 @@
+name: Verify RootHidePatcher FIX
+on:
+  push:
+    paths:
+      - 'tweaks/RootHidePatcher-FIX/**'
+      - '.github/workflows/roothidepatcher-fix.yml'
+  pull_request:
+    paths:
+      - 'tweaks/RootHidePatcher-FIX/**'
+      - '.github/workflows/roothidepatcher-fix.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y gawk dpkg-dev
+      - name: Test per-architecture RPATH normalization
+        run: python3 tweaks/RootHidePatcher-FIX/tests/test_rpaths.py
+      - name: Build and inspect package
+        run: |
+          bash tweaks/RootHidePatcher-FIX/build.sh
+          dpkg-deb --info tweaks/RootHidePatcher-FIX/debs/com.gokuencinar.roothidepatcherfix_1.0.0_iphoneos-arm64e.deb

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+case "$1" in
+configure|triggered)
+    /bin/bash /usr/libexec/roothidepatcherfix/manage.sh apply "$1"
+    ;;
+esac
+exit 0
