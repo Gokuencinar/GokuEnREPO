@@ -40,7 +40,7 @@ Toggle Wi-Fi and Bluetooth On/Off from Control Center (iOS 11+, including iOS 18
 
 ### RootHidePatcher FIX
 
-Prevents duplicate library search paths when converting tweaks with RootHidePatcher 2.1.4. RootHide bootstrap only, with backup and restoration on removal.
+Prevents duplicate library search paths when converting tweaks with RootHidePatcher 2.1.4. RootHide only.
 
 [Details](tweaks/RootHidePatcher-FIX/README.md) · [Changelog](tweaks/RootHidePatcher-FIX/CHANGELOG.md)
 

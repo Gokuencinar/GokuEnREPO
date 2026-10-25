@@ -10,4 +10,4 @@ install -m 755 src/postinst src/prerm "$stage/DEBIAN/"
 install -m 755 src/manage.sh "$stage/usr/libexec/roothidepatcherfix/"
 install -m 644 src/rpath_dedup.awk src/functions.sh src/insert.awk src/manifest "$stage/usr/libexec/roothidepatcherfix/"
 for script in src/manage.sh src/postinst src/prerm src/functions.sh; do bash -n "$script"; done
-dpkg-deb --root-owner-group -Zxz -b "$stage" debs/com.gokuencinar.roothidepatcherfix_1.0.0_iphoneos-arm64e.deb
+dpkg-deb --root-owner-group -Zxz -b "$stage" debs/com.gokuencinar.roothidepatcherfix_1.0.1_iphoneos-arm64e.deb
