@@ -47,9 +47,9 @@ for block in blocks:
         rewritten.extend([
             f"Name: NukeWireless ({variant})",
             "Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.",
-            "Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html",
-            "Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html",
-            "Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png",
+            "Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html",
+            "Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html",
+            "Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png",
         ])
         block = "\n".join(rewritten)
 

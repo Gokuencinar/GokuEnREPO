@@ -1586,9 +1586,9 @@ Section: Utilities
 Author: GokuEn
 Name: NukeWireless (Rootful)
 Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
 
 Package: com.gokuencinar.nukewireless
 Version: 1.0
@@ -1608,9 +1608,9 @@ Section: Utilities
 Author: GokuEn
 Name: NukeWireless (RootHide)
 Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
 
 Package: com.gokuencinar.nukewireless
 Version: 1.0
@@ -1629,9 +1629,9 @@ Section: Utilities
 Author: GokuEn
 Name: NukeWireless (Dopamine)
 Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/Nuke-Wireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/Nuke-Wireless/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
 
 Package: com.gokuencinar.roothidepatcherfix
 Version: 1.0.1
