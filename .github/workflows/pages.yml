@@ -7,6 +7,7 @@ on:
     paths:
       - "index.html"
       - "tweaks/**/depiction.html"
+      - "tweaks/**/depiction.json"
       - "tweaks/**/assets/**"
       - "tweaks/**/README.md"
       - "tweaks/**/CHANGELOG.md"

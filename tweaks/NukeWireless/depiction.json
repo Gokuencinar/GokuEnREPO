@@ -1,0 +1,42 @@
+{
+  "class": "DepictionTabView",
+  "minVersion": "0.4",
+  "tintColor": "#00BFFF",
+  "tabs": [
+    {
+      "class": "DepictionStackView",
+      "tabname": "Details",
+      "views": [
+        {
+          "class": "DepictionMarkdownView",
+          "markdown": "Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements."
+        },
+        {
+          "class": "DepictionScreenshotsView",
+          "itemCornerRadius": 12,
+          "itemSize": "{184, 400}",
+          "screenshots": [
+            {
+              "url": "https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/assets/screenshots/01-anuncios-bluetooth-iphone.png",
+              "accessibilityText": "Bluetooth advertisements in dark mode"
+            },
+            {
+              "url": "https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/assets/screenshots/02-lista-wifi-iphone.png",
+              "accessibilityText": "Wi-Fi device list in dark mode"
+            },
+            {
+              "url": "https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/assets/screenshots/03-bloqueo-hotspot-iphone.png",
+              "accessibilityText": "Personal hotspot device actions in dark mode"
+            }
+          ]
+        },
+        {
+          "class": "DepictionLabelView",
+          "text": "Preview with sample data.",
+          "fontSize": 11,
+          "textColor": "#8E8E93"
+        }
+      ]
+    }
+  ]
+}
