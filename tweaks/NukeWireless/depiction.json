@@ -37,6 +37,16 @@
           "textColor": "#8E8E93"
         }
       ]
+    },
+    {
+      "class": "DepictionStackView",
+      "tabname": "Changes",
+      "views": [
+        {
+          "class": "DepictionMarkdownView",
+          "markdown": "### 1.0.1\n\nFixed a minor issue with icon colors when blocking or unblocking devices."
+        }
+      ]
     }
   ]
 }
