@@ -1587,9 +1587,9 @@ Author: GokuEn
 Name: NukeWireless (Rootful)
 Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
-SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 
 Package: com.gokuencinar.nukewireless
 Version: 1.0
@@ -1610,9 +1610,9 @@ Author: GokuEn
 Name: NukeWireless (RootHide)
 Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
-SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 
 Package: com.gokuencinar.nukewireless
 Version: 1.0
@@ -1632,9 +1632,9 @@ Author: GokuEn
 Name: NukeWireless (Dopamine)
 Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
-SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 
 Package: com.gokuencinar.roothidepatcherfix
 Version: 1.0.1
