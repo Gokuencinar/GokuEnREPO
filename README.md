@@ -48,7 +48,7 @@ Prevents duplicate library search paths when converting tweaks with RootHidePatc
 
 NukeWireless is a Wi-Fi and Bluetooth management toolkit. Discover and manage network devices, block connections, scan Bluetooth devices, and send Bluetooth advertisements.
 
-[Details](tweaks/Nuke-Wireless/README.md)
+[Details](https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html)
 
 Original `arpoison`, `ldid`, `network-cmds` packages and their auxiliary libraries are available for RootHide, Dopamine/rootless and rootful. [Dependencies, sources and bootstrap requirements](tweaks/NukeWireless-Dependencies/README.md).
 
