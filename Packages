@@ -1570,67 +1570,67 @@ Priority: important
 Description: arp, ndp, traceroute, mnc, mtest, traceroute6, ifconfig, ip6addrctl, netstat, ping6, route, rtsol
 
 Package: com.gokuencinar.nukewireless
-Name: NukeWireless (Rootful)
-Version: 1.0.1
-Architecture: iphoneos-arm
-Author: GokuEn
-Maintainer: GokuEn
-Section: Utilities
-Depends: ldid, arpoison, network-cmds, mobilesubstrate
-Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
-Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.1-Rootful.deb
-Size: 9187994
-MD5sum: a5e40877faf8f1442c021356c3b4451d
-SHA1: 997ae6a2b5bfacd8cdcde079326b5ac0a4d5a052
-SHA256: 034adc8e7ca64c7ad16b05e32f9f2f0d51ddef32d58d3c554096461fba2e8cde
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
-SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
-
-Package: com.gokuencinar.nukewireless
-Name: NukeWireless (RootHide)
 Version: 1.0.1
 Architecture: iphoneos-arm64e
-Author: GokuEn
 Maintainer: GokuEn
-Section: Utilities
 Pre-Depends: rootless-compat (>= 0.9)
 Depends: ldid, arpoison, network-cmds, ellekit, rootless-compat
 Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
 Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
 Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.1-RootHide.deb
 Size: 9188184
 MD5sum: 19582ba3c9690dd94ca32f37b5c7d000
 SHA1: eb4d02c3b50c06d6f6fd22174833ed297ef1989e
 SHA256: a8b7aa46dff079f1cbf33ddf050d4e21aa21be6762f4170586d9bb372dde8653
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (RootHide)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
 
 Package: com.gokuencinar.nukewireless
-Name: NukeWireless (Dopamine)
 Version: 1.0.1
 Architecture: iphoneos-arm64
-Author: GokuEn
 Maintainer: GokuEn
-Section: Utilities
 Depends: ldid, arpoison, network-cmds, mobilesubstrate
 Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
 Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
 Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.1-Dopamine.deb
 Size: 9188206
 MD5sum: 6c38a09f615b6f53b1f5a50b84e4f543
 SHA1: a4d62b3e0e15cd415bef2aef882b3dc92b1dc362
 SHA256: 12add9422a5b64610d6701e79f56465103cb3484a6809183485a9930485ad16b
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (Dopamine)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
+
+Package: com.gokuencinar.nukewireless
+Version: 1.0.1
+Architecture: iphoneos-arm
+Maintainer: GokuEn
+Depends: ldid, arpoison, network-cmds, mobilesubstrate
+Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
+Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.1-Rootful.deb
+Size: 9187994
+MD5sum: a5e40877faf8f1442c021356c3b4451d
+SHA1: 997ae6a2b5bfacd8cdcde079326b5ac0a4d5a052
+SHA256: 034adc8e7ca64c7ad16b05e32f9f2f0d51ddef32d58d3c554096461fba2e8cde
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (Rootful)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
