@@ -1,5 +1,6 @@
 #import "BLAppDelegate.h"
 #import "BLControlViewController.h"
+#import "BLAnalyzerViewController.h"
 #import "BLCountriesViewController.h"
 #import "BLInfoViewController.h"
 #import "BLCommon.h"
@@ -15,20 +16,27 @@
                                                      image:[UIImage systemImageNamed:@"antenna.radiowaves.left.and.right"]
                                                        tag:0];
 
+    BLAnalyzerViewController *analyzer = [[BLAnalyzerViewController alloc] init];
+    UINavigationController *analyzerNav = [[UINavigationController alloc] initWithRootViewController:analyzer];
+    analyzerNav.tabBarItem = [[UITabBarItem alloc] initWithTitle:BLT(@"Analizador", @"Analyzer")
+                                                     image:[UIImage systemImageNamed:@"waveform.path.ecg"]
+                                                       tag:1];
+
     BLCountriesViewController *countries = [[BLCountriesViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
     UINavigationController *countriesNav = [[UINavigationController alloc] initWithRootViewController:countries];
     countriesNav.tabBarItem = [[UITabBarItem alloc] initWithTitle:BLT(@"Países", @"Countries")
                                                        image:[UIImage systemImageNamed:@"globe.europe.africa.fill"]
-                                                         tag:1];
+                                                         tag:2];
 
     BLInfoViewController *info = [[BLInfoViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
     UINavigationController *infoNav = [[UINavigationController alloc] initWithRootViewController:info];
     infoNav.tabBarItem = [[UITabBarItem alloc] initWithTitle:BLT(@"Ajustes", @"Settings")
                                                   image:[UIImage systemImageNamed:@"gearshape.fill"]
-                                                    tag:2];
+                                                    tag:3];
 
     UITabBarController *tabs = [[UITabBarController alloc] init];
-    tabs.viewControllers = @[controlNav, countriesNav, infoNav];
+    tabs.viewControllers = @[controlNav, analyzerNav, countriesNav, infoNav];
+    tabs.tabBar.tintColor = [UIColor colorWithRed:0.05 green:0.72 blue:0.65 alpha:1];
     if (selectedIndex < tabs.viewControllers.count) tabs.selectedIndex = selectedIndex;
 
     return tabs;

@@ -41,6 +41,7 @@ static void BLDaemonLog(const char *message) {
 
 @interface BLTelephonyManager (BandLockDaemonPrivate)
 - (NSDictionary *)queryCoreTelephony;
+- (NSDictionary *)queryCoreTelephonyForPassiveObservation;
 - (NSDictionary *)snapshotFromQuery:(NSDictionary *)query;
 - (BOOL)setRatSelectionSync:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText;
 - (BOOL)writeLTEBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
@@ -152,7 +153,9 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             if ([BLRHSignalScan.sharedScan isRunning]) {
                 return @{@"success": @NO, @"message": @"A scan is already running; query scan_status"};
             }
-            return [manager signalProbeFromQuery:[manager queryCoreTelephony]];
+            // Signal-only requests must not block on the unreliable RAT getter.
+            // Do not reuse this route to authorize any active band operation.
+            return [manager signalProbeFromQuery:[manager queryCoreTelephonyForPassiveObservation]];
         }
         if ([command isEqualToString:@"scan_status"]) return [BLRHSignalScan.sharedScan status];
         if ([command isEqualToString:@"scan_line_diagnostic"]) {

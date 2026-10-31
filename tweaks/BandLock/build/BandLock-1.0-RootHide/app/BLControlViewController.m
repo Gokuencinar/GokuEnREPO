@@ -7,6 +7,32 @@
 #import "BLCountryProfile.h"
 #import "BLCommon.h"
 #import "BLBreadcrumb.h"
+#import <QuartzCore/QuartzCore.h>
+
+@interface BLControlHero : UIView
+@property (nonatomic, strong) CAGradientLayer *backgroundGradient;
+@end
+@implementation BLControlHero
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        self.backgroundGradient = [CAGradientLayer layer];
+        self.backgroundGradient.colors = @[
+            (__bridge id)[UIColor colorWithRed:0.08 green:0.20 blue:0.34 alpha:1].CGColor,
+            (__bridge id)[UIColor colorWithRed:0.04 green:0.47 blue:0.49 alpha:1].CGColor];
+        self.backgroundGradient.startPoint = CGPointMake(0, 0);
+        self.backgroundGradient.endPoint = CGPointMake(1, 1);
+        [self.layer insertSublayer:self.backgroundGradient atIndex:0];
+        self.layer.cornerRadius = 22;
+        self.layer.masksToBounds = YES;
+    }
+    return self;
+}
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    self.backgroundGradient.frame = self.bounds;
+}
+@end
 
 @interface BLControlViewController ()
 @property (nonatomic, strong) BLTelephonyManager *manager;
@@ -21,6 +47,8 @@
 @property (nonatomic, strong) UILabel *pendingNRValue;
 @property (nonatomic, strong) UILabel *resultValue;
 @property (nonatomic, strong) UILabel *modeValue;
+@property (nonatomic, strong) UILabel *heroNetworkValue;
+@property (nonatomic, strong) UILabel *heroBandValue;
 @property (nonatomic, strong) UIButton *refreshButton;
 @property (nonatomic, strong) UIButton *countryManageButton;
 @property (nonatomic, strong) UIButton *fiveGModeButton;
@@ -120,7 +148,9 @@
     UIView *card = [[UIView alloc] init];
     card.translatesAutoresizingMaskIntoConstraints = NO;
     card.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
-    card.layer.cornerRadius = 16.0;
+    card.layer.cornerRadius = 20.0;
+    card.layer.borderColor = [UIColor.separatorColor colorWithAlphaComponent:0.18].CGColor;
+    card.layer.borderWidth = 0.5;
 
     UIStackView *stack = [[UIStackView alloc] init];
     stack.translatesAutoresizingMaskIntoConstraints = NO;
@@ -142,6 +172,53 @@
         [stack.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-14]
     ]];
     return card;
+}
+
+- (UIView *)overviewHero {
+    BLControlHero *hero = [[BLControlHero alloc] init];
+    hero.translatesAutoresizingMaskIntoConstraints = NO;
+    UIStackView *body = [[UIStackView alloc] init];
+    body.axis = UILayoutConstraintAxisVertical;
+    body.spacing = 9;
+    body.translatesAutoresizingMaskIntoConstraints = NO;
+    UILabel *eyebrow = [UILabel new];
+    eyebrow.text = BLT(@"ESTACIÓN DE CONTROL", @"NETWORK CONTROL CENTER");
+    eyebrow.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+    eyebrow.textColor = [UIColor colorWithWhite:1 alpha:0.73];
+    [body addArrangedSubview:eyebrow];
+    UILabel *title = [UILabel new];
+    title.text = @"BandLock Global";
+    title.font = [UIFont systemFontOfSize:27 weight:UIFontWeightBold];
+    title.textColor = UIColor.whiteColor;
+    [body addArrangedSubview:title];
+    UIStackView *status = [UIStackView new];
+    status.axis = UILayoutConstraintAxisHorizontal;
+    status.distribution = UIStackViewDistributionFillEqually;
+    status.spacing = 10;
+    self.heroNetworkValue = [UILabel new];
+    self.heroBandValue = [UILabel new];
+    for (UILabel *item in @[self.heroNetworkValue, self.heroBandValue]) {
+        item.numberOfLines = 2;
+        item.textColor = UIColor.whiteColor;
+        item.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+        [status addArrangedSubview:item];
+    }
+    [body addArrangedSubview:status];
+    UILabel *footer = [UILabel new];
+    footer.text = BLT(@"Control manual · Cambios solo bajo confirmación",
+                      @"Manual control · Changes only after confirmation");
+    footer.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+    footer.textColor = [UIColor colorWithWhite:1 alpha:0.8];
+    footer.numberOfLines = 0;
+    [body addArrangedSubview:footer];
+    [hero addSubview:body];
+    [NSLayoutConstraint activateConstraints:@[
+        [body.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:19],
+        [body.trailingAnchor constraintEqualToAnchor:hero.trailingAnchor constant:-19],
+        [body.topAnchor constraintEqualToAnchor:hero.topAnchor constant:18],
+        [body.bottomAnchor constraintEqualToAnchor:hero.bottomAnchor constant:-20]
+    ]];
+    return hero;
 }
 
 - (UIButton *)buttonWithTitle:(NSString *)title symbol:(NSString *)symbol selector:(SEL)selector destructive:(BOOL)destructive {
@@ -182,6 +259,8 @@
         [self.stackView.bottomAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.bottomAnchor constant:-24],
         [self.stackView.widthAnchor constraintEqualToAnchor:self.scrollView.frameLayoutGuide.widthAnchor constant:-32]
     ]];
+
+    [self.stackView addArrangedSubview:[self overviewHero]];
 
     self.refreshButton = [self buttonWithTitle:BLT(@"Actualizar estado", @"Refresh status") symbol:@"arrow.clockwise" selector:@selector(refreshTapped:) destructive:NO];
     UILabel *network = nil;
@@ -281,6 +360,8 @@
 }
 
 - (void)refreshDisplay {
+    self.heroNetworkValue.text = [NSString stringWithFormat:BLT(@"RED\n%@", @"NETWORK\n%@"), self.manager.radioAccessTechnology ?: @"—"];
+    self.heroBandValue.text = [NSString stringWithFormat:BLT(@"BANDA CONECTADA\n%@", @"SERVING BAND\n%@"), self.manager.servingBand ?: @"—"];
     self.networkValue.text = self.manager.radioAccessTechnology ?: @"—";
     self.servingValue.text = self.manager.servingBand ?: @"—";
     self.activeValue.text = BLBandList(self.manager.activeBands);

@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.5\.1~rhscan7$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui1$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -86,6 +86,8 @@ for (const metric of ['rsrp', 'rsrq', 'rssi', 'snr']) {
   assert.match(app, new RegExp('@"' + metric + '"'));
 }
 assert.match(main, /\[command isEqualToString:@"signal_probe"\]/);
+assert.match(main, /\[manager signalProbeFromQuery:\[manager queryCoreTelephonyForPassiveObservation\]\]/,
+  'The monitor must use a read-only signal query that does not wait on unknown RAT selection');
 assert.match(main, /\[command isEqualToString:@"scan_start"\]/);
 for (const action of ['scan_start','scan_status','scan_cancel','scan_recover','scan_line_diagnostic']) {
   assert.match(main, new RegExp('@"' + action + '"'));
@@ -154,3 +156,25 @@ const probe = core.slice(start, end);
 assert.doesNotMatch(probe, /setActiveBandInfo|writeLTEBands|writeNRBands|setRatSelection/);
 assert.doesNotMatch(probe, /@"(uuid|slotID|cellId|PCI|MCC|MNC|TAC|EARFCN|NRARFCN)"/);
 console.log('RootHide experimental two-band scan regression checks: PASS');
+
+// UI analyzer should never include a radio-modifying client action or private identifiers.
+const analyzer = read('app/BLAnalyzerViewController.m');
+const delegate = read('app/BLAppDelegate.m');
+assert.match(read('app/Makefile'), /BLAnalyzerViewController\.m/);
+assert.match(delegate, /BLAnalyzerViewController/);
+assert.match(delegate, /@\[controlNav, analyzerNav, countriesNav, infoNav\]/);
+assert.match(analyzer, /signalProbeWithCompletion:/);
+assert.match(analyzer, /scheduledTimerWithTimeInterval:12/);
+assert.match(analyzer, /BLAnalyzerMaxSamples = 300/);
+assert.match(analyzer, /@"source"\] isEqual:@"typed"/);
+assert.match(analyzer, /@"rat"\] isEqual:@"LTE"/);
+assert.match(analyzer, /@"role"\] isEqual:@"serving"/);
+assert.match(analyzer, /viewWillDisappear:/);
+assert.match(analyzer, /stopMonitoring/);
+assert.match(analyzer, /removeObjectForKey:BLAnalyzerHistoryKey/);
+assert.match(analyzer, /NSJSONSerialization/);
+assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|startSignalScan|startPassiveSignalObservation|setNetworkMode|applyPendingBands|scan_start|scan_recover|setRatSelectionSync)\b|@"(?:imsi|imei|cellId|subscriptionUUID)"/i,
+  'Analyzer may only request typed passive signal, never mutate the modem or store private cell IDs');
+assert.match(control, /firmware \(<= 17\.0\)/,
+  'Keep the unverified iOS18 package blocked until explicit device-compatibility tests');
+console.log('RootHide LTE 1.6 analyzer UI and read-only data gates: PASS');

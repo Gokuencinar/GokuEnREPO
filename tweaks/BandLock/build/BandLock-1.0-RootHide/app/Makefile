@@ -10,6 +10,7 @@ BandLock_FILES = \
 	BLCountryProfile.m \
 	BLTelephonyManager.m \
 	BLControlViewController.m \
+	BLAnalyzerViewController.m \
 	BLBandPickerViewController.m \
 	BLNRBandPickerViewController.m \
 	BLCountryBandsViewController.m \
