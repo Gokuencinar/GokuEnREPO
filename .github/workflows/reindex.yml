@@ -2,6 +2,7 @@ name: Rebuild APT index
 
 on:
   push:
+    branches: [main]
     paths:
       - 'tweaks/**/debs/**'
       - 'tweaks/NukeWireless-Dependencies/**'
@@ -15,6 +16,7 @@ permissions:
 
 jobs:
   index:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +36,7 @@ jobs:
             git reset --hard origin/main
             python3 scripts/verify-dependency-mirror.py
             bash scripts/rebuild-packages.sh
+            python3 -m unittest scripts/test_bandlock_publication.py
             python3 scripts/verify-dependency-mirror.py --index
             git add Packages Packages.gz
             if git diff --cached --quiet; then
