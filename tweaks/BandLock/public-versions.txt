@@ -1,0 +1,19 @@
+# Explicitly approved BandLock versions for the public Sileo repository.
+# Experimental builds belong in GitHub Actions artifacts, never in Packages.
+# Add a version here ONLY when its public release is intentionally approved.
+0.5.0
+0.6.0
+0.6.1
+0.6.2
+0.6.3
+0.6.4
+0.6.5
+0.6.6
+0.6.34
+0.6.35
+1.0
+1.1
+1.2
+1.3
+1.4
+1.5

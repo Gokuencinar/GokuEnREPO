@@ -9,6 +9,8 @@ done
 
 python3 - <<'PY'
 from pathlib import Path
+import sys
+from scripts.bandlock_publication import publishable
 
 path = Path("Packages")
 raw = path.read_text().strip()
@@ -39,6 +41,14 @@ for block in blocks:
             fields[k] = v
 
     package = fields.get("Package")
+
+    # The release channel is an explicit allow-list. Never allow local or
+    # CI experiment versions (rhscan, rhui, diagnostics, etc.) into Sileo,
+    # even if their DEB was accidentally copied into tweaks/BandLock/debs.
+    if not publishable(package or "", fields.get("Version", "")):
+        print(f"Skipping unpublished BandLock package: {package} "
+              f"{fields.get('Version', '<missing>')}", file=sys.stderr)
+        continue
 
     if package == "com.gokuencinar.nukewireless":
         variant = {"iphoneos-arm64":"Dopamine", "iphoneos-arm64e":"RootHide", "iphoneos-arm":"Rootful"}[fields["Architecture"]]
