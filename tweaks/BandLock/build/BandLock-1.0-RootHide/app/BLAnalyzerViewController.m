@@ -1,5 +1,6 @@
 #import "BLAnalyzerViewController.h"
 #import "BLTelephonyManager.h"
+#import "BLCommon.h"
 #import "BLLocalization.h"
 #import <math.h>
 
@@ -147,7 +148,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     [button setTitle:title forState:UIControlStateNormal];
     [button setImage:[UIImage systemImageNamed:symbol] forState:UIControlStateNormal];
     button.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    button.contentEdgeInsets = UIEdgeInsetsMake(12, 10, 12, 10);
+    // The button's minimum-height constraint supplies generous touch area
+    // without deprecated contentEdgeInsets (Theos builds with -Werror).
     [button addTarget:self action:selector forControlEvents:UIControlEventTouchUpInside];
     [button.heightAnchor constraintGreaterThanOrEqualToConstant:48].active = YES;
     return button;
