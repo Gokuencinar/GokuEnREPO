@@ -574,26 +574,6 @@ Name: BandLock (Rootful)
 
 Package: com.gokuencinar.bettersettings
 Version: 1.0.0
-Architecture: iphoneos-arm64
-Maintainer: Gokuencinar
-Installed-Size: 220
-Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter1), ellekit | mobilesubstrate
-Conflicts: com.gokuencinar.cossettings18
-Replaces: com.gokuencinar.cossettings18
-Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.0_iphoneos-arm64.deb
-Size: 27158
-MD5sum: 1d3ded49c967b8790bd72a07ead3e306
-SHA1: 922ea024dc5477af2bfb66b5e582f50abd507b22
-SHA256: 99169f54456315019bf039f488568b91b76c22474e774ee02df13e513a0f0da9
-Section: Tweaks
-Author: Gokuencinar
-Name: Better Settings
-Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
-
-Package: com.gokuencinar.bettersettings
-Version: 1.0.0
 Architecture: iphoneos-arm64e
 Maintainer: Gokuencinar
 Installed-Size: 444
@@ -608,6 +588,26 @@ SHA256: 14ac3908131103165f2d749712e81719094a49cf6eab84f74606b4680619a88b
 Section: Tweaks
 Author: Gokuencinar
 Name: Better Settings (RootHide)
+Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
+
+Package: com.gokuencinar.bettersettings
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Installed-Size: 220
+Depends: firmware (>= 16.0), preferenceloader (>= 2.3.3+zbetter1), ellekit | mobilesubstrate
+Conflicts: com.gokuencinar.cossettings18
+Replaces: com.gokuencinar.cossettings18
+Filename: tweaks/BetterSettings/debs/com.gokuencinar.bettersettings_1.0.0_iphoneos-arm64.deb
+Size: 27158
+MD5sum: 1d3ded49c967b8790bd72a07ead3e306
+SHA1: 922ea024dc5477af2bfb66b5e582f50abd507b22
+SHA256: 99169f54456315019bf039f488568b91b76c22474e774ee02df13e513a0f0da9
+Section: Tweaks
+Author: Gokuencinar
+Name: Better Settings
 Description: A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BetterSettings/assets/icon.png
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depiction.html
@@ -654,23 +654,6 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterSettings/depict
 
 Package: preferenceloader
 Version: 2.3.3+zbetter1
-Architecture: iphoneos-arm64
-Maintainer: Dhinak G <dhinak@dhinak.net>
-Installed-Size: 416
-Depends: mobilesubstrate, firmware (>= 15.0)
-Conflicts: preferenceloader-legacy
-Replaces: preferenceloader-legacy
-Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter1_iphoneos-arm64.deb
-Size: 36112
-MD5sum: 56207384682e5b7828ebf359ce491112
-SHA1: 581ae2eef56bbf50a1b0eb12bf852a07c244d149
-SHA256: 5a329ea12becee7a5a187d216ac1bd3ddff043dc69e5f572724a1008a2f18ebd
-Section: System
-Author: Dustin Howett <dustin@howett.net>
-Name: PreferenceLoader
-
-Package: preferenceloader
-Version: 2.3.3+zbetter1
 Architecture: iphoneos-arm64e
 Maintainer: Dhinak G <dhinak@dhinak.net>
 Installed-Size: 416
@@ -687,18 +670,18 @@ Author: Dustin Howett <dustin@howett.net>
 Name: PreferenceLoader (RootHide)
 
 Package: preferenceloader
-Version: 2.3.3+zbetter2
+Version: 2.3.3+zbetter1
 Architecture: iphoneos-arm64
 Maintainer: Dhinak G <dhinak@dhinak.net>
 Installed-Size: 416
 Depends: mobilesubstrate, firmware (>= 15.0)
 Conflicts: preferenceloader-legacy
 Replaces: preferenceloader-legacy
-Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter2_iphoneos-arm64.deb
-Size: 36910
-MD5sum: 06bff152cf2d663f645b98170c711205
-SHA1: cad6beaa4cfbe5ef6f5b0223fe85f64691cd736d
-SHA256: 566a9f12399bb8a4a5cee3827037e4d9b0cb08bfb42bce9594b18623d94fa1ea
+Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter1_iphoneos-arm64.deb
+Size: 36112
+MD5sum: 56207384682e5b7828ebf359ce491112
+SHA1: 581ae2eef56bbf50a1b0eb12bf852a07c244d149
+SHA256: 5a329ea12becee7a5a187d216ac1bd3ddff043dc69e5f572724a1008a2f18ebd
 Section: System
 Author: Dustin Howett <dustin@howett.net>
 Name: PreferenceLoader
@@ -719,6 +702,23 @@ SHA256: 3623bae6e8f81b90d036fb78b53322b6292b8b1924e8456bafdc973fd322606d
 Section: System
 Author: Dustin Howett <dustin@howett.net>
 Name: PreferenceLoader (RootHide)
+
+Package: preferenceloader
+Version: 2.3.3+zbetter2
+Architecture: iphoneos-arm64
+Maintainer: Dhinak G <dhinak@dhinak.net>
+Installed-Size: 416
+Depends: mobilesubstrate, firmware (>= 15.0)
+Conflicts: preferenceloader-legacy
+Replaces: preferenceloader-legacy
+Filename: tweaks/BetterSettings/debs/preferenceloader_2.3.3+zbetter2_iphoneos-arm64.deb
+Size: 36910
+MD5sum: 06bff152cf2d663f645b98170c711205
+SHA1: cad6beaa4cfbe5ef6f5b0223fe85f64691cd736d
+SHA256: 566a9f12399bb8a4a5cee3827037e4d9b0cb08bfb42bce9594b18623d94fa1ea
+Section: System
+Author: Dustin Howett <dustin@howett.net>
+Name: PreferenceLoader
 
 Package: com.betterwifirh.tweak.dopamine
 Version: 0.3.15
@@ -1100,6 +1100,25 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BetterWiFi-RH/depicti
 
 Package: com.ps.cconandoff
 Version: 1.1.0
+Architecture: iphoneos-arm64
+Maintainer: PoomSmart
+Installed-Size: 152
+Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 11.0)
+Conflicts: com.jakeashacks.realcc
+Filename: tweaks/CC-On-Off/debs/com.ps.cconandoff_1.1.0_iphoneos-arm64.deb
+Size: 5500
+MD5sum: b1d5be9fa2742fa0c572899a54900d56
+SHA1: 1651167dfa33a7bf9818307ffad4b0befa239aee
+SHA256: 9bdcc2d78cfb71045dc3b24ab4079a20e3c5897f990377f6e657edf785ab26c2
+Section: Tweaks
+Description: Toggle Wi-Fi and Bluetooth On/Off from Control Center (iOS 11+, including iOS 18).
+Author: PoomSmart
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/CC-On-Off/depiction.html
+Name: CC On & Off
+Sileodepiction: https://poomsmart.github.io/repo/sileodepictions/cconoff.json
+
+Package: com.ps.cconandoff
+Version: 1.1.0
 Architecture: iphoneos-arm
 Maintainer: PoomSmart
 Installed-Size: 136
@@ -1136,25 +1155,6 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/CC-On-Off/depiction.h
 Name: CC On & Off
 Sileodepiction: https://poomsmart.github.io/repo/sileodepictions/cconoff.json
 
-Package: com.ps.cconandoff
-Version: 1.1.0
-Architecture: iphoneos-arm64
-Maintainer: PoomSmart
-Installed-Size: 152
-Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 11.0)
-Conflicts: com.jakeashacks.realcc
-Filename: tweaks/CC-On-Off/debs/com.ps.cconandoff_1.1.0_iphoneos-arm64.deb
-Size: 5500
-MD5sum: b1d5be9fa2742fa0c572899a54900d56
-SHA1: 1651167dfa33a7bf9818307ffad4b0befa239aee
-SHA256: 9bdcc2d78cfb71045dc3b24ab4079a20e3c5897f990377f6e657edf785ab26c2
-Section: Tweaks
-Description: Toggle Wi-Fi and Bluetooth On/Off from Control Center (iOS 11+, including iOS 18).
-Author: PoomSmart
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/CC-On-Off/depiction.html
-Name: CC On & Off
-Sileodepiction: https://poomsmart.github.io/repo/sileodepictions/cconoff.json
-
 Package: arpoison
 Version: 0.7
 Architecture: iphoneos-arm64
@@ -1166,22 +1166,6 @@ Size: 9596
 MD5sum: ef23cef9e317e5bc83620c91fc354bf2
 SHA1: 19d9be15d8afd2be0e76028ce301a95bbf1bb63a
 SHA256: 39aeee5c8880b3d6ef953b7e986ebacfee784308517ba4b870451d110f17e51b
-Section: Networking
-Priority: optional
-Homepage: http://www.arpoison.net/
-Description: Generates user-defined ARP packets
-
-Package: arpoison
-Version: 0.7
-Architecture: iphoneos-arm
-Maintainer: Procursus Team <support@procurs.us>
-Installed-Size: 5
-Depends: libnet9
-Filename: tweaks/NukeWireless-Dependencies/debs/arpoison_0.7_iphoneos-arm.deb
-Size: 9696
-MD5sum: 321ed4d660ea07a7d98062b0cd6a75af
-SHA1: 2618260382f59dc2f874760f6f3644cc6f6bf1d0
-SHA256: 5ab3d26dd93cd6b3a2554462638fe2fa319541087344d365e4e5fb01cd8e9c89
 Section: Networking
 Priority: optional
 Homepage: http://www.arpoison.net/
@@ -1203,21 +1187,21 @@ Priority: optional
 Homepage: http://www.arpoison.net/
 Description: Generates user-defined ARP packets
 
-Package: ldid
-Version: 2.1.5-procursus7
+Package: arpoison
+Version: 0.7
 Architecture: iphoneos-arm
 Maintainer: Procursus Team <support@procurs.us>
-Installed-Size: 236
-Depends: libiosexec1 (>= 1.2.2), libssl3, libplist3 (>= 2.2.0)
-Filename: tweaks/NukeWireless-Dependencies/debs/ldid_2.1.5-procursus7_iphoneos-arm.deb
-Size: 72498
-MD5sum: c2d7d27b154df53a2ce34ed47c378565
-SHA1: 7bd1a7c6ab79f9df931e8768d7199d563b3f9618
-SHA256: 0ff838697e2916333a48676346aaa5563c95bac809db807ec416cb7393c7761f
-Section: Development
+Installed-Size: 5
+Depends: libnet9
+Filename: tweaks/NukeWireless-Dependencies/debs/arpoison_0.7_iphoneos-arm.deb
+Size: 9696
+MD5sum: 321ed4d660ea07a7d98062b0cd6a75af
+SHA1: 2618260382f59dc2f874760f6f3644cc6f6bf1d0
+SHA256: 5ab3d26dd93cd6b3a2554462638fe2fa319541087344d365e4e5fb01cd8e9c89
+Section: Networking
 Priority: optional
-Description: pseudo-codesign Mach-O files
-Author: Jay Freeman (saurik) <saurik@saurik.com>
+Homepage: http://www.arpoison.net/
+Description: Generates user-defined ARP packets
 
 Package: ldid
 Version: 2.1.5-procursus7
@@ -1251,32 +1235,21 @@ Priority: optional
 Description: pseudo-codesign Mach-O files
 Author: Jay Freeman (saurik) <saurik@saurik.com>
 
-Package: libnet9
-Version: 1.2
-Architecture: iphoneos-arm64e
-Maintainer: RootHide <RootHideDev@twitter>
-Installed-Size: 116
-Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1)
-Filename: tweaks/NukeWireless-Dependencies/debs/libnet9_1.2_iphoneos-arm64e.deb
-Size: 34038
-MD5sum: 197a84ec28a792033ccbf71038839647
-SHA1: 81b6589a4b61869441c58ec92a73116787d4c5b2
-SHA256: 51f5c64a86a8ad4dab824149c1bab336b0e96c3791e3b0ad8a6c1e237b640c7f
-Section: Libraries
+Package: ldid
+Version: 2.1.5-procursus7
+Architecture: iphoneos-arm
+Maintainer: Procursus Team <support@procurs.us>
+Installed-Size: 236
+Depends: libiosexec1 (>= 1.2.2), libssl3, libplist3 (>= 2.2.0)
+Filename: tweaks/NukeWireless-Dependencies/debs/ldid_2.1.5-procursus7_iphoneos-arm.deb
+Size: 72498
+MD5sum: c2d7d27b154df53a2ce34ed47c378565
+SHA1: 7bd1a7c6ab79f9df931e8768d7199d563b3f9618
+SHA256: 0ff838697e2916333a48676346aaa5563c95bac809db807ec416cb7393c7761f
+Section: Development
 Priority: optional
-Description: library for the construction and handling of network packets
- libnet provides a portable framework for low-level network packet
- writing and handling.
- .
- libnet features portable packet creation interfaces at the IP layer
- and link layer, as well as a host of supplementary functionality.
- .
- Using libnet, quick and simple packet assembly applications can be
- whipped up with little effort. With a bit more time, more complex
- programs can be written (Traceroute and ping were easily rewritten
- using libnet and libpcap).
- .
- This package contains the shared library.
+Description: pseudo-codesign Mach-O files
+Author: Jay Freeman (saurik) <saurik@saurik.com>
 
 Package: libnet9
 Version: 1.2
@@ -1315,6 +1288,33 @@ Size: 30352
 MD5sum: 2ffcac5aeeea3a564b0ced89f8cada77
 SHA1: 088ea15dfb868a490559a95f59fa572a812a4afb
 SHA256: 36b470a7da714d7b339de78d22d39100d91a35b2fe1bbc2cd788a942b7f98124
+Section: Libraries
+Priority: optional
+Description: library for the construction and handling of network packets
+ libnet provides a portable framework for low-level network packet
+ writing and handling.
+ .
+ libnet features portable packet creation interfaces at the IP layer
+ and link layer, as well as a host of supplementary functionality.
+ .
+ Using libnet, quick and simple packet assembly applications can be
+ whipped up with little effort. With a bit more time, more complex
+ programs can be written (Traceroute and ping were easily rewritten
+ using libnet and libpcap).
+ .
+ This package contains the shared library.
+
+Package: libnet9
+Version: 1.2
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
+Installed-Size: 116
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1)
+Filename: tweaks/NukeWireless-Dependencies/debs/libnet9_1.2_iphoneos-arm64e.deb
+Size: 34038
+MD5sum: 197a84ec28a792033ccbf71038839647
+SHA1: 81b6589a4b61869441c58ec92a73116787d4c5b2
+SHA256: 51f5c64a86a8ad4dab824149c1bab336b0e96c3791e3b0ad8a6c1e237b640c7f
 Section: Libraries
 Priority: optional
 Description: library for the construction and handling of network packets
@@ -1408,18 +1408,18 @@ Description: system interface for user-level packet capture
 
 Package: libplist3
 Version: 2.2.0+git20230130.4b50a5a
-Architecture: iphoneos-arm64
-Maintainer: Procursus Team <support@procurs.us>
+Architecture: iphoneos-arm64e
+Maintainer: RootHide <RootHideDev@twitter>
 Installed-Size: 132
-Depends: libiosexec1 (>= 1.2.2)
+Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1)
 Conflicts: libplist
 Replaces: libplist
 Provides: libplist (= 99)
-Filename: tweaks/NukeWireless-Dependencies/debs/libplist3_2.2.0+git20230130.4b50a5a_iphoneos-arm64.deb
-Size: 44864
-MD5sum: bca322eba9e8f6b0c6ef8c9482241c72
-SHA1: 084ba36bac2f5d732a0a1baea8982b7ff5ddaeb1
-SHA256: 0cefd3bbb8b8fdd4df92f1ce09a137fa39d6496a22a3e252a5a9784ad3ff4f4f
+Filename: tweaks/NukeWireless-Dependencies/debs/libplist3_2.2.0+git20230130.4b50a5a_iphoneos-arm64e.deb
+Size: 44936
+MD5sum: c23bc4cdbad22f5517d29ae0184572c1
+SHA1: 7ddd0d885ddb41d83588ae66efd83649244031fd
+SHA256: c1d7d425141db10c15382cbde703206e44aef0977094d72f91c52d37c4118c33
 Section: Development
 Priority: standard
 Description: Library for handling Apple binary and XML property lists
@@ -1444,18 +1444,18 @@ Description: Library for handling Apple binary and XML property lists
 
 Package: libplist3
 Version: 2.2.0+git20230130.4b50a5a
-Architecture: iphoneos-arm64e
-Maintainer: RootHide <RootHideDev@twitter>
+Architecture: iphoneos-arm64
+Maintainer: Procursus Team <support@procurs.us>
 Installed-Size: 132
-Depends: roothide (>= 0.0.6), libiosexec1 (>= 1.3.1)
+Depends: libiosexec1 (>= 1.2.2)
 Conflicts: libplist
 Replaces: libplist
 Provides: libplist (= 99)
-Filename: tweaks/NukeWireless-Dependencies/debs/libplist3_2.2.0+git20230130.4b50a5a_iphoneos-arm64e.deb
-Size: 44936
-MD5sum: c23bc4cdbad22f5517d29ae0184572c1
-SHA1: 7ddd0d885ddb41d83588ae66efd83649244031fd
-SHA256: c1d7d425141db10c15382cbde703206e44aef0977094d72f91c52d37c4118c33
+Filename: tweaks/NukeWireless-Dependencies/debs/libplist3_2.2.0+git20230130.4b50a5a_iphoneos-arm64.deb
+Size: 44864
+MD5sum: bca322eba9e8f6b0c6ef8c9482241c72
+SHA1: 084ba36bac2f5d732a0a1baea8982b7ff5ddaeb1
+SHA256: 0cefd3bbb8b8fdd4df92f1ce09a137fa39d6496a22a3e252a5a9784ad3ff4f4f
 Section: Development
 Priority: standard
 Description: Library for handling Apple binary and XML property lists
@@ -1482,15 +1482,15 @@ Description: Secure Sockets Layer toolkit - shared libraries
 
 Package: libssl3
 Version: 3.2.1
-Architecture: iphoneos-arm
+Architecture: iphoneos-arm64
 Maintainer: Procursus Team <support@procurs.us>
 Installed-Size: 5056
 Depends: libiosexec1 (>= 1.3.1), ca-certificates
-Filename: tweaks/NukeWireless-Dependencies/debs/libssl3_3.2.1_iphoneos-arm.deb
-Size: 2189408
-MD5sum: fa30e626ffb6b0552530ead445ad5e19
-SHA1: da001eba7d5e4986380384ab6596273305361a6e
-SHA256: 0ad8d0d01cd3472093151dbbbf633f76b0e108cc1334f7898517664ff4d95042
+Filename: tweaks/NukeWireless-Dependencies/debs/libssl3_3.2.1_iphoneos-arm64.deb
+Size: 2202960
+MD5sum: 11f4baf9869fa1a0c7327f5a95f6f472
+SHA1: e5b5b427c0c1826553387fdb09fa95454c4ee708
+SHA256: cea1b21c8f11c7bb7ca963dd115e837e8041298056695a32ca5ddb4190e17d75
 Section: Libraries
 Priority: standard
 Description: Secure Sockets Layer toolkit - shared libraries
@@ -1502,15 +1502,15 @@ Description: Secure Sockets Layer toolkit - shared libraries
 
 Package: libssl3
 Version: 3.2.1
-Architecture: iphoneos-arm64
+Architecture: iphoneos-arm
 Maintainer: Procursus Team <support@procurs.us>
 Installed-Size: 5056
 Depends: libiosexec1 (>= 1.3.1), ca-certificates
-Filename: tweaks/NukeWireless-Dependencies/debs/libssl3_3.2.1_iphoneos-arm64.deb
-Size: 2202960
-MD5sum: 11f4baf9869fa1a0c7327f5a95f6f472
-SHA1: e5b5b427c0c1826553387fdb09fa95454c4ee708
-SHA256: cea1b21c8f11c7bb7ca963dd115e837e8041298056695a32ca5ddb4190e17d75
+Filename: tweaks/NukeWireless-Dependencies/debs/libssl3_3.2.1_iphoneos-arm.deb
+Size: 2189408
+MD5sum: fa30e626ffb6b0552530ead445ad5e19
+SHA1: da001eba7d5e4986380384ab6596273305361a6e
+SHA256: 0ad8d0d01cd3472093151dbbbf633f76b0e108cc1334f7898517664ff4d95042
 Section: Libraries
 Priority: standard
 Description: Secure Sockets Layer toolkit - shared libraries
@@ -1570,67 +1570,67 @@ Priority: important
 Description: arp, ndp, traceroute, mnc, mtest, traceroute6, ifconfig, ip6addrctl, netstat, ping6, route, rtsol
 
 Package: com.gokuencinar.nukewireless
-Name: NukeWireless (RootHide)
-Version: 1.0.2
-Architecture: iphoneos-arm64e
-Author: GokuEn
-Maintainer: GokuEn
-Section: Utilities
-Pre-Depends: rootless-compat (>= 0.9)
-Depends: ldid, arpoison, network-cmds, ellekit, rootless-compat
-Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
-Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
-Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.2-RootHide.deb
-Size: 9196304
-MD5sum: e27ca95cc943db696f24145899200b6c
-SHA1: 2089b737009eb2e86de44cc42d1b2f5bd698e9ed
-SHA256: 8cf984fcf14de686380a0d59c7977374065889c18de77a73c3733ad44b5e2e04
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
-SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
-Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
-
-Package: com.gokuencinar.nukewireless
-Name: NukeWireless (Dopamine)
 Version: 1.0.2
 Architecture: iphoneos-arm64
-Author: GokuEn
 Maintainer: GokuEn
-Section: Utilities
 Depends: ldid, arpoison, network-cmds, mobilesubstrate
 Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
 Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
 Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.2-Dopamine.deb
 Size: 9196172
 MD5sum: 1b90aa4882c640da8e425a8bb15ff9fe
 SHA1: ef9e85631e5cd26fcfeba85b90f0b71339abb574
 SHA256: d9910b09e84d5ba6e3630f58171067ecc9eaee3beaa4cd8d243992b2663a41bc
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (Dopamine)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
 
 Package: com.gokuencinar.nukewireless
-Name: NukeWireless (Rootful)
 Version: 1.0.2
 Architecture: iphoneos-arm
-Author: GokuEn
 Maintainer: GokuEn
-Section: Utilities
 Depends: ldid, arpoison, network-cmds, mobilesubstrate
 Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
 Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
-Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
 Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.2-Rootful.deb
 Size: 9195680
 MD5sum: 30e6037af69d68b2813fa00b4d19c725
 SHA1: df75fd114273fcc8e92706168b1949925cfee5f4
 SHA256: 2b848e97c5ad3691b379d9e76073184d931dfa18674e21738c00cdbda0705858
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (Rootful)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
+
+Package: com.gokuencinar.nukewireless
+Version: 1.0.2
+Architecture: iphoneos-arm64e
+Maintainer: GokuEn
+Pre-Depends: rootless-compat (>= 0.9)
+Depends: ldid, arpoison, network-cmds, ellekit, rootless-compat
+Conflicts: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Replaces: xyz.cypwn.harpy-reloaded, com.gokuencinar.nukewireless.bluetooth
+Provides: com.gokuencinar.nukewireless.bluetooth (= 2.0.0~diagnostic11)
+Filename: tweaks/NukeWireless/debs/NukeWireless-1.0.2-RootHide.deb
+Size: 9196304
+MD5sum: e27ca95cc943db696f24145899200b6c
+SHA1: 2089b737009eb2e86de44cc42d1b2f5bd698e9ed
+SHA256: 8cf984fcf14de686380a0d59c7977374065889c18de77a73c3733ad44b5e2e04
+Section: Utilities
+Author: GokuEn
+Name: NukeWireless (RootHide)
+Description: Block Wi-Fi and personal hotspot devices, scan BLE devices and send Bluetooth advertisements.
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
 SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html
