@@ -149,6 +149,17 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         BLDaemonLog([[NSString stringWithFormat:@"handle command=%@", command] UTF8String]);
         BLTelephonyManager *manager = BLTelephonyManager.sharedManager;
 
+        // iOS 18 read-only preview: the LTE analyzer is being tested here for
+        // the first time. Explicit band/RAT writes and active scans must stay
+        // disabled until we have hardware-validated them on this iOS release.
+        // Leave emergency journal recovery available: preventing restoration
+        // after a previous build wrote bands would be unsafe.
+        if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 &&
+            [@[@"rat", @"apply", @"apply_nr", @"scan_start"] containsObject:command]) {
+            return @{@"success": @NO, @"read_only": @YES,
+                     @"message": @"iOS 18 LTE analyzer preview: changing bands or RAT / active scans disabled"};
+        }
+
         if ([command isEqualToString:@"signal_probe"]) {
             if ([BLRHSignalScan.sharedScan isRunning]) {
                 return @{@"success": @NO, @"message": @"A scan is already running; query scan_status"};

@@ -205,8 +205,12 @@
     }
     [body addArrangedSubview:status];
     UILabel *footer = [UILabel new];
-    footer.text = BLT(@"Control manual · Cambios solo bajo confirmación",
-                      @"Manual control · Changes only after confirmation");
+    BOOL previewReadOnly = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+    footer.text = previewReadOnly
+        ? BLT(@"iOS 18 experimental · Control de bandas bloqueado; Analizador LTE pasivo disponible",
+              @"Experimental iOS 18 · Band changes disabled; passive LTE Analyzer available")
+        : BLT(@"Control manual · Cambios solo bajo confirmación",
+              @"Manual control · Changes only after confirmation");
     footer.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
     footer.textColor = [UIColor colorWithWhite:1 alpha:0.8];
     footer.numberOfLines = 0;

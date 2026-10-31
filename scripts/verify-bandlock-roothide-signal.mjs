@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui1$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui2$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -175,6 +175,9 @@ assert.match(analyzer, /removeObjectForKey:BLAnalyzerHistoryKey/);
 assert.match(analyzer, /NSJSONSerialization/);
 assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|startSignalScan|startPassiveSignalObservation|setNetworkMode|applyPendingBands|scan_start|scan_recover|setRatSelectionSync)\b|@"(?:imsi|imei|cellId|subscriptionUUID)"/i,
   'Analyzer may only request typed passive signal, never mutate the modem or store private cell IDs');
-assert.match(control, /firmware \(<= 17\.0\)/,
-  'Keep the unverified iOS18 package blocked until explicit device-compatibility tests');
+assert.match(control, /firmware \(<= 18\.99\)/,
+  'Experimental preview must explicitly recognize firmware 18.7.1');
+assert.match(main, /operatingSystemVersion\.majorVersion >= 18/);
+assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/,
+  'iOS18 preview must block every direct modem selection writer and active scan');
 console.log('RootHide LTE 1.6 analyzer UI and read-only data gates: PASS');
