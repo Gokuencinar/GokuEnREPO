@@ -44,7 +44,7 @@
       "views": [
         {
           "class": "DepictionMarkdownView",
-          "markdown": "### 1.0.2\n\nAdded Wi-Fi favorites and filtering, improved scan progress and device actions, enabled blocking during scans, sped up bulk blocking, and improved BLE history, map filters, compatibility information and diagnostics."
+          "markdown": "### 1.0.2\n\n- Added Wi-Fi favorites and filtering.\n- Improved scan progress and device actions.\n- Enabled device blocking during scans.\n- Sped up bulk blocking.\n- Improved BLE history and map filters.\n- Improved compatibility information and diagnostics."
         }
       ]
     }
