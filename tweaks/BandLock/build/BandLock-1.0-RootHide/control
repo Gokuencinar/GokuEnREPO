@@ -1,8 +1,8 @@
 Package: com.gokuencinar.bandlock
-Name: BandLock (RootHide LTE Analyzer iOS 18 Preview)
-Version: 1.6.0~rhui2
+Name: BandLock (RootHide Compact UI Preview)
+Version: 1.6.0~rhui3
 Architecture: iphoneos-arm64e
-Description: Experimental RootHide LTE analyzer preview with modern UI, typed passive monitoring and private local history. On iOS 18, changing bands, RAT and active scans are deliberately disabled pending hardware validation; emergency recovery remains possible.
+Description: Experimental compact Control UI with safer checkmark-only band selection, passive LTE analyzer and private history. On iOS 18, modem band/RAT writes and active scans remain disabled; emergency recovery remains available.
 Maintainer: Gokuencinar
 Author: Gokuencinar
 Section: Tweaks

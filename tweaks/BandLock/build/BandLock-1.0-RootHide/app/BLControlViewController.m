@@ -8,6 +8,7 @@
 #import "BLCommon.h"
 #import "BLBreadcrumb.h"
 #import <QuartzCore/QuartzCore.h>
+#import <math.h>
 
 @interface BLControlHero : UIView
 @property (nonatomic, strong) CAGradientLayer *backgroundGradient;
@@ -34,6 +35,125 @@
 }
 @end
 
+// Compact, accessible disclosure panel. No UISwitch or hidden radio side effects.
+@interface BLControlDisclosure : UIView
+@property (nonatomic, strong) UIStackView *body;
+@property (nonatomic, strong) UIImageView *chevron;
+@property (nonatomic, strong) UIButton *trigger;
+@property (nonatomic, copy) NSString *sectionTitle;
+@property (nonatomic, assign) BOOL expanded;
+- (instancetype)initWithTitle:(NSString *)title subtitle:(NSString *)subtitle
+                       symbol:(NSString *)symbol content:(NSArray<UIView *> *)views
+                     expanded:(BOOL)expanded;
+- (void)setExpanded:(BOOL)expanded animated:(BOOL)animated;
+@end
+
+@implementation BLControlDisclosure
+- (instancetype)initWithTitle:(NSString *)title subtitle:(NSString *)subtitle
+                       symbol:(NSString *)symbol content:(NSArray<UIView *> *)views
+                     expanded:(BOOL)expanded {
+    self = [super init];
+    if (!self) return nil;
+    self.sectionTitle = title;
+    self.translatesAutoresizingMaskIntoConstraints = NO;
+    self.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
+    self.layer.cornerRadius = 20;
+    self.layer.borderWidth = 0.5;
+    self.layer.borderColor = [UIColor.separatorColor colorWithAlphaComponent:0.20].CGColor;
+
+    UIStackView *column = [UIStackView new];
+    column.axis = UILayoutConstraintAxisVertical;
+    column.spacing = 0;
+    column.translatesAutoresizingMaskIntoConstraints = NO;
+    [self addSubview:column];
+    [NSLayoutConstraint activateConstraints:@[
+        [column.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:15],
+        [column.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-15],
+        [column.topAnchor constraintEqualToAnchor:self.topAnchor constant:10],
+        [column.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-10]
+    ]];
+
+    UIView *header = [UIView new];
+    header.translatesAutoresizingMaskIntoConstraints = NO;
+    [header.heightAnchor constraintGreaterThanOrEqualToConstant:59].active = YES;
+    UIImageView *symbolView = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:symbol]];
+    symbolView.translatesAutoresizingMaskIntoConstraints = NO;
+    symbolView.tintColor = [UIColor colorWithRed:0.07 green:0.66 blue:0.59 alpha:1];
+    symbolView.contentMode = UIViewContentModeScaleAspectFit;
+    symbolView.backgroundColor = [[UIColor colorWithRed:0.07 green:0.66 blue:0.59 alpha:1] colorWithAlphaComponent:0.12];
+    symbolView.layer.cornerRadius = 13;
+    symbolView.clipsToBounds = YES;
+    symbolView.preferredSymbolConfiguration = [UIImageSymbolConfiguration configurationWithPointSize:18 weight:UIImageSymbolWeightSemibold];
+    [header addSubview:symbolView];
+    UILabel *name = [UILabel new];
+    name.text = title;
+    name.textColor = UIColor.labelColor;
+    name.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+    UILabel *detail = [UILabel new];
+    detail.text = subtitle;
+    detail.textColor = UIColor.secondaryLabelColor;
+    detail.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+    detail.numberOfLines = 2;
+    UIStackView *copy = [UIStackView new];
+    copy.axis = UILayoutConstraintAxisVertical;
+    copy.spacing = 3;
+    copy.translatesAutoresizingMaskIntoConstraints = NO;
+    [copy addArrangedSubview:name];
+    [copy addArrangedSubview:detail];
+    [header addSubview:copy];
+    self.chevron = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"chevron.down"]];
+    self.chevron.translatesAutoresizingMaskIntoConstraints = NO;
+    self.chevron.tintColor = UIColor.tertiaryLabelColor;
+    [header addSubview:self.chevron];
+    [NSLayoutConstraint activateConstraints:@[
+        [symbolView.leadingAnchor constraintEqualToAnchor:header.leadingAnchor],
+        [symbolView.centerYAnchor constraintEqualToAnchor:header.centerYAnchor],
+        [symbolView.widthAnchor constraintEqualToConstant:43],
+        [symbolView.heightAnchor constraintEqualToConstant:43],
+        [copy.leadingAnchor constraintEqualToAnchor:symbolView.trailingAnchor constant:12],
+        [copy.centerYAnchor constraintEqualToAnchor:header.centerYAnchor],
+        [copy.trailingAnchor constraintLessThanOrEqualToAnchor:self.chevron.leadingAnchor constant:-10],
+        [self.chevron.trailingAnchor constraintEqualToAnchor:header.trailingAnchor constant:-4],
+        [self.chevron.centerYAnchor constraintEqualToAnchor:header.centerYAnchor],
+        [self.chevron.widthAnchor constraintEqualToConstant:13],
+        [self.chevron.heightAnchor constraintEqualToConstant:16]
+    ]];
+    self.trigger = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.trigger.translatesAutoresizingMaskIntoConstraints = NO;
+    self.trigger.accessibilityTraits = UIAccessibilityTraitButton;
+    [self.trigger addTarget:self action:@selector(toggleTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [header addSubview:self.trigger];
+    [NSLayoutConstraint activateConstraints:@[
+        [self.trigger.leadingAnchor constraintEqualToAnchor:header.leadingAnchor],
+        [self.trigger.trailingAnchor constraintEqualToAnchor:header.trailingAnchor],
+        [self.trigger.topAnchor constraintEqualToAnchor:header.topAnchor],
+        [self.trigger.bottomAnchor constraintEqualToAnchor:header.bottomAnchor]
+    ]];
+    [column addArrangedSubview:header];
+    self.body = [UIStackView new];
+    self.body.axis = UILayoutConstraintAxisVertical;
+    self.body.spacing = 11;
+    self.body.layoutMarginsRelativeArrangement = YES;
+    self.body.layoutMargins = UIEdgeInsetsMake(10, 2, 12, 2);
+    for (UIView *item in views) [self.body addArrangedSubview:item];
+    [column addArrangedSubview:self.body];
+    [self setExpanded:expanded animated:NO];
+    return self;
+}
+
+- (void)toggleTapped:(UIButton *)sender { [self setExpanded:!self.expanded animated:YES]; }
+- (void)setExpanded:(BOOL)expanded { [self setExpanded:expanded animated:NO]; }
+- (void)setExpanded:(BOOL)expanded animated:(BOOL)animated {
+    _expanded = expanded;
+    self.body.hidden = !expanded;
+    self.chevron.transform = expanded ? CGAffineTransformMakeRotation((CGFloat)M_PI) : CGAffineTransformIdentity;
+    self.trigger.accessibilityLabel = [NSString stringWithFormat:@"%@ · %@",
+        self.sectionTitle, expanded ? BLT(@"Contraer", @"Collapse") : BLT(@"Expandir", @"Expand")];
+    self.trigger.accessibilityValue = expanded ? BLT(@"Abierto", @"Expanded") : BLT(@"Cerrado", @"Collapsed");
+    if (animated) [UIView animateWithDuration:0.2 animations:^{ [self.superview layoutIfNeeded]; }];
+}
+@end
+
 @interface BLControlViewController ()
 @property (nonatomic, strong) BLTelephonyManager *manager;
 @property (nonatomic, strong) UIScrollView *scrollView;
@@ -53,6 +173,13 @@
 @property (nonatomic, strong) UIButton *countryManageButton;
 @property (nonatomic, strong) UIButton *fiveGModeButton;
 @property (nonatomic, strong) UIView *nrBandsCard;
+@property (nonatomic, strong) BLControlDisclosure *signalSection;
+@property (nonatomic, strong) BLControlDisclosure *safetySection;
+@property (nonatomic, strong) UIButton *radioAutomaticButton;
+@property (nonatomic, strong) UIButton *radioLTEButton;
+@property (nonatomic, strong) UIButton *applyLTEButton;
+@property (nonatomic, strong) UIButton *restoreLTEPreviousButton;
+@property (nonatomic, strong) UIButton *restoreLTEAllButton;
 @property (nonatomic, strong) UILabel *signalValue;
 @property (nonatomic, strong) UIButton *signalStartButton;
 @property (nonatomic, strong) UIButton *signalObserveButton;
@@ -174,6 +301,17 @@
     return card;
 }
 
+- (BLControlDisclosure *)disclosure:(NSString *)title subtitle:(NSString *)subtitle
+                             symbol:(NSString *)symbol views:(NSArray<UIView *> *)views {
+    return [[BLControlDisclosure alloc] initWithTitle:title subtitle:subtitle
+                                               symbol:symbol content:views expanded:NO];
+}
+
+- (void)openAnalyzerTapped:(UIButton *)sender {
+    UITabBarController *tabs = self.tabBarController;
+    if (tabs.viewControllers.count > 1) tabs.selectedIndex = 1;
+}
+
 - (UIView *)overviewHero {
     BLControlHero *hero = [[BLControlHero alloc] init];
     hero.translatesAutoresizingMaskIntoConstraints = NO;
@@ -267,14 +405,36 @@
     [self.stackView addArrangedSubview:[self overviewHero]];
 
     self.refreshButton = [self buttonWithTitle:BLT(@"Actualizar estado", @"Refresh status") symbol:@"arrow.clockwise" selector:@selector(refreshTapped:) destructive:NO];
+    UIButton *analyzerShortcut = [self buttonWithTitle:BLT(@"Analizador LTE", @"LTE Analyzer")
+                                                symbol:@"waveform.path.ecg" selector:@selector(openAnalyzerTapped:) destructive:NO];
+    analyzerShortcut.backgroundColor = [UIColor colorWithRed:0.07 green:0.64 blue:0.56 alpha:1];
+    analyzerShortcut.tintColor = UIColor.whiteColor;
+    [analyzerShortcut setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    analyzerShortcut.layer.cornerRadius = 15;
+    analyzerShortcut.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    analyzerShortcut.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
+    self.refreshButton.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
+    self.refreshButton.layer.cornerRadius = 15;
+    self.refreshButton.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    self.refreshButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
+    UIStackView *quickActions = [UIStackView new];
+    quickActions.axis = UILayoutConstraintAxisHorizontal;
+    quickActions.spacing = 10;
+    quickActions.distribution = UIStackViewDistributionFillEqually;
+    [quickActions addArrangedSubview:analyzerShortcut];
+    [quickActions addArrangedSubview:self.refreshButton];
+    [analyzerShortcut.heightAnchor constraintGreaterThanOrEqualToConstant:54].active = YES;
+    [self.stackView addArrangedSubview:quickActions];
+
     UILabel *network = nil;
     UILabel *serving = nil;
     UILabel *active = nil;
     UILabel *activeNR = nil;
     UIView *activeNRRow = [self rowWithTitle:BLT(@"Bandas 5G NR permitidas", @"Allowed 5G NR bands") valueLabel:&activeNR];
     UILabel *result = nil;
-    UIView *statusCard = [self cardWithTitle:BLT(@"ESTADO", @"STATUS") content:@[
-        self.refreshButton,
+    BLControlDisclosure *statusCard = [self disclosure:BLT(@"Detalles de red", @"Network details")
+        subtitle:BLT(@"Bandas permitidas, modo y respuesta del daemon", @"Allowed bands, mode and daemon status")
+        symbol:@"chart.bar.xaxis" views:@[
         [self rowWithTitle:BLT(@"Red actual", @"Current network") valueLabel:&network],
         [self rowWithTitle:BLT(@"Banda conectada", @"Serving band") valueLabel:&serving],
         [self rowWithTitle:BLT(@"Bandas LTE permitidas", @"Allowed LTE bands") valueLabel:&active],
@@ -287,20 +447,22 @@
     self.activeNRValue = activeNR;
     self.activeNRRow = activeNRRow;
     self.resultValue = result;
-    [self.stackView addArrangedSubview:statusCard];
 
     UIButton *automatic = [self buttonWithTitle:BLT(@"Modo automático", @"Automatic mode") symbol:@"antenna.radiowaves.left.and.right" selector:@selector(automaticTapped:) destructive:NO];
     UIButton *lteOnly = [self buttonWithTitle:BLT(@"Solo LTE / 4G", @"LTE / 4G only") symbol:@"4g.lte" selector:@selector(lteOnlyTapped:) destructive:NO];
+    self.radioAutomaticButton = automatic;
+    self.radioLTEButton = lteOnly;
     self.fiveGModeButton = [self buttonWithTitle:@"5G Auto / 5G On / 5G Only" symbol:@"5g" selector:@selector(fiveGModeTapped:) destructive:NO];
     UILabel *mode = nil;
-    UIView *modeCard = [self cardWithTitle:BLT(@"MODO DE RED", @"NETWORK MODE") content:@[
+    BLControlDisclosure *modeCard = [self disclosure:BLT(@"Modo de red", @"Network mode")
+        subtitle:BLT(@"Configuración manual · Avanzado", @"Manual configuration · Advanced")
+        symbol:@"antenna.radiowaves.left.and.right" views:@[
         [self rowWithTitle:BLT(@"Configuración", @"Configuration") valueLabel:&mode],
         automatic,
         lteOnly,
         self.fiveGModeButton
     ]];
     self.modeValue = mode;
-    [self.stackView addArrangedSubview:modeCard];
 
     self.countryManageButton = [self buttonWithTitle:@"" symbol:@"globe.europe.africa.fill" selector:@selector(manageCountryBandsTapped:) destructive:NO];
     self.countryManageButton.hidden = YES;
@@ -308,20 +470,29 @@
     UIButton *apply = [self buttonWithTitle:BLT(@"Aplicar selección", @"Apply selection") symbol:@"checkmark.circle.fill" selector:@selector(applyTapped:) destructive:NO];
     UIButton *restorePrevious = [self buttonWithTitle:BLT(@"Restaurar selección anterior", @"Restore previous selection") symbol:@"arrow.uturn.backward" selector:@selector(restorePreviousTapped:) destructive:NO];
     UIButton *restoreAll = [self buttonWithTitle:BLT(@"Restaurar todas las soportadas", @"Restore all supported") symbol:@"arrow.counterclockwise.circle" selector:@selector(restoreAllTapped:) destructive:NO];
+    self.applyLTEButton = apply;
+    self.restoreLTEPreviousButton = restorePrevious;
+    self.restoreLTEAllButton = restoreAll;
     UILabel *pending = nil;
-    UIView *bandsCard = [self cardWithTitle:BLT(@"BANDAS LTE", @"LTE BANDS") content:@[
+    UIView *bandsCard = [self cardWithTitle:BLT(@"MIS BANDAS LTE", @"MY LTE BANDS") content:@[
         [self rowWithTitle:BLT(@"Selección pendiente", @"Pending selection") valueLabel:&pending],
-        self.countryManageButton, edit, apply, restorePrevious, restoreAll
+        self.countryManageButton, edit, apply
     ]];
     self.pendingValue = pending;
     [self.stackView addArrangedSubview:bandsCard];
+    // The normal dashboard exposes just a signal shortcut and band selection.
+    // Destructive/recovery and radio mode operations remain in separate panels.
+    [self.stackView addArrangedSubview:statusCard];
+    [self.stackView addArrangedSubview:modeCard];
 
     UILabel *pendingNR = nil;
     UIButton *editNR = [self buttonWithTitle:BLT(@"Editar bandas 5G NR", @"Edit 5G NR bands") symbol:@"slider.horizontal.3" selector:@selector(editNRBandsTapped:) destructive:NO];
     UIButton *applyNR = [self buttonWithTitle:BLT(@"Aplicar selección 5G", @"Apply 5G selection") symbol:@"checkmark.circle.fill" selector:@selector(applyNRTapped:) destructive:NO];
     UIButton *restorePreviousNR = [self buttonWithTitle:BLT(@"Restaurar selección 5G anterior", @"Restore previous 5G selection") symbol:@"arrow.uturn.backward" selector:@selector(restorePreviousNRTapped:) destructive:NO];
     UIButton *restoreAllNR = [self buttonWithTitle:BLT(@"Restaurar todas las 5G soportadas", @"Restore all supported 5G bands") symbol:@"arrow.counterclockwise.circle" selector:@selector(restoreAllNRTapped:) destructive:NO];
-    self.nrBandsCard = [self cardWithTitle:BLT(@"BANDAS 5G NR", @"5G NR BANDS") content:@[
+    self.nrBandsCard = [self disclosure:BLT(@"Bandas 5G NR", @"5G NR bands")
+        subtitle:BLT(@"Opciones para dispositivos compatibles", @"For compatible devices")
+        symbol:@"antenna.radiowaves.left.and.right" views:@[
         [self rowWithTitle:BLT(@"Selección pendiente", @"Pending selection") valueLabel:&pendingNR],
         editNR, applyNR, restorePreviousNR, restoreAllNR
     ]];
@@ -330,7 +501,8 @@
     [self.stackView addArrangedSubview:self.nrBandsCard];
 
     UIButton *field = [self buttonWithTitle:BLT(@"Abrir Field Test", @"Open Field Test") symbol:@"wave.3.right.circle" selector:@selector(fieldTestTapped:) destructive:NO];
-    UIView *toolsCard = [self cardWithTitle:BLT(@"HERRAMIENTAS", @"TOOLS") content:@[field]];
+    BLControlDisclosure *toolsCard = [self disclosure:BLT(@"Herramientas", @"Tools")
+        subtitle:BLT(@"Diagnóstico del sistema", @"System diagnostics") symbol:@"wrench.and.screwdriver" views:@[field]];
     [self.stackView addArrangedSubview:toolsCard];
 
     UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad (RootHide)", @"Read signal (RootHide)")
@@ -348,10 +520,14 @@
     self.signalValue.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
     self.signalValue.text = BLT(@"El barrido experimental exige Solo LTE/4G, una sola línea activa y RSRP mínimo de −115 dBm. Puede interrumpir todas las llamadas.",
                                 @"Experimental scan requires LTE-only, a single active line and RSRP of at least −115 dBm. Calls may be interrupted.");
-    [self.stackView addArrangedSubview:[self cardWithTitle:BLT(@"ANALIZADOR DE SEÑAL · ROOTHIDE (PRUEBA)",
-                                                             @"SIGNAL ANALYZER · ROOTHIDE (TEST)")
-                                                      content:@[probe, self.signalObserveButton, self.signalStartButton,
-                                                                self.signalCancelButton, restore, self.signalValue]]];
+    self.signalSection = [self disclosure:BLT(@"Diagnóstico avanzado", @"Advanced diagnostics")
+        subtitle:BLT(@"Lecturas técnicas y pruebas experimentales", @"Technical readings and experimental tests")
+        symbol:@"waveform.path" views:@[probe, self.signalObserveButton, self.signalStartButton, self.signalValue]];
+    [self.stackView addArrangedSubview:self.signalSection];
+    self.safetySection = [self disclosure:BLT(@"Restauración y seguridad", @"Recovery and safety")
+        subtitle:BLT(@"Restaurar bandas o atender una recuperación pendiente", @"Restore bands or handle pending recovery")
+        symbol:@"cross.case" views:@[restorePrevious, restoreAll, self.signalCancelButton, restore]];
+    [self.stackView addArrangedSubview:self.safetySection];
 
     UILabel *version = [[UILabel alloc] init];
     NSString *bundleVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
@@ -364,6 +540,7 @@
 }
 
 - (void)refreshDisplay {
+    BOOL readOnly18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
     self.heroNetworkValue.text = [NSString stringWithFormat:BLT(@"RED\n%@", @"NETWORK\n%@"), self.manager.radioAccessTechnology ?: @"—"];
     self.heroBandValue.text = [NSString stringWithFormat:BLT(@"BANDA CONECTADA\n%@", @"SERVING BAND\n%@"), self.manager.servingBand ?: @"—"];
     self.networkValue.text = self.manager.radioAccessTechnology ?: @"—";
@@ -374,8 +551,16 @@
     self.pendingNRValue.text = BLNRBandList(self.manager.pendingNRBands);
     self.resultValue.text = self.manager.hasRefreshedStatus ? (self.manager.detailText ?: @"") : @"";
     self.modeValue.text = self.manager.networkMode ?: @"—";
-    self.activeNRRow.hidden = !self.manager.supports5G;
-    self.nrBandsCard.hidden = !self.manager.supports5G || !self.manager.supportedNRBands.count;
+    self.activeNRRow.hidden = readOnly18 || !self.manager.supports5G;
+    self.nrBandsCard.hidden = readOnly18 || !self.manager.supports5G || !self.manager.supportedNRBands.count;
+    self.fiveGModeButton.hidden = readOnly18 || !self.manager.supports5G;
+    self.radioAutomaticButton.enabled = !readOnly18 && !self.manager.busy;
+    self.radioLTEButton.enabled = !readOnly18 && !self.manager.busy;
+    self.fiveGModeButton.enabled = !readOnly18 && !self.manager.busy;
+    self.applyLTEButton.hidden = readOnly18;
+    self.applyLTEButton.enabled = !readOnly18 && !self.manager.busy;
+    self.restoreLTEPreviousButton.hidden = readOnly18;
+    self.restoreLTEAllButton.hidden = readOnly18;
     NSDictionary *selectedCountry = BLSelectedCountryRecord();
     self.countryManageButton.hidden = selectedCountry == nil;
     if (selectedCountry) {
@@ -385,9 +570,11 @@
     }
     self.refreshButton.enabled = !self.manager.busy;
     [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar estado", @"Refresh status")) forState:UIControlStateNormal];
-    self.signalStartButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
+    self.signalStartButton.hidden = readOnly18;
+    self.signalStartButton.enabled = !readOnly18 && !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
     self.signalObserveButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
     self.signalCancelButton.enabled = self.signalRunning;
+    if (self.signalRunning || self.signalRecoveryRequired) [self.safetySection setExpanded:YES animated:NO];
 }
 
 - (void)showAlert:(NSString *)message {

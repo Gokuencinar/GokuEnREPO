@@ -103,12 +103,11 @@
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.textLabel.text = BLGBandTitle(band);
     cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", BLGFrequencyForBand(band).length ? BLGFrequencyForBand(band) : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), BLGDuplexForBand(band)];
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    UISwitch *toggle = [[UISwitch alloc] init];
-    toggle.on = [self.selected containsObject:band];
-    toggle.tag = indexPath.section * 1000 + indexPath.row;
-    [toggle addTarget:self action:@selector(bandSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-    cell.accessoryView = toggle;
+    // Restore the vetted no-switch design from c2efb10 (2026-09-28).
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.accessoryType = [self.selected containsObject:band]
+        ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+    cell.tintColor = [UIColor colorWithRed:0.05 green:0.66 blue:0.58 alpha:1];
     return cell;
 }
 
@@ -133,22 +132,19 @@
     }
 }
 
-- (void)bandSwitchChanged:(UISwitch *)sender {
-    NSInteger section = sender.tag / 1000;
-    NSInteger row = sender.tag % 1000;
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    if (indexPath.section == 0) return;
     @try {
-        NSArray<NSNumber *> *sectionBands = [self bandsForSection:section];
-        if (row < 0 || row >= (NSInteger)sectionBands.count) return;
-        NSNumber *band = sectionBands[(NSUInteger)row];
-        if (sender.isOn) [self.selected addObject:band];
+        NSArray<NSNumber *> *sectionBands = [self bandsForSection:indexPath.section];
+        if (indexPath.row < 0 || indexPath.row >= (NSInteger)sectionBands.count) return;
+        NSNumber *band = sectionBands[(NSUInteger)indexPath.row];
+        if (![self.selected containsObject:band]) [self.selected addObject:band];
         else [self.selected removeObject:band];
         [self commitSelection];
+        [tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
     } @catch (NSException *exception) {
     }
-}
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [tableView deselectRowAtIndexPath:indexPath animated:NO];
 }
 
 @end

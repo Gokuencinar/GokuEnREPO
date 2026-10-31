@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui2$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui3$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -181,3 +181,26 @@ assert.match(main, /operatingSystemVersion\.majorVersion >= 18/);
 assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/,
   'iOS18 preview must block every direct modem selection writer and active scan');
 console.log('RootHide LTE 1.6 analyzer UI and read-only data gates: PASS');
+
+// Prevent regression to the crash-prone switch UI removed in c2efb10 (2026-09-28).
+for (const file of [
+  'app/BLBandPickerViewController.m',
+  'app/BLNRBandPickerViewController.m',
+  'app/BLCountryBandsViewController.m',
+  'app/BLInfoViewController.m',
+]) {
+  const source = read(file);
+  assert.doesNotMatch(source, /\bUISwitch\b|\bbandSwitchChanged\b|\bccToggleChanged\b/,
+    `${file} must never reintroduce the old UISwitch handlers`);
+  assert.match(source, /UITableViewCellAccessoryCheckmark/);
+  assert.match(source, /didSelectRowAtIndexPath:/);
+}
+assert.match(app, /@interface BLControlDisclosure : UIView/);
+for (const title of ['Modo de red', 'Detalles de red', 'Restauración y seguridad', 'Diagnóstico avanzado']) {
+  assert.ok(app.includes('disclosure:BLT(@"' + title + '"'), title + ' must be collapsible');
+}
+assert.match(app, /openAnalyzerTapped:/);
+assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
+assert.match(app, /self\.signalStartButton\.hidden = readOnly18/);
+assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
+console.log('BandLock compact Control and historical no-switch regression: PASS');
