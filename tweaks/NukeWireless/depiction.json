@@ -44,7 +44,7 @@
       "views": [
         {
           "class": "DepictionMarkdownView",
-          "markdown": "### 1.0.1\n\nFixed a minor issue with icon colors when blocking or unblocking devices."
+          "markdown": "### 1.0.2\n\nAdded Wi-Fi favorites and filtering, improved scan progress and device actions, enabled blocking during scans, sped up bulk blocking, and improved BLE history, map filters, compatibility information and diagnostics."
         }
       ]
     }
