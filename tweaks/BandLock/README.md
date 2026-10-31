@@ -1,18 +1,5 @@
 # BandLock Global — LTE/4G + 5G NR Band Control App for iOS 15–18
 
-**BandLock Global** is the public worldwide edition of BandLock for **iOS 15–18**. Starting with 1.0 it is published in three jailbreak variants: **RootHide**, **Dopamine rootless**, and **classic rootful**.
-
-**BandLock Global** es la edición pública internacional de BandLock para **iOS 15–18**. Desde 1.0 se publica en tres variantes de jailbreak: **RootHide**, **Dopamine rootless** y **rootful clásico**.
-
-> Current public version / Versión pública actual: **1.5** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
-
-
-## Español
-
-### Interfaz
-
-BandLock se divide en tres pestañas. CoreTelephony/CommCenter se ejecuta dentro de un LaunchDaemon separado (`BandLockDaemon`) y la app se comunica con él por un socket Unix local. La interfaz no crea procesos mediante `posix_spawn`:
-
 - **Control** — estado del módem, red actual, banda servidora, modos Automático/Solo LTE/5G Auto/5G On/5G Only, selección independiente LTE y 5G NR, aplicar/restaurar y Field Test. El selector de idioma aparece arriba a la derecha junto al idioma actual.
 - **Países** — buscador con 160 países y territorios. Cada país muestra bandas LTE y 5G NR de referencia y su intersección con lo que reporta el módem del iPhone.
 - **Ajustes** — configuración del módulo del Centro de Control (visibilidad de 2G/3G/4G/5G y modos 5G avanzados), seguida de versión actual, créditos, comprobación de actualizaciones, notas de versión, GokuEnREPO, glosario técnico y **Buy Me a Coffee**.
