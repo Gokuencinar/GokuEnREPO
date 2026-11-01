@@ -94,6 +94,7 @@
     detail.textColor = UIColor.secondaryLabelColor;
     detail.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
     detail.numberOfLines = 2;
+    detail.hidden = subtitle.length == 0;
     UIStackView *copy = [UIStackView new];
     copy.axis = UILayoutConstraintAxisVertical;
     copy.spacing = 3;
@@ -317,42 +318,47 @@
     hero.translatesAutoresizingMaskIntoConstraints = NO;
     UIStackView *body = [[UIStackView alloc] init];
     body.axis = UILayoutConstraintAxisVertical;
-    body.spacing = 9;
+    body.spacing = 12;
     body.translatesAutoresizingMaskIntoConstraints = NO;
     UILabel *eyebrow = [UILabel new];
-    eyebrow.text = BLT(@"ESTACIÓN DE CONTROL", @"NETWORK CONTROL CENTER");
+    eyebrow.text = BLT(@"CONEXIÓN", @"CONNECTION");
     eyebrow.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
     eyebrow.textColor = [UIColor colorWithWhite:1 alpha:0.73];
     [body addArrangedSubview:eyebrow];
-    UILabel *title = [UILabel new];
-    title.text = @"BandLock Global";
-    title.font = [UIFont systemFontOfSize:27 weight:UIFontWeightBold];
-    title.textColor = UIColor.whiteColor;
-    [body addArrangedSubview:title];
     UIStackView *status = [UIStackView new];
     status.axis = UILayoutConstraintAxisHorizontal;
     status.distribution = UIStackViewDistributionFillEqually;
-    status.spacing = 10;
+    status.spacing = 16;
     self.heroNetworkValue = [UILabel new];
     self.heroBandValue = [UILabel new];
-    for (UILabel *item in @[self.heroNetworkValue, self.heroBandValue]) {
-        item.numberOfLines = 2;
+    NSArray<NSString *> *titles = @[BLT(@"RED", @"NETWORK"), BLT(@"BANDA", @"BAND")];
+    NSArray<UILabel *> *values = @[self.heroNetworkValue, self.heroBandValue];
+    for (NSUInteger i = 0; i < values.count; i++) {
+        UIStackView *column = [UIStackView new];
+        column.axis = UILayoutConstraintAxisVertical;
+        column.spacing = 5;
+        UILabel *caption = [UILabel new];
+        caption.text = titles[i];
+        caption.textColor = [UIColor colorWithWhite:1 alpha:0.70];
+        caption.font = [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold];
+        [column addArrangedSubview:caption];
+        UILabel *item = values[i];
+        item.numberOfLines = 1;
+        item.adjustsFontSizeToFitWidth = YES;
+        item.minimumScaleFactor = 0.78;
         item.textColor = UIColor.whiteColor;
-        item.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-        [status addArrangedSubview:item];
+        item.font = [UIFont systemFontOfSize:21 weight:UIFontWeightBold];
+        [column addArrangedSubview:item];
+        [status addArrangedSubview:column];
     }
     [body addArrangedSubview:status];
-    UILabel *footer = [UILabel new];
-    BOOL previewReadOnly = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
-    footer.text = previewReadOnly
-        ? BLT(@"iOS 18 experimental · Control de bandas bloqueado; Analizador LTE pasivo disponible",
-              @"Experimental iOS 18 · Band changes disabled; passive LTE Analyzer available")
-        : BLT(@"Control manual · Cambios solo bajo confirmación",
-              @"Manual control · Changes only after confirmation");
-    footer.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
-    footer.textColor = [UIColor colorWithWhite:1 alpha:0.8];
-    footer.numberOfLines = 0;
-    [body addArrangedSubview:footer];
+    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
+        UILabel *readOnly = [UILabel new];
+        readOnly.text = BLT(@"Solo lectura · iOS 18", @"Read-only · iOS 18");
+        readOnly.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+        readOnly.textColor = [UIColor colorWithWhite:1 alpha:0.77];
+        [body addArrangedSubview:readOnly];
+    }
     [hero addSubview:body];
     [NSLayoutConstraint activateConstraints:@[
         [body.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:19],
@@ -404,8 +410,8 @@
 
     [self.stackView addArrangedSubview:[self overviewHero]];
 
-    self.refreshButton = [self buttonWithTitle:BLT(@"Actualizar estado", @"Refresh status") symbol:@"arrow.clockwise" selector:@selector(refreshTapped:) destructive:NO];
-    UIButton *analyzerShortcut = [self buttonWithTitle:BLT(@"Analizador LTE", @"LTE Analyzer")
+    self.refreshButton = [self buttonWithTitle:BLT(@"Actualizar", @"Refresh") symbol:@"arrow.clockwise" selector:@selector(refreshTapped:) destructive:NO];
+    UIButton *analyzerShortcut = [self buttonWithTitle:BLT(@"Analizador", @"Analyzer")
                                                 symbol:@"waveform.path.ecg" selector:@selector(openAnalyzerTapped:) destructive:NO];
     analyzerShortcut.backgroundColor = [UIColor colorWithRed:0.07 green:0.64 blue:0.56 alpha:1];
     analyzerShortcut.tintColor = UIColor.whiteColor;
@@ -433,7 +439,7 @@
     UIView *activeNRRow = [self rowWithTitle:BLT(@"Bandas 5G NR permitidas", @"Allowed 5G NR bands") valueLabel:&activeNR];
     UILabel *result = nil;
     BLControlDisclosure *statusCard = [self disclosure:BLT(@"Detalles de red", @"Network details")
-        subtitle:BLT(@"Bandas permitidas, modo y respuesta del daemon", @"Allowed bands, mode and daemon status")
+        subtitle:nil
         symbol:@"chart.bar.xaxis" views:@[
         [self rowWithTitle:BLT(@"Red actual", @"Current network") valueLabel:&network],
         [self rowWithTitle:BLT(@"Banda conectada", @"Serving band") valueLabel:&serving],
@@ -455,7 +461,7 @@
     self.fiveGModeButton = [self buttonWithTitle:@"5G Auto / 5G On / 5G Only" symbol:@"5g" selector:@selector(fiveGModeTapped:) destructive:NO];
     UILabel *mode = nil;
     BLControlDisclosure *modeCard = [self disclosure:BLT(@"Modo de red", @"Network mode")
-        subtitle:BLT(@"Configuración manual · Avanzado", @"Manual configuration · Advanced")
+        subtitle:nil
         symbol:@"antenna.radiowaves.left.and.right" views:@[
         [self rowWithTitle:BLT(@"Configuración", @"Configuration") valueLabel:&mode],
         automatic,
@@ -474,8 +480,8 @@
     self.restoreLTEPreviousButton = restorePrevious;
     self.restoreLTEAllButton = restoreAll;
     UILabel *pending = nil;
-    UIView *bandsCard = [self cardWithTitle:BLT(@"MIS BANDAS LTE", @"MY LTE BANDS") content:@[
-        [self rowWithTitle:BLT(@"Selección pendiente", @"Pending selection") valueLabel:&pending],
+    UIView *bandsCard = [self cardWithTitle:BLT(@"BANDAS LTE", @"LTE BANDS") content:@[
+        [self rowWithTitle:BLT(@"Seleccionadas", @"Selected") valueLabel:&pending],
         self.countryManageButton, edit, apply
     ]];
     self.pendingValue = pending;
@@ -491,7 +497,7 @@
     UIButton *restorePreviousNR = [self buttonWithTitle:BLT(@"Restaurar selección 5G anterior", @"Restore previous 5G selection") symbol:@"arrow.uturn.backward" selector:@selector(restorePreviousNRTapped:) destructive:NO];
     UIButton *restoreAllNR = [self buttonWithTitle:BLT(@"Restaurar todas las 5G soportadas", @"Restore all supported 5G bands") symbol:@"arrow.counterclockwise.circle" selector:@selector(restoreAllNRTapped:) destructive:NO];
     self.nrBandsCard = [self disclosure:BLT(@"Bandas 5G NR", @"5G NR bands")
-        subtitle:BLT(@"Opciones para dispositivos compatibles", @"For compatible devices")
+        subtitle:nil
         symbol:@"antenna.radiowaves.left.and.right" views:@[
         [self rowWithTitle:BLT(@"Selección pendiente", @"Pending selection") valueLabel:&pendingNR],
         editNR, applyNR, restorePreviousNR, restoreAllNR
@@ -502,7 +508,7 @@
 
     UIButton *field = [self buttonWithTitle:BLT(@"Abrir Field Test", @"Open Field Test") symbol:@"wave.3.right.circle" selector:@selector(fieldTestTapped:) destructive:NO];
     BLControlDisclosure *toolsCard = [self disclosure:BLT(@"Herramientas", @"Tools")
-        subtitle:BLT(@"Diagnóstico del sistema", @"System diagnostics") symbol:@"wrench.and.screwdriver" views:@[field]];
+        subtitle:nil symbol:@"wrench.and.screwdriver" views:@[field]];
     [self.stackView addArrangedSubview:toolsCard];
 
     UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad (RootHide)", @"Read signal (RootHide)")
@@ -521,34 +527,32 @@
     self.signalValue.text = BLT(@"El barrido experimental exige Solo LTE/4G, una sola línea activa y RSRP mínimo de −115 dBm. Puede interrumpir todas las llamadas.",
                                 @"Experimental scan requires LTE-only, a single active line and RSRP of at least −115 dBm. Calls may be interrupted.");
     self.signalSection = [self disclosure:BLT(@"Diagnóstico avanzado", @"Advanced diagnostics")
-        subtitle:BLT(@"Lecturas técnicas y pruebas experimentales", @"Technical readings and experimental tests")
+        subtitle:nil
         symbol:@"waveform.path" views:@[probe, self.signalObserveButton, self.signalStartButton, self.signalValue]];
     [self.stackView addArrangedSubview:self.signalSection];
     self.safetySection = [self disclosure:BLT(@"Restauración y seguridad", @"Recovery and safety")
-        subtitle:BLT(@"Restaurar bandas o atender una recuperación pendiente", @"Restore bands or handle pending recovery")
+        subtitle:nil
         symbol:@"cross.case" views:@[restorePrevious, restoreAll, self.signalCancelButton, restore]];
     [self.stackView addArrangedSubview:self.safetySection];
 
-    UILabel *version = [[UILabel alloc] init];
-    NSString *bundleVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
-    version.text = [NSString stringWithFormat:@"BandLock Global %@", bundleVersion];
-    version.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
-    version.textColor = UIColor.tertiaryLabelColor;
-    version.numberOfLines = 0;
-    version.textAlignment = NSTextAlignmentCenter;
-    [self.stackView addArrangedSubview:version];
 }
 
 - (void)refreshDisplay {
     BOOL readOnly18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
-    self.heroNetworkValue.text = [NSString stringWithFormat:BLT(@"RED\n%@", @"NETWORK\n%@"), self.manager.radioAccessTechnology ?: @"—"];
-    self.heroBandValue.text = [NSString stringWithFormat:BLT(@"BANDA CONECTADA\n%@", @"SERVING BAND\n%@"), self.manager.servingBand ?: @"—"];
+    self.heroNetworkValue.text = self.manager.radioAccessTechnology ?: @"—";
+    self.heroBandValue.text = self.manager.servingBand ?: @"—";
     self.networkValue.text = self.manager.radioAccessTechnology ?: @"—";
     self.servingValue.text = self.manager.servingBand ?: @"—";
     self.activeValue.text = BLBandList(self.manager.activeBands);
     self.activeNRValue.text = BLNRBandList(self.manager.activeNRBands);
-    self.pendingValue.text = BLBandList(self.manager.pendingBands);
-    self.pendingNRValue.text = BLNRBandList(self.manager.pendingNRBands);
+    NSUInteger pendingCount = self.manager.pendingBands.count;
+    self.pendingValue.text = pendingCount
+        ? [NSString stringWithFormat:BLT(@"%lu bandas", @"%lu bands"), (unsigned long)pendingCount]
+        : BLT(@"Sin selección", @"None selected");
+    NSUInteger pendingNRCount = self.manager.pendingNRBands.count;
+    self.pendingNRValue.text = pendingNRCount
+        ? [NSString stringWithFormat:BLT(@"%lu bandas", @"%lu bands"), (unsigned long)pendingNRCount]
+        : BLT(@"Sin selección", @"None selected");
     self.resultValue.text = self.manager.hasRefreshedStatus ? (self.manager.detailText ?: @"") : @"";
     self.modeValue.text = self.manager.networkMode ?: @"—";
     self.activeNRRow.hidden = readOnly18 || !self.manager.supports5G;
@@ -569,7 +573,7 @@
                                       forState:UIControlStateNormal];
     }
     self.refreshButton.enabled = !self.manager.busy;
-    [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar estado", @"Refresh status")) forState:UIControlStateNormal];
+    [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar", @"Refresh")) forState:UIControlStateNormal];
     self.signalStartButton.hidden = readOnly18;
     self.signalStartButton.enabled = !readOnly18 && !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
     self.signalObserveButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;

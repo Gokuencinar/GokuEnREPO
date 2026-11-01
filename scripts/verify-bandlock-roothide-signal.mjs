@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui3$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui4$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -204,3 +204,18 @@ assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
 assert.match(app, /self\.signalStartButton\.hidden = readOnly18/);
 assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
 console.log('BandLock compact Control and historical no-switch regression: PASS');
+
+// rhui4: the hero must not truncate a long heading on narrow iPhones.
+assert.match(app, /BLT\(@"BANDA", @"BAND"\)/);
+assert.match(app, /item\.adjustsFontSizeToFitWidth = YES/);
+assert.doesNotMatch(app, /BANDA CONECTADA\\n%@|SERVING BAND\\n%@/);
+assert.doesNotMatch(app, /ESTACIÓN DE CONTROL|BandLock Global %@/, 'Avoid duplicate headings/version labels');
+// The entire list must remain available only inside the editor / network details,
+// never in the always-visible pending bands card.
+assert.match(app, /self\.pendingValue\.text = pendingCount/);
+assert.match(app, /self\.manager\.pendingBands\.count/);
+assert.doesNotMatch(app, /self\.pendingValue\.text = BLBandList\(/);
+assert.match(app, /detail\.hidden = subtitle\.length == 0/);
+assert.match(app, /Solo lectura · iOS 18/);
+assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
+console.log('BandLock rhui4 concise UI and truncated header regression: PASS');
