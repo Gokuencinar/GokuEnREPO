@@ -73,7 +73,7 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    return [NSString stringWithFormat:BLT(@"Datos de referencia LTE y 5G NR · actualización %@. Las bandas reales dependen del operador, región, roaming y fecha.", @"LTE and 5G NR reference data · updated %@. Actual bands vary by carrier, region, roaming and time."), self.datasetDate ?: @"—"];
+    return nil;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -82,9 +82,8 @@
     NSArray *nrBands = BLSortedBands(country[@"nr_bands"]);
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.textLabel.text = [self localizedNameForCountry:country];
-    NSString *lteText = bands.count ? BLBandList(bands) : BLT(@"LTE sin datos", @"No LTE data");
-    NSString *nrText = nrBands.count ? BLNRBandList(nrBands) : BLT(@"5G sin datos", @"No 5G data");
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"LTE: %@ · 5G: %@", lteText, nrText];
+    cell.detailTextLabel.text = [NSString stringWithFormat:BLT(@"LTE: %lu · 5G: %lu", @"LTE: %lu · 5G: %lu"),
+                                 (unsigned long)bands.count, (unsigned long)nrBands.count];
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
     cell.detailTextLabel.numberOfLines = 2;
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;

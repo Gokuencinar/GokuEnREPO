@@ -75,11 +75,10 @@
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     if (section == 0) {
-        return BLT(@"Aquí solo cambias la selección pendiente. Pulsa Aplicar en Control para modificar el módem.",
-                   @"Changes here only update the pending selection. Tap Apply in Control to change the modem.");
+        return BLT(@"Cambios pendientes hasta pulsar Aplicar.", @"Changes pending until Apply.");
     }
     if (section == 3 && self.sdlBands.count) return BLT(@"SDL es bajada suplementaria. No conviene usar únicamente bandas SDL.", @"SDL is supplemental downlink. Avoid selecting only SDL bands.");
-    if (section == 5 && self.availableNRBands.count) return BLT(@"Las bandas nXX se preparan como una selección 5G separada. Usa «Aplicar selección 5G» en Control para escribirlas.", @"The nXX bands are prepared as a separate 5G selection. Use “Apply 5G selection” in Control to write them.");
+    if (section == 5 && self.availableNRBands.count) return BLT(@"Las bandas 5G se aplican por separado.", @"5G bands are applied separately.");
     return nil;
 }
 
@@ -111,11 +110,8 @@
 
     BOOL nr = indexPath.section == 5;
     NSNumber *band = nr ? self.availableNRBands[indexPath.row] : [self bandsForSection:indexPath.section][indexPath.row];
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.textLabel.text = nr ? BLGNRBandTitle(band) : BLGBandTitle(band);
-    NSString *frequency = nr ? BLGNRFrequencyForBand(band) : BLGFrequencyForBand(band);
-    NSString *duplex = nr ? BLGNRDuplexForBand(band) : BLGDuplexForBand(band);
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", frequency.length ? frequency : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), duplex];
     cell.selectionStyle = UITableViewCellSelectionStyleDefault;
     BOOL selected = nr ? [self.selectedNR containsObject:band] : [self.selected containsObject:band];
     cell.accessoryType = selected ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;

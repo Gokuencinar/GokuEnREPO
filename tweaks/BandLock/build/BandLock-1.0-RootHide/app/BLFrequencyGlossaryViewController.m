@@ -38,8 +38,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return self.entries.count; }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    return BLT(@"La frecuencia real usada en cada momento depende del operador, la zona, la red y la agregación de portadoras.",
-               @"The frequency actually used at any moment depends on the carrier, location, network and carrier aggregation.");
+    return nil;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {

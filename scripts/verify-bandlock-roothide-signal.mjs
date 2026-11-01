@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui4$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui5$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -219,3 +219,24 @@ assert.match(app, /detail\.hidden = subtitle\.length == 0/);
 assert.match(app, /Solo lectura · iOS 18/);
 assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
 console.log('BandLock rhui4 concise UI and truncated header regression: PASS');
+
+// rhui5 removes verbose text-only UI, not the privacy/persistence restrictions.
+assert.doesNotMatch(analyzer, /Solo se guardan fecha|Only time, band and valid|Observa\. Compara\. Entiende\.|Observe\. Compare\. Understand\./);
+assert.doesNotMatch(analyzer, /Gráfica de muestras válidas|Graph of valid samples|CoreTelephony · Tipado · Lectura pasiva/);
+assert.doesNotMatch(analyzer, /Mediciones LTE pasivas · Sin modificar|Passive LTE measurements · No band/);
+assert.match(analyzer, /strongSelf\.statusLabel\.hidden = YES/);
+assert.match(analyzer, /self\.statusLabel\.hidden = NO/);
+assert.match(analyzer, /BLAnalyzerHistoryKey/);
+assert.match(analyzer, /BLAnalyzerMetric\(typed\[metric\], metric\)/);
+assert.match(analyzer, /\[self stopMonitoring\]/);
+const countries = read('app/BLCountriesViewController.m');
+assert.match(countries, /LTE: %lu · 5G: %lu/);
+assert.doesNotMatch(countries, /Las bandas reales dependen del operador|Actual bands vary by carrier/);
+for (const file of ['app/BLBandPickerViewController.m','app/BLNRBandPickerViewController.m','app/BLCountryBandsViewController.m']) {
+  const picker = read(file);
+  assert.doesNotMatch(picker, /cell\.detailTextLabel\.text = \[NSString stringWithFormat/);
+  assert.match(picker, /UITableViewCellAccessoryCheckmark/);
+}
+const info = read('app/BLInfoViewController.m');
+assert.doesNotMatch(info, /Auto always remains visible|Off: one 5G option is shown/);
+console.log('BandLock rhui5 minimal UI, read-only and no-switch regressions: PASS');

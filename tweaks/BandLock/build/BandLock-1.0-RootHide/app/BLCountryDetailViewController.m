@@ -65,9 +65,8 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    if (section == 1) return BLT(@"✓ indica que esa banda también aparece entre las soportadas por el módem de este iPhone. La lista del país es orientativa y puede variar por operador y zona.", @"✓ means that band is also reported as supported by this iPhone modem. Country data is a reference and may vary by carrier and location.");
-    if (section == 2) return BLT(@"Las bandas nXX proceden del catálogo 5G por país. ✓ indica que el módem también reporta esa banda NR como configurable.", @"The nXX bands come from the country 5G catalogue. ✓ means the modem also reports that NR band as configurable.");
-    if (section == 3) return BLT(@"El botón prepara por separado las intersecciones LTE y 5G NR. Los cambios solo se aplican después desde Control.", @"The button separately prepares the LTE and 5G NR intersections. Changes are only applied later from Control.");
+    if (section == 1 || section == 2) return BLT(@"✓ Compatible con este iPhone.", @"✓ Compatible with this iPhone.");
+    if (section == 3) return BLT(@"Cambios pendientes hasta pulsar Aplicar.", @"Changes pending until Apply.");
     return nil;
 }
 

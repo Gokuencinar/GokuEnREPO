@@ -183,16 +183,6 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         [self.stack.widthAnchor constraintEqualToAnchor:self.scroll.frameLayoutGuide.widthAnchor constant:-32]
     ]];
 
-    UIStackView *header = [self columnWithSpace:6];
-    [header addArrangedSubview:[self text:BLT(@"TU RED, EN DETALLE", @"YOUR NETWORK, IN DETAIL")
-        size:12 color:BLAnalyzerTeal() weight:UIFontWeightBold]];
-    [header addArrangedSubview:[self text:BLT(@"Observa. Compara. Entiende.", @"Observe. Compare. Understand.")
-        size:25 color:UIColor.whiteColor weight:UIFontWeightBold]];
-    [header addArrangedSubview:[self text:BLT(@"Mediciones LTE pasivas · Sin modificar bandas ni modos de red",
-        @"Passive LTE measurements · No band or network mode changes")
-        size:13 color:BLAnalyzerMuted() weight:UIFontWeightRegular]];
-    [self.stack addArrangedSubview:header];
-
     self.bandLabel = [self text:@"LTE · —" size:31 color:UIColor.whiteColor weight:UIFontWeightBold];
     self.statusLabel = [self text:BLT(@"Sin lectura todavía", @"No reading yet")
         size:12 color:BLAnalyzerTeal() weight:UIFontWeightMedium];
@@ -226,15 +216,13 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     self.graph.backgroundColor = UIColor.clearColor;
     self.graph.translatesAutoresizingMaskIntoConstraints = NO;
     [self.graph.heightAnchor constraintEqualToConstant:148].active = YES;
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"EVOLUCIÓN RSRP · ÚLTIMAS LECTURAS", @"RSRP TREND · RECENT READINGS")
-        children:@[self.graph, [self text:BLT(@"Gráfica de muestras válidas, no un escaneo de bandas.",
-                                             @"Graph of valid samples, not a band scan.")
-                                         size:11 color:BLAnalyzerMuted() weight:UIFontWeightRegular]]]];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"EVOLUCIÓN RSRP", @"RSRP TREND")
+        children:@[self.graph]]];
 
     self.comparisonLabel = [self text:@"—" size:14 color:UIColor.whiteColor weight:UIFontWeightMedium];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"COMPARAR BANDAS OBSERVADAS", @"COMPARE OBSERVED BANDS") children:@[self.comparisonLabel]]];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"COMPARATIVA", @"COMPARISON") children:@[self.comparisonLabel]]];
     self.historyLabel = [self text:@"—" size:13 color:UIColor.whiteColor weight:UIFontWeightRegular];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"HISTORIAL LOCAL", @"LOCAL HISTORY") children:@[self.historyLabel]]];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"HISTORIAL", @"HISTORY") children:@[self.historyLabel]]];
 
     UIButton *export = [self action:BLT(@"Compartir lecturas", @"Share readings") icon:@"square.and.arrow.up"
                              selector:@selector(exportTapped:) strong:NO];
@@ -242,9 +230,6 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
                             selector:@selector(clearTapped:) strong:NO];
     [self.stack addArrangedSubview:export];
     [self.stack addArrangedSubview:clear];
-    [self.stack addArrangedSubview:[self text:BLT(@"Solo se guardan fecha, banda y RSRP/RSRQ/RSSI/SNR válidos. Nunca IMSI, IMEI, identificación de celda ni ubicación. El monitor se detiene al salir de esta pantalla.",
-        @"Only time, band and valid RSRP/RSRQ/RSSI/SNR are saved. Never IMSI, IMEI, cell IDs or location. Monitoring stops when you leave this screen.")
-        size:12 color:BLAnalyzerMuted() weight:UIFontWeightRegular]];
     [self refreshHistoryUI];
 }
 
@@ -283,6 +268,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     if (self.requesting || BLTelephonyManager.sharedManager.busy) return;
     self.requesting = YES;
     self.readButton.enabled = NO;
+    self.statusLabel.hidden = NO;
     self.statusLabel.text = BLT(@"Consultando señal LTE…", @"Reading LTE signal…");
     __weak typeof(self) weakSelf = self;
     [BLTelephonyManager.sharedManager signalProbeWithCompletion:^(NSDictionary *result) {
@@ -291,7 +277,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         strongSelf.requesting = NO;
         strongSelf.readButton.enabled = YES;
         if (![result[@"success"] boolValue]) {
-            strongSelf.statusLabel.text = BLT(@"Lectura no disponible. Prueba más tarde.", @"Reading unavailable. Try later.");
+            strongSelf.statusLabel.text = BLT(@"Lectura no disponible", @"Reading unavailable");
             return;
         }
         NSArray *rows = [result[@"measurements"] isKindOfClass:NSArray.class] ? result[@"measurements"] : @[];
@@ -309,7 +295,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
             }
         }
         if (!typed) {
-            strongSelf.statusLabel.text = BLT(@"No hay lectura LTE tipada válida", @"No valid typed LTE reading available");
+            strongSelf.statusLabel.text = BLT(@"Sin datos LTE", @"No LTE data");
             return;
         }
         NSMutableDictionary *saved = [@{@"timestamp": @([NSDate date].timeIntervalSince1970),
@@ -329,7 +315,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         strongSelf.snrLabel.text = [strongSelf displayMetric:saved[@"snr"]];
         strongSelf.rsrqLabel.text = [strongSelf displayMetric:saved[@"rsrq"]];
         strongSelf.rssiLabel.text = [strongSelf displayMetric:saved[@"rssi"]];
-        strongSelf.statusLabel.text = BLT(@"CoreTelephony · Tipado · Lectura pasiva", @"CoreTelephony · Typed · Passive reading");
+        strongSelf.statusLabel.text = @"";
+        strongSelf.statusLabel.hidden = YES;
         [strongSelf refreshHistoryUI];
     }];
 }
@@ -361,9 +348,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
 - (void)refreshHistoryUI {
     NSUInteger count = self.history.count;
     if (!count) {
-        self.historyLabel.text = BLT(@"Todavía no hay muestras. Inicia una lectura.", @"No samples yet. Start a reading.");
-        self.comparisonLabel.text = BLT(@"Aparecerán únicamente las bandas medidas realmente.",
-                                           @"Only genuinely measured bands will appear.");
+        self.historyLabel.text = BLT(@"Sin lecturas", @"No readings");
+        self.comparisonLabel.text = BLT(@"Sin datos", @"No data");
         self.graph.samples = @[];
         return;
     }
@@ -411,7 +397,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
             band, [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
     }
     self.comparisonLabel.text = comparison.count ? [comparison componentsJoinedByString:@"\n"] :
-        BLT(@"Sin RSRP tipado para comparar.", @"No typed RSRP to compare.");
+        BLT(@"Sin datos", @"No data");
 }
 
 - (void)exportTapped:(UIButton *)sender {

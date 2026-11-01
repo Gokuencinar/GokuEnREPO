@@ -56,7 +56,7 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    if (section == 0) return BLT(@"Aquí solo preparas la selección 5G. Volver a Control y pulsar Aplicar selección 5G es lo que modifica el módem.", @"This only prepares the 5G selection. Returning to Control and tapping Apply 5G selection is what changes the modem.");
+    if (section == 0) return BLT(@"Cambios pendientes hasta pulsar Aplicar.", @"Changes pending until Apply.");
     if (section == 3 && self.sdlBands.count) return BLT(@"Las bandas SDL son solo de bajada y no deben usarse como única selección.", @"SDL bands are downlink-only and should not be used as the only selection.");
     return nil;
 }
@@ -90,9 +90,8 @@
         return cell;
     }
     NSNumber *band = [self bandsForSection:indexPath.section][indexPath.row];
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.textLabel.text = BLGNRBandTitle(band);
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", BLGNRFrequencyForBand(band).length ? BLGNRFrequencyForBand(band) : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), BLGNRDuplexForBand(band)];
     cell.selectionStyle = UITableViewCellSelectionStyleDefault;
     cell.accessoryType = [self.selected containsObject:band]
         ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;

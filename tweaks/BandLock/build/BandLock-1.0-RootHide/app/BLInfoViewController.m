@@ -88,8 +88,8 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    if (section == 0) return BLT(@"Centro de control · Modos visibles", @"Control Center · Visible modes");
-    if (section == 1) return BLT(@"Centro de control · 5G", @"Control Center · 5G");
+    if (section == 0) return BLT(@"Centro de control", @"Control Center");
+    if (section == 1) return BLT(@"Opciones 5G", @"5G options");
     if (section == 2) return BLT(@"Información", @"Info");
     if (section == 3) return BLT(@"Actualizaciones", @"Updates");
     if (section == 4) return BLT(@"Recursos", @"Resources");
@@ -97,14 +97,6 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    if (section == 0) {
-        return BLT(@"Automático siempre permanece visible para que puedas volver a la selección normal de iOS.",
-                   @"Auto always remains visible so you can return to normal iOS network selection.");
-    }
-    if (section == 1) {
-        return BLT(@"Desactivado: aparece una única opción 5G que usa 5G Auto. Activado: aparecen 5G Auto, 5G NSA y 5G SA por separado.",
-                   @"Off: one 5G option is shown using 5G Auto. On: 5G Auto, 5G NSA and 5G SA are shown separately.");
-    }
     return nil;
 }
 
