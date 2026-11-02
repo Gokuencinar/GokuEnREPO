@@ -1,4 +1,5 @@
 #import "BLInfoViewController.h"
+#import "../../BLHardwareCapabilities.h"
 #import "BLFrequencyGlossaryViewController.h"
 #import "BLCCPreferences.h"
 #import "BLLocalization.h"
@@ -79,8 +80,8 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 6; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 4;
-    if (section == 1) return 1;
+    if (section == 0) return BLDeviceIsKnownLTEOnly() ? 3 : 4;
+    if (section == 1) return BLDeviceIsKnownLTEOnly() ? 0 : 1;
     if (section == 2) return 3;
     if (section == 3) return 2;
     if (section == 4) return 2;
@@ -89,7 +90,7 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     if (section == 0) return BLT(@"Centro de control", @"Control Center");
-    if (section == 1) return BLT(@"Opciones 5G", @"5G options");
+    if (section == 1) return BLDeviceIsKnownLTEOnly() ? nil : BLT(@"Opciones 5G", @"5G options");
     if (section == 2) return BLT(@"Información", @"Info");
     if (section == 3) return BLT(@"Actualizaciones", @"Updates");
     if (section == 4) return BLT(@"Recursos", @"Resources");
@@ -97,6 +98,8 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
+    if (section == 0) return BLT(@"Toca cada fila para marcar o desmarcar los modos visibles.",
+                                  @"Tap a row to show or hide its mode in Control Center.");
     return nil;
 }
 

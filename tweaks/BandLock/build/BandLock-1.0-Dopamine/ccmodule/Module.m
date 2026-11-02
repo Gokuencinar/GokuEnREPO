@@ -7,30 +7,8 @@
 #import <sys/time.h>
 #import <unistd.h>
 #import <string.h>
-#import <dlfcn.h>
 #import "BLCCPreferences.h"
-
-typedef void *BLCTServerConnectionRef;
-typedef BLCTServerConnectionRef (*BLCTServerConnectionCreateFn)(CFAllocatorRef allocator, void (*callback)(void), void *context);
-typedef void *(*BLCTServerConnectionSetRATSelectionFn)(BLCTServerConnectionRef connection, CFStringRef selection, void *unknown);
-
-static void BLCTServerConnectionCallback(void) {}
-
-static void *BLCoreTelephonyHandle(void) {
-    static void *handle = NULL;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        handle = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony", RTLD_LAZY | RTLD_LOCAL);
-    });
-    return handle;
-}
-
-static CFStringRef BLRATSelectionConstant(const char *symbolName) {
-    void *handle = BLCoreTelephonyHandle();
-    if (!handle || !symbolName) return NULL;
-    CFStringRef *symbol = (CFStringRef *)dlsym(handle, symbolName);
-    return symbol ? *symbol : NULL;
-}
+#import "../../BLHardwareCapabilities.h"
 
 #if BL_VARIANT_ROOTHIDE
 #import <roothide.h>
@@ -58,7 +36,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
     self = [super init];
     if (self) {
         NSString *savedMode = BLCCLastModeCode();
-        if ([savedMode hasPrefix:@"5g-"] && !BLCCShow5G()) savedMode = @"automatic";
+        if ([savedMode hasPrefix:@"5g-"] && (!BLCCShow5G() || BLDeviceIsKnownLTEOnly())) savedMode = @"automatic";
         _currentModeCode = savedMode.length ? [savedMode copy] : @"automatic";
         _confirmedModeCode = [_currentModeCode copy];
         _supports5G = NO;
@@ -179,6 +157,19 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 - (NSString *)bl_normalizedReportedMode:(NSString *)reportedMode {
     if (!reportedMode.length) return reportedMode;
 
+    if (BLDeviceIsKnownLTEOnly() && [reportedMode hasPrefix:@"5g-"]) reportedMode = @"unknown";
+
+    // There cannot be a successful BandLock mode write on iOS 18. A saved
+    // intent from an older build is not a modem readback and must not override
+    // the actual daemon status or display a fictitious 5G/LTE lock.
+    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
+        if ([reportedMode isEqualToString:@"2g"] && !BLCCShow2G()) return @"automatic";
+        if ([reportedMode isEqualToString:@"3g"] && !BLCCShow3G()) return @"automatic";
+        if ([reportedMode isEqualToString:@"lte"] && !BLCCShowLTE()) return @"automatic";
+        if ([reportedMode hasPrefix:@"5g-"] && (!self.supports5G || !BLCCShow5G())) return @"unknown";
+        return reportedMode;
+    }
+
     BLCCSynchronizePreferences();
     NSString *intent = BLCCLastModeCode();
 
@@ -190,7 +181,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         if ([intent isEqualToString:@"2g"]) return BLCCShow2G() ? @"2g" : @"automatic";
         if ([intent isEqualToString:@"3g"]) return BLCCShow3G() ? @"3g" : @"automatic";
         if ([intent isEqualToString:@"lte"]) return BLCCShowLTE() ? @"lte" : @"automatic";
-        if ([intent hasPrefix:@"5g-"]) return BLCCShow5G() ? intent : @"automatic";
+        if ([intent hasPrefix:@"5g-"]) return (self.supports5G && BLCCShow5G() && !BLDeviceIsKnownLTEOnly()) ? intent : @"automatic";
         if ([intent isEqualToString:@"automatic"]) return @"automatic";
     }
 
@@ -260,6 +251,17 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         UIViewController *presenter = [self bl_topViewController];
         if (!presenter) return;
 
+        // On iOS 18 BandLock is strictly passive. Never offer a selector that
+        // appears to apply a modem mode while the daemon intentionally rejects it.
+        if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
+            UIAlertController *notice = [UIAlertController alertControllerWithTitle:@"BandLock · Solo lectura"
+                message:@"En iOS 18 no se pueden cambiar modos de red desde el Centro de control. Configura qué modos se muestran en BandLock > Ajustes."
+                preferredStyle:UIAlertControllerStyleAlert];
+            [notice addAction:[UIAlertAction actionWithTitle:@"Aceptar" style:UIAlertActionStyleCancel handler:nil]];
+            [presenter presentViewController:notice animated:YES completion:nil];
+            return;
+        }
+
         UIAlertController *picker =
             [UIAlertController alertControllerWithTitle:@"BandLock Network"
                                                 message:@"Selecciona el modo de red"
@@ -316,6 +318,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
 
 - (void)bl_applyMode:(NSString *)requestedMode {
     if (!requestedMode.length) return;
+    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) return;
     if ([requestedMode hasPrefix:@"5g-"] && !self.supports5G) return;
 
     self.stateEpoch += 1;
@@ -326,40 +329,15 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
     // Keep the UI responsive immediately, but perform the actual modem change
     // through BandLockDaemon. The app uses the same CoreTelephonyClient path
     // successfully on newer Qualcomm devices, while the direct
-    // _CTServerConnectionSetRATSelection path can return without applying the
+    // legacy direct setter can return without applying the
     // requested RAT and the next status refresh then falls back to Auto/5G.
     self.currentModeCode = requestedMode;
     [self bl_syncVisualSelection];
     [self bl_applyModeThroughDaemon:requestedMode epoch:epoch];
 }
 
-- (BOOL)bl_setRATDirect:(NSString *)mode {
-    void *handle = BLCoreTelephonyHandle();
-    if (!handle) return NO;
-
-    BLCTServerConnectionCreateFn createConnection =
-        (BLCTServerConnectionCreateFn)dlsym(handle, "_CTServerConnectionCreate");
-    BLCTServerConnectionSetRATSelectionFn setSelection =
-        (BLCTServerConnectionSetRATSelectionFn)dlsym(handle, "_CTServerConnectionSetRATSelection");
-    if (!createConnection || !setSelection) return NO;
-
-    CFStringRef selection = NULL;
-    if ([mode isEqualToString:@"automatic"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection7");
-    else if ([mode isEqualToString:@"2g"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection0");
-    else if ([mode isEqualToString:@"3g"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection1");
-    else if ([mode isEqualToString:@"lte"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection6");
-    else if ([mode isEqualToString:@"5g-on"]) selection = BLRATSelectionConstant("kCTRegistrationRATSelection11");
-    if (!selection) return NO;
-
-    BLCTServerConnectionRef connection =
-        createConnection(kCFAllocatorDefault, BLCTServerConnectionCallback, NULL);
-    if (!connection) return NO;
-
-    setSelection(connection, selection, NULL);
-    return YES;
-}
-
 - (void)bl_applyModeThroughDaemon:(NSString *)requestedMode epoch:(NSUInteger)epoch {
+    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) return;
     dispatch_queue_t queue = self.daemonQueue;
     if (!queue || !requestedMode.length) return;
 
@@ -407,6 +385,9 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
     if (CFAbsoluteTimeGetCurrent() < self.statusRefreshNotBefore) return;
     NSUInteger epoch = self.stateEpoch;
     self.statusRefreshInFlight = YES;
+    // CoreTelephony status may be expensive or temporarily unresponsive.
+    // Repainting the Control Center must not cause an unbounded query loop.
+    self.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent() + 20.0;
 
     dispatch_async(queue, ^{
         NSDictionary *result = [self bl_sendRequestSynchronously:@{@"cmd": @"status"}];
@@ -416,7 +397,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         }
 
         NSString *modeCode = [result[@"mode_code"] isKindOfClass:NSString.class] ? result[@"mode_code"] : nil;
-        BOOL supports5G = [result[@"supports_5g"] boolValue];
+        BOOL supports5G = !BLDeviceIsKnownLTEOnly() && [result[@"supports_5g"] boolValue];
         if (!modeCode.length) {
             dispatch_async(dispatch_get_main_queue(), ^{ self.statusRefreshInFlight = NO; });
             return;
@@ -426,11 +407,12 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
         dispatch_async(dispatch_get_main_queue(), ^{
             self.statusRefreshInFlight = NO;
             if (epoch != self.stateEpoch) return;
+            self.supports5G = supports5G;
             NSString *normalizedModeCode = [self bl_normalizedReportedMode:modeCode];
+            BOOL changed = ![self.currentModeCode isEqualToString:normalizedModeCode];
             self.currentModeCode = normalizedModeCode;
             self.confirmedModeCode = normalizedModeCode;
-            self.supports5G = supports5G;
-            [self bl_syncVisualSelection];
+            if (changed) [self bl_syncVisualSelection];
         });
     });
 }
@@ -451,7 +433,7 @@ static CFStringRef BLRATSelectionConstant(const char *symbolName) {
     // match the app client's generous IPC window. CoreTelephonyClient may need
     // several seconds to resolve the subscription context and complete a RAT
     // transition on newer devices.
-    struct timeval timeout = {.tv_sec = 30, .tv_usec = 0};
+    struct timeval timeout = {.tv_sec = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 ? 3 : 30, .tv_usec = 0};
     (void)setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     (void)setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 

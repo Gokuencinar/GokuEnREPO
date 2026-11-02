@@ -1,4 +1,5 @@
 #import "BLTelephonyManager.h"
+#import "../../BLHardwareCapabilities.h"
 #import "BLCommon.h"
 #import "BLBreadcrumb.h"
 #import <sys/socket.h>
@@ -358,12 +359,15 @@ static NSString *BLDaemonSocketPath(void) {
     self.supportedNRBands = [supportedNRValue isKindOfClass:[NSArray class]] ? BLSortedBands(supportedNRValue) : @[];
     id activeNRValue = result[@"active_nr"];
     self.activeNRBands = [activeNRValue isKindOfClass:[NSArray class]] ? BLSortedBands(activeNRValue) : @[];
-    self.supports5G = [result[@"supports_5g"] boolValue] || self.supportedNRBands.count > 0;
+    self.supports5G = !BLDeviceIsKnownLTEOnly() &&
+        ([result[@"supports_5g"] boolValue] || self.supportedNRBands.count > 0);
+    if (!self.supports5G) { self.supportedNRBands = @[]; self.activeNRBands = @[]; }
     self.radioAccessTechnology = [result[@"rat"] isKindOfClass:[NSString class]] ? result[@"rat"] : @"—";
     BLBreadcrumb("consume rat assigned");
     self.servingBand = [result[@"serving"] isKindOfClass:[NSString class]] ? result[@"serving"] : @"—";
     BLBreadcrumb("consume serving assigned");
     NSString *modeCode = [result[@"mode_code"] isKindOfClass:[NSString class]] ? result[@"mode_code"] : nil;
+    if (!self.supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"unknown";
     self.networkModeCode = modeCode ?: @"other";
     if ([modeCode isEqualToString:@"automatic"]) self.networkMode = BLT(@"Automático", @"Automatic");
     else if ([modeCode isEqualToString:@"2g"]) self.networkMode = BLT(@"Solo 2G", @"2G only");

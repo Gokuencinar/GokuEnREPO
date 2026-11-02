@@ -1,4 +1,5 @@
 #import "BLTelephonyManager.h"
+#import "../../BLHardwareCapabilities.h"
 #import "BLCommon.h"
 #import "BLGBandMetadata.h"
 #import <UIKit/UIKit.h>
@@ -478,7 +479,9 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     NSArray *activeNR = BLNRBandsFromDictionary(active);
     NSString *kind = BLRHRatSelectionKind(query[@"ratSelection"]);
     NSString *preferred = [query[@"ratPreferred"] isKindOfClass:[NSString class]] ? query[@"ratPreferred"] : @"—";
-    BOOL supports5G = [query[@"supports5G"] boolValue] || supportedNR.count > 0;
+    BOOL supports5G = !BLDeviceIsKnownLTEOnly() &&
+        ([query[@"supports5G"] boolValue] || supportedNR.count > 0);
+    if (!supports5G) { supportedNR = @[]; activeNR = @[]; }
     NSString *mode = BLT(@"No disponible", @"Unavailable");
     NSString *modeCode = @"unknown";
     if ([kind isEqualToString:@"automatic"] && supports5G &&
@@ -486,9 +489,9 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         mode = @"5G Auto"; modeCode = @"5g-auto";
     } else if ([kind isEqualToString:@"automatic"]) {
         mode = BLT(@"Automático", @"Automatic"); modeCode = @"automatic";
-    } else if ([kind isEqualToString:@"nr_sa"]) {
+    } else if (supports5G && [kind isEqualToString:@"nr_sa"]) {
         mode = @"5G Only (SA)"; modeCode = @"5g-only";
-    } else if ([kind isEqualToString:@"nr_nsa"] || [kind isEqualToString:@"nr"]) {
+    } else if (supports5G && ([kind isEqualToString:@"nr_nsa"] || [kind isEqualToString:@"nr"])) {
         mode = @"5G On"; modeCode = @"5g-on";
     } else if ([kind isEqualToString:@"lte"]) {
         mode = BLT(@"Solo LTE / 4G", @"LTE / 4G only"); modeCode = @"lte";

@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui5$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui6$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -240,3 +240,38 @@ for (const file of ['app/BLBandPickerViewController.m','app/BLNRBandPickerViewCo
 const info = read('app/BLInfoViewController.m');
 assert.doesNotMatch(info, /Auto always remains visible|Off: one 5G option is shown/);
 console.log('BandLock rhui5 minimal UI, read-only and no-switch regressions: PASS');
+
+// rhui6: a band metadata dictionary cannot upgrade a physical LTE-only modem.
+// The hardware veto must apply at daemon, app and CC, even for persisted intents.
+const hw = readFileSync('tweaks/BandLock/build/BLHardwareCapabilities.h', 'utf8');
+const cc = readFileSync('tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m', 'utf8');
+assert.match(hw, /sysctlbyname\("hw\.machine"/);
+assert.match(hw, /sscanf\(model, "iPhone%d,%d"/);
+assert.match(hw, /major > 0 && major < 13/);
+const isLTEOnlyModel = model => {
+  const match = /^iPhone(\d+),(\d+)$/.exec(model);
+  return match !== null && +match[1] > 0 && +match[1] < 13;
+};
+for (const device of ['iPhone10,3','iPhone11,2','iPhone12,3','iPhone12,8']) {
+  assert.equal(isLTEOnlyModel(device), true, `${device} must not expose 5G`);
+}
+for (const device of ['iPhone13,2','iPhone14,6','iPhone17,3']) {
+  assert.equal(isLTEOnlyModel(device), false, `${device} may support 5G if CoreTelephony confirms it`);
+}
+assert.match(core, /BOOL supports5G = !BLDeviceIsKnownLTEOnly\(\)/);
+assert.match(core, /if \(!supports5G\) \{ supportedNR = @\[\]; activeNR = @\[\]; \}/);
+assert.match(manager, /self\.supports5G = !BLDeviceIsKnownLTEOnly\(\)/);
+assert.match(info, /section == 0\) return BLDeviceIsKnownLTEOnly\(\) \? 3 : 4/);
+assert.match(info, /section == 1\) return BLDeviceIsKnownLTEOnly\(\) \? 0 : 1/);
+assert.match(info, /Toca cada fila para marcar o desmarcar/);
+assert.match(info, /UITableViewCellAccessoryCheckmark/);
+assert.match(cc, /BLDeviceIsKnownLTEOnly\(\)/);
+assert.match(cc, /A saved\s*\n\s*\/\/ intent from an older build is not a modem readback/);
+assert.doesNotMatch(cc, /_CTServerConnectionSetRATSelection|bl_setRATDirect|BLCTServerConnectionCreateFn/,
+  'CC must never have a direct CoreTelephony RAT setter');
+assert.match(cc, /if \(\[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18\) return;/);
+assert.match(cc, /if \(\[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18\) \{[\s\S]*?Solo lectura/);
+assert.match(cc, /self\.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent\(\) \+ 20\.0/);
+assert.match(cc, /\.tv_sec = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18 \? 3 : 30/);
+assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
+console.log('BandLock rhui6 hardware 5G, CC UI and iOS18 read-only protections: PASS');
