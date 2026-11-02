@@ -251,20 +251,12 @@
         UIViewController *presenter = [self bl_topViewController];
         if (!presenter) return;
 
-        // On iOS 18 BandLock is strictly passive. Never offer a selector that
-        // appears to apply a modem mode while the daemon intentionally rejects it.
-        if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
-            UIAlertController *notice = [UIAlertController alertControllerWithTitle:@"BandLock · Solo lectura"
-                message:@"En iOS 18 no se pueden cambiar modos de red desde el Centro de control. Configura qué modos se muestran en BandLock > Ajustes."
-                preferredStyle:UIAlertControllerStyleAlert];
-            [notice addAction:[UIAlertAction actionWithTitle:@"Aceptar" style:UIAlertActionStyleCancel handler:nil]];
-            [presenter presentViewController:notice animated:YES completion:nil];
-            return;
-        }
-
+        BOOL readOnly18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
         UIAlertController *picker =
             [UIAlertController alertControllerWithTitle:@"BandLock Network"
-                                                message:@"Selecciona el modo de red"
+                                                message:readOnly18
+                                                    ? @"Modos disponibles · Solo lectura en iOS 18. No se modificará la red."
+                                                    : @"Selecciona el modo de red"
                                          preferredStyle:UIAlertControllerStyleActionSheet];
 
         BLCCSynchronizePreferences();
@@ -290,7 +282,31 @@
                                          style:UIAlertActionStyleDefault
                                        handler:^(__unused UIAlertAction *selectedAction) {
                     self.modePicker = nil;
-                    [self bl_applyMode:mode];
+                    if (readOnly18) {
+                        // Preserve the 1.5 selector for reference and visibility
+                        // settings, but do not pretend to change the RAT: the
+                        // iOS 18 daemon explicitly rejects modem writes.
+                        UIAlertController *notice = [UIAlertController
+                            alertControllerWithTitle:@"BandLock · Solo lectura"
+                            message:[NSString stringWithFormat:
+                                @"%@ está disponible en el selector, pero iOS 18 no permite aplicarlo de forma segura.",
+                                [self bl_titleForMode:mode]]
+                            preferredStyle:UIAlertControllerStyleAlert];
+                        [notice addAction:[UIAlertAction actionWithTitle:@"Aceptar"
+                                                                   style:UIAlertActionStyleCancel
+                                                                 handler:nil]];
+                        // UIKit is still dismissing the action sheet inside
+                        // its handler. Present after the sheet transition.
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.40 * NSEC_PER_SEC)),
+                                       dispatch_get_main_queue(), ^{
+                            UIViewController *top = [self bl_topViewController];
+                            if (top && !top.presentedViewController) {
+                                [top presentViewController:notice animated:YES completion:nil];
+                            }
+                        });
+                    } else {
+                        [self bl_applyMode:mode];
+                    }
                 }];
 
             [picker addAction:action];

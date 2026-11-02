@@ -80,8 +80,10 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 6; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return BLDeviceIsKnownLTEOnly() ? 3 : 4;
-    if (section == 1) return BLDeviceIsKnownLTEOnly() ? 0 : 1;
+    // Keep every option from BandLock 1.5 visible. Hardware-unavailable
+    // choices are identified as such rather than silently removed.
+    if (section == 0) return 4;
+    if (section == 1) return 1;
     if (section == 2) return 3;
     if (section == 3) return 2;
     if (section == 4) return 2;
@@ -90,7 +92,7 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     if (section == 0) return BLT(@"Centro de control", @"Control Center");
-    if (section == 1) return BLDeviceIsKnownLTEOnly() ? nil : BLT(@"Opciones 5G", @"5G options");
+    if (section == 1) return BLT(@"Opciones 5G", @"5G options");
     if (section == 2) return BLT(@"Información", @"Info");
     if (section == 3) return BLT(@"Actualizaciones", @"Updates");
     if (section == 4) return BLT(@"Recursos", @"Resources");
@@ -100,6 +102,10 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     if (section == 0) return BLT(@"Toca cada fila para marcar o desmarcar los modos visibles.",
                                   @"Tap a row to show or hide its mode in Control Center.");
+    if (section == 1 && BLDeviceIsKnownLTEOnly()) {
+        return BLT(@"Este iPhone solo admite LTE. Las opciones 5G se conservan visibles para referencia, pero están desactivadas.",
+                   @"This iPhone supports LTE only. 5G options remain visible for reference but are disabled.");
+    }
     return nil;
 }
 
@@ -156,6 +162,16 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
     return cell;
 }
 
+- (UITableViewCell *)unavailable5GCellWithTitle:(NSString *)title {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+    cell.textLabel.text = title;
+    cell.textLabel.textColor = UIColor.secondaryLabelColor;
+    cell.detailTextLabel.text = BLT(@"No compatible", @"Unsupported");
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    cell.accessoryType = UITableViewCellAccessoryNone;
+    return cell;
+}
+
 - (BOOL)ccValueForTag:(BLCCSwitchTag)tag {
     switch (tag) {
         case BLCCSwitchTag2G: return BLCCShow2G();
@@ -182,8 +198,12 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
     if (indexPath.section == 0 && indexPath.row == 0) return [self switchCellWithTitle:@"2G" tag:BLCCSwitchTag2G enabled:BLCCShow2G()];
     if (indexPath.section == 0 && indexPath.row == 1) return [self switchCellWithTitle:@"3G" tag:BLCCSwitchTag3G enabled:BLCCShow3G()];
     if (indexPath.section == 0 && indexPath.row == 2) return [self switchCellWithTitle:@"4G / LTE" tag:BLCCSwitchTagLTE enabled:BLCCShowLTE()];
-    if (indexPath.section == 0) return [self switchCellWithTitle:@"5G" tag:BLCCSwitchTag5G enabled:BLCCShow5G()];
-    if (indexPath.section == 1) return [self switchCellWithTitle:BLT(@"Modos 5G avanzados", @"Advanced 5G modes") tag:BLCCSwitchTagAdvanced5G enabled:BLCCAdvanced5GModes()];
+    if (indexPath.section == 0) return BLDeviceIsKnownLTEOnly()
+        ? [self unavailable5GCellWithTitle:@"5G"]
+        : [self switchCellWithTitle:@"5G" tag:BLCCSwitchTag5G enabled:BLCCShow5G()];
+    if (indexPath.section == 1) return BLDeviceIsKnownLTEOnly()
+        ? [self unavailable5GCellWithTitle:BLT(@"Modos 5G avanzados", @"Advanced 5G modes")]
+        : [self switchCellWithTitle:BLT(@"Modos 5G avanzados", @"Advanced 5G modes") tag:BLCCSwitchTagAdvanced5G enabled:BLCCAdvanced5GModes()];
     if (indexPath.section == 2 && indexPath.row == 0) return [self valueCell:@"BandLock Global" detail:@"RootHide" symbol:@"antenna.radiowaves.left.and.right" disclosure:NO];
     if (indexPath.section == 2 && indexPath.row == 1) return [self valueCell:BLT(@"Versión actual", @"Current version") detail:version symbol:@"number.circle" disclosure:NO];
     if (indexPath.section == 2) return [self creditsCell];
@@ -264,6 +284,7 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     if (indexPath.section <= 1) {
+        if (BLDeviceIsKnownLTEOnly() && (indexPath.section == 1 || indexPath.row == 3)) return;
         BLCCSwitchTag tag = indexPath.section == 1 ? BLCCSwitchTagAdvanced5G
             : indexPath.row == 0 ? BLCCSwitchTag2G
             : indexPath.row == 1 ? BLCCSwitchTag3G

@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui6$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui7$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -262,8 +262,11 @@ assert.match(core, /BOOL supports5G = !BLDeviceIsKnownLTEOnly\(\)/);
 assert.match(core, /if \(!BLDeviceIsKnownLTEOnly\(\) && \[client respondsToSelector:supports5GSelector\]\)/);
 assert.match(core, /if \(!supports5G\) \{ supportedNR = @\[\]; activeNR = @\[\]; \}/);
 assert.match(manager, /self\.supports5G = !BLDeviceIsKnownLTEOnly\(\)/);
-assert.match(info, /section == 0\) return BLDeviceIsKnownLTEOnly\(\) \? 3 : 4/);
-assert.match(info, /section == 1\) return BLDeviceIsKnownLTEOnly\(\) \? 0 : 1/);
+assert.match(info, /if \(section == 0\) return 4/);
+assert.match(info, /if \(section == 1\) return 1/);
+assert.match(info, /unavailable5GCellWithTitle:/);
+assert.match(info, /No compatible/);
+assert.match(info, /BLDeviceIsKnownLTEOnly\(\) && \(indexPath.section == 1 \|\| indexPath.row == 3\)/);
 assert.match(info, /Toca cada fila para marcar o desmarcar/);
 assert.match(info, /UITableViewCellAccessoryCheckmark/);
 assert.match(cc, /BLDeviceIsKnownLTEOnly\(\)/);
@@ -271,7 +274,12 @@ assert.match(cc, /A saved\s*\n\s*\/\/ intent from an older build is not a modem 
 assert.doesNotMatch(cc, /_CTServerConnectionSetRATSelection|bl_setRATDirect|BLCTServerConnectionCreateFn/,
   'CC must never have a direct CoreTelephony RAT setter');
 assert.match(cc, /if \(\[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18\) return;/);
-assert.match(cc, /if \(\[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18\) \{[\s\S]*?Solo lectura/);
+assert.match(cc, /BOOL readOnly18 = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18/);
+assert.match(cc, /if \(readOnly18\) \{[\s\S]*?Solo lectura/);
+assert.match(cc, /NSMutableArray<NSString \*> \*modes = \[NSMutableArray arrayWithObject:@"automatic"\]/);
+for (const mode of ['2g','3g','lte']) {
+  assert.match(cc, new RegExp('if \\(BLCCShow' + (mode === 'lte' ? 'LTE' : mode.toUpperCase()) + '\\\(\\\)\\\) \\\[modes addObject:@"' + mode + '"\\\]'));
+}
 assert.match(cc, /self\.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent\(\) \+ 20\.0/);
 assert.match(cc, /\.tv_sec = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18 \? 3 : 30/);
 assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/);

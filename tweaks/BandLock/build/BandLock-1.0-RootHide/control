@@ -1,6 +1,6 @@
 Package: com.gokuencinar.bandlock
 Name: BandLock (RootHide CC Safety Preview)
-Version: 1.6.0~rhui6
+Version: 1.6.0~rhui7
 Architecture: iphoneos-arm64e
 Description: Experimental Control Center safety fixes with correct LTE-only hardware detection, bounded background refresh and visible checkmark preferences. On iOS 18 the module is strictly read-only.
 Maintainer: Gokuencinar
