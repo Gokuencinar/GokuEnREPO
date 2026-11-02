@@ -354,7 +354,7 @@
     [body addArrangedSubview:status];
     if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
         UILabel *readOnly = [UILabel new];
-        readOnly.text = BLT(@"Solo lectura · iOS 18", @"Read-only · iOS 18");
+        readOnly.text = BLT(@"Cambio de modo sujeto a verificación", @"Mode change requires verification");
         readOnly.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
         readOnly.textColor = [UIColor colorWithWhite:1 alpha:0.77];
         [body addArrangedSubview:readOnly];
@@ -511,11 +511,11 @@
         subtitle:nil symbol:@"wrench.and.screwdriver" views:@[field]];
     [self.stackView addArrangedSubview:toolsCard];
 
-    UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad (RootHide)", @"Read signal (RootHide)")
+    UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad", @"Read signal")
                                      symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
     self.signalStartButton = [self buttonWithTitle:BLT(@"Medir señal de bandas (2 LTE, PRUEBA)", @"Measure band signal (2 LTE, TEST)")
                                               symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanStartTapped:) destructive:NO];
-    self.signalObserveButton = [self buttonWithTitle:BLT(@"Observar bandas LTE (sin desconectar)", @"Observe LTE bands (no disconnection)")
+    self.signalObserveButton = [self buttonWithTitle:BLT(@"Barrido pasivo LTE / 5G", @"Passive LTE / 5G scan")
                                                symbol:@"waveform.path" selector:@selector(signalObserveTapped:) destructive:NO];
     self.signalCancelButton = [self buttonWithTitle:BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore")
                                                symbol:@"xmark.circle" selector:@selector(signalScanCancelTapped:) destructive:YES];
@@ -524,9 +524,9 @@
     self.signalValue = [self valueLabel];
     self.signalValue.textAlignment = NSTextAlignmentLeft;
     self.signalValue.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
-    self.signalValue.text = BLT(@"El barrido experimental exige Solo LTE/4G, una sola línea activa y RSRP mínimo de −115 dBm. Puede interrumpir todas las llamadas.",
-                                @"Experimental scan requires LTE-only, a single active line and RSRP of at least −115 dBm. Calls may be interrupted.");
-    self.signalSection = [self disclosure:BLT(@"Diagnóstico avanzado", @"Advanced diagnostics")
+    self.signalValue.text = BLT(@"Consulta la señal o inicia un barrido pasivo.",
+                                @"Read signal or start a passive scan.");
+    self.signalSection = [self disclosure:BLT(@"Diagnóstico", @"Diagnostics")
         subtitle:nil
         symbol:@"waveform.path" views:@[probe, self.signalObserveButton, self.signalStartButton, self.signalValue]];
     [self.stackView addArrangedSubview:self.signalSection];
@@ -558,9 +558,9 @@
     self.activeNRRow.hidden = readOnly18 || !self.manager.supports5G;
     self.nrBandsCard.hidden = readOnly18 || !self.manager.supports5G || !self.manager.supportedNRBands.count;
     self.fiveGModeButton.hidden = readOnly18 || !self.manager.supports5G;
-    self.radioAutomaticButton.enabled = !readOnly18 && !self.manager.busy;
-    self.radioLTEButton.enabled = !readOnly18 && !self.manager.busy;
-    self.fiveGModeButton.enabled = !readOnly18 && !self.manager.busy;
+    self.radioAutomaticButton.enabled = !self.manager.busy;
+    self.radioLTEButton.enabled = !self.manager.busy;
+    self.fiveGModeButton.enabled = !self.manager.busy;
     self.applyLTEButton.hidden = readOnly18;
     self.applyLTEButton.enabled = !readOnly18 && !self.manager.busy;
     self.restoreLTEPreviousButton.hidden = readOnly18;
@@ -772,8 +772,7 @@
 
 - (void)signalProbeTapped:(UIButton *)sender {
     if (self.manager.busy) return;
-    self.signalValue.text = BLT(@"Consultando CoreTelephony sin cambiar la conexión…",
-                                @"Reading CoreTelephony without changing the network…");
+    self.signalValue.text = BLT(@"Consultando señal…", @"Reading signal…");
     __weak typeof(self) weakSelf = self;
     [self.manager signalProbeWithCompletion:^(NSDictionary *result) {
         if (![result[@"success"] boolValue]) {
@@ -788,7 +787,8 @@
             NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
             NSString *role = [row[@"role"] isKindOfClass:NSString.class] ? row[@"role"] : @"";
             NSString *label = band ? [NSString stringWithFormat:@"%@ %@%@", rat, [rat isEqual:@"NR"] ? @"n" : @"B", band] : rat;
-            [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %@", label, role, row[@"source"] ?: @"unknown"]];
+            [lines addObject:[NSString stringWithFormat:@"%@%@", label,
+                [role isEqualToString:@"neighbor"] ? BLT(@" · Vecina", @" · Neighbor") : @""]];
             for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
                 id v = row[metric];
                 if (![v isKindOfClass:NSNumber.class]) continue;
@@ -797,21 +797,9 @@
             }
         }
         if (!measurements.count) {
-            [lines addObject:BLT(@"Sin mediciones válidas. No se muestran ceros ficticios.",
-                                  @"No validated metrics. Placeholder zeros are not displayed.")];
+            [lines addObject:BLT(@"Sin señal disponible", @"No signal available")];
         }
-        NSDictionary *diagnostics = [result[@"diagnostics"] isKindOfClass:NSDictionary.class] ? result[@"diagnostics"] : @{};
-        [lines addObject:[NSString stringWithFormat:@"API: %@", diagnostics[@"typed_api"] ?: @"unknown"]];
-        for (NSString *field in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
-            NSString *key = [@"legacy_serving_" stringByAppendingString:field];
-            [lines addObject:[NSString stringWithFormat:@"legacy %@: %@", field.uppercaseString, diagnostics[key] ?: @"unknown"]];
-        }
-        NSString *power = [result[@"has_serving_power"] boolValue] ?
-            BLT(@"Potencia LTE disponible. El barrido requiere cobertura suficiente y confirmación.",
-                @"LTE power is available. Scanning requires sufficient coverage and explicit confirmation.") :
-            BLT(@"RSRP/RSSI aún no disponibles: no se cortará la cobertura.",
-                @"RSRP/RSSI still unavailable: cellular service will not be interrupted.");
-        [lines addObject:power];
+        // Source/API metadata stays in the daemon diagnostics, not the UI.
         weakSelf.signalValue.text = [lines componentsJoinedByString:@"\n"];
     }];
 }
@@ -851,9 +839,8 @@
             return;
         }
         weakSelf.signalRunning = YES;
-        weakSelf.signalValue.text = BLT(
-            @"Observando LTE sin cambiar bandas. Solo aparecerán las bandas usadas naturalmente por el iPhone.",
-            @"Watching LTE without changing bands. Only naturally used bands will be measured.");
+        weakSelf.signalValue.text = BLT(@"Observando LTE y 5G compatibles…",
+                                        @"Observing supported LTE and 5G…");
         [weakSelf refreshDisplay];
         [weakSelf startSignalPolling];
     }];
@@ -901,13 +888,13 @@
         if ([status[@"phase"] isEqualToString:@"idle"]) return; // Keep read-only probe visible.
         NSMutableArray *lines = [NSMutableArray array];
         NSString *message = [status[@"message"] isKindOfClass:NSString.class] ? status[@"message"] : @"";
-        [lines addObject:[NSString stringWithFormat:@"%@ · %@",
-                            status[@"phase"], message]];
+        if (message.length) [lines addObject:message];
         NSArray *rows = [status[@"rows"] isKindOfClass:NSArray.class] ? status[@"rows"] : @[];
         for (NSDictionary *row in rows) {
             if (![row isKindOfClass:NSDictionary.class]) continue;
-            NSMutableString *line = [NSMutableString stringWithFormat:@"LTE B%@: %@",
-                row[@"band"] ?: @"—", row[@"status"] ?: @"no_measurement"];
+            NSString *rat = [row[@"rat"] isEqualToString:@"NR"] ? @"5G n" : @"LTE B";
+            NSMutableString *line = [NSMutableString stringWithFormat:@"%@%@",
+                rat, row[@"band"] ?: @"—"];
             for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
                 NSNumber *value = row[metric];
                 if ([value isKindOfClass:NSNumber.class]) [line appendFormat:@" · %@ %.1f", metric.uppercaseString, value.doubleValue];

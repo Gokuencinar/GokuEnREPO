@@ -149,15 +149,16 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         BLDaemonLog([[NSString stringWithFormat:@"handle command=%@", command] UTF8String]);
         BLTelephonyManager *manager = BLTelephonyManager.sharedManager;
 
-        // iOS 18 read-only preview: the LTE analyzer is being tested here for
-        // the first time. Explicit band/RAT writes and active scans must stay
-        // disabled until we have hardware-validated them on this iOS release.
+        // This is a modem capability / safety gate, NOT a filesystem
+        // permissions error. Preferences, reports and passive diagnostics
+        // remain writable. Unverified private RAT setters on iOS 18 can
+        // disconnect the cellular radio or block CoreTelephony.
         // Leave emergency journal recovery available: preventing restoration
         // after a previous build wrote bands would be unsafe.
         if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 &&
-            [@[@"rat", @"apply", @"apply_nr", @"scan_start"] containsObject:command]) {
-            return @{@"success": @NO, @"read_only": @YES,
-                     @"message": @"iOS 18 LTE analyzer preview: changing bands or RAT / active scans disabled"};
+            [@[@"apply", @"apply_nr", @"scan_start"] containsObject:command]) {
+            return @{@"success": @NO, @"unsupported_modem_write": @YES,
+                     @"message": @"El cambio de red no está verificado en este iOS"};
         }
 
         if ([command isEqualToString:@"signal_probe"]) {
@@ -208,6 +209,26 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
 
         if ([command isEqualToString:@"rat"]) {
             NSString *mode = [request[@"mode"] isKindOfClass:[NSString class]] ? request[@"mode"] : @"";
+            NSSet<NSString *> *allowed = [NSSet setWithArray:
+                @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
+            if (![allowed containsObject:mode])
+                return @{@"success": @NO, @"message": @"Modo de red no válido"};
+            // On iOS 18, do not try a private RAT setter unless the active
+            // modem's current selection can be read back authoritatively.
+            // This check happens only on an explicit user request, never
+            // during background status refresh from SpringBoard.
+            if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
+                if ([BLRHSignalScan.sharedScan hasPendingRecovery])
+                    return @{@"success": @NO, @"message": @"Restauración de bandas pendiente"};
+                NSDictionary *before = [manager queryCoreTelephony];
+                if (before[@"error"])
+                    return @{@"success": @NO, @"message": @"No se puede consultar el módem"};
+                NSString *previous = [manager snapshotFromQuery:before][@"mode_code"];
+                if (![allowed containsObject:previous]) {
+                    return @{@"success": @NO, @"message":
+                        @"No se puede verificar el modo actual en iOS 18; no se ha modificado la red"};
+                }
+            }
             BOOL requests5G = [mode hasPrefix:@"5g-"];
             if (requests5G) {
                 NSDictionary *capabilityQuery = [manager queryCoreTelephony];
@@ -231,7 +252,13 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             }
             [NSThread sleepForTimeInterval:0.35];
             NSMutableDictionary *payload = [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
-            if ([payload[@"success"] boolValue]) payload[@"message"] = payload[@"mode"] ?: @"RAT updated";
+            if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 &&
+                ![payload[@"mode_code"] isEqualToString:mode]) {
+                payload[@"success"] = @NO;
+                payload[@"message"] = @"No se pudo verificar el cambio de modo";
+            } else if ([payload[@"success"] boolValue]) {
+                payload[@"message"] = payload[@"mode"] ?: @"Modo actualizado";
+            }
             return payload;
         }
 

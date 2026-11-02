@@ -850,6 +850,10 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 
 - (NSDictionary *)signalProbeFromQuery:(NSDictionary *)query {
     if (query[@"error"]) return @{@"success": @NO, @"message": [query[@"error"] description] ?: @"CoreTelephony error"};
+    // NR metadata alone is not evidence of a 5G modem. Hardware must be
+    // capable and the active subscription must report NR support.
+    NSDictionary *capabilities = [self snapshotFromQuery:query];
+    BOOL supportsNR = !BLDeviceIsKnownLTEOnly() && [capabilities[@"supports_5g"] boolValue];
     id cellInfo = query[@"cellInfo"];
     NSArray *legacyInfo = nil;
     SEL legacySelector = NSSelectorFromString(@"legacyInfo");
@@ -864,6 +868,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         if (![raw isKindOfClass:NSDictionary.class]) continue;
         NSDictionary *legacy = BLRHLegacySignalRow(raw);
         if (!legacy) continue;
+        if ([legacy[@"rat"] isEqualToString:@"NR"] && !supportsNR) continue;
         if ([legacy[@"role"] isEqual:@"serving"] && [legacy[@"rat"] isEqual:@"LTE"] && !servingLegacy) {
             servingLegacy = raw;
         }
@@ -903,7 +908,8 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     if (typed) {
         NSMutableDictionary *serving = nil;
         for (NSMutableDictionary *item in items) {
-            if ([item[@"role"] isEqual:@"serving"] && [item[@"rat"] isEqual:@"LTE"]) {
+            if ([item[@"role"] isEqual:@"serving"] &&
+                [item[@"rat"] isEqual:(supportsNR && [capabilities[@"rat"] hasPrefix:@"5G"] ? @"NR" : @"LTE")]) {
                 serving = item;
                 break;
             }
@@ -916,6 +922,8 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         // Typed metrics and legacy band metadata come from distinct APIs.
         // Never overwrite a legacy row and mark its remaining legacy metrics
         // as typed: a missing typed RSRP must not inherit a legacy RSRP.
+        // Only label typed metrics as NR when an actual serving NR row is
+        // present. NSA LTE-anchor measurements must not masquerade as 5G.
         NSMutableDictionary *typedServing = [@{
             @"rat": serving[@"rat"] ?: @"unknown",
             @"role": @"serving", @"source": @"typed"
@@ -951,18 +959,21 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     };
     BOOL hasPower = NO;
     for (NSDictionary *item in available) {
-        if ([item[@"role"] isEqual:@"serving"] && [item[@"rat"] isEqual:@"LTE"] &&
+        if ([item[@"role"] isEqual:@"serving"] &&
+            ([item[@"rat"] isEqual:@"LTE"] || (supportsNR && [item[@"rat"] isEqual:@"NR"])) &&
             (item[@"rsrp"] || item[@"rssi"])) hasPower = YES;
     }
     return @{
         @"success": @YES,
         @"measurements": available,
         @"diagnostics": diagnostics,
+        @"supports_nr": @(supportsNR),
+        @"supported_nr": supportsNR ? (capabilities[@"supported_nr"] ?: @[]) : @[],
         @"has_serving_power": @(hasPower),
         @"active_scan_available": @NO,
         @"message": hasPower
-            ? @"Serving LTE power detected. Experimental scanning requires independently verified LTE-only mode and safe original-band recovery."
-            : @"No valid serving LTE RSRP/RSSI. Active scan remains disabled; diagnostic reports available data."
+            ? @"Señal disponible"
+            : @"Sin potencia válida de la celda principal"
     };
 }
 

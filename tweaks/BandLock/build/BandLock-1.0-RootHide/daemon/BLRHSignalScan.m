@@ -15,6 +15,7 @@
 #import <limits.h>
 #import <stdint.h>
 #import <string.h>
+#import "../../BLHardwareCapabilities.h"
 
 @interface BLTelephonyManager (BLRHSignalScanPrivate)
 - (NSDictionary *)queryCoreTelephony;
@@ -39,7 +40,10 @@ static BOOL BLScanWriteJournal(NSDictionary *state) {
     NSError *error = nil;
     NSString *directoryPath = BLScanDirectory();
     NSString *journalPath = BLScanJournal();
-    if (!directoryPath.length || !journalPath.length || ![directoryPath containsString:@"/.jbroot-"]) return NO;
+    // Never assume the randomly generated RootHide root contains a particular
+    // textual prefix. Validate the path using jbroot's live resolution.
+    if (!directoryPath.isAbsolutePath || !journalPath.isAbsolutePath ||
+        ![journalPath hasPrefix:[directoryPath stringByAppendingString:@"/"]]) return NO;
     if (![fm createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions: @0700} error:&error]) return NO;
     NSData *data = [NSPropertyListSerialization dataWithPropertyList:state format:NSPropertyListBinaryFormat_v1_0 options:0 error:&error];
     if (!data.length) return NO;
@@ -454,15 +458,16 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         self.scanState = [@{@"success": @YES, @"running": @YES,
             @"read_only": @YES, @"phase": @"observing",
             @"rows": @[], @"total": @2, @"completed": @0,
-            @"message": @"Watching naturally selected LTE bands; no radio changes"} mutableCopy];
+            @"message": @"Observando señal LTE/NR"} mutableCopy];
     }
     dispatch_async(self.scanQueue, ^{
         NSMutableArray *rows = [NSMutableArray array];
         NSString *stop = nil;
         NSString *subscription = nil;
         @try {
-            // 12 bounded observations; one per slot, no retry can ever
-            // write bands or change RAT. Only typed serving LTE power.
+            // 12 bounded observations. No retry may write bands or RAT.
+            // On NR-capable hardware, collect real serving NR observations,
+            // never synthesize NR from an LTE anchor.
             for (NSUInteger sample = 0; sample < 12; sample++) {
                 @autoreleasepool {
                     if ([self shouldStop]) { stop = @"Observation cancelled"; break; }
@@ -481,22 +486,33 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         stop = @"The data subscription changed; observation stopped";
                         break;
                     }
+                    BOOL supportsNR = !BLDeviceIsKnownLTEOnly() &&
+                        [[manager snapshotFromQuery:query][@"supports_5g"] boolValue];
                     for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
+                        if (rows.count >= 2) break;
+                        NSString *rat = measurement[@"rat"];
                         if (![measurement[@"role"] isEqualToString:@"serving"] ||
-                            ![measurement[@"rat"] isEqualToString:@"LTE"] ||
-                            ![measurement[@"source"] isEqualToString:@"typed"] ||
+                            !([rat isEqualToString:@"LTE"] ||
+                              (supportsNR && [rat isEqualToString:@"NR"])) ||
                             !BLScanHasPower(measurement) ||
                             ![measurement[@"band"] isKindOfClass:NSNumber.class]) continue;
+                        // LTE requires a typed measurement. NR can use legacy
+                        // values when CoreTelephony supplies a genuinely
+                        // identified serving NR cell, never a guessed band.
+                        if ([rat isEqualToString:@"LTE"] &&
+                            ![measurement[@"source"] isEqualToString:@"typed"]) continue;
                         NSNumber *band = measurement[@"band"];
-                        if (band.integerValue < 1 || band.integerValue > 255) continue;
+                        if (band.integerValue < 1 ||
+                            band.integerValue > ([rat isEqual:@"NR"] ? 1024 : 255)) continue;
                         BOOL seen = NO;
                         for (NSDictionary *previous in rows) {
-                            if ([previous[@"band"] isEqual:band]) { seen = YES; break; }
+                            if ([previous[@"band"] isEqual:band] &&
+                                [previous[@"rat"] isEqualToString:rat]) { seen = YES; break; }
                         }
                         if (!seen) {
                             NSMutableDictionary *record = [@{
-                                @"band": band, @"rat": @"LTE",
-                                @"role": @"serving", @"source": @"typed",
+                                @"band": band, @"rat": rat,
+                                @"role": @"serving", @"source": measurement[@"source"] ?: @"legacy",
                                 @"status": @"measured", @"read_only": @YES
                             } mutableCopy];
                             for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
@@ -505,13 +521,13 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                             }
                             [rows addObject:record];
                         }
-                        break; // Exactly one serving measurement per sample.
+                        // LTE and NR may coexist in an NSA sample.
                     }
                     @synchronized(self) {
                         self.scanState[@"rows"] = [rows copy];
                         self.scanState[@"completed"] = @(rows.count);
                         self.scanState[@"message"] = [NSString stringWithFormat:
-                            @"Read-only observation %lu/12; %lu natural LTE bands",
+                            @"Muestra %lu/12 · %lu bandas",
                             (unsigned long)(sample + 1), (unsigned long)rows.count];
                     }
                     if (rows.count >= 2) break;
@@ -534,14 +550,14 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     : @"observation_complete";
                 self.scanState[@"message"] = stop ? stop :
                     (rows.count >= 2
-                     ? @"Two naturally observed LTE bands; no modem settings changed"
-                     : @"Only naturally observed bands recorded; no modem settings changed");
+                     ? @"Medición completada"
+                     : @"Observación completada");
                 self.scanState[@"recovery_required"] = @NO;
             }
         }
     });
     return @{@"success": @YES, @"read_only": @YES,
-             @"message": @"Passive LTE signal observation started; no bands will be changed"};
+             @"message": @"Observación de señal iniciada"};
 }
 
 - (NSDictionary *)cancel {

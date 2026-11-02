@@ -183,7 +183,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         [self.stack.widthAnchor constraintEqualToAnchor:self.scroll.frameLayoutGuide.widthAnchor constant:-32]
     ]];
 
-    self.bandLabel = [self text:@"LTE · —" size:31 color:UIColor.whiteColor weight:UIFontWeightBold];
+    self.bandLabel = [self text:@"—" size:31 color:UIColor.whiteColor weight:UIFontWeightBold];
     self.statusLabel = [self text:BLT(@"Sin lectura todavía", @"No reading yet")
         size:12 color:BLAnalyzerTeal() weight:UIFontWeightMedium];
     UIStackView *metricRow = [UIStackView new];
@@ -269,7 +269,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     self.requesting = YES;
     self.readButton.enabled = NO;
     self.statusLabel.hidden = NO;
-    self.statusLabel.text = BLT(@"Consultando señal LTE…", @"Reading LTE signal…");
+    self.statusLabel.text = BLT(@"Consultando señal…", @"Reading signal…");
     __weak typeof(self) weakSelf = self;
     [BLTelephonyManager.sharedManager signalProbeWithCompletion:^(NSDictionary *result) {
         BLAnalyzerViewController *strongSelf = weakSelf;
@@ -282,24 +282,31 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         }
         NSArray *rows = [result[@"measurements"] isKindOfClass:NSArray.class] ? result[@"measurements"] : @[];
         NSDictionary *typed = nil;
+        BOOL supportsNR = [result[@"supports_nr"] boolValue];
         for (id candidate in rows) {
             if (![candidate isKindOfClass:NSDictionary.class]) continue;
             NSDictionary *row = candidate;
             NSNumber *band = row[@"band"];
-            if (![row[@"source"] isEqual:@"typed"] || ![row[@"role"] isEqual:@"serving"] ||
-                ![row[@"rat"] isEqual:@"LTE"] || ![band isKindOfClass:NSNumber.class] ||
-                band.integerValue < 1 || band.integerValue > 256) continue;
+            BOOL lte = [row[@"rat"] isEqual:@"LTE"];
+            BOOL nr = supportsNR && [row[@"rat"] isEqual:@"NR"];
+            if (![row[@"role"] isEqual:@"serving"] || !(lte || nr) ||
+                ![band isKindOfClass:NSNumber.class] ||
+                band.integerValue < 1 || band.integerValue > (nr ? 1024 : 256)) continue;
+            // LTE needs a typed sample. 5G may be an explicitly identified
+            // serving NR row with validated (non-placeholder) legacy metrics.
+            if (lte && ![row[@"source"] isEqual:@"typed"]) continue;
             if (BLAnalyzerMetric(row[@"rsrp"], @"rsrp") || BLAnalyzerMetric(row[@"rssi"], @"rssi")) {
-                typed = row;
-                break;
+                if (!typed || nr) typed = row;
+                if (nr) break; // Prefer an actual NR serving cell when available.
             }
         }
         if (!typed) {
-            strongSelf.statusLabel.text = BLT(@"Sin datos LTE", @"No LTE data");
+            strongSelf.statusLabel.text = BLT(@"Sin mediciones", @"No measurements");
             return;
         }
         NSMutableDictionary *saved = [@{@"timestamp": @([NSDate date].timeIntervalSince1970),
-                                          @"band": typed[@"band"]} mutableCopy];
+                                          @"band": typed[@"band"],
+                                          @"rat": typed[@"rat"]} mutableCopy];
         for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
             NSNumber *value = BLAnalyzerMetric(typed[metric], metric);
             if (value) saved[metric] = value;
@@ -310,7 +317,9 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
             [history removeObjectsInRange:NSMakeRange(0, history.count-BLAnalyzerMaxSamples)];
         strongSelf.history = history;
         [NSUserDefaults.standardUserDefaults setObject:history forKey:BLAnalyzerHistoryKey];
-        strongSelf.bandLabel.text = [NSString stringWithFormat:@"LTE · B%@", saved[@"band"]];
+        strongSelf.bandLabel.text = [saved[@"rat"] isEqual:@"NR"]
+            ? [NSString stringWithFormat:@"5G · n%@", saved[@"band"]]
+            : [NSString stringWithFormat:@"LTE · B%@", saved[@"band"]];
         strongSelf.rsrpLabel.text = [strongSelf displayMetric:saved[@"rsrp"]];
         strongSelf.snrLabel.text = [strongSelf displayMetric:saved[@"snr"]];
         strongSelf.rsrqLabel.text = [strongSelf displayMetric:saved[@"rsrq"]];
@@ -362,39 +371,49 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         NSDictionary *item = self.history[(NSUInteger)index];
         NSDate *date = [NSDate dateWithTimeIntervalSince1970:[item[@"timestamp"] doubleValue]];
         NSString *power = item[@"rsrp"] ? [NSString stringWithFormat:@"%@ dBm", [self displayMetric:item[@"rsrp"]]] : @"—";
-        [lines addObject:[NSString stringWithFormat:@"%@  ·  B%@  ·  %@",
-            [formatter stringFromDate:date], item[@"band"], power]];
+        NSString *bandName = [item[@"rat"] isEqual:@"NR"]
+            ? [NSString stringWithFormat:@"n%@", item[@"band"]]
+            : [NSString stringWithFormat:@"B%@", item[@"band"]];
+        [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %@",
+            [formatter stringFromDate:date], bandName, power]];
     }
     self.historyLabel.text = [lines componentsJoinedByString:@"\n"];
     NSUInteger chartStart = count > 40 ? count-40 : 0;
     // A single trace is for the last naturally observed band only: do not join
     // unrelated serving-cell/band measurements into a fabricated signal trend.
     NSNumber *latestBand = self.history.lastObject[@"band"];
+    NSString *latestRAT = self.history.lastObject[@"rat"] ?: @"LTE";
     NSMutableArray *sameBand = [NSMutableArray array];
     for (NSUInteger i = chartStart; i < count; i++) {
         NSDictionary *sample = self.history[i];
-        if ([sample[@"band"] isEqual:latestBand]) [sameBand addObject:sample];
+        if ([sample[@"band"] isEqual:latestBand] &&
+            [(sample[@"rat"] ?: @"LTE") isEqual:latestRAT]) [sameBand addObject:sample];
     }
     self.graph.samples = sameBand;
 
-    NSMutableDictionary<NSNumber *, NSMutableDictionary *> *groups = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, NSMutableDictionary *> *groups = [NSMutableDictionary dictionary];
     for (NSDictionary *sample in self.history) {
         NSNumber *value = BLAnalyzerMetric(sample[@"rsrp"], @"rsrp");
         if (!value) continue;
         NSNumber *band = sample[@"band"];
-        NSMutableDictionary *group = groups[band];
-        if (!group) { group = [@{@"sum": @0.0, @"count": @0} mutableCopy]; groups[band] = group; }
+        NSString *key = [NSString stringWithFormat:@"%@:%@", sample[@"rat"] ?: @"LTE", band];
+        NSMutableDictionary *group = groups[key];
+        if (!group) { group = [@{@"sum": @0.0, @"count": @0} mutableCopy]; groups[key] = group; }
         group[@"sum"] = @([group[@"sum"] doubleValue]+value.doubleValue);
         group[@"count"] = @([group[@"count"] integerValue]+1);
     }
     NSMutableArray *comparison = [NSMutableArray array];
     NSArray *sorted = [groups.allKeys sortedArrayUsingSelector:@selector(compare:)];
-    for (NSNumber *band in sorted) {
-        NSDictionary *group = groups[band];
+    for (NSString *key in sorted) {
+        NSDictionary *group = groups[key];
         NSInteger n = [group[@"count"] integerValue];
         if (!n) continue;
-        [comparison addObject:[NSString stringWithFormat:@"B%@   %.1f dBm   ·   %ld %@",
-            band, [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
+        NSArray *parts = [key componentsSeparatedByString:@":"];
+        NSString *display = [parts.firstObject isEqual:@"NR"]
+            ? [@"n" stringByAppendingString:parts.lastObject]
+            : [@"B" stringByAppendingString:parts.lastObject];
+        [comparison addObject:[NSString stringWithFormat:@"%@   %.1f dBm · %ld %@",
+            display, [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
     }
     self.comparisonLabel.text = comparison.count ? [comparison componentsJoinedByString:@"\n"] :
         BLT(@"Sin datos", @"No data");
@@ -402,7 +421,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
 
 - (void)exportTapped:(UIButton *)sender {
     if (!self.history.count) return;
-    NSDictionary *safe = @{@"schema": @"bandlock.typed-lte-history.v1", @"measurements": self.history};
+    NSDictionary *safe = @{@"schema": @"bandlock.cell-signal-history.v2", @"measurements": self.history};
     NSData *data = [NSJSONSerialization dataWithJSONObject:safe options:NSJSONWritingPrettyPrinted error:nil];
     if (!data) return;
     NSString *text = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -414,7 +433,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
 }
 
 - (void)clearTapped:(UIButton *)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Borrar historial LTE", @"Clear LTE history")
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Borrar historial", @"Clear history")
        message:BLT(@"Se eliminarán todas las muestras guardadas en este iPhone.",
                    @"All locally stored samples will be removed from this iPhone.") preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];

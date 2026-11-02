@@ -13,18 +13,19 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui7$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui8$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
 assert.match(main, /jbroot\(@"\/tmp\/com\.gokuencinar\.bandlockd\.sock"\)/);
 assert.match(manager, /BLRootHidePhysicalRootFromEnvironment/);
 assert.match(manager, /signalProbeWithCompletion:/);
-assert.match(app, /Consultar intensidad \(RootHide\)/);
+assert.match(app, /Consultar intensidad/);
+assert.doesNotMatch(app, /Consultar intensidad \(RootHide\)/);
 assert.match(app, /signalProbeTapped:/);
 assert.match(app, /signalScanStartTapped:/);
 assert.match(app, /signalScanCancelTapped:/);
-assert.match(app, /Observar bandas LTE \(sin desconectar\)/);
+assert.match(app, /Barrido pasivo LTE \/ 5G/);
 assert.match(app, /signalObserveTapped:/);
 assert.match(manager, /startPassiveSignalObservationWithCompletion:/);
 assert.match(main, /scan_observe_start/);
@@ -168,6 +169,7 @@ assert.match(analyzer, /scheduledTimerWithTimeInterval:12/);
 assert.match(analyzer, /BLAnalyzerMaxSamples = 300/);
 assert.match(analyzer, /@"source"\] isEqual:@"typed"/);
 assert.match(analyzer, /@"rat"\] isEqual:@"LTE"/);
+assert.match(analyzer, /@"rat"\] isEqual:@"NR"/);
 assert.match(analyzer, /@"role"\] isEqual:@"serving"/);
 assert.match(analyzer, /viewWillDisappear:/);
 assert.match(analyzer, /stopMonitoring/);
@@ -178,8 +180,10 @@ assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|startSignalScan|s
 assert.match(control, /firmware \(<= 18\.99\)/,
   'Experimental preview must explicitly recognize firmware 18.7.1');
 assert.match(main, /operatingSystemVersion\.majorVersion >= 18/);
-assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/,
-  'iOS18 preview must block every direct modem selection writer and active scan');
+assert.match(main, /@\[@"apply", @"apply_nr", @"scan_start"\] containsObject:command/,
+  'iOS18 must block unverified band writes and active scans');
+assert.match(main, /No se puede verificar el modo actual en iOS 18/,
+  'A RAT change requires an authoritative readback before any write');
 console.log('RootHide LTE 1.6 analyzer UI and read-only data gates: PASS');
 
 // Prevent regression to the crash-prone switch UI removed in c2efb10 (2026-09-28).
@@ -196,13 +200,13 @@ for (const file of [
   assert.match(source, /didSelectRowAtIndexPath:/);
 }
 assert.match(app, /@interface BLControlDisclosure : UIView/);
-for (const title of ['Modo de red', 'Detalles de red', 'Restauración y seguridad', 'Diagnóstico avanzado']) {
+for (const title of ['Modo de red', 'Detalles de red', 'Restauración y seguridad', 'Diagnóstico']) {
   assert.ok(app.includes('disclosure:BLT(@"' + title + '"'), title + ' must be collapsible');
 }
 assert.match(app, /openAnalyzerTapped:/);
 assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
 assert.match(app, /self\.signalStartButton\.hidden = readOnly18/);
-assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
+assert.match(main, /@\[@"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
 console.log('BandLock compact Control and historical no-switch regression: PASS');
 
 // rhui4: the hero must not truncate a long heading on narrow iPhones.
@@ -216,7 +220,7 @@ assert.match(app, /self\.pendingValue\.text = pendingCount/);
 assert.match(app, /self\.manager\.pendingBands\.count/);
 assert.doesNotMatch(app, /self\.pendingValue\.text = BLBandList\(/);
 assert.match(app, /detail\.hidden = subtitle\.length == 0/);
-assert.match(app, /Solo lectura · iOS 18/);
+assert.match(app, /Cambio de modo sujeto a verificación/);
 assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
 console.log('BandLock rhui4 concise UI and truncated header regression: PASS');
 
@@ -273,19 +277,40 @@ assert.match(cc, /BLDeviceIsKnownLTEOnly\(\)/);
 assert.match(cc, /A saved\s*\n\s*\/\/ intent from an older build is not a modem readback/);
 assert.doesNotMatch(cc, /_CTServerConnectionSetRATSelection|bl_setRATDirect|BLCTServerConnectionCreateFn/,
   'CC must never have a direct CoreTelephony RAT setter');
-assert.match(cc, /if \(\[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18\) return;/);
+assert.match(main, /No se puede verificar el modo actual en iOS 18/);
+assert.match(main, /if \(!\[allowed containsObject:previous\]\)/);
 assert.match(cc, /BOOL readOnly18 = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18/);
-assert.match(cc, /if \(readOnly18\) \{[\s\S]*?Solo lectura/);
+assert.match(cc, /Se comprobará la compatibilidad/);
+assert.match(cc, /\[self bl_applyMode:mode\]/);
 assert.match(cc, /NSMutableArray<NSString \*> \*modes = \[NSMutableArray arrayWithObject:@"automatic"\]/);
 for (const mode of ['2g','3g','lte']) {
   assert.match(cc, new RegExp('if \\(BLCCShow' + (mode === 'lte' ? 'LTE' : mode.toUpperCase()) + '\\\(\\\)\\\) \\\[modes addObject:@"' + mode + '"\\\]'));
 }
 assert.match(cc, /self\.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent\(\) \+ 20\.0/);
-assert.match(cc, /\.tv_sec = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18 \? 3 : 30/);
-assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
+assert.match(cc, /\.tv_sec = ios18 \? \(backgroundStatus \? 3 : 12\) : 30/);
+assert.match(main, /@\[@"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
 const statusHandler = main.slice(main.indexOf('if ([command isEqualToString:@"status"])'),
                                  main.indexOf('if ([command isEqualToString:@"rat"])'));
 assert.match(statusHandler, /operatingSystemVersion\.majorVersion >= 18/);
 assert.match(statusHandler, /\[manager queryCoreTelephonyForPassiveObservation\]/,
   'iOS18 status must not call unreliable RAT getters from the CC module');
 console.log('BandLock rhui6 hardware 5G, CC UI and iOS18 read-only protections: PASS');
+
+// rhui8: signal diagnostics are strictly passive and model-gated for NR.
+assert.match(core, /BOOL supportsNR = !BLDeviceIsKnownLTEOnly\(\)/);
+assert.match(core, /if \(\[legacy\[@"rat"\] isEqualToString:@"NR"\] && !supportsNR\) continue/);
+assert.match(core, /@"supports_nr": @\(supportsNR\)/);
+assert.match(core, /Only label typed metrics as NR when an actual serving NR row/);
+assert.match(scan, /#import "\.\.\/\.\.\/BLHardwareCapabilities\.h"/);
+assert.match(passive, /\(supportsNR && \[rat isEqualToString:@"NR"\]\)/);
+assert.match(passive, /band\.integerValue > \(\[rat isEqual:@"NR"\] \? 1024 : 255\)/);
+assert.match(passive, /\[previous\[@"rat"\] isEqualToString:rat\]/);
+assert.match(app, /Barrido pasivo LTE \/ 5G/);
+assert.doesNotMatch(app, /@"API: "|@"legacy %@/);
+assert.match(analyzer, /@"rat": typed\[@"rat"\]/);
+assert.match(analyzer, /bandlock\.cell-signal-history\.v2/);
+assert.match(main, /@"unsupported_modem_write": @YES/);
+assert.match(main, /if \(!\[allowed containsObject:previous\]\)/);
+assert.doesNotMatch(passive, /setActiveBandInfo|setRatSelection:|BLScanWriteJournal/);
+assert.match(scan, /!\[journalPath hasPrefix:\[directoryPath stringByAppendingString:@"\/"\]\]/);
+console.log('BandLock rhui8 NR diagnostics, concise UI, dynamic paths, guarded mode writes: PASS');

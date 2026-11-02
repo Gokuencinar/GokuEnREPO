@@ -402,7 +402,7 @@ static NSString *BLDaemonSocketPath(void) {
     NSString *daemonMessage = [result[@"message"] isKindOfClass:[NSString class]] ? result[@"message"] : nil;
     NSString *message = success ? (successMessage ?: daemonMessage ?: BLT(@"Operación completada.", @"Operation completed."))
                                 : (daemonMessage ?: BLT(@"Operación fallida.", @"Operation failed."));
-    self.statusText = success ? BLT(@"Listo", @"Ready") : BLT(@"Error del daemon", @"Daemon error");
+    self.statusText = success ? BLT(@"Listo", @"Ready") : BLT(@"No disponible", @"Unavailable");
     self.detailText = message ?: @"";
     if (completion) {
         BLBreadcrumb("action completion begin");
@@ -414,7 +414,7 @@ static NSString *BLDaemonSocketPath(void) {
 
 - (void)refreshWithCompletion:(BLActionCompletion)completion {
     BLBreadcrumb("refreshWithCompletion enter");
-    self.statusText = BLT(@"Consultando daemon…", @"Querying daemon…");
+    self.statusText = BLT(@"Actualizando…", @"Refreshing…");
     [self sendRequest:@{@"cmd": @"status"} completion:^(NSDictionary *result) {
         BLBreadcrumb("refresh result block enter");
         if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:NO];

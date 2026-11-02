@@ -255,7 +255,7 @@
         UIAlertController *picker =
             [UIAlertController alertControllerWithTitle:@"BandLock Network"
                                                 message:readOnly18
-                                                    ? @"Modos disponibles · Solo lectura en iOS 18. No se modificará la red."
+                                                    ? @"Se comprobará la compatibilidad antes de cambiar el modo."
                                                     : @"Selecciona el modo de red"
                                          preferredStyle:UIAlertControllerStyleActionSheet];
 
@@ -282,31 +282,7 @@
                                          style:UIAlertActionStyleDefault
                                        handler:^(__unused UIAlertAction *selectedAction) {
                     self.modePicker = nil;
-                    if (readOnly18) {
-                        // Preserve the 1.5 selector for reference and visibility
-                        // settings, but do not pretend to change the RAT: the
-                        // iOS 18 daemon explicitly rejects modem writes.
-                        UIAlertController *notice = [UIAlertController
-                            alertControllerWithTitle:@"BandLock · Solo lectura"
-                            message:[NSString stringWithFormat:
-                                @"%@ está disponible en el selector, pero iOS 18 no permite aplicarlo de forma segura.",
-                                [self bl_titleForMode:mode]]
-                            preferredStyle:UIAlertControllerStyleAlert];
-                        [notice addAction:[UIAlertAction actionWithTitle:@"Aceptar"
-                                                                   style:UIAlertActionStyleCancel
-                                                                 handler:nil]];
-                        // UIKit is still dismissing the action sheet inside
-                        // its handler. Present after the sheet transition.
-                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.40 * NSEC_PER_SEC)),
-                                       dispatch_get_main_queue(), ^{
-                            UIViewController *top = [self bl_topViewController];
-                            if (top && !top.presentedViewController) {
-                                [top presentViewController:notice animated:YES completion:nil];
-                            }
-                        });
-                    } else {
-                        [self bl_applyMode:mode];
-                    }
+                    [self bl_applyMode:mode];
                 }];
 
             [picker addAction:action];
@@ -334,7 +310,6 @@
 
 - (void)bl_applyMode:(NSString *)requestedMode {
     if (!requestedMode.length) return;
-    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) return;
     if ([requestedMode hasPrefix:@"5g-"] && !self.supports5G) return;
 
     self.stateEpoch += 1;
@@ -353,7 +328,6 @@
 }
 
 - (void)bl_applyModeThroughDaemon:(NSString *)requestedMode epoch:(NSUInteger)epoch {
-    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) return;
     dispatch_queue_t queue = self.daemonQueue;
     if (!queue || !requestedMode.length) return;
 
@@ -371,6 +345,19 @@
                   BLCCSetLastModeCode(self.confirmedModeCode ?: @"automatic");
                   self.currentModeCode = self.confirmedModeCode ?: @"automatic";
                   [self bl_syncVisualSelection];
+                  NSString *message = [result[@"message"] isKindOfClass:NSString.class]
+                      ? result[@"message"] : @"No se ha podido cambiar el modo";
+                  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
+                                 dispatch_get_main_queue(), ^{
+                      UIViewController *presenter = [self bl_topViewController];
+                      if (!presenter || presenter.presentedViewController) return;
+                      UIAlertController *notice = [UIAlertController
+                          alertControllerWithTitle:@"BandLock" message:message
+                          preferredStyle:UIAlertControllerStyleAlert];
+                      [notice addAction:[UIAlertAction actionWithTitle:@"Aceptar"
+                                                                 style:UIAlertActionStyleCancel handler:nil]];
+                      [presenter presentViewController:notice animated:YES completion:nil];
+                  });
                   return;
               }
 
@@ -445,11 +432,12 @@
 
     int one = 1;
     (void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one));
-    // RAT changes are handled asynchronously from the Control Center UI, so
-    // match the app client's generous IPC window. CoreTelephonyClient may need
-    // several seconds to resolve the subscription context and complete a RAT
-    // transition on newer devices.
-    struct timeval timeout = {.tv_sec = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 ? 3 : 30, .tv_usec = 0};
+    // The 3-second limit is for background status refresh only. An explicit
+    // RAT action performs a bounded readback before the setter and needs a
+    // longer async IPC window, without blocking SpringBoard's main thread.
+    BOOL ios18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+    BOOL backgroundStatus = [request[@"cmd"] isEqualToString:@"status"];
+    struct timeval timeout = {.tv_sec = ios18 ? (backgroundStatus ? 3 : 12) : 30, .tv_usec = 0};
     (void)setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     (void)setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 
