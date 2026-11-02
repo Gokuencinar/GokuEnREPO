@@ -37,7 +37,7 @@
     if (self) {
         // Saved preference is merely an intent from a previous session.
         // Never represent it as a freshly verified modem selection.
-        _currentModeCode = @"unknown";
+        _currentModeCode = @"automatic";
         _confirmedModeCode = nil;
         _supports5G = NO;
         _stateEpoch = 0;
@@ -65,7 +65,7 @@
     else if ([self.currentModeCode isEqualToString:@"lte"]) text = @"4G";
     else if ([self.currentModeCode isEqualToString:@"3g"]) text = @"3G";
     else if (self.supports5G && [self.currentModeCode hasPrefix:@"5g-"]) text = @"5G";
-    else if (![self.currentModeCode isEqualToString:@"automatic"]) text = @"Red";
+    // Unknown state falls back to Auto visually; never show "Red" or "?".
 
     label.font = [UIFont systemFontOfSize:[text isEqualToString:@"Auto"] ? 13.0 : 16.0
                                   weight:UIFontWeightSemibold];
@@ -341,7 +341,7 @@
 
               if (!success) {
                   BOOL uncertain = [result[@"verification_pending"] boolValue];
-                  self.currentModeCode = uncertain ? @"unknown" : (self.confirmedModeCode ?: @"unknown");
+                  self.currentModeCode = uncertain ? @"automatic" : (self.confirmedModeCode ?: @"automatic");
                   [self bl_syncVisualSelection];
                   if (uncertain) {
                       // The setter may have taken effect but the private
@@ -373,12 +373,16 @@
             if ([supports5GValue respondsToSelector:@selector(boolValue)]) {
                 self.supports5G = [supports5GValue boolValue];
               }
-              BLCCSetLastModeCode(requestedMode);
               NSString *confirmed = modeCode.length ? modeCode : @"unknown";
             if (!self.supports5G && [confirmed hasPrefix:@"5g-"]) confirmed = @"automatic";
             confirmed = [self bl_normalizedReportedMode:confirmed];
-            self.currentModeCode = confirmed;
-            self.confirmedModeCode = confirmed;
+            BOOL verified = ![result[@"verification_pending"] boolValue] &&
+                ![confirmed isEqualToString:@"unknown"];
+            self.currentModeCode = verified ? confirmed : @"automatic";
+            if (verified) {
+                self.confirmedModeCode = confirmed;
+                BLCCSetLastModeCode(requestedMode);
+            }
             self.modeIntentPinnedUntil = CFAbsoluteTimeGetCurrent() + 8.0;
             self.statusRefreshNotBefore = self.modeIntentPinnedUntil;
             [self bl_syncVisualSelection];
@@ -421,13 +425,11 @@
             if (epoch != self.stateEpoch) return;
             self.supports5G = supports5G;
             NSString *normalizedModeCode = [self bl_normalizedReportedMode:modeCode];
+            BOOL verified = ![normalizedModeCode isEqualToString:@"unknown"];
+            if (!verified) normalizedModeCode = @"automatic";
             BOOL changed = ![self.currentModeCode isEqualToString:normalizedModeCode];
-            if (![normalizedModeCode isEqualToString:@"unknown"]) {
-                self.currentModeCode = normalizedModeCode;
-                self.confirmedModeCode = normalizedModeCode;
-            } else {
-                self.currentModeCode = @"unknown";
-            }
+            self.currentModeCode = normalizedModeCode;
+            if (verified) self.confirmedModeCode = normalizedModeCode;
             if (changed) [self bl_syncVisualSelection];
         });
     });

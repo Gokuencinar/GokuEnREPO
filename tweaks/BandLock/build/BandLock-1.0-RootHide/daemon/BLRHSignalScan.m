@@ -449,7 +449,14 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     return BLRHLineDiagnostics(query);
 }
 
-- (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager {
+- (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager
+                                              target:(NSString *)targetRAT {
+    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT]) {
+        return @{@"success": @NO, @"message": @"Tecnología de red no válida"};
+    }
+    if ([targetRAT isEqualToString:@"NR"] && BLDeviceIsKnownLTEOnly()) {
+        return @{@"success": @NO, @"message": @"Este iPhone no dispone de módem 5G"};
+    }
     @synchronized(self) {
         if (self.running || self.recovering || BLScanJournalExists()) {
             return @{@"success": @NO,
@@ -460,7 +467,9 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         self.scanState = [@{@"success": @YES, @"running": @YES,
             @"read_only": @YES, @"phase": @"observing",
             @"rows": @[], @"total": @(BLPassiveMaxRows), @"completed": @0,
-            @"message": @"Observando 2G / 3G / 4G / 5G"} mutableCopy];
+            @"target_rat": targetRAT,
+            @"message": [NSString stringWithFormat:@"Observando %@",
+                [targetRAT isEqualToString:@"LTE"] ? @"4G" : ([targetRAT isEqualToString:@"NR"] ? @"5G" : targetRAT)]} mutableCopy];
     }
     dispatch_async(self.scanQueue, ^{
         NSMutableArray *rows = [NSMutableArray array];
@@ -494,9 +503,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         if (rows.count >= BLPassiveMaxRows) break;
                         NSString *rat = measurement[@"rat"];
                         if (![measurement[@"role"] isEqualToString:@"serving"] ||
-                            !([rat isEqualToString:@"2G"] || [rat isEqualToString:@"3G"] ||
-                              [rat isEqualToString:@"LTE"] ||
-                              (supportsNR && [rat isEqualToString:@"NR"])) ||
+                            ![rat isEqualToString:targetRAT] ||
+                            ([rat isEqualToString:@"NR"] && !supportsNR) ||
                             !BLScanHasPower(measurement)) continue;
                         // LTE requires a typed measurement. NR can use legacy
                         // values when CoreTelephony supplies a genuinely
@@ -515,7 +523,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                             NSMutableDictionary *record = [@{
                                 @"rat": rat,
                                 @"role": @"serving", @"source": measurement[@"source"] ?: @"legacy",
-                                @"status": @"measured", @"read_only": @YES
+                            @"status": @"measured", @"read_only": @YES
                             } mutableCopy];
                             if (band) record[@"band"] = band;
                             for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
@@ -552,9 +560,12 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     ? (cancelled ? @"observation_cancelled" : @"observation_stopped")
                     : @"observation_complete";
                 self.scanState[@"message"] = stop ? stop :
-                    (rows.count >= BLPassiveMaxRows
-                     ? @"Medición completada"
-                     : @"Observación completada");
+                    (rows.count
+                     ? @"Observación completada"
+                     : [NSString stringWithFormat:
+                         @"No se ha observado señal %@ en la conexión actual; no se ha forzado ninguna red",
+                         [targetRAT isEqualToString:@"LTE"] ? @"4G" :
+                         ([targetRAT isEqualToString:@"NR"] ? @"5G" : targetRAT)]);
                 self.scanState[@"recovery_required"] = @NO;
             }
         }

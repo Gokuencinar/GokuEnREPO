@@ -1,5 +1,6 @@
 #import "BLTelephonyManager.h"
 #import "../../BLHardwareCapabilities.h"
+#include <errno.h>
 #import "BLCommon.h"
 #import "BLGBandMetadata.h"
 #import <UIKit/UIKit.h>
@@ -418,6 +419,29 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     return [self queryCoreTelephonyWithRatSelection:NO];
 }
 
+// Changing the selected RAT does not require a band-info read or a prior RAT
+// getter. The 1.6 iOS18 preflight added these calls on top of the 1.5 path,
+// causing failures before the setter was ever reached on busy CommCenter
+// instances. Fetch only the context required by the original setter.
+- (NSDictionary *)queryContextForRatChange {
+    void *handle = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony", RTLD_NOW | RTLD_LOCAL);
+    if (!handle) return @{@"error": @"CoreTelephony no está disponible"};
+    Class clientClass = NSClassFromString(@"CoreTelephonyClient");
+    id client = clientClass ? [[clientClass alloc] init] : nil;
+    if (!client) return @{@"error": @"CoreTelephonyClient no está disponible"};
+    NSError *contextError = nil;
+    id context = nil;
+    SEL current = NSSelectorFromString(@"getCurrentDataSubscriptionContextSync:");
+    if ([client respondsToSelector:current]) context = BLMsgErr(client, current, &contextError);
+    if (!context) {
+        contextError = nil;
+        SEL preferred = NSSelectorFromString(@"getPreferredDataSubscriptionContextSync:");
+        if ([client respondsToSelector:preferred]) context = BLMsgErr(client, preferred, &contextError);
+    }
+    if (!context) return @{@"error": contextError.localizedDescription ?: @"No hay línea móvil activa"};
+    return @{@"client": client, @"context": context};
+}
+
 - (NSDictionary *)queryCoreTelephonyWithRatSelection:(BOOL)includeRatSelection {
     void *handle = dlopen("/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony", RTLD_NOW | RTLD_LOCAL);
     if (!handle) return @{@"error": BLT(@"No se pudo cargar CoreTelephony.", @"Could not load CoreTelephony.")};
@@ -444,7 +468,10 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         SEL preferredSelector = NSSelectorFromString(@"getPreferredDataSubscriptionContextSync:");
         if ([client respondsToSelector:preferredSelector]) context = BLMsgErr(client, preferredSelector, &contextError);
     }
-    if (!context) return @{@"error": contextError ? contextError.description : BLT(@"No hay contexto de datos activo.", @"No active data subscription context.")};
+    if (!context) return @{@"error":
+        ([contextError.domain isEqualToString:NSPOSIXErrorDomain] && contextError.code == EAGAIN)
+            ? @"CommCenter está ocupado temporalmente. Inténtalo de nuevo."
+            : (contextError ? contextError.description : BLT(@"No hay contexto de datos activo.", @"No active data subscription context."))};
 
     BOOL supports5G = NO;
     NSError *supports5GError = nil;
@@ -458,8 +485,21 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     SEL bandSelector = NSSelectorFromString(@"getBandInfo:error:");
     if (![client respondsToSelector:bandSelector]) return @{@"error": @"getBandInfo:error: unavailable"};
     NSError *bandError = nil;
-    id bandInfo = BLMsgObjErr(client, bandSelector, context, &bandError);
-    if (!bandInfo) return @{@"error": bandError ? bandError.description : @"getBandInfo:error: returned nil"};
+    id bandInfo = nil;
+    // Read-only retries only. EAGAIN (35) means the current modem request is
+    // temporarily unavailable, NOT a file permissions failure. Never loop a
+    // setter and never repeat a write as part of these read-only attempts.
+    for (NSUInteger attempt = 0; attempt < 3; attempt++) {
+        bandError = nil;
+        bandInfo = BLMsgObjErr(client, bandSelector, context, &bandError);
+        if (bandInfo || ![bandError.domain isEqualToString:NSPOSIXErrorDomain] ||
+            bandError.code != EAGAIN) break;
+        if (attempt < 2) [NSThread sleepForTimeInterval:0.18];
+    }
+    if (!bandInfo) return @{@"error":
+        ([bandError.domain isEqualToString:NSPOSIXErrorDomain] && bandError.code == EAGAIN)
+            ? @"El módem está ocupado temporalmente. Reintenta la consulta."
+            : (bandError ? bandError.description : @"getBandInfo:error: returned nil")};
 
     NSDictionary *ratSelection = includeRatSelection
         ? [self readRatSelectionFromClient:client context:context]
@@ -603,7 +643,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 }
 
 - (BOOL)setRatSelectionSync:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText {
-    NSDictionary *query = [self queryCoreTelephony];
+    NSDictionary *query = [self queryContextForRatChange];
     if (query[@"error"]) { if (errorText) *errorText = query[@"error"]; return NO; }
     id client = query[@"client"];
     id context = query[@"context"];
@@ -614,7 +654,13 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     BLMsgSetRatSelection(client, setter, context, selection, preferred, ^(NSError *error) { callbackError = error; dispatch_semaphore_signal(semaphore); });
     long wait = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)));
     if (wait != 0) { if (errorText) *errorText = BLT(@"Tiempo de espera agotado.", @"Operation timed out."); return NO; }
-    if (callbackError) { if (errorText) *errorText = callbackError.description; return NO; }
+    if (callbackError) {
+        if (errorText) *errorText = [callbackError.domain isEqualToString:NSPOSIXErrorDomain] &&
+            callbackError.code == EAGAIN
+            ? @"CommCenter está ocupado temporalmente (EAGAIN/35). No se repetirá la escritura."
+            : callbackError.description;
+        return NO;
+    }
     return YES;
 }
 

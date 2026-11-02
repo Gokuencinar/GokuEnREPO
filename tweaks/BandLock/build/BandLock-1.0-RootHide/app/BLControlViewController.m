@@ -7,6 +7,7 @@
 #import "BLCountryProfile.h"
 #import "BLCommon.h"
 #import "BLBreadcrumb.h"
+#import "../../BLHardwareCapabilities.h"
 #import <QuartzCore/QuartzCore.h>
 #import <math.h>
 
@@ -183,7 +184,7 @@
 @property (nonatomic, strong) UIButton *restoreLTEAllButton;
 @property (nonatomic, strong) UILabel *signalValue;
 @property (nonatomic, strong) UIButton *signalStartButton;
-@property (nonatomic, strong) UIButton *signalObserveButton;
+@property (nonatomic, copy) NSArray<UIButton *> *signalObserveButtons;
 @property (nonatomic, strong) UIButton *signalCancelButton;
 @property (nonatomic, strong) NSTimer *signalTimer;
 @property (nonatomic, assign) BOOL signalRunning;
@@ -515,8 +516,19 @@
                                      symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
     self.signalStartButton = [self buttonWithTitle:BLT(@"Medir señal de bandas (2 LTE, PRUEBA)", @"Measure band signal (2 LTE, TEST)")
                                               symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanStartTapped:) destructive:NO];
-    self.signalObserveButton = [self buttonWithTitle:BLT(@"Barrido pasivo 2G–5G", @"Passive 2G–5G scan")
-                                               symbol:@"waveform.path" selector:@selector(signalObserveTapped:) destructive:NO];
+    NSMutableArray<UIButton *> *technologyButtons = [NSMutableArray array];
+    NSArray<NSString *> *technologyLabels = @[
+        BLT(@"Barrido 2G · GSM/EDGE", @"2G scan · GSM/EDGE"),
+        BLT(@"Barrido 3G · UMTS/HSPA", @"3G scan · UMTS/HSPA"),
+        BLT(@"Barrido 4G · LTE", @"4G scan · LTE"),
+        BLT(@"Barrido 5G · NR", @"5G scan · NR")];
+    for (NSUInteger i = 0; i < technologyLabels.count; i++) {
+        UIButton *option = [self buttonWithTitle:technologyLabels[i]
+                   symbol:@"waveform.path" selector:@selector(signalObserveTapped:) destructive:NO];
+        option.tag = (NSInteger)i + 2;
+        [technologyButtons addObject:option];
+    }
+    self.signalObserveButtons = technologyButtons;
     self.signalCancelButton = [self buttonWithTitle:BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore")
                                                symbol:@"xmark.circle" selector:@selector(signalScanCancelTapped:) destructive:YES];
     UIButton *restore = [self buttonWithTitle:BLT(@"Recuperar bandas originales", @"Recover original bands")
@@ -526,9 +538,12 @@
     self.signalValue.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
     self.signalValue.text = BLT(@"Consulta la señal o inicia un barrido pasivo.",
                                 @"Read signal or start a passive scan.");
+    NSMutableArray<UIView *> *diagnostics = [NSMutableArray arrayWithObject:probe];
+    [diagnostics addObjectsFromArray:self.signalObserveButtons];
+    [diagnostics addObject:self.signalStartButton];
+    [diagnostics addObject:self.signalValue];
     self.signalSection = [self disclosure:BLT(@"Diagnóstico", @"Diagnostics")
-        subtitle:nil
-        symbol:@"waveform.path" views:@[probe, self.signalObserveButton, self.signalStartButton, self.signalValue]];
+        subtitle:nil symbol:@"waveform.path" views:diagnostics];
     [self.stackView addArrangedSubview:self.signalSection];
     self.safetySection = [self disclosure:BLT(@"Restauración y seguridad", @"Recovery and safety")
         subtitle:nil
@@ -576,7 +591,11 @@
     [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar", @"Refresh")) forState:UIControlStateNormal];
     self.signalStartButton.hidden = readOnly18;
     self.signalStartButton.enabled = !readOnly18 && !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
-    self.signalObserveButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
+    for (UIButton *button in self.signalObserveButtons) {
+        button.enabled = !self.manager.busy && !self.signalRunning &&
+                         !self.signalRecoveryRequired &&
+                         !(button.tag == 5 && BLDeviceIsKnownLTEOnly());
+    }
     self.signalCancelButton.enabled = self.signalRunning;
     if (self.signalRunning || self.signalRecoveryRequired) [self.safetySection setExpanded:YES animated:NO];
 }
@@ -833,16 +852,21 @@
 
 - (void)signalObserveTapped:(UIButton *)sender {
     if (self.signalRunning || self.signalRecoveryRequired || self.manager.busy) return;
+    NSInteger index = sender.tag - 2;
+    NSArray<NSString *> *technologyCodes = @[@"2G", @"3G", @"LTE", @"NR"];
+    if (index < 0 || index >= (NSInteger)technologyCodes.count) return;
+    NSString *rat = technologyCodes[(NSUInteger)index];
     __weak typeof(self) weakSelf = self;
-    [self.manager startPassiveSignalObservationWithCompletion:^(NSDictionary *result) {
+    [self.manager startPassiveSignalObservationForRAT:rat completion:^(NSDictionary *result) {
         if (![result[@"success"] boolValue]) {
             [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
                 ? result[@"message"] : @"Observation did not start"];
             return;
         }
         weakSelf.signalRunning = YES;
-        weakSelf.signalValue.text = BLT(@"Observando redes disponibles (2G–5G)…",
-                                        @"Observing available networks (2G–5G)…");
+        weakSelf.signalValue.text = [NSString stringWithFormat:
+            BLT(@"Observando %@ (solo lectura)…", @"Observing %@ (read-only)…"),
+            [rat isEqualToString:@"LTE"] ? @"4G" : ([rat isEqualToString:@"NR"] ? @"5G" : rat)];
         [weakSelf refreshDisplay];
         [weakSelf startSignalPolling];
     }];

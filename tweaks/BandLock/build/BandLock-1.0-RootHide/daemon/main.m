@@ -181,7 +181,10 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             return [BLRHSignalScan.sharedScan startWithManager:manager];
         }
         if ([command isEqualToString:@"scan_observe_start"]) {
-            return [BLRHSignalScan.sharedScan startPassiveObservationWithManager:manager];
+            NSString *targetRAT = [request[@"rat"] isKindOfClass:NSString.class] ? request[@"rat"] : @"";
+            if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT])
+                return @{@"success": @NO, @"message": @"Selecciona una tecnología 2G, 3G, 4G o 5G"};
+            return [BLRHSignalScan.sharedScan startPassiveObservationWithManager:manager target:targetRAT];
         }
         if (([command isEqualToString:@"rat"] ||
              [command isEqualToString:@"apply"] ||
@@ -213,22 +216,11 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
                 @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
             if (![allowed containsObject:mode])
                 return @{@"success": @NO, @"message": @"Modo de red no válido"};
-            // On iOS 18, do not try a private RAT setter unless the active
-            // modem's current selection can be read back authoritatively.
-            // This check happens only on an explicit user request, never
-            // during background status refresh from SpringBoard.
-            if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
-                if ([BLRHSignalScan.sharedScan hasPendingRecovery])
-                    return @{@"success": @NO, @"message": @"Restauración de bandas pendiente"};
-                NSDictionary *before = [manager queryCoreTelephony];
-                if (before[@"error"])
-                    return @{@"success": @NO, @"message": @"No se puede consultar el módem"};
-                NSString *previous = [manager snapshotFromQuery:before][@"mode_code"];
-                if (![allowed containsObject:previous]) {
-                    return @{@"success": @NO, @"message":
-                        @"No se puede verificar el modo actual en iOS 18; no se ha modificado la red"};
-                }
-            }
+            // 1.5 did not require an authoritative RAT readback before the
+            // setter. The private getter is unreliable on iOS 18 and caused
+            // the 1.6 path to fail before attempting a user-requested mode.
+            // Keep the scan/recovery exclusion above; never apply band writes
+            // here. This command is only reached after explicit user action.
             BOOL requests5G = [mode hasPrefix:@"5g-"];
             if (requests5G) {
                 NSDictionary *capabilityQuery = [manager queryCoreTelephony];
@@ -248,23 +240,22 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             else if ([mode isEqualToString:@"5g-only"]) { selection = BLRATNRSA; preferred = BLNRRAT; }
             NSString *errorText = nil;
             if (![manager setRatSelectionSync:selection preferred:preferred errorText:&errorText]) {
+                BLDaemonLog("RAT setter failed; no automatic retry");
                 return @{@"success": @NO, @"message": errorText ?: @"RAT write failed"};
             }
-            // CoreTelephony updates asynchronously. A single read after 350ms
-            // cannot prove failure; a getter can also return "unknown".
-            // Retry a bounded number of reads without writing again.
             BOOL isIOS18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
-            NSMutableDictionary *payload = nil;
-            for (NSUInteger attempt = 0; attempt < (isIOS18 ? 3 : 1); attempt++) {
-                [NSThread sleepForTimeInterval:0.6];
-                payload = [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
-                if (!isIOS18 || [payload[@"mode_code"] isEqualToString:mode]) break;
-            }
-            if (isIOS18 && ![payload[@"mode_code"] isEqualToString:mode]) {
-                return @{@"success": @NO, @"verification_pending": @YES,
+            // iOS18 RAT getters may produce EAGAIN even after a successful
+            // setter callback. Do not mistake this for a failed write and do
+            // not issue additional private getters/repeated writes.
+            if (isIOS18) {
+                BLDaemonLog("RAT callback accepted; modem selection remains unverified");
+                return @{@"success": @YES, @"verification_pending": @YES,
                          @"mode_code": @"unknown",
-                         @"message": @"Cambio solicitado; el módem aún no confirma el modo"};
+                         @"message": @"Solicitud aceptada; modo aún sin confirmar"};
             }
+            [NSThread sleepForTimeInterval:0.35];
+            NSMutableDictionary *payload =
+                [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
             if ([payload[@"success"] boolValue]) {
                 payload[@"message"] = payload[@"mode"] ?: @"Modo actualizado";
             }

@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui9$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui10$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -25,9 +25,9 @@ assert.doesNotMatch(app, /Consultar intensidad \(RootHide\)/);
 assert.match(app, /signalProbeTapped:/);
 assert.match(app, /signalScanStartTapped:/);
 assert.match(app, /signalScanCancelTapped:/);
-assert.match(app, /Barrido pasivo 2G–5G/);
+assert.match(app, /Barrido 2G/);
 assert.match(app, /signalObserveTapped:/);
-assert.match(manager, /startPassiveSignalObservationWithCompletion:/);
+assert.match(manager, /startPassiveSignalObservationForRAT:/);
 assert.match(main, /scan_observe_start/);
 assert.match(scanHeader, /startPassiveObservationWithManager:/);
 const passiveStart = scan.indexOf('- (NSDictionary *)startPassiveObservationWithManager:');
@@ -183,8 +183,8 @@ assert.match(control, /firmware \(<= 18\.99\)/,
 assert.match(main, /operatingSystemVersion\.majorVersion >= 18/);
 assert.match(main, /@\[@"apply", @"apply_nr", @"scan_start"\] containsObject:command/,
   'iOS18 must block unverified band writes and active scans');
-assert.match(main, /No se puede verificar el modo actual en iOS 18/,
-  'A RAT change requires an authoritative readback before any write');
+assert.doesNotMatch(main, /No se puede verificar el modo actual en iOS 18/,
+  'The old iOS18 RAT preflight must not reject changes before calling the 1.5 setter');
 console.log('RootHide LTE 1.6 analyzer UI and read-only data gates: PASS');
 
 // Prevent regression to the crash-prone switch UI removed in c2efb10 (2026-09-28).
@@ -278,8 +278,8 @@ assert.match(cc, /BLDeviceIsKnownLTEOnly\(\)/);
 assert.match(cc, /A saved preference is not a modem readback/);
 assert.doesNotMatch(cc, /_CTServerConnectionSetRATSelection|bl_setRATDirect|BLCTServerConnectionCreateFn/,
   'CC must never have a direct CoreTelephony RAT setter');
-assert.match(main, /No se puede verificar el modo actual en iOS 18/);
-assert.match(main, /if \(!\[allowed containsObject:previous\]\)/);
+assert.doesNotMatch(main, /No se puede verificar el modo actual en iOS 18/);
+assert.doesNotMatch(main, /if \(!\[allowed containsObject:previous\]\)/);
 assert.match(cc, /BOOL readOnly18 = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18/);
 assert.match(cc, /Se comprobará la compatibilidad/);
 assert.match(cc, /\[self bl_applyMode:mode\]/);
@@ -303,29 +303,29 @@ assert.match(core, /if \(\[legacy\[@"rat"\] isEqualToString:@"NR"\] && !supports
 assert.match(core, /@"supports_nr": @\(supportsNR\)/);
 assert.match(core, /Only label typed metrics as NR when an actual serving NR row/);
 assert.match(scan, /#import "\.\.\/\.\.\/BLHardwareCapabilities\.h"/);
-assert.match(passive, /\(supportsNR && \[rat isEqualToString:@"NR"\]\)/);
+assert.match(passive, /\(\[rat isEqualToString:@"NR"\] && !supportsNR\)/);
 assert.match(passive, /band\.integerValue > \(\[rat isEqual:@"NR"\] \? 1024 : 255\)/);
 assert.match(passive, /\[previous\[@"rat"\] isEqualToString:rat\]/);
-assert.match(app, /Barrido pasivo 2G–5G/);
+assert.match(app, /Barrido 5G/);
 assert.doesNotMatch(app, /@"API: "|@"legacy %@/);
 assert.match(analyzer, /@"rat": typed\[@"rat"\]/);
 assert.match(analyzer, /bandlock\.cell-signal-history\.v2/);
 assert.match(main, /@"unsupported_modem_write": @YES/);
-assert.match(main, /if \(!\[allowed containsObject:previous\]\)/);
+assert.doesNotMatch(main, /if \(!\[allowed containsObject:previous\]\)/);
 assert.doesNotMatch(passive, /setActiveBandInfo|setRatSelection:|BLScanWriteJournal/);
 assert.match(scan, /!\[journalPath hasPrefix:\[directoryPath stringByAppendingString:@"\/"\]\]/);
 console.log('BandLock rhui8 NR diagnostics, concise UI, dynamic paths, guarded mode writes: PASS');
 
 // rhui9: unknown RAT selections are not user-visible "?" or verified mode.
 assert.doesNotMatch(cc, /text = @"\?"/);
-assert.match(cc, /text = @"Red"/);
-assert.match(cc, /_currentModeCode = @"unknown"/);
+assert.doesNotMatch(cc, /text = @"Red"/);
+assert.match(cc, /_currentModeCode = @"automatic"/);
 assert.match(cc, /_confirmedModeCode = nil/);
 assert.match(cc, /if \(uncertain\) \{/);
 assert.match(cc, /\[result\[@"verification_pending"\] boolValue\]/);
 assert.match(main, /@"verification_pending": @YES/);
 assert.doesNotMatch(main, /@"No se pudo verificar el cambio de modo"/);
-assert.match(main, /for \(NSUInteger attempt = 0; attempt < \(isIOS18 \? 3 : 1\); attempt\+\+\)/);
+assert.doesNotMatch(main, /for \(NSUInteger attempt = 0; attempt < \(isIOS18 \? 3 : 1\); attempt\+\+\)/);
 assert.match(core, /static NSString \*BLRHSignalRAT\(NSString \*raw\)/);
 for (const technology of ['GSM','GPRS','EDGE','WCDMA','UMTS','HSPA']) {
   assert.match(core, new RegExp('"'+technology+'"'));
@@ -335,11 +335,38 @@ for (const metric of ['rscp','ecno']) {
   assert.match(app, new RegExp('@"'+metric+'"'));
   assert.match(analyzer, new RegExp('@"'+metric+'"'));
 }
-assert.match(passive, /\[rat isEqualToString:@"2G"\]/);
-assert.match(passive, /\[rat isEqualToString:@"3G"\]/);
+assert.match(passive, /\[rat isEqualToString:targetRAT\]/);
+assert.match(passive, /@"target_rat": targetRAT/);
 assert.match(passive, /BLPassiveMaxRows/);
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|BLScanWriteJournal|setRatSelection|setActiveBandInfo/);
 assert.match(analyzer, /@"3G"/);
 assert.match(analyzer, /@"2G"/);
 assert.match(analyzer, /latestBand &&/);
 console.log('BandLock rhui9 nonmisleading mode state, 2G–5G passive diagnostics: PASS');
+
+// rhui10 fixes the non-UI regression without running an active modem test.
+const ratContextStart = core.indexOf('- (NSDictionary *)queryContextForRatChange');
+const ratContextEnd = core.indexOf('- (NSDictionary *)queryCoreTelephonyWithRatSelection:', ratContextStart);
+assert.ok(ratContextStart >= 0 && ratContextEnd > ratContextStart);
+const ratContext = core.slice(ratContextStart, ratContextEnd);
+assert.doesNotMatch(ratContext, /getBandInfo|readRatSelectionFromClient|getRatSelectionMask/);
+const setterStart = core.indexOf('- (BOOL)setRatSelectionSync:');
+const setterEnd = core.indexOf('- (void)setNetworkModeSelection:', setterStart);
+assert.match(core.slice(setterStart, setterEnd), /\[self queryContextForRatChange\]/);
+assert.doesNotMatch(core.slice(setterStart, setterEnd), /\[self queryCoreTelephony\]/);
+assert.match(main, /RAT callback accepted; modem selection remains unverified/);
+assert.doesNotMatch(main, /for \(NSUInteger attempt = 0; attempt < \(isIOS18/);
+assert.match(core, /callbackError.code == EAGAIN/);
+assert.match(cc, /_currentModeCode = @"automatic"/);
+assert.doesNotMatch(cc, /text = @"(?:Red|\?)"/);
+assert.match(main, /\[command isEqualToString:@"scan_observe_start"\]/);
+assert.match(main, /@"rat"\]/);
+for (const [rat, display] of [['2G','2G'], ['3G','3G'], ['LTE','4G'], ['NR','5G']]) {
+  assert.match(manager, new RegExp('@"' + rat + '"'));
+  assert.match(app, new RegExp('Barrido ' + display));
+}
+assert.match(app, /technologyCodes = @\[@"2G", @"3G", @"LTE", @"NR"\]/);
+assert.match(passive, /\[rat isEqualToString:targetRAT\]/);
+assert.match(passive, /No se ha observado señal/);
+assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|setRatSelection|BLScanWriteJournal/);
+console.log('BandLock rhui10 RAT regression isolation and independent 2G–5G read-only scans: PASS');
