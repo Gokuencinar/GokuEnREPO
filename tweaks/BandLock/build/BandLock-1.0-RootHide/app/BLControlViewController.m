@@ -905,6 +905,13 @@
         if (![status[@"phase"] isKindOfClass:NSString.class]) return;
         weakSelf.signalRunning = [status[@"running"] boolValue];
         weakSelf.signalRecoveryRequired = [status[@"recovery_required"] boolValue];
+        // rhui9 left the three-second polling timer alive indefinitely after
+        // a scan finished. Repeated scan_status IPC is unnecessary while idle
+        // and can keep waking the daemon (confirmed in device logs).
+        if (!weakSelf.signalRunning && !weakSelf.signalRecoveryRequired) {
+            [weakSelf.signalTimer invalidate];
+            weakSelf.signalTimer = nil;
+        }
         [weakSelf refreshDisplay];
         BOOL passive = [status[@"read_only"] boolValue];
         [weakSelf.signalCancelButton setTitle:(passive

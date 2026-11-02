@@ -370,5 +370,7 @@ for (const [rat, display] of [['2G','2G'], ['3G','3G'], ['LTE','4G'], ['NR','5G'
 assert.match(app, /technologyCodes = @\[@"2G", @"3G", @"LTE", @"NR"\]/);
 assert.match(passive, /\[rat isEqualToString:targetRAT\]/);
 assert.match(passive, /No se ha observado señal/);
+assert.match(app, /\[weakSelf\.signalTimer invalidate\]/);
+assert.match(app, /if \(!weakSelf\.signalRunning && !weakSelf\.signalRecoveryRequired\)/);
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|setRatSelection|BLScanWriteJournal/);
 console.log('BandLock rhui10 RAT regression isolation and independent 2G–5G read-only scans: PASS');

@@ -19,6 +19,7 @@ Baseline: commit c520ff7 (BandLock 1.5). Installed candidate before investigatio
    Passive signal observation may continue without band-info metadata when legacy/typed cell measurements exist. Actual LTE/NR band-write preparation continues to require band metadata.
 5. Rhui9 showed Red when the mode was unknown. Rhui10 shows Auto as the initial/fallback glyph, without claiming this represents a confirmed modem state.
 6. Rhui9 used one combined passive 2G-5G observation. Rhui10 offers four independently selected observations: 2G GSM/EDGE, 3G UMTS/HSPA, 4G LTE, and 5G NR. Each response is filtered to the requested, genuinely observed serving RAT.
+7. Device logs showed recurring scan_status IPC approximately every three seconds, even after observation ended. The app had not invalidated its polling timer when scan state became idle. Rhui10 stops the timer when neither scanning nor recovering.
 
 ## Limitations
 
