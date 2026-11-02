@@ -136,8 +136,10 @@ static NSString *BLScanSubscriptionUUID(NSDictionary *query) {
 
 static BOOL BLScanHasPower(NSDictionary *row) {
     return [row[@"rsrp"] isKindOfClass:NSNumber.class] ||
-           [row[@"rssi"] isKindOfClass:NSNumber.class];
+           [row[@"rssi"] isKindOfClass:NSNumber.class] ||
+           [row[@"rscp"] isKindOfClass:NSNumber.class];
 }
+static const NSUInteger BLPassiveMaxRows = 8;
 
 static NSNumber *BLRHSlotNumber(id context) {
     if (!context || context == NSNull.null) return nil;
@@ -457,8 +459,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         self.cancelRequested = NO;
         self.scanState = [@{@"success": @YES, @"running": @YES,
             @"read_only": @YES, @"phase": @"observing",
-            @"rows": @[], @"total": @2, @"completed": @0,
-            @"message": @"Observando señal LTE/NR"} mutableCopy];
+            @"rows": @[], @"total": @(BLPassiveMaxRows), @"completed": @0,
+            @"message": @"Observando 2G / 3G / 4G / 5G"} mutableCopy];
     }
     dispatch_async(self.scanQueue, ^{
         NSMutableArray *rows = [NSMutableArray array];
@@ -476,46 +478,47 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         stop = @"CoreTelephony temporarily unavailable; observation stopped";
                         break;
                     }
+                    // Read-only observation does not require a writable band
+                    // context. Keep the identity invariant when available,
+                    // but do not reject older 2G/3G observations simply
+                    // because a private LTE subscription getter is missing.
                     NSString *fingerprint = BLScanSubscriptionUUID(query);
-                    if (!fingerprint || !BLScanSingleActiveLine(query)) {
-                        stop = @"Unable to verify a single active data line; observation stopped";
-                        break;
-                    }
                     if (!subscription) subscription = fingerprint;
-                    if (![subscription isEqualToString:fingerprint]) {
+                    if (subscription && fingerprint && ![subscription isEqualToString:fingerprint]) {
                         stop = @"The data subscription changed; observation stopped";
                         break;
                     }
                     BOOL supportsNR = !BLDeviceIsKnownLTEOnly() &&
                         [[manager snapshotFromQuery:query][@"supports_5g"] boolValue];
                     for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
-                        if (rows.count >= 2) break;
+                        if (rows.count >= BLPassiveMaxRows) break;
                         NSString *rat = measurement[@"rat"];
                         if (![measurement[@"role"] isEqualToString:@"serving"] ||
-                            !([rat isEqualToString:@"LTE"] ||
+                            !([rat isEqualToString:@"2G"] || [rat isEqualToString:@"3G"] ||
+                              [rat isEqualToString:@"LTE"] ||
                               (supportsNR && [rat isEqualToString:@"NR"])) ||
-                            !BLScanHasPower(measurement) ||
-                            ![measurement[@"band"] isKindOfClass:NSNumber.class]) continue;
+                            !BLScanHasPower(measurement)) continue;
                         // LTE requires a typed measurement. NR can use legacy
                         // values when CoreTelephony supplies a genuinely
                         // identified serving NR cell, never a guessed band.
                         if ([rat isEqualToString:@"LTE"] &&
                             ![measurement[@"source"] isEqualToString:@"typed"]) continue;
                         NSNumber *band = measurement[@"band"];
-                        if (band.integerValue < 1 ||
-                            band.integerValue > ([rat isEqual:@"NR"] ? 1024 : 255)) continue;
+                        if (band && (band.integerValue < 1 ||
+                            band.integerValue > ([rat isEqual:@"NR"] ? 1024 : 255))) continue;
                         BOOL seen = NO;
                         for (NSDictionary *previous in rows) {
-                            if ([previous[@"band"] isEqual:band] &&
+                            if (((!band && !previous[@"band"]) || [previous[@"band"] isEqual:band]) &&
                                 [previous[@"rat"] isEqualToString:rat]) { seen = YES; break; }
                         }
                         if (!seen) {
                             NSMutableDictionary *record = [@{
-                                @"band": band, @"rat": rat,
+                                @"rat": rat,
                                 @"role": @"serving", @"source": measurement[@"source"] ?: @"legacy",
                                 @"status": @"measured", @"read_only": @YES
                             } mutableCopy];
-                            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+                            if (band) record[@"band"] = band;
+                            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
                                 id value = measurement[metric];
                                 if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
                             }
@@ -530,7 +533,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                             @"Muestra %lu/12 · %lu bandas",
                             (unsigned long)(sample + 1), (unsigned long)rows.count];
                     }
-                    if (rows.count >= 2) break;
+                    if (rows.count >= BLPassiveMaxRows) break;
                     if (sample < 11) [NSThread sleepForTimeInterval:2.0];
                 } // Release CoreTelephony objects from this sample promptly.
             }
@@ -549,7 +552,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     ? (cancelled ? @"observation_cancelled" : @"observation_stopped")
                     : @"observation_complete";
                 self.scanState[@"message"] = stop ? stop :
-                    (rows.count >= 2
+                    (rows.count >= BLPassiveMaxRows
                      ? @"Medición completada"
                      : @"Observación completada");
                 self.scanState[@"recovery_required"] = @NO;

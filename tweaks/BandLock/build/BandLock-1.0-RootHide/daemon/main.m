@@ -250,13 +250,22 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             if (![manager setRatSelectionSync:selection preferred:preferred errorText:&errorText]) {
                 return @{@"success": @NO, @"message": errorText ?: @"RAT write failed"};
             }
-            [NSThread sleepForTimeInterval:0.35];
-            NSMutableDictionary *payload = [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
-            if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 &&
-                ![payload[@"mode_code"] isEqualToString:mode]) {
-                payload[@"success"] = @NO;
-                payload[@"message"] = @"No se pudo verificar el cambio de modo";
-            } else if ([payload[@"success"] boolValue]) {
+            // CoreTelephony updates asynchronously. A single read after 350ms
+            // cannot prove failure; a getter can also return "unknown".
+            // Retry a bounded number of reads without writing again.
+            BOOL isIOS18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+            NSMutableDictionary *payload = nil;
+            for (NSUInteger attempt = 0; attempt < (isIOS18 ? 3 : 1); attempt++) {
+                [NSThread sleepForTimeInterval:0.6];
+                payload = [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
+                if (!isIOS18 || [payload[@"mode_code"] isEqualToString:mode]) break;
+            }
+            if (isIOS18 && ![payload[@"mode_code"] isEqualToString:mode]) {
+                return @{@"success": @NO, @"verification_pending": @YES,
+                         @"mode_code": @"unknown",
+                         @"message": @"Cambio solicitado; el módem aún no confirma el modo"};
+            }
+            if ([payload[@"success"] boolValue]) {
                 payload[@"message"] = payload[@"mode"] ?: @"Modo actualizado";
             }
             return payload;

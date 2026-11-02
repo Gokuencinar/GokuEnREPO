@@ -5,7 +5,7 @@
 #import <math.h>
 
 // This page intentionally does not expose any band/mode changing command.
-// The persisted schema allows only timestamp, band and physical signal metrics.
+// The persisted schema allows only RAT, optional band and physical metrics.
 static NSString *const BLAnalyzerHistoryKey = @"BLAnalyzerTypedLTEHistory.v1";
 static NSUInteger const BLAnalyzerMaxSamples = 300;
 
@@ -21,6 +21,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     if ([name isEqualToString:@"rssi"] && (value < -160 || value > -20)) return nil;
     if ([name isEqualToString:@"rsrq"] && (value < -40 || value > 10)) return nil;
     if ([name isEqualToString:@"snr"] && (value < -50 || value > 50)) return nil;
+    if ([name isEqualToString:@"rscp"] && (value < -130 || value > -20)) return nil;
+    if ([name isEqualToString:@"ecno"] && (value < -40 || value >= 0)) return nil;
     return @(value);
 }
 
@@ -46,7 +48,10 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     CGContextStrokePath(context);
     NSMutableArray<NSNumber *> *values = [NSMutableArray array];
     for (NSDictionary *sample in self.samples) {
-        NSNumber *v = BLAnalyzerMetric(sample[@"rsrp"], @"rsrp");
+        NSString *rat = sample[@"rat"] ?: @"LTE";
+        NSString *metric = [rat isEqual:@"3G"] ? @"rscp" :
+            ([rat isEqual:@"2G"] ? @"rssi" : @"rsrp");
+        NSNumber *v = BLAnalyzerMetric(sample[metric], metric);
         if (v) [values addObject:v];
     }
     if (!values.count) return;
@@ -79,8 +84,10 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) UILabel *bandLabel;
 @property (nonatomic, strong) UILabel *rsrpLabel;
+@property (nonatomic, strong) UILabel *rsrpTitleLabel;
 @property (nonatomic, strong) UILabel *snrLabel;
 @property (nonatomic, strong) UILabel *rsrqLabel;
+@property (nonatomic, strong) UILabel *rsrqTitleLabel;
 @property (nonatomic, strong) UILabel *rssiLabel;
 @property (nonatomic, strong) UILabel *historyLabel;
 @property (nonatomic, strong) UILabel *comparisonLabel;
@@ -111,12 +118,15 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     return stack;
 }
 
-- (UIStackView *)metricWithTitle:(NSString *)title valueLabel:(UILabel * __strong *)outLabel {
+- (UIStackView *)metricWithTitle:(NSString *)title valueLabel:(UILabel * __strong *)outLabel
+                     titleLabel:(UILabel * __strong *)outTitle {
     UIStackView *item = [self columnWithSpace:5];
-    [item addArrangedSubview:[self text:title size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium]];
+    UILabel *heading = [self text:title size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
+    [item addArrangedSubview:heading];
     UILabel *value = [self text:@"—" size:22 color:UIColor.whiteColor weight:UIFontWeightBold];
     [item addArrangedSubview:value];
     if (outLabel) *outLabel = value;
+    if (outTitle) *outTitle = heading;
     return item;
 }
 
@@ -190,8 +200,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     metricRow.axis = UILayoutConstraintAxisHorizontal;
     metricRow.distribution = UIStackViewDistributionFillEqually;
     metricRow.spacing = 12;
-    [metricRow addArrangedSubview:[self metricWithTitle:@"RSRP · dBm" valueLabel:&_rsrpLabel]];
-    [metricRow addArrangedSubview:[self metricWithTitle:@"SNR · dB" valueLabel:&_snrLabel]];
+    [metricRow addArrangedSubview:[self metricWithTitle:@"RSRP · dBm" valueLabel:&_rsrpLabel titleLabel:&_rsrpTitleLabel]];
+    [metricRow addArrangedSubview:[self metricWithTitle:@"SNR · dB" valueLabel:&_snrLabel titleLabel:NULL]];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"SEÑAL ACTUAL", @"CURRENT SIGNAL")
                                           children:@[self.bandLabel, self.statusLabel, metricRow]]];
 
@@ -199,8 +209,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     minorRow.axis = UILayoutConstraintAxisHorizontal;
     minorRow.spacing = 12;
     minorRow.distribution = UIStackViewDistributionFillEqually;
-    [minorRow addArrangedSubview:[self metricWithTitle:@"RSRQ · dB" valueLabel:&_rsrqLabel]];
-    [minorRow addArrangedSubview:[self metricWithTitle:@"RSSI · dBm" valueLabel:&_rssiLabel]];
+    [minorRow addArrangedSubview:[self metricWithTitle:@"RSRQ · dB" valueLabel:&_rsrqLabel titleLabel:&_rsrqTitleLabel]];
+    [minorRow addArrangedSubview:[self metricWithTitle:@"RSSI · dBm" valueLabel:&_rssiLabel titleLabel:NULL]];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"MÉTRICAS ADICIONALES", @"ADDITIONAL METRICS") children:@[minorRow]]];
 
     self.readButton = [self action:BLT(@"Tomar lectura", @"Take reading") icon:@"waveform.path.ecg"
@@ -216,7 +226,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     self.graph.backgroundColor = UIColor.clearColor;
     self.graph.translatesAutoresizingMaskIntoConstraints = NO;
     [self.graph.heightAnchor constraintEqualToConstant:148].active = YES;
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"EVOLUCIÓN RSRP", @"RSRP TREND")
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"EVOLUCIÓN DE SEÑAL", @"SIGNAL TREND")
         children:@[self.graph]]];
 
     self.comparisonLabel = [self text:@"—" size:14 color:UIColor.whiteColor weight:UIFontWeightMedium];
@@ -250,14 +260,18 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         NSDictionary *row = input[i];
         if (![row isKindOfClass:NSDictionary.class]) continue;
         NSNumber *band = row[@"band"], *timestamp = row[@"timestamp"];
-        if (![band isKindOfClass:NSNumber.class] || band.integerValue < 1 || band.integerValue > 256 ||
+        NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"LTE";
+        if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat] ||
             ![timestamp isKindOfClass:NSNumber.class]) continue;
-        NSMutableDictionary *clean = [@{@"timestamp": timestamp, @"band": band} mutableCopy];
-        for (NSString *name in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+        if (band && (![band isKindOfClass:NSNumber.class] ||
+            band.integerValue < 1 || band.integerValue > ([rat isEqual:@"NR"] ? 1024 : 256))) continue;
+        NSMutableDictionary *clean = [@{@"timestamp": timestamp, @"rat": rat} mutableCopy];
+        if (band) clean[@"band"] = band;
+        for (NSString *name in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
             NSNumber *value = BLAnalyzerMetric(row[name], name);
             if (value) clean[name] = value;
         }
-        if (clean[@"rsrp"] || clean[@"rssi"]) [safe addObject:clean];
+        if (clean[@"rsrp"] || clean[@"rssi"] || clean[@"rscp"]) [safe addObject:clean];
     }
     return safe;
 }
@@ -289,13 +303,16 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
             NSNumber *band = row[@"band"];
             BOOL lte = [row[@"rat"] isEqual:@"LTE"];
             BOOL nr = supportsNR && [row[@"rat"] isEqual:@"NR"];
-            if (![row[@"role"] isEqual:@"serving"] || !(lte || nr) ||
-                ![band isKindOfClass:NSNumber.class] ||
-                band.integerValue < 1 || band.integerValue > (nr ? 1024 : 256)) continue;
+            BOOL legacy = [row[@"rat"] isEqual:@"2G"] || [row[@"rat"] isEqual:@"3G"];
+            if (![row[@"role"] isEqual:@"serving"] || !(lte || nr || legacy) ||
+                (band && (![band isKindOfClass:NSNumber.class] ||
+                    band.integerValue < 1 || band.integerValue > (nr ? 1024 : 256)))) continue;
             // LTE needs a typed sample. 5G may be an explicitly identified
             // serving NR row with validated (non-placeholder) legacy metrics.
             if (lte && ![row[@"source"] isEqual:@"typed"]) continue;
-            if (BLAnalyzerMetric(row[@"rsrp"], @"rsrp") || BLAnalyzerMetric(row[@"rssi"], @"rssi")) {
+            if (BLAnalyzerMetric(row[@"rsrp"], @"rsrp") ||
+                BLAnalyzerMetric(row[@"rssi"], @"rssi") ||
+                BLAnalyzerMetric(row[@"rscp"], @"rscp")) {
                 if (!typed || nr) typed = row;
                 if (nr) break; // Prefer an actual NR serving cell when available.
             }
@@ -305,9 +322,9 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
             return;
         }
         NSMutableDictionary *saved = [@{@"timestamp": @([NSDate date].timeIntervalSince1970),
-                                          @"band": typed[@"band"],
                                           @"rat": typed[@"rat"]} mutableCopy];
-        for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+        if (typed[@"band"]) saved[@"band"] = typed[@"band"];
+        for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
             NSNumber *value = BLAnalyzerMetric(typed[metric], metric);
             if (value) saved[metric] = value;
         }
@@ -317,12 +334,18 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
             [history removeObjectsInRange:NSMakeRange(0, history.count-BLAnalyzerMaxSamples)];
         strongSelf.history = history;
         [NSUserDefaults.standardUserDefaults setObject:history forKey:BLAnalyzerHistoryKey];
-        strongSelf.bandLabel.text = [saved[@"rat"] isEqual:@"NR"]
-            ? [NSString stringWithFormat:@"5G · n%@", saved[@"band"]]
-            : [NSString stringWithFormat:@"LTE · B%@", saved[@"band"]];
-        strongSelf.rsrpLabel.text = [strongSelf displayMetric:saved[@"rsrp"]];
+        NSString *rat = saved[@"rat"];
+        NSString *prefix = [rat isEqual:@"NR"] ? @"5G" : ([rat isEqual:@"LTE"] ? @"4G" : rat);
+        strongSelf.bandLabel.text = saved[@"band"]
+            ? [NSString stringWithFormat:@"%@ · %@%@", prefix,
+                [rat isEqual:@"NR"] ? @"n" : @"B", saved[@"band"]]
+            : prefix;
+        BOOL g3 = [rat isEqual:@"3G"], g2 = [rat isEqual:@"2G"];
+        strongSelf.rsrpTitleLabel.text = g3 ? @"RSCP · dBm" : (g2 ? @"RSSI · dBm" : @"RSRP · dBm");
+        strongSelf.rsrqTitleLabel.text = g3 ? @"Ec/No · dB" : @"RSRQ · dB";
+        strongSelf.rsrpLabel.text = [strongSelf displayMetric:saved[g3 ? @"rscp" : (g2 ? @"rssi" : @"rsrp")]];
         strongSelf.snrLabel.text = [strongSelf displayMetric:saved[@"snr"]];
-        strongSelf.rsrqLabel.text = [strongSelf displayMetric:saved[@"rsrq"]];
+        strongSelf.rsrqLabel.text = [strongSelf displayMetric:saved[g3 ? @"ecno" : @"rsrq"]];
         strongSelf.rssiLabel.text = [strongSelf displayMetric:saved[@"rssi"]];
         strongSelf.statusLabel.text = @"";
         strongSelf.statusLabel.hidden = YES;
@@ -370,10 +393,12 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     for (NSInteger index = (NSInteger)count-1; index >= start; index--) {
         NSDictionary *item = self.history[(NSUInteger)index];
         NSDate *date = [NSDate dateWithTimeIntervalSince1970:[item[@"timestamp"] doubleValue]];
-        NSString *power = item[@"rsrp"] ? [NSString stringWithFormat:@"%@ dBm", [self displayMetric:item[@"rsrp"]]] : @"—";
-        NSString *bandName = [item[@"rat"] isEqual:@"NR"]
-            ? [NSString stringWithFormat:@"n%@", item[@"band"]]
-            : [NSString stringWithFormat:@"B%@", item[@"band"]];
+        NSString *metric = [item[@"rat"] isEqual:@"3G"] ? @"rscp" :
+            ([item[@"rat"] isEqual:@"2G"] ? @"rssi" : @"rsrp");
+        NSString *power = item[metric] ? [NSString stringWithFormat:@"%@ dBm", [self displayMetric:item[metric]]] : @"—";
+        NSString *bandName = item[@"band"] ?
+            [NSString stringWithFormat:@"%@%@", [item[@"rat"] isEqual:@"NR"] ? @"n" : @"B", item[@"band"]] :
+            (item[@"rat"] ?: @"—");
         [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %@",
             [formatter stringFromDate:date], bandName, power]];
     }
@@ -386,17 +411,20 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     NSMutableArray *sameBand = [NSMutableArray array];
     for (NSUInteger i = chartStart; i < count; i++) {
         NSDictionary *sample = self.history[i];
-        if ([sample[@"band"] isEqual:latestBand] &&
+        if (latestBand && [sample[@"band"] isEqual:latestBand] &&
             [(sample[@"rat"] ?: @"LTE") isEqual:latestRAT]) [sameBand addObject:sample];
     }
     self.graph.samples = sameBand;
 
     NSMutableDictionary<NSString *, NSMutableDictionary *> *groups = [NSMutableDictionary dictionary];
     for (NSDictionary *sample in self.history) {
-        NSNumber *value = BLAnalyzerMetric(sample[@"rsrp"], @"rsrp");
+        NSString *rat = sample[@"rat"] ?: @"LTE";
+        NSString *metric = [rat isEqual:@"3G"] ? @"rscp" : ([rat isEqual:@"2G"] ? @"rssi" : @"rsrp");
+        NSNumber *value = BLAnalyzerMetric(sample[metric], metric);
         if (!value) continue;
         NSNumber *band = sample[@"band"];
-        NSString *key = [NSString stringWithFormat:@"%@:%@", sample[@"rat"] ?: @"LTE", band];
+        if (!band) continue; // Different cells cannot be compared by a fake band.
+        NSString *key = [NSString stringWithFormat:@"%@:%@", rat, band];
         NSMutableDictionary *group = groups[key];
         if (!group) { group = [@{@"sum": @0.0, @"count": @0} mutableCopy]; groups[key] = group; }
         group[@"sum"] = @([group[@"sum"] doubleValue]+value.doubleValue);
@@ -409,9 +437,9 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         NSInteger n = [group[@"count"] integerValue];
         if (!n) continue;
         NSArray *parts = [key componentsSeparatedByString:@":"];
-        NSString *display = [parts.firstObject isEqual:@"NR"]
-            ? [@"n" stringByAppendingString:parts.lastObject]
-            : [@"B" stringByAppendingString:parts.lastObject];
+        NSString *display = [NSString stringWithFormat:@"%@ %@%@",
+            [parts.firstObject isEqual:@"NR"] ? @"5G" : ([parts.firstObject isEqual:@"LTE"] ? @"4G" : parts.firstObject),
+            [parts.firstObject isEqual:@"NR"] ? @"n" : @"B", parts.lastObject];
         [comparison addObject:[NSString stringWithFormat:@"%@   %.1f dBm · %ld %@",
             display, [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
     }

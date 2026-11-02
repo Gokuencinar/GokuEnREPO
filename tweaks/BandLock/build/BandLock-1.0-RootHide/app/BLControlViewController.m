@@ -515,7 +515,7 @@
                                      symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
     self.signalStartButton = [self buttonWithTitle:BLT(@"Medir señal de bandas (2 LTE, PRUEBA)", @"Measure band signal (2 LTE, TEST)")
                                               symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanStartTapped:) destructive:NO];
-    self.signalObserveButton = [self buttonWithTitle:BLT(@"Barrido pasivo LTE / 5G", @"Passive LTE / 5G scan")
+    self.signalObserveButton = [self buttonWithTitle:BLT(@"Barrido pasivo 2G–5G", @"Passive 2G–5G scan")
                                                symbol:@"waveform.path" selector:@selector(signalObserveTapped:) destructive:NO];
     self.signalCancelButton = [self buttonWithTitle:BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore")
                                                symbol:@"xmark.circle" selector:@selector(signalScanCancelTapped:) destructive:YES];
@@ -786,10 +786,12 @@
             NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"—";
             NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
             NSString *role = [row[@"role"] isKindOfClass:NSString.class] ? row[@"role"] : @"";
-            NSString *label = band ? [NSString stringWithFormat:@"%@ %@%@", rat, [rat isEqual:@"NR"] ? @"n" : @"B", band] : rat;
+            NSString *displayRAT = [rat isEqualToString:@"NR"] ? @"5G" : ([rat isEqualToString:@"LTE"] ? @"4G" : rat);
+            NSString *label = band ? [NSString stringWithFormat:@"%@ %@%@", displayRAT,
+                [rat isEqualToString:@"NR"] ? @"n" : @"B", band] : displayRAT;
             [lines addObject:[NSString stringWithFormat:@"%@%@", label,
                 [role isEqualToString:@"neighbor"] ? BLT(@" · Vecina", @" · Neighbor") : @""]];
-            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
                 id v = row[metric];
                 if (![v isKindOfClass:NSNumber.class]) continue;
                 NSString *unit = ([metric isEqual:@"rsrp"] || [metric isEqual:@"rssi"]) ? @"dBm" : @"dB";
@@ -839,8 +841,8 @@
             return;
         }
         weakSelf.signalRunning = YES;
-        weakSelf.signalValue.text = BLT(@"Observando LTE y 5G compatibles…",
-                                        @"Observing supported LTE and 5G…");
+        weakSelf.signalValue.text = BLT(@"Observando redes disponibles (2G–5G)…",
+                                        @"Observing available networks (2G–5G)…");
         [weakSelf refreshDisplay];
         [weakSelf startSignalPolling];
     }];
@@ -892,10 +894,13 @@
         NSArray *rows = [status[@"rows"] isKindOfClass:NSArray.class] ? status[@"rows"] : @[];
         for (NSDictionary *row in rows) {
             if (![row isKindOfClass:NSDictionary.class]) continue;
-            NSString *rat = [row[@"rat"] isEqualToString:@"NR"] ? @"5G n" : @"LTE B";
-            NSMutableString *line = [NSMutableString stringWithFormat:@"%@%@",
-                rat, row[@"band"] ?: @"—"];
-            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr"]) {
+            NSString *rat = row[@"rat"];
+            NSString *display = [rat isEqualToString:@"NR"] ? @"5G" :
+                ([rat isEqualToString:@"LTE"] ? @"4G" : (rat ?: @"Red"));
+            NSMutableString *line = [NSMutableString stringWithString:display];
+            if ([row[@"band"] isKindOfClass:NSNumber.class])
+                [line appendFormat:@" %@%@", [rat isEqualToString:@"NR"] ? @"n" : @"B", row[@"band"]];
+            for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
                 NSNumber *value = row[metric];
                 if ([value isKindOfClass:NSNumber.class]) [line appendFormat:@" · %@ %.1f", metric.uppercaseString, value.doubleValue];
             }

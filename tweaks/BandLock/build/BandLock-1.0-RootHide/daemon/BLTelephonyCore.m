@@ -184,12 +184,26 @@ static NSString *BLRHMetricPresence(NSDictionary *row, NSArray<NSString *> *keys
     return @"missing";
 }
 
+// Keep radio-technology classification independent of the availability of
+// LTE/NR-specific signal metrics. A UMTS or GSM cell is not an LTE cell.
+static NSString *BLRHSignalRAT(NSString *raw) {
+    if (![raw isKindOfClass:NSString.class]) return nil;
+    NSString *upper = raw.uppercaseString;
+    if ([upper containsString:@"NR"]) return @"NR";
+    if ([upper containsString:@"LTE"]) return @"LTE";
+    for (NSString *token in @[@"WCDMA", @"UMTS", @"UTRAN", @"HSPA", @"HSDPA", @"HSUPA", @"TD-SCDMA"]) {
+        if ([upper containsString:token]) return @"3G";
+    }
+    for (NSString *token in @[@"GSM", @"GPRS", @"EDGE", @"GERAN"]) {
+        if ([upper containsString:token]) return @"2G";
+    }
+    return nil;
+}
+
 static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     if (![row isKindOfClass:NSDictionary.class]) return nil;
     NSString *rawRAT = row[@"kCTCellMonitorCellRadioAccessTechnology"];
-    NSString *rat = [rawRAT isKindOfClass:NSString.class] ?
-        ([rawRAT rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"NR" :
-         ([rawRAT rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"LTE" : nil)) : nil;
+    NSString *rat = BLRHSignalRAT(rawRAT);
     NSString *type = row[@"kCTCellMonitorCellType"];
     NSString *role = [type isKindOfClass:NSString.class] ?
         ([type rangeOfString:@"Serving" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"serving" :
@@ -202,10 +216,16 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     NSNumber *rsrq = BLRHLegacyMetric(row, @[@"kCTCellMonitorRSRQ", @"RSRQ", @"rsrq"], -60, 0, YES);
     NSNumber *rssi = BLRHLegacyMetric(row, @[@"kCTCellMonitorRSSI", @"RSSI", @"rssi"], -200, -20, YES);
     NSNumber *snr = BLRHLegacyMetric(row, @[@"kCTCellMonitorSNR", @"SNR", @"snr"], -100, 100, NO);
+    NSNumber *rscp = [rat isEqualToString:@"3G"] ?
+        BLRHLegacyMetric(row, @[@"kCTCellMonitorRSCP", @"RSCP", @"rscp"], -130, -20, YES) : nil;
+    NSNumber *ecno = [rat isEqualToString:@"3G"] ?
+        BLRHLegacyMetric(row, @[@"kCTCellMonitorEcNo", @"kCTCellMonitorECNO", @"EcNo", @"ECNO", @"ecno"], -40, 0, YES) : nil;
     if (rsrp) item[@"rsrp"] = rsrp;
     if (rsrq) item[@"rsrq"] = rsrq;
     if (rssi) item[@"rssi"] = rssi;
     if (snr) item[@"snr"] = snr;
+    if (rscp) item[@"rscp"] = rscp;
+    if (ecno) item[@"ecno"] = ecno;
     return item;
 }
 
@@ -919,13 +939,16 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
                 if ([item[@"role"] isEqual:@"serving"]) { serving = item; break; }
             }
         }
+        NSString *actualRAT = serving[@"rat"];
+        if (!actualRAT.length) actualRAT = BLRHSignalRAT(capabilities[@"rat"]);
+        if ([actualRAT isEqualToString:@"NR"] && !supportsNR) actualRAT = nil;
         // Typed metrics and legacy band metadata come from distinct APIs.
         // Never overwrite a legacy row and mark its remaining legacy metrics
         // as typed: a missing typed RSRP must not inherit a legacy RSRP.
         // Only label typed metrics as NR when an actual serving NR row is
         // present. NSA LTE-anchor measurements must not masquerade as 5G.
         NSMutableDictionary *typedServing = [@{
-            @"rat": serving[@"rat"] ?: @"unknown",
+            @"rat": actualRAT ?: @"unknown",
             @"role": @"serving", @"source": @"typed"
         } mutableCopy];
         if (serving[@"band"]) typedServing[@"band"] = serving[@"band"];
@@ -933,11 +956,17 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         NSNumber *rsrq = BLRHMetric(typed, @"rsrq", -60, 0, YES);
         NSNumber *rssi = BLRHMetric(typed, @"rssi", -200, -20, YES);
         NSNumber *snr = BLRHMetric(typed, @"snr", -100, 100, NO);
+        NSNumber *rscp = [typedServing[@"rat"] isEqualToString:@"3G"]
+            ? BLRHMetric(typed, @"rscp", -130, -20, YES) : nil;
+        NSNumber *ecno = [typedServing[@"rat"] isEqualToString:@"3G"]
+            ? BLRHMetric(typed, @"ecno", -40, 0, YES) : nil;
         if (rsrp) typedServing[@"rsrp"] = rsrp;
         if (rsrq) typedServing[@"rsrq"] = rsrq;
         if (rssi) typedServing[@"rssi"] = rssi;
         if (snr) typedServing[@"snr"] = snr;
-        if (rsrp || rsrq || rssi || snr) {
+        if (rscp) typedServing[@"rscp"] = rscp;
+        if (ecno) typedServing[@"ecno"] = ecno;
+        if (rsrp || rsrq || rssi || snr || rscp || ecno) {
             [items insertObject:typedServing atIndex:0];
             typedStatus = @"values_available";
         } else {
@@ -947,7 +976,8 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 
     NSMutableArray *available = [NSMutableArray array];
     for (NSDictionary *row in items) {
-        if (row[@"rsrp"] || row[@"rsrq"] || row[@"rssi"] || row[@"snr"]) [available addObject:row];
+        if (row[@"rsrp"] || row[@"rsrq"] || row[@"rssi"] ||
+            row[@"snr"] || row[@"rscp"] || row[@"ecno"]) [available addObject:row];
     }
     NSDictionary *diagnostics = @{
         @"typed_api": typedStatus,
@@ -960,8 +990,9 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     BOOL hasPower = NO;
     for (NSDictionary *item in available) {
         if ([item[@"role"] isEqual:@"serving"] &&
-            ([item[@"rat"] isEqual:@"LTE"] || (supportsNR && [item[@"rat"] isEqual:@"NR"])) &&
-            (item[@"rsrp"] || item[@"rssi"])) hasPower = YES;
+            ([item[@"rat"] isEqual:@"LTE"] || [item[@"rat"] isEqual:@"2G"] ||
+             [item[@"rat"] isEqual:@"3G"] || (supportsNR && [item[@"rat"] isEqual:@"NR"])) &&
+            (item[@"rsrp"] || item[@"rssi"] || item[@"rscp"])) hasPower = YES;
     }
     return @{
         @"success": @YES,

@@ -35,10 +35,10 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        NSString *savedMode = BLCCLastModeCode();
-        if ([savedMode hasPrefix:@"5g-"] && (!BLCCShow5G() || BLDeviceIsKnownLTEOnly())) savedMode = @"automatic";
-        _currentModeCode = savedMode.length ? [savedMode copy] : @"automatic";
-        _confirmedModeCode = [_currentModeCode copy];
+        // Saved preference is merely an intent from a previous session.
+        // Never represent it as a freshly verified modem selection.
+        _currentModeCode = @"unknown";
+        _confirmedModeCode = nil;
         _supports5G = NO;
         _stateEpoch = 0;
         _statusRefreshNotBefore = 0;
@@ -65,7 +65,7 @@
     else if ([self.currentModeCode isEqualToString:@"lte"]) text = @"4G";
     else if ([self.currentModeCode isEqualToString:@"3g"]) text = @"3G";
     else if (self.supports5G && [self.currentModeCode hasPrefix:@"5g-"]) text = @"5G";
-    else if (![self.currentModeCode isEqualToString:@"automatic"]) text = @"?";
+    else if (![self.currentModeCode isEqualToString:@"automatic"]) text = @"Red";
 
     label.font = [UIFont systemFontOfSize:[text isEqualToString:@"Auto"] ? 13.0 : 16.0
                                   weight:UIFontWeightSemibold];
@@ -159,9 +159,8 @@
 
     if (BLDeviceIsKnownLTEOnly() && [reportedMode hasPrefix:@"5g-"]) reportedMode = @"unknown";
 
-    // There cannot be a successful BandLock mode write on iOS 18. A saved
-    // intent from an older build is not a modem readback and must not override
-    // the actual daemon status or display a fictitious 5G/LTE lock.
+    // Only a trustworthy modem readback may update the confirmed mode.
+    // A saved preference is not a modem readback.
     if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
         if ([reportedMode isEqualToString:@"2g"] && !BLCCShow2G()) return @"automatic";
         if ([reportedMode isEqualToString:@"3g"] && !BLCCShow3G()) return @"automatic";
@@ -314,7 +313,6 @@
 
     self.stateEpoch += 1;
     NSUInteger epoch = self.stateEpoch;
-    BLCCSetLastModeCode(requestedMode);
     self.modeIntentPinnedUntil = CFAbsoluteTimeGetCurrent() + 8.0;
 
     // Keep the UI responsive immediately, but perform the actual modem change
@@ -342,9 +340,20 @@
             if (epoch != self.stateEpoch) return;
 
               if (!success) {
-                  BLCCSetLastModeCode(self.confirmedModeCode ?: @"automatic");
-                  self.currentModeCode = self.confirmedModeCode ?: @"automatic";
+                  BOOL uncertain = [result[@"verification_pending"] boolValue];
+                  self.currentModeCode = uncertain ? @"unknown" : (self.confirmedModeCode ?: @"unknown");
                   [self bl_syncVisualSelection];
+                  if (uncertain) {
+                      // The setter may have taken effect but the private
+                      // getter cannot confirm it. Never show a false failure
+                      // dialog or claim that the previous mode is still set.
+                      self.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent() + 3.0;
+                      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4 * NSEC_PER_SEC)),
+                          dispatch_get_main_queue(), ^{
+                              if (epoch == self.stateEpoch) [self bl_refreshFromDaemon];
+                          });
+                      return;
+                  }
                   NSString *message = [result[@"message"] isKindOfClass:NSString.class]
                       ? result[@"message"] : @"No se ha podido cambiar el modo";
                   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
@@ -365,7 +374,7 @@
                 self.supports5G = [supports5GValue boolValue];
               }
               BLCCSetLastModeCode(requestedMode);
-              NSString *confirmed = modeCode.length ? modeCode : requestedMode;
+              NSString *confirmed = modeCode.length ? modeCode : @"unknown";
             if (!self.supports5G && [confirmed hasPrefix:@"5g-"]) confirmed = @"automatic";
             confirmed = [self bl_normalizedReportedMode:confirmed];
             self.currentModeCode = confirmed;
@@ -405,7 +414,7 @@
             dispatch_async(dispatch_get_main_queue(), ^{ self.statusRefreshInFlight = NO; });
             return;
         }
-        if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"automatic";
+        if (!supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"unknown";
 
         dispatch_async(dispatch_get_main_queue(), ^{
             self.statusRefreshInFlight = NO;
@@ -413,8 +422,12 @@
             self.supports5G = supports5G;
             NSString *normalizedModeCode = [self bl_normalizedReportedMode:modeCode];
             BOOL changed = ![self.currentModeCode isEqualToString:normalizedModeCode];
-            self.currentModeCode = normalizedModeCode;
-            self.confirmedModeCode = normalizedModeCode;
+            if (![normalizedModeCode isEqualToString:@"unknown"]) {
+                self.currentModeCode = normalizedModeCode;
+                self.confirmedModeCode = normalizedModeCode;
+            } else {
+                self.currentModeCode = @"unknown";
+            }
             if (changed) [self bl_syncVisualSelection];
         });
     });
