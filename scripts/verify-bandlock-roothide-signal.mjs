@@ -357,6 +357,8 @@ assert.doesNotMatch(core.slice(setterStart, setterEnd), /\[self queryCoreTelepho
 assert.match(main, /RAT callback accepted; modem selection remains unverified/);
 assert.doesNotMatch(main, /for \(NSUInteger attempt = 0; attempt < \(isIOS18/);
 assert.match(core, /callbackError.code == EAGAIN/);
+assert.match(core, /if \(!bandInfo && includeRatSelection\) return/);
+assert.match(core, /@"bandInfo": bandInfo \?: NSNull\.null/);
 assert.match(cc, /_currentModeCode = @"automatic"/);
 assert.doesNotMatch(cc, /text = @"(?:Red|\?)"/);
 assert.match(main, /\[command isEqualToString:@"scan_observe_start"\]/);

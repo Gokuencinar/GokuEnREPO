@@ -16,6 +16,7 @@ Baseline: commit c520ff7 (BandLock 1.5). Installed candidate before investigatio
 2. In rhui9, additional full CoreTelephony queries and synchronous RAT-mask getter preceded the setter. Rhui10 uses a focused context-only query before the same setter. No band-info or RAT getter is required to obtain its context.
 3. Rhui9 made up to three full post-set queries and could report a false failure when readback stayed unknown. Rhui10 treats a successful callback as an *accepted request*, with verification still pending. It neither asserts a confirmed network mode nor repeats the active write.
 4. Rhui10 handles POSIX EAGAIN/35 during passive getBandInfo readback with at most three read-only calls (180 ms gaps); it does not automatically repeat RAT writes. Persistent errors show a clear explanation instead of raw NSError text.
+   Passive signal observation may continue without band-info metadata when legacy/typed cell measurements exist. Actual LTE/NR band-write preparation continues to require band metadata.
 5. Rhui9 showed Red when the mode was unknown. Rhui10 shows Auto as the initial/fallback glyph, without claiming this represents a confirmed modem state.
 6. Rhui9 used one combined passive 2G-5G observation. Rhui10 offers four independently selected observations: 2G GSM/EDGE, 3G UMTS/HSPA, 4G LTE, and 5G NR. Each response is filtered to the requested, genuinely observed serving RAT.
 

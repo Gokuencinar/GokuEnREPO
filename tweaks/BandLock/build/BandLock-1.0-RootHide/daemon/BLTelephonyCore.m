@@ -496,7 +496,12 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
             bandError.code != EAGAIN) break;
         if (attempt < 2) [NSThread sleepForTimeInterval:0.18];
     }
-    if (!bandInfo) return @{@"error":
+    // Band metadata is mandatory when preparing an actual band write. For
+    // passive signal observation on 2G/3G (and during CommCenter EAGAIN),
+    // cellular metrics may still be available from copyCellInfo and typed
+    // signal APIs. Do not suppress those measurements solely for lack of
+    // LTE/NR band capabilities.
+    if (!bandInfo && includeRatSelection) return @{@"error":
         ([bandError.domain isEqualToString:NSPOSIXErrorDomain] && bandError.code == EAGAIN)
             ? @"El módem está ocupado temporalmente. Reintenta la consulta."
             : (bandError ? bandError.description : @"getBandInfo:error: returned nil")};
@@ -511,7 +516,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     id cellInfo = [self copyCellInfoFromClient:client context:context];
     return @{@"client": client,
              @"context": context,
-             @"bandInfo": bandInfo,
+             @"bandInfo": bandInfo ?: NSNull.null,
              @"ratRaw": ratRaw ?: NSNull.null,
              @"cellInfo": cellInfo ?: NSNull.null,
              @"ratSelection": ratSelection[@"selection"] ?: @"—",
