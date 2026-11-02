@@ -259,6 +259,7 @@ for (const device of ['iPhone13,2','iPhone14,6','iPhone17,3']) {
   assert.equal(isLTEOnlyModel(device), false, `${device} may support 5G if CoreTelephony confirms it`);
 }
 assert.match(core, /BOOL supports5G = !BLDeviceIsKnownLTEOnly\(\)/);
+assert.match(core, /if \(!BLDeviceIsKnownLTEOnly\(\) && \[client respondsToSelector:supports5GSelector\]\)/);
 assert.match(core, /if \(!supports5G\) \{ supportedNR = @\[\]; activeNR = @\[\]; \}/);
 assert.match(manager, /self\.supports5G = !BLDeviceIsKnownLTEOnly\(\)/);
 assert.match(info, /section == 0\) return BLDeviceIsKnownLTEOnly\(\) \? 3 : 4/);
@@ -274,4 +275,9 @@ assert.match(cc, /if \(\[NSProcessInfo processInfo\]\.operatingSystemVersion\.ma
 assert.match(cc, /self\.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent\(\) \+ 20\.0/);
 assert.match(cc, /\.tv_sec = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18 \? 3 : 30/);
 assert.match(main, /@\[@"rat", @"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
+const statusHandler = main.slice(main.indexOf('if ([command isEqualToString:@"status"])'),
+                                 main.indexOf('if ([command isEqualToString:@"rat"])'));
+assert.match(statusHandler, /operatingSystemVersion\.majorVersion >= 18/);
+assert.match(statusHandler, /\[manager queryCoreTelephonyForPassiveObservation\]/,
+  'iOS18 status must not call unreliable RAT getters from the CC module');
 console.log('BandLock rhui6 hardware 5G, CC UI and iOS18 read-only protections: PASS');

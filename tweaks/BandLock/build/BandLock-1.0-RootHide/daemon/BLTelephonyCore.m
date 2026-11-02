@@ -429,7 +429,8 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     BOOL supports5G = NO;
     NSError *supports5GError = nil;
     SEL supports5GSelector = NSSelectorFromString(@"getSupports5G:error:");
-    if ([client respondsToSelector:supports5GSelector]) {
+    // Do not call a private NR capability getter on known LTE-only hardware.
+    if (!BLDeviceIsKnownLTEOnly() && [client respondsToSelector:supports5GSelector]) {
         id supports5GValue = BLMsgObjErr(client, supports5GSelector, context, &supports5GError);
         if (!supports5GError && [supports5GValue respondsToSelector:@selector(boolValue)]) supports5G = [supports5GValue boolValue];
     }

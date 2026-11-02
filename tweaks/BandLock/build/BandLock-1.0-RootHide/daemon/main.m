@@ -194,7 +194,14 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
 
         if ([command isEqualToString:@"status"]) {
             BLDaemonLog("status query begin");
-            NSDictionary *payload = BLStatusPayload(manager, [manager queryCoreTelephony]);
+            // On iOS 18 neither the sync nor the async private RAT getter has
+            // produced trustworthy results on the test device. More importantly,
+            // SpringBoard requests must never enqueue that slow getter in the
+            // daemon. Report a conservative unknown selection instead.
+            BOOL passiveStatus = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+            NSDictionary *query = passiveStatus ? [manager queryCoreTelephonyForPassiveObservation]
+                                                : [manager queryCoreTelephony];
+            NSDictionary *payload = BLStatusPayload(manager, query);
             BLDaemonLog("status query end");
             return payload;
         }
