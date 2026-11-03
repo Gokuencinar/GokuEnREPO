@@ -468,6 +468,15 @@ static BOOL BLScanBandConfigurationMatches(BLTelephonyManager *manager,
     return savedActive && currentActive && [savedActive isEqualToDictionary:currentActive];
 }
 
+static BOOL BLScanTargetBandsMatch(BLTelephonyManager *manager,
+                                   NSDictionary *query,
+                                   NSString *targetRAT,
+                                   NSArray<NSNumber *> *originalBands) {
+    if (!targetRAT.length || !originalBands.count) return NO;
+    return BLScanMatches([manager activeBandsForTargetRAT:targetRAT fromQuery:query],
+                         originalBands);
+}
+
 // A registered LTE serving cell is NOT proof of LTE-only selection. A
 // transiently unavailable selection may be retried, but absolutely no
 // further modem writes occur until an explicit LTE-only selection is read.
@@ -511,6 +520,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
 @property (nonatomic, assign) NSUInteger automaticRecoveryRetries;
 @property (nonatomic, strong) dispatch_queue_t scanQueue;
 - (NSDictionary *)startPreparedWithManager:(BLTelephonyManager *)manager;
+- (BOOL)restoreJournalWithManager:(BLTelephonyManager *)manager
+                           failure:(NSString **)failureReason;
 - (void)runTechnologyScanForTarget:(NSString *)targetRAT
                        restoreMode:(NSString *)restoreMode
                       subscription:(NSString *)subscription
@@ -1064,7 +1075,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         }
         [self setPhase:@"restoring" message:[NSString stringWithFormat:
             @"Restaurando modo %@…", restoreMode]];
-        BOOL restored = [self restoreJournalWithManager:manager];
+        NSString *recoveryFailure = nil;
+        BOOL restored = [self restoreJournalWithManager:manager failure:&recoveryFailure];
         NSArray *rows = BLSortedObservedBands(byBand);
         @synchronized(self) {
             self.running = NO;
@@ -1078,7 +1090,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                 ? (stopReason ?: [NSString stringWithFormat:
                     @"Barrido %@ completado · %lu bandas observadas · modo anterior solicitado de nuevo",
                     BLDisplayTargetRAT(targetRAT), (unsigned long)rows.count])
-                : @"No se pudo volver a solicitar el modo anterior. Usa Recuperar antes de otro cambio.";
+                : (recoveryFailure ?: @"No se pudo volver a solicitar el modo anterior. Usa Recuperar antes de otro cambio.");
         }
     }
 }
@@ -1121,9 +1133,14 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     @synchronized(self) { return self.cancelRequested; }
 }
 
-- (BOOL)restoreJournalWithManager:(BLTelephonyManager *)manager {
+- (BOOL)restoreJournalWithManager:(BLTelephonyManager *)manager
+                           failure:(NSString **)failureReason {
+    if (failureReason) *failureReason = nil;
     NSDictionary *saved = BLScanReadJournal();
-    if (!saved) return NO;
+    if (!saved) {
+        if (failureReason) *failureReason = @"No se encontró el journal de recuperación";
+        return NO;
+    }
     if (([saved[@"version"] isEqual:@2] &&
          [saved[@"scan_kind"] isEqualToString:@"technology_observation"]) ||
         ([saved[@"version"] isEqual:@3] &&
@@ -1136,7 +1153,10 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             ? saved[@"target_rat"] : nil;
         NSSet *allowedModes = [NSSet setWithArray:
             @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
-        if (subscription.length != 64 || ![allowedModes containsObject:restoreMode]) return NO;
+        if (subscription.length != 64 || ![allowedModes containsObject:restoreMode]) {
+            if (failureReason) *failureReason = @"El punto de retorno guardado no es válido";
+            return NO;
+        }
 
         NSDictionary *identity = nil;
         for (NSUInteger attempt = 0; attempt < 5; attempt++) {
@@ -1146,52 +1166,101 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             if (attempt < 4) [NSThread sleepForTimeInterval:1.0];
         }
         if (identity[@"error"] ||
-            ![(BLScanSubscriptionUUID(identity) ?: @"") isEqualToString:subscription]) return NO;
-        if (!BLScanSingleActiveLine(identity)) return NO;
+            ![(BLScanSubscriptionUUID(identity) ?: @"") isEqualToString:subscription]) {
+            if (failureReason) *failureReason = @"No se pudo confirmar la misma línea móvil durante la recuperación";
+            return NO;
+        }
+        if (!BLScanSingleActiveLine(identity)) {
+            if (failureReason) *failureReason = @"La línea móvil activa cambió durante la recuperación";
+            return NO;
+        }
 
+        BOOL bandsRestored = YES;
+        BOOL bandWriteAccepted = YES;
+        NSString *bandError = nil;
+        NSArray<NSNumber *> *originalBands = @[];
         if ([saved[@"version"] isEqual:@3]) {
             NSDictionary *originalConfiguration =
                 [saved[@"original_band_config"] isKindOfClass:NSDictionary.class]
                     ? saved[@"original_band_config"] : nil;
-            if (!targetRAT.length || !originalConfiguration) return NO;
-            if (!BLScanBandConfigurationMatches(manager, identity, originalConfiguration)) {
-                NSString *bandError = nil;
-                if (![manager restoreBandConfiguration:originalConfiguration
-                                            usingQuery:identity
-                                             errorText:&bandError]) return NO;
-                BOOL bandsRestored = NO;
-                for (NSUInteger check = 0; check < 10; check++) {
-                    [NSThread sleepForTimeInterval:0.8];
+            originalBands = BLSortedBands(saved[@"original_bands"]);
+            if (!targetRAT.length || !originalConfiguration || !originalBands.count) {
+                if (failureReason) *failureReason = @"La configuración original de bandas no es recuperable";
+                return NO;
+            }
+            bandsRestored = BLScanTargetBandsMatch(manager, identity, targetRAT, originalBands) ||
+                BLScanBandConfigurationMatches(manager, identity, originalConfiguration);
+            if (!bandsRestored) {
+                // Restore only the RAT modified by this scan. A full saved
+                // CTBandInfo snapshot can overwrite unrelated live masks.
+                NSLog(@"[BandLock recovery] target=%@ restoring original mask=%@", targetRAT, originalBands);
+                bandWriteAccepted = [manager writeBands:originalBands
+                                           forTargetRAT:targetRAT
+                                             usingQuery:identity
+                                              errorText:&bandError];
+                NSLog(@"[BandLock recovery] band setter accepted=%d error=%@", bandWriteAccepted, bandError);
+                // CTBandInfo can take several seconds to converge. Verify
+                // the group this scan actually modified, but do not abort
+                // before requesting the saved network mode: that old ordering
+                // could strand a 3G scan on B1/B2 forever.
+                for (NSUInteger check = 0; bandWriteAccepted && !bandsRestored && check < 6; check++) {
+                    [NSThread sleepForTimeInterval:1.0];
                     NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
                     if (readback[@"error"]) continue;
                     NSString *fingerprint = BLScanSubscriptionUUID(readback);
-                    if (fingerprint.length && ![fingerprint isEqualToString:subscription]) return NO;
-                    if (!BLScanSingleActiveLine(readback)) return NO;
-                    if (BLScanBandConfigurationMatches(manager, readback, originalConfiguration)) {
-                        bandsRestored = YES;
-                        break;
+                    if (fingerprint.length && ![fingerprint isEqualToString:subscription]) {
+                        if (failureReason) *failureReason = @"La línea de datos cambió durante la recuperación";
+                        return NO;
                     }
+                    if (!BLScanSingleActiveLine(readback)) {
+                        if (failureReason) *failureReason = @"La línea móvil dejó de ser verificable durante la recuperación";
+                        return NO;
+                    }
+                    bandsRestored = BLScanTargetBandsMatch(manager, readback, targetRAT, originalBands) ||
+                        BLScanBandConfigurationMatches(manager, readback, originalConfiguration);
                 }
-                if (!bandsRestored) return NO;
             }
         }
 
         NSString *restoreError = nil;
-        if (![manager setModeCodeSync:restoreMode errorText:&restoreError]) return NO;
+        NSLog(@"[BandLock recovery] request original mode=%@ band_match=%d", restoreMode, bandsRestored);
+        if (![manager setModeCodeSync:restoreMode errorText:&restoreError]) {
+            NSLog(@"[BandLock recovery] restore RAT failed=%@ journal kept", restoreError);
+            if (failureReason) *failureReason = [NSString stringWithFormat:
+                @"No se pudo solicitar el modo anterior (%@). El journal se conserva para Recuperar.",
+                restoreError ?: @"error de CommCenter"];
+            return NO;
+        }
+        NSLog(@"[BandLock recovery] restore RAT accepted; waiting for service and band readback");
         NSString *expectedRAT = BLTargetRATForMode(restoreMode);
         BOOL serviceRestored = NO;
-        for (NSUInteger check = 0; check < 10; check++) {
-            [NSThread sleepForTimeInterval:0.8];
+        // UMTS/3G detach/attach is substantially slower than LTE on some
+        // carriers. Allow a bounded 20 s convergence window after the saved
+        // mode request instead of declaring recovery failed after ~8 s.
+        for (NSUInteger check = 0; check < 20; check++) {
+            [NSThread sleepForTimeInterval:1.0];
             NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
             if (readback[@"error"]) continue;
             NSString *fingerprint = BLScanSubscriptionUUID(readback);
-            if (fingerprint.length && ![fingerprint isEqualToString:subscription]) return NO;
-            if (!BLScanSingleActiveLine(readback)) return NO;
+            if (fingerprint.length && ![fingerprint isEqualToString:subscription]) {
+                if (failureReason) *failureReason = @"La línea de datos cambió durante la recuperación";
+                return NO;
+            }
+            if (!BLScanSingleActiveLine(readback)) {
+                if (failureReason) *failureReason = @"La línea móvil dejó de ser verificable durante la recuperación";
+                return NO;
+            }
+            if ([saved[@"version"] isEqual:@3] && !bandsRestored) {
+                NSDictionary *originalConfiguration =
+                    [saved[@"original_band_config"] isKindOfClass:NSDictionary.class]
+                        ? saved[@"original_band_config"] : nil;
+                bandsRestored = BLScanTargetBandsMatch(manager, readback, targetRAT, originalBands) ||
+                    (originalConfiguration && BLScanBandConfigurationMatches(manager, readback, originalConfiguration));
+            }
             NSArray *measurements = BLScanMeasurements(manager, readback);
             if (expectedRAT.length) {
                 if (BLScanHasServingRAT(manager, readback, expectedRAT)) {
                     serviceRestored = YES;
-                    break;
                 }
             } else {
                 for (NSDictionary *measurement in measurements) {
@@ -1201,16 +1270,40 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         break;
                     }
                 }
-                if (serviceRestored) break;
             }
+            if (serviceRestored && bandsRestored) break;
+        }
+        NSLog(@"[BandLock recovery] convergence service=%d bands=%d band_write=%d", serviceRestored, bandsRestored, bandWriteAccepted);
+        if ([saved[@"version"] isEqual:@3] && !bandsRestored) {
+            if (failureReason) {
+                *failureReason = bandWriteAccepted
+                    ? @"El modo anterior volvió, pero la máscara original de bandas aún no pudo verificarse. Usa Recuperar de nuevo."
+                    : [NSString stringWithFormat:
+                        @"No se pudo restaurar la máscara original de bandas (%@). El modo anterior ya fue solicitado; usa Recuperar de nuevo.",
+                        bandError ?: @"error de CoreTelephony"];
+            }
+            return NO;
+        }
+        if (!serviceRestored) {
+            if (failureReason) *failureReason = @"El modo anterior fue solicitado, pero el servicio móvil no volvió a registrarse dentro de 20 s. Usa Recuperar de nuevo.";
+            return NO;
         }
         // The private iOS18 selection getter may still be Unknown. Do not call
         // the selection itself verified, but require cellular registration to
         // converge after restoring the saved BandLock intent before clearing
         // the crash-recovery journal.
-        return serviceRestored && BLScanClearJournal();
+        if (!BLScanClearJournal()) {
+            NSLog(@"[BandLock recovery] journal clear failed");
+            if (failureReason) *failureReason = @"La restauración se verificó, pero no se pudo cerrar el journal de seguridad";
+            return NO;
+        }
+        NSLog(@"[BandLock recovery] journal cleared after positive verification");
+        return YES;
     }
-    if (![saved[@"version"] isEqual:@1]) return NO;
+    if (![saved[@"version"] isEqual:@1]) {
+        if (failureReason) *failureReason = @"Versión de journal de recuperación no compatible";
+        return NO;
+    }
     NSArray *original = BLSortedBands(saved[@"original_lte"]);
     NSString *subscription = saved[@"subscription_hash"];
     if (!original.count || original.count > 128 || ![subscription isKindOfClass:NSString.class] || subscription.length != 64) return NO;
@@ -1263,9 +1356,11 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
 - (void)recoverIfNeededWithManager:(BLTelephonyManager *)manager {
     if (![self hasPendingRecovery] || [self isRunning]) return;
     [self setPhase:@"restoring" message:@"Recovering bands left by an interrupted scan"];
-    BOOL restored = [self restoreJournalWithManager:manager];
+    NSString *recoveryFailure = nil;
+    BOOL restored = [self restoreJournalWithManager:manager failure:&recoveryFailure];
     [self setPhase:(restored ? @"restored" : @"recovery_required")
-           message:(restored ? @"Original bands restored" : @"Could not verify restoration; retry recovery before changing bands")];
+           message:(restored ? @"Original bands restored" :
+                    (recoveryFailure ?: @"Could not verify restoration; retry recovery before changing bands"))];
     @synchronized(self) {
         self.scanState[@"success"] = @(restored);
         self.scanState[@"running"] = @NO;
@@ -1521,7 +1616,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             (void)BLScanWriteJournal(restoring);
         }
         [self setPhase:@"restoring" message:@"Restoring original LTE bands"];
-        BOOL restored = [self restoreJournalWithManager:manager];
+        NSString *recoveryFailure = nil;
+        BOOL restored = [self restoreJournalWithManager:manager failure:&recoveryFailure];
         @synchronized(self) {
             self.running = NO;
             self.cancelRequested = NO;
@@ -1530,7 +1626,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             self.scanState[@"phase"] = restored ? @"complete" : @"recovery_required";
             self.scanState[@"message"] = restored
                 ? (stopReason ?: @"Scan completed; original bands restored")
-                : @"Restoration could not be verified. Do not change bands; use Recover";
+                : (recoveryFailure ?: @"Restoration could not be verified. Do not change bands; use Recover");
             self.scanState[@"recovery_required"] = @(!restored);
         }
     }

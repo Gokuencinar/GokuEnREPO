@@ -23,6 +23,15 @@ static NSString * const BLRATNRSA = @"kCTRegistrationRATSelectionNRStandAlone";
 static NSString * const BLLogDirectory = @"/var/mobile/Library/Logs/BandLockGlobal";
 static NSString * const BLLastLogPath = @"/var/mobile/Library/Logs/BandLockGlobal/BandLock-last.txt";
 static NSString * const BLStateDefaultsKey = @"BandLockGlobalState";
+static const NSTimeInterval BLRatWriteQuietPeriod = 6.0;
+static NSTimeInterval BLRatLastWriteStartedAt = 0.0;
+
+static dispatch_semaphore_t BLRatWriteGate(void) {
+    static dispatch_semaphore_t gate;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ gate = dispatch_semaphore_create(1); });
+    return gate;
+}
 
 static id BLMsg0(id object, SEL selector) { return ((id (*)(id, SEL))objc_msgSend)(object, selector); }
 static id BLMsgErr(id object, SEL selector, NSError **error) { return ((id (*)(id, SEL, NSError **))objc_msgSend)(object, selector, error); }
@@ -708,25 +717,42 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 }
 
 - (BOOL)setRatSelectionSync:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText {
-    NSDictionary *query = [self queryContextForRatChange];
-    if (query[@"error"]) { if (errorText) *errorText = query[@"error"]; return NO; }
-    id client = query[@"client"];
-    id context = query[@"context"];
-    SEL setter = NSSelectorFromString(@"setRatSelection:selection:preferred:completion:");
-    if (![client respondsToSelector:setter]) { if (errorText) *errorText = @"setRatSelection unavailable"; return NO; }
-    __block NSError *callbackError = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    BLMsgSetRatSelection(client, setter, context, selection, preferred, ^(NSError *error) { callbackError = error; dispatch_semaphore_signal(semaphore); });
-    long wait = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)));
-    if (wait != 0) { if (errorText) *errorText = BLT(@"Tiempo de espera agotado.", @"Operation timed out."); return NO; }
-    if (callbackError) {
-        if (errorText) *errorText = [callbackError.domain isEqualToString:NSPOSIXErrorDomain] &&
-            callbackError.code == EAGAIN
-            ? @"CommCenter está ocupado temporalmente (EAGAIN/35). No se repetirá la escritura."
-            : callbackError.description;
-        return NO;
+    dispatch_semaphore_t gate = BLRatWriteGate();
+    dispatch_semaphore_wait(gate, DISPATCH_TIME_FOREVER);
+    @try {
+        // CommCenter rejects back-to-back private RAT writes with EAGAIN/35.
+        // Space explicit user/scan/recovery requests BEFORE the next write;
+        // this is not a retry of a failed write and never repeats a setter
+        // unless a distinct caller requested another mode.
+        if (BLRatLastWriteStartedAt > 0) {
+            NSTimeInterval elapsed = CFAbsoluteTimeGetCurrent() - BLRatLastWriteStartedAt;
+            NSTimeInterval remaining = BLRatWriteQuietPeriod - elapsed;
+            if (remaining > 0) [NSThread sleepForTimeInterval:remaining];
+        }
+
+        NSDictionary *query = [self queryContextForRatChange];
+        if (query[@"error"]) { if (errorText) *errorText = query[@"error"]; return NO; }
+        id client = query[@"client"];
+        id context = query[@"context"];
+        SEL setter = NSSelectorFromString(@"setRatSelection:selection:preferred:completion:");
+        if (![client respondsToSelector:setter]) { if (errorText) *errorText = @"setRatSelection unavailable"; return NO; }
+        __block NSError *callbackError = nil;
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+        BLRatLastWriteStartedAt = CFAbsoluteTimeGetCurrent();
+        BLMsgSetRatSelection(client, setter, context, selection, preferred, ^(NSError *error) { callbackError = error; dispatch_semaphore_signal(semaphore); });
+        long wait = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)));
+        if (wait != 0) { if (errorText) *errorText = BLT(@"Tiempo de espera agotado.", @"Operation timed out."); return NO; }
+        if (callbackError) {
+            if (errorText) *errorText = [callbackError.domain isEqualToString:NSPOSIXErrorDomain] &&
+                callbackError.code == EAGAIN
+                ? @"CommCenter está ocupado temporalmente (EAGAIN/35). No se repetirá la escritura."
+                : callbackError.description;
+            return NO;
+        }
+        return YES;
+    } @finally {
+        dispatch_semaphore_signal(gate);
     }
-    return YES;
 }
 
 - (BOOL)setModeCodeSync:(NSString *)mode errorText:(NSString **)errorText {

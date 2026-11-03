@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui11$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui12$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -380,7 +380,7 @@ assert.match(app, /if \(!weakSelf\.signalRunning && !weakSelf\.signalRecoveryReq
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|setRatSelection|BLScanWriteJournal/);
 console.log('BandLock rhui10 RAT regression isolation and independent 2G–5G read-only scans: PASS');
 
-// rhui11: keep accepted user intent visible on iOS18 and make the four
+// rhui12: keep accepted user intent visible on iOS18 and make the four
 // diagnostic buttons technology-directed. Exhaustive band writes are allowed
 // only when CTBandInfo exposes a live supported/active inventory; otherwise the
 // scanner falls back to real serving/neighbor observations.
@@ -417,10 +417,38 @@ assert.match(technologyScan, /Tiempo máximo del barrido agotado/);
 assert.match(technologyScan, /BLScanHasConflictingServingRAT\(manager, writeQuery, targetRAT\)/);
 assert.match(technologyScan, /!exhaustive && sample < BLTechnologyScanSamples/);
 assert.match(scan, /\[saved\[@"version"\] isEqual:@3\]/);
-assert.match(scan, /restoreBandConfiguration:originalConfiguration/);
+assert.match(scan, /writeBands:originalBands\s+forTargetRAT:targetRAT/);
 assert.match(scan, /BLScanBandConfigurationMatches\(manager, readback, originalConfiguration\)/);
-assert.match(scan, /serviceRestored && BLScanClearJournal\(\)/);
+assert.match(scan, /if \(!serviceRestored\)/);
+assert.match(scan, /if \(!BLScanClearJournal\(\)\)/);
 assert.match(scan, /BLDeviceIsKnownLTEOnly\(\)/);
 assert.doesNotMatch(technologyScan, /countryBands/i,
   'Technology scan candidates must come from the modem, not a country table');
-console.log('BandLock rhui11 pending RAT intent and technology-directed all-band diagnostics: PASS');
+console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
+
+// rhui12: coalesce rapid Control Center taps, and never automatically drain
+// the queued mode after a failed CommCenter setter.
+assert.match(cc, /@property \(nonatomic, assign\) BOOL modeWriteInFlight/);
+assert.match(cc, /if \(self\.modeWriteInFlight\)\s*\{\s*self\.queuedModeCode = requestedMode;\s*return;/);
+assert.match(cc, /if \(success && queued\.length && !\[queued isEqualToString:requestedMode\]\)/);
+assert.match(cc, /else if \(!success && epoch != self\.stateEpoch\)/);
+assert.doesNotMatch(cc, /if \(!success && queued\.length\)\s*\[self bl_applyModeThroughDaemon:/);
+assert.match(core, /BLRatWriteQuietPeriod = 6\.0/);
+assert.match(core, /dispatch_semaphore_wait\(gate, DISPATCH_TIME_FOREVER\)/);
+assert.match(core, /callbackError\.code == EAGAIN/);
+
+// The recovery path must restore the modified RAT, request original mode
+// regardless of transient band readback, then prove both before clearing.
+const recoveryStart = scan.indexOf('- (BOOL)restoreJournalWithManager:');
+const recoveryEnd = scan.indexOf('- (void)recoverIfNeededWithManager:', recoveryStart);
+assert.ok(recoveryStart >= 0 && recoveryEnd > recoveryStart);
+const recovery = scan.slice(recoveryStart, recoveryEnd);
+assert.match(recovery, /writeBands:originalBands\s+forTargetRAT:targetRAT/);
+assert.doesNotMatch(recovery, /\[manager restoreBandConfiguration:/);
+assert.ok(recovery.indexOf('writeBands:originalBands') < recovery.indexOf('setModeCodeSync:restoreMode'));
+assert.match(recovery, /check < 20/);
+assert.match(recovery, /if \(\[saved\[@"version"\] isEqual:@3\] && !bandsRestored\)/);
+assert.match(recovery, /if \(!serviceRestored\)/);
+assert.ok(recovery.indexOf('if (!serviceRestored)') < recovery.indexOf('if (!BLScanClearJournal())'));
+assert.match(recovery, /journal cleared after positive verification/);
+console.log('BandLock rhui12 RAT single-flight and staged recovery safety: PASS');

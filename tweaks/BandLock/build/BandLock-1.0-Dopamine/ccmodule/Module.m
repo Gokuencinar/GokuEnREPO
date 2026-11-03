@@ -27,6 +27,8 @@
 @property (nonatomic, assign) NSTimeInterval statusRefreshNotBefore;
 @property (nonatomic, assign) NSTimeInterval modeIntentPinnedUntil;
 @property (nonatomic, assign) BOOL statusRefreshInFlight;
+@property (nonatomic, assign) BOOL modeWriteInFlight;
+@property (nonatomic, copy) NSString *queuedModeCode;
 @property (nonatomic, strong) dispatch_queue_t daemonQueue;
 @property (nonatomic, strong) UIAlertController *modePicker;
 @end
@@ -46,6 +48,8 @@
         _statusRefreshNotBefore = 0;
         _modeIntentPinnedUntil = 0;
         _statusRefreshInFlight = NO;
+        _modeWriteInFlight = NO;
+        _queuedModeCode = nil;
         _daemonQueue = dispatch_queue_create("com.gokuencinar.bandlock.ccmodule", DISPATCH_QUEUE_SERIAL);
         [self bl_refreshFromDaemon];
     }
@@ -325,6 +329,16 @@
     // requested RAT and the next status refresh then falls back to Auto/5G.
     self.currentModeCode = requestedMode;
     [self bl_syncVisualSelection];
+    // A serial dispatch queue alone still executes every rapid tap. Keep only
+    // the newest explicit intent while one modem write is in flight so a
+    // 2G→3G→4G gesture cannot hammer CommCenter with obsolete intermediate
+    // setters. The latest intent is submitted only after the accepted write;
+    // a failed/EAGAIN write is never retried automatically.
+    if (self.modeWriteInFlight) {
+        self.queuedModeCode = requestedMode;
+        return;
+    }
+    self.modeWriteInFlight = YES;
     [self bl_applyModeThroughDaemon:requestedMode epoch:epoch];
 }
 
@@ -340,7 +354,8 @@
         id supports5GValue = result[@"supports_5g"];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (epoch != self.stateEpoch) return;
+            @try {
+              if (epoch != self.stateEpoch) return;
 
               if (!success) {
                   BOOL uncertain = [result[@"verification_pending"] boolValue];
@@ -399,6 +414,31 @@
                            dispatch_get_main_queue(), ^{
                 if (epoch == self.stateEpoch) [self bl_refreshFromDaemon];
             });
+            } @finally {
+                NSString *queued = self.queuedModeCode;
+                self.queuedModeCode = nil;
+                self.modeWriteInFlight = NO;
+                if (success && queued.length && ![queued isEqualToString:requestedMode]) {
+                    self.modeWriteInFlight = YES;
+                    [self bl_applyModeThroughDaemon:queued epoch:self.stateEpoch];
+                } else if (success && queued.length && [queued isEqualToString:requestedMode]) {
+                    // The latest tap returned to the in-flight selection.
+                    // Its epoch superseded the original callback, so keep
+                    // that accepted intent instead of leaving stale UI.
+                    self.currentModeCode = requestedMode;
+                    self.pendingModeCode = requestedMode;
+                    BLCCSetLastModeCode(requestedMode);
+                    self.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent() + 8.0;
+                    [self bl_syncVisualSelection];
+                } else if (!success && epoch != self.stateEpoch) {
+                    // A newer visual intent was never submitted because the
+                    // preceding modem write failed. Do not leave that unsent
+                    // intent painted as if CommCenter had accepted it.
+                    self.pendingModeCode = nil;
+                    self.currentModeCode = self.confirmedModeCode ?: @"automatic";
+                    [self bl_syncVisualSelection];
+                }
+            }
         });
     });
 }
