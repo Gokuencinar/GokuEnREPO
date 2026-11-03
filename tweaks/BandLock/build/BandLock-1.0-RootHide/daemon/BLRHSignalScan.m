@@ -1146,7 +1146,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             if (attempt < 4) [NSThread sleepForTimeInterval:1.0];
         }
         if (identity[@"error"] ||
-            ![[BLScanSubscriptionUUID(identity) ?: @""] isEqualToString:subscription]) return NO;
+            ![(BLScanSubscriptionUUID(identity) ?: @"") isEqualToString:subscription]) return NO;
         if (!BLScanSingleActiveLine(identity)) return NO;
 
         if ([saved[@"version"] isEqual:@3]) {
