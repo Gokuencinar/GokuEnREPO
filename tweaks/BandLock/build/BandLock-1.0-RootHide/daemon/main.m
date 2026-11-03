@@ -80,10 +80,6 @@ static NSString *BLStoredAcceptedModeCode(void) {
     return [BLAllowedModeCodes() containsObject:mode] ? mode : nil;
 }
 
-static NSString *BLLastAcceptedModeCode(void) {
-    return BLStoredAcceptedModeCode() ?: @"automatic";
-}
-
 static void BLRememberAcceptedModeCode(NSString *mode) {
     if (![BLAllowedModeCodes() containsObject:mode]) return;
     [NSUserDefaults.standardUserDefaults setObject:mode forKey:BLLastAcceptedModeDefaultsKey];
