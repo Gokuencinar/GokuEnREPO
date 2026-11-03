@@ -268,6 +268,7 @@ static NSDictionary *BLRHActiveLineCheck(NSDictionary *query) {
     BOOL activeAPI = [client respondsToSelector:NSSelectorFromString(@"getActiveContexts:")];
     BOOL singleActive = NO;
     BOOL slotMatched = NO;
+    NSUInteger activeContextCount = NSNotFound;
     NSString *status = @"api_unavailable";
     if (activeAPI) {
         @try {
@@ -281,6 +282,7 @@ static NSDictionary *BLRHActiveLineCheck(NSDictionary *query) {
                 status = @"error";
             } else if ([subscriptions isKindOfClass:NSArray.class]) {
                 status = @"array";
+                activeContextCount = [(NSArray *)subscriptions count];
                 singleActive = [(NSArray *)subscriptions count] == 1;
                 if (singleActive && dataSlot) {
                     NSNumber *activeSlot = BLRHSlotNumber([(NSArray *)subscriptions firstObject]);
@@ -297,6 +299,7 @@ static NSDictionary *BLRHActiveLineCheck(NSDictionary *query) {
                             slotMatched && BLScanSubscriptionUUID(query).length == 64),
              @"one_registered_rat": @(singleRegistered),
              @"one_active_context": @(singleActive),
+             @"active_context_count": activeContextCount == NSNotFound ? NSNull.null : @(activeContextCount),
              @"active_context_matches_data_slot": @(slotMatched),
              @"data_service_matches_registered_rat": @(serviceInRAT),
              @"active_context_check_status": status};
@@ -304,6 +307,34 @@ static NSDictionary *BLRHActiveLineCheck(NSDictionary *query) {
 
 static BOOL BLScanSingleActiveLine(NSDictionary *query) {
     return [BLRHActiveLineCheck(query)[@"verified"] boolValue];
+}
+
+// Recovery is allowed to run while the modem is detached. Requiring one
+// registered RAT before requesting the saved mode creates a circular failure:
+// a 3G-only scan may lose service precisely because the carrier no longer
+// registers 3G. Keep the identity checks fail-closed for a changed/multiple
+// line, but allow zero registered RATs when the same hashed data context is
+// still present. This helper is for recovery only; scan preflight remains
+// strict via BLScanSingleActiveLine().
+static BOOL BLScanRecoveryIdentityCompatible(NSDictionary *query,
+                                             NSString *subscription) {
+    if (![subscription isKindOfClass:NSString.class] || subscription.length != 64) return NO;
+    NSString *fingerprint = BLScanSubscriptionUUID(query);
+    if (!fingerprint.length || ![fingerprint isEqualToString:subscription]) return NO;
+
+    NSDictionary *rat = [query[@"ratRaw"] isKindOfClass:NSDictionary.class]
+        ? query[@"ratRaw"] : nil;
+    if (rat && rat.count > 1) return NO;
+
+    NSDictionary *lineCheck = BLRHActiveLineCheck(query);
+    id activeCountValue = lineCheck[@"active_context_count"];
+    if ([activeCountValue isKindOfClass:NSNumber.class]) {
+        NSUInteger activeCount = [activeCountValue unsignedIntegerValue];
+        if (activeCount > 1) return NO;
+        if (activeCount == 1 && ![lineCheck[@"active_context_matches_data_slot"] boolValue]) return NO;
+    }
+    if (rat.count == 1 && ![lineCheck[@"data_service_matches_registered_rat"] boolValue]) return NO;
+    return YES;
 }
 
 // Privacy-preserving preflight: only counts, selector availability and
@@ -1165,15 +1196,16 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             if (fingerprint.length) break;
             if (attempt < 4) [NSThread sleepForTimeInterval:1.0];
         }
-        if (identity[@"error"] ||
-            ![(BLScanSubscriptionUUID(identity) ?: @"") isEqualToString:subscription]) {
+        if (identity[@"error"] || !BLScanRecoveryIdentityCompatible(identity, subscription)) {
             if (failureReason) *failureReason = @"No se pudo confirmar la misma línea móvil durante la recuperación";
             return NO;
         }
-        if (!BLScanSingleActiveLine(identity)) {
-            if (failureReason) *failureReason = @"La línea móvil activa cambió durante la recuperación";
-            return NO;
-        }
+        NSDictionary *identityLine = BLRHActiveLineCheck(identity);
+        NSDictionary *identityRAT = [identity[@"ratRaw"] isKindOfClass:NSDictionary.class] ? identity[@"ratRaw"] : @{};
+        NSLog(@"[BandLock recovery] identity accepted registered_rats=%lu active_contexts=%@ strict=%d",
+              (unsigned long)identityRAT.count,
+              identityLine[@"active_context_count"] ?: NSNull.null,
+              [identityLine[@"verified"] boolValue]);
 
         BOOL bandsRestored = YES;
         BOOL bandWriteAccepted = YES;
@@ -1207,13 +1239,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     [NSThread sleepForTimeInterval:1.0];
                     NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
                     if (readback[@"error"]) continue;
-                    NSString *fingerprint = BLScanSubscriptionUUID(readback);
-                    if (fingerprint.length && ![fingerprint isEqualToString:subscription]) {
-                        if (failureReason) *failureReason = @"La línea de datos cambió durante la recuperación";
-                        return NO;
-                    }
-                    if (!BLScanSingleActiveLine(readback)) {
-                        if (failureReason) *failureReason = @"La línea móvil dejó de ser verificable durante la recuperación";
+                    if (!BLScanRecoveryIdentityCompatible(readback, subscription)) {
+                        if (failureReason) *failureReason = @"La línea móvil cambió durante la recuperación";
                         return NO;
                     }
                     bandsRestored = BLScanTargetBandsMatch(manager, readback, targetRAT, originalBands) ||
@@ -1234,20 +1261,15 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         NSLog(@"[BandLock recovery] restore RAT accepted; waiting for service and band readback");
         NSString *expectedRAT = BLTargetRATForMode(restoreMode);
         BOOL serviceRestored = NO;
-        // UMTS/3G detach/attach is substantially slower than LTE on some
-        // carriers. Allow a bounded 20 s convergence window after the saved
-        // mode request instead of declaring recovery failed after ~8 s.
-        for (NSUInteger check = 0; check < 20; check++) {
+        // A 3G-only scan can leave the modem fully detached on carriers where
+        // 3G is unavailable. Allow the saved Auto/LTE request to execute first,
+        // then give registration a bounded 30 s convergence window.
+        for (NSUInteger check = 0; check < 30; check++) {
             [NSThread sleepForTimeInterval:1.0];
             NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
             if (readback[@"error"]) continue;
-            NSString *fingerprint = BLScanSubscriptionUUID(readback);
-            if (fingerprint.length && ![fingerprint isEqualToString:subscription]) {
-                if (failureReason) *failureReason = @"La línea de datos cambió durante la recuperación";
-                return NO;
-            }
-            if (!BLScanSingleActiveLine(readback)) {
-                if (failureReason) *failureReason = @"La línea móvil dejó de ser verificable durante la recuperación";
+            if (!BLScanRecoveryIdentityCompatible(readback, subscription)) {
+                if (failureReason) *failureReason = @"La línea móvil cambió durante la recuperación";
                 return NO;
             }
             if ([saved[@"version"] isEqual:@3] && !bandsRestored) {
@@ -1285,7 +1307,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             return NO;
         }
         if (!serviceRestored) {
-            if (failureReason) *failureReason = @"El modo anterior fue solicitado, pero el servicio móvil no volvió a registrarse dentro de 20 s. Usa Recuperar de nuevo.";
+            if (failureReason) *failureReason = @"El modo anterior fue solicitado, pero el servicio móvil no volvió a registrarse dentro de 30 s. Usa Recuperar de nuevo.";
             return NO;
         }
         // The private iOS18 selection getter may still be Unknown. Do not call

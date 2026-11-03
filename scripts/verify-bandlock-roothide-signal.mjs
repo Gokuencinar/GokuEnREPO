@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui12$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui13$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -446,9 +446,23 @@ const recovery = scan.slice(recoveryStart, recoveryEnd);
 assert.match(recovery, /writeBands:originalBands\s+forTargetRAT:targetRAT/);
 assert.doesNotMatch(recovery, /\[manager restoreBandConfiguration:/);
 assert.ok(recovery.indexOf('writeBands:originalBands') < recovery.indexOf('setModeCodeSync:restoreMode'));
-assert.match(recovery, /check < 20/);
+assert.match(recovery, /check < 30/);
 assert.match(recovery, /if \(\[saved\[@"version"\] isEqual:@3\] && !bandsRestored\)/);
 assert.match(recovery, /if \(!serviceRestored\)/);
 assert.ok(recovery.indexOf('if (!serviceRestored)') < recovery.indexOf('if (!BLScanClearJournal())'));
 assert.match(recovery, /journal cleared after positive verification/);
 console.log('BandLock rhui12 RAT single-flight and staged recovery safety: PASS');
+
+// rhui13: recovery must be able to escape a detached 3G-only state. The same
+// subscription fingerprint remains mandatory, and multiple registered RATs or
+// active contexts are still rejected; only the zero-registered-RAT transition
+// is tolerated while the saved Auto/LTE mode is being restored.
+assert.match(scan, /static BOOL BLScanRecoveryIdentityCompatible/);
+assert.match(scan, /rat && rat\.count > 1/);
+assert.match(scan, /activeCount > 1/);
+assert.match(recovery, /!BLScanRecoveryIdentityCompatible\(identity, subscription\)/);
+assert.match(recovery, /!BLScanRecoveryIdentityCompatible\(readback, subscription\)/);
+assert.doesNotMatch(recovery, /if \(!BLScanSingleActiveLine\(identity\)\)/);
+assert.match(recovery, /check < 30/);
+assert.match(recovery, /dentro de 30 s/);
+console.log('BandLock rhui13 detached-RAT recovery gate: PASS');
