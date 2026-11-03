@@ -23,6 +23,17 @@
 - (NSDictionary *)snapshotFromQuery:(NSDictionary *)query;
 - (NSArray<NSNumber *> *)activeLTEFromQuery:(NSDictionary *)query;
 - (BOOL)writeLTEBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
+- (BOOL)setModeCodeSync:(NSString *)mode errorText:(NSString **)errorText;
+- (NSArray<NSNumber *> *)supportedBandsForTargetRAT:(NSString *)targetRAT fromQuery:(NSDictionary *)query;
+- (NSArray<NSNumber *> *)activeBandsForTargetRAT:(NSString *)targetRAT fromQuery:(NSDictionary *)query;
+- (BOOL)writeBands:(NSArray<NSNumber *> *)bands
+      forTargetRAT:(NSString *)targetRAT
+        usingQuery:(NSDictionary *)query
+         errorText:(NSString **)errorText;
+- (NSDictionary *)bandConfigurationSnapshotFromQuery:(NSDictionary *)query;
+- (BOOL)restoreBandConfiguration:(NSDictionary *)snapshot
+                      usingQuery:(NSDictionary *)query
+                       errorText:(NSString **)errorText;
 @end
 
 static NSString *BLScanDirectory(void) {
@@ -140,6 +151,65 @@ static BOOL BLScanHasPower(NSDictionary *row) {
            [row[@"rscp"] isKindOfClass:NSNumber.class];
 }
 static const NSUInteger BLPassiveMaxRows = 8;
+static const NSUInteger BLTechnologyScanSamples = 16;
+
+static NSString *BLModeForTargetRAT(NSString *targetRAT) {
+    if ([targetRAT isEqualToString:@"2G"]) return @"2g";
+    if ([targetRAT isEqualToString:@"3G"]) return @"3g";
+    if ([targetRAT isEqualToString:@"LTE"]) return @"lte";
+    if ([targetRAT isEqualToString:@"NR"]) return @"5g-on";
+    return nil;
+}
+
+static NSString *BLDisplayTargetRAT(NSString *targetRAT) {
+    if ([targetRAT isEqualToString:@"LTE"]) return @"4G";
+    if ([targetRAT isEqualToString:@"NR"]) return @"5G";
+    return targetRAT ?: @"Red";
+}
+
+static NSArray<NSDictionary *> *BLSortedObservedBands(NSDictionary<NSNumber *, NSDictionary *> *byBand) {
+    NSArray<NSNumber *> *keys = [[byBand allKeys] sortedArrayUsingComparator:^NSComparisonResult(NSNumber *a, NSNumber *b) {
+        return [a compare:b];
+    }];
+    NSMutableArray<NSDictionary *> *rows = [NSMutableArray arrayWithCapacity:keys.count];
+    for (NSNumber *band in keys) {
+        NSDictionary *row = byBand[band];
+        if (row) [rows addObject:row];
+    }
+    return rows;
+}
+
+static void BLMergeObservedBand(NSMutableDictionary<NSNumber *, NSDictionary *> *byBand,
+                                NSDictionary *measurement,
+                                NSString *targetRAT) {
+    if (![measurement isKindOfClass:NSDictionary.class] ||
+        ![measurement[@"rat"] isEqualToString:targetRAT]) return;
+    NSNumber *band = [measurement[@"band"] isKindOfClass:NSNumber.class] ? measurement[@"band"] : nil;
+    if (!band || band.integerValue < 1 ||
+        band.integerValue > ([targetRAT isEqualToString:@"NR"] ? 1024 : 255)) return;
+    NSString *role = [measurement[@"role"] isKindOfClass:NSString.class] ? measurement[@"role"] : @"unknown";
+    if (![role isEqualToString:@"serving"] && ![role isEqualToString:@"neighbor"]) return;
+
+    NSMutableDictionary *record = [@{
+        @"band": band,
+        @"rat": targetRAT,
+        @"role": role,
+        @"source": [measurement[@"source"] isKindOfClass:NSString.class] ? measurement[@"source"] : @"unknown",
+        @"status": BLScanHasPower(measurement) ? @"measured" : @"detected"
+    } mutableCopy];
+    for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
+        id value = measurement[metric];
+        if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
+    }
+
+    NSDictionary *existing = byBand[band];
+    // Prefer serving-cell data over a neighbor row. Otherwise retain the
+    // first real metric set instead of fabricating an average across cells.
+    BOOL replace = !existing ||
+        ([existing[@"role"] isEqualToString:@"neighbor"] && [role isEqualToString:@"serving"]) ||
+        (![existing[@"status"] isEqualToString:@"measured"] && [record[@"status"] isEqualToString:@"measured"]);
+    if (replace) byBand[band] = record;
+}
 
 static NSNumber *BLRHSlotNumber(id context) {
     if (!context || context == NSNull.null) return nil;
@@ -358,6 +428,46 @@ static NSArray *BLScanMeasurements(BLTelephonyManager *manager, NSDictionary *qu
         ? probe[@"measurements"] : @[];
 }
 
+static BOOL BLScanHasServingRAT(BLTelephonyManager *manager, NSDictionary *query, NSString *targetRAT) {
+    if (![targetRAT isKindOfClass:NSString.class] || !targetRAT.length) return NO;
+    for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
+        if ([measurement[@"rat"] isEqualToString:targetRAT] &&
+            [measurement[@"role"] isEqualToString:@"serving"]) return YES;
+    }
+    return NO;
+}
+
+static BOOL BLScanHasConflictingServingRAT(BLTelephonyManager *manager,
+                                            NSDictionary *query,
+                                            NSString *targetRAT) {
+    for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
+        if (![measurement[@"role"] isEqualToString:@"serving"]) continue;
+        NSString *rat = [measurement[@"rat"] isKindOfClass:NSString.class]
+            ? measurement[@"rat"] : nil;
+        if (rat.length && ![rat isEqualToString:targetRAT]) return YES;
+    }
+    return NO;
+}
+
+static NSString *BLTargetRATForMode(NSString *mode) {
+    if ([mode isEqualToString:@"2g"]) return @"2G";
+    if ([mode isEqualToString:@"3g"]) return @"3G";
+    if ([mode isEqualToString:@"lte"]) return @"LTE";
+    if ([mode isEqualToString:@"5g-on"] || [mode isEqualToString:@"5g-only"]) return @"NR";
+    return nil; // Automatic / 5G Auto may legitimately register on several RATs.
+}
+
+static BOOL BLScanBandConfigurationMatches(BLTelephonyManager *manager,
+                                           NSDictionary *query,
+                                           NSDictionary *savedConfiguration) {
+    NSDictionary *current = [manager bandConfigurationSnapshotFromQuery:query];
+    NSDictionary *savedActive = [savedConfiguration[@"active"] isKindOfClass:NSDictionary.class]
+        ? savedConfiguration[@"active"] : nil;
+    NSDictionary *currentActive = [current[@"active"] isKindOfClass:NSDictionary.class]
+        ? current[@"active"] : nil;
+    return savedActive && currentActive && [savedActive isEqualToDictionary:currentActive];
+}
+
 // A registered LTE serving cell is NOT proof of LTE-only selection. A
 // transiently unavailable selection may be retried, but absolutely no
 // further modem writes occur until an explicit LTE-only selection is read.
@@ -401,6 +511,10 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
 @property (nonatomic, assign) NSUInteger automaticRecoveryRetries;
 @property (nonatomic, strong) dispatch_queue_t scanQueue;
 - (NSDictionary *)startPreparedWithManager:(BLTelephonyManager *)manager;
+- (void)runTechnologyScanForTarget:(NSString *)targetRAT
+                       restoreMode:(NSString *)restoreMode
+                      subscription:(NSString *)subscription
+                           manager:(BLTelephonyManager *)manager;
 @end
 
 @implementation BLRHSignalScan
@@ -574,6 +688,401 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
              @"message": @"Observación de señal iniciada"};
 }
 
+- (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
+                                           target:(NSString *)targetRAT
+                                      restoreMode:(NSString *)restoreMode {
+    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT]) {
+        return @{@"success": @NO, @"message": @"Tecnología de red no válida"};
+    }
+    if ([targetRAT isEqualToString:@"NR"] && BLDeviceIsKnownLTEOnly()) {
+        return @{@"success": @NO, @"message": @"Este iPhone no dispone de módem 5G"};
+    }
+    NSString *targetMode = BLModeForTargetRAT(targetRAT);
+    NSSet *allowedModes = [NSSet setWithArray:
+        @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
+    if (!targetMode.length || ![allowedModes containsObject:restoreMode]) {
+        return @{@"success": @NO,
+                 @"message": @"No existe un modo de retorno seguro para iniciar el barrido"};
+    }
+
+    @synchronized(self) {
+        if (self.running || self.recovering || BLScanJournalExists()) {
+            return @{@"success": @NO,
+                     @"message": @"Termina el barrido o la recuperación anterior antes de iniciar otro"};
+        }
+        self.running = YES;
+        self.cancelRequested = NO;
+    }
+
+    NSDictionary *preflight = [manager queryCoreTelephonyForPassiveObservation];
+    NSString *subscription = preflight[@"error"] ? nil : BLScanSubscriptionUUID(preflight);
+    NSDictionary *originalBandConfiguration = preflight[@"error"]
+        ? nil : [manager bandConfigurationSnapshotFromQuery:preflight];
+    NSArray<NSNumber *> *baselineSupported = preflight[@"error"]
+        ? @[] : [manager supportedBandsForTargetRAT:targetRAT fromQuery:preflight];
+    NSArray<NSNumber *> *baselineActive = preflight[@"error"]
+        ? @[] : [manager activeBandsForTargetRAT:targetRAT fromQuery:preflight];
+    BOOL hasBandBaseline = originalBandConfiguration && baselineSupported.count &&
+        baselineActive.count && baselineActive.count <= 128 &&
+        [[NSSet setWithArray:baselineActive]
+            isSubsetOfSet:[NSSet setWithArray:baselineSupported]];
+    NSString *failure = nil;
+    if (preflight[@"error"]) failure = @"No se pudo consultar la línea móvil antes del barrido";
+    else if (!BLScanSingleActiveLine(preflight))
+        failure = @"El barrido requiere una única línea móvil activa";
+    else if (subscription.length != 64)
+        failure = @"No se pudo identificar de forma estable la línea móvil";
+
+    if (failure.length) {
+        @synchronized(self) {
+            self.running = NO;
+            self.cancelRequested = NO;
+        }
+        return @{@"success": @NO, @"message": failure};
+    }
+
+    NSMutableDictionary *journal = [@{
+        @"version": hasBandBaseline ? @3 : @2,
+        @"scan_kind": hasBandBaseline ? @"technology_band_sweep" : @"technology_observation",
+        @"original_mode": restoreMode,
+        @"target_rat": targetRAT,
+        @"target_mode": targetMode,
+        @"subscription_hash": subscription,
+        @"started": @([[NSDate date] timeIntervalSince1970])
+    } mutableCopy];
+    if (hasBandBaseline) {
+        journal[@"original_band_config"] = originalBandConfiguration;
+        journal[@"original_bands"] = baselineActive;
+        journal[@"initial_supported_bands"] = baselineSupported;
+        journal[@"phase"] = @"pre_rat_baseline_saved";
+    }
+    if (!BLScanWriteJournal(journal)) {
+        @synchronized(self) { self.running = NO; }
+        return @{@"success": @NO,
+                 @"message": @"No se pudo guardar la recuperación antes de cambiar de red"};
+    }
+
+    @synchronized(self) {
+        self.scanState = [@{
+            @"success": @YES,
+            @"running": @YES,
+            @"read_only": @NO,
+            @"band_read_only": @YES,
+            @"phase": @"switching_rat",
+            @"target_rat": targetRAT,
+            @"rows": @[],
+            @"total": @(BLTechnologyScanSamples),
+            @"completed": @0,
+            @"message": [NSString stringWithFormat:@"Cambiando temporalmente a %@…",
+                BLDisplayTargetRAT(targetRAT)]
+        } mutableCopy];
+    }
+
+    dispatch_async(self.scanQueue, ^{
+        [self runTechnologyScanForTarget:targetRAT
+                             restoreMode:restoreMode
+                            subscription:subscription
+                                 manager:manager];
+    });
+    return @{
+        @"success": @YES,
+        @"read_only": @NO,
+        @"band_read_only": @YES,
+        @"message": [NSString stringWithFormat:@"Barrido %@ iniciado", BLDisplayTargetRAT(targetRAT)]
+    };
+}
+
+- (void)runTechnologyScanForTarget:(NSString *)targetRAT
+                       restoreMode:(NSString *)restoreMode
+                      subscription:(NSString *)subscription
+                           manager:(BLTelephonyManager *)manager {
+    NSMutableDictionary<NSNumber *, NSDictionary *> *byBand = [NSMutableDictionary dictionary];
+    NSString *stopReason = nil;
+    NSString *targetMode = BLModeForTargetRAT(targetRAT);
+    BOOL targetObserved = NO;
+    NSTimeInterval deadline = [NSDate date].timeIntervalSince1970 + 240.0;
+    @try {
+        NSString *setError = nil;
+        if (![manager setModeCodeSync:targetMode errorText:&setError]) {
+            stopReason = setError ?: @"No se pudo cambiar temporalmente la tecnología";
+        }
+
+        // The private RAT getter is unreliable on iOS 18. Do not call a
+        // successful setter a verified mode change: wait for an actual serving
+        // cell of the requested technology before beginning the scan window.
+        for (NSUInteger wait = 0; !stopReason && wait < 12; wait++) {
+            if ([NSDate date].timeIntervalSince1970 >= deadline) {
+                stopReason = @"Tiempo máximo del barrido agotado";
+                break;
+            }
+            if ([self shouldStop]) { stopReason = @"Barrido cancelado"; break; }
+            NSDictionary *query = [manager queryCoreTelephonyForPassiveObservation];
+            if (query[@"error"]) {
+                if (wait < 11) { [NSThread sleepForTimeInterval:1.0]; continue; }
+                stopReason = @"CoreTelephony no respondió al comprobar el cambio de tecnología";
+                break;
+            }
+            NSString *fingerprint = BLScanSubscriptionUUID(query);
+            if (fingerprint.length && ![fingerprint isEqualToString:subscription]) {
+                stopReason = @"La línea de datos cambió durante el barrido";
+                break;
+            }
+            NSArray *measurements = BLScanMeasurements(manager, query);
+            for (NSDictionary *measurement in measurements) {
+                if ([measurement[@"rat"] isEqualToString:targetRAT] &&
+                    [measurement[@"role"] isEqualToString:@"serving"]) {
+                    targetObserved = YES;
+                }
+                BLMergeObservedBand(byBand, measurement, targetRAT);
+            }
+            @synchronized(self) {
+                self.scanState[@"rows"] = BLSortedObservedBands(byBand);
+                self.scanState[@"message"] = [NSString stringWithFormat:
+                    @"Esperando registro %@ · %lu bandas detectadas",
+                    BLDisplayTargetRAT(targetRAT), (unsigned long)byBand.count];
+            }
+            if (targetObserved) break;
+            if (wait < 11) [NSThread sleepForTimeInterval:1.0];
+        }
+        if (!stopReason && !targetObserved) {
+            stopReason = [NSString stringWithFormat:
+                @"No se registró una celda %@ tras solicitar el cambio; se restaura el modo anterior",
+                BLDisplayTargetRAT(targetRAT)];
+        }
+
+        // If CTBandInfo exposes a writable band inventory for this RAT, sweep
+        // every safe modem-reported band one by one. This is the exhaustive
+        // path the UI calls "todas las bandas": candidates come from the live
+        // modem inventory, never from a hard-coded country list.
+        NSDictionary *baselineJournal = BLScanReadJournal();
+        NSArray<NSNumber *> *supported = BLSortedBands(baselineJournal[@"initial_supported_bands"]);
+        NSArray<NSNumber *> *originalBands = BLSortedBands(baselineJournal[@"original_bands"]);
+        NSDictionary *originalBandConfiguration =
+            [baselineJournal[@"original_band_config"] isKindOfClass:NSDictionary.class]
+                ? baselineJournal[@"original_band_config"] : nil;
+        NSMutableArray<NSNumber *> *candidates = [NSMutableArray array];
+        for (NSNumber *band in supported) {
+            if (![band isKindOfClass:NSNumber.class] || band.integerValue <= 0 || band.integerValue > 1024) continue;
+            if ([targetRAT isEqualToString:@"LTE"] &&
+                [[BLGDuplexForBand(band) uppercaseString] isEqualToString:@"SDL"]) continue;
+            if ([targetRAT isEqualToString:@"NR"] &&
+                [[BLGNRDuplexForBand(band) uppercaseString] hasPrefix:@"SDL"]) continue;
+            [candidates addObject:band];
+        }
+        BOOL exhaustive = !stopReason && targetObserved &&
+            [baselineJournal[@"version"] isEqual:@3] &&
+            [baselineJournal[@"scan_kind"] isEqualToString:@"technology_band_sweep"] &&
+            originalBandConfiguration && candidates.count && candidates.count <= 64 &&
+            originalBands.count && originalBands.count <= 128 &&
+            [[NSSet setWithArray:originalBands] isSubsetOfSet:[NSSet setWithArray:supported]];
+
+        if (exhaustive) {
+            NSDictionary *saved = BLScanReadJournal();
+            NSMutableDictionary *bandJournal = [saved mutableCopy];
+            bandJournal[@"phase"] = @"band_sweep_ready";
+            if (!BLScanWriteJournal(bandJournal)) {
+                stopReason = @"No se pudo confirmar el journal antes del barrido de bandas";
+            } else {
+                @synchronized(self) {
+                    self.scanState[@"band_read_only"] = @NO;
+                    self.scanState[@"total"] = @(candidates.count);
+                    self.scanState[@"completed"] = @0;
+                    self.scanState[@"message"] = [NSString stringWithFormat:
+                        @"%@ · %lu bandas del módem preparadas",
+                        BLDisplayTargetRAT(targetRAT), (unsigned long)candidates.count];
+                }
+            }
+        }
+
+        if (exhaustive && !stopReason) {
+            // Discard the initial serving/neighbor snapshot: each result below
+            // must correspond to a band that was explicitly selected and read
+            // back as active before its metrics are accepted.
+            [byBand removeAllObjects];
+            for (NSUInteger index = 0; index < candidates.count; index++) {
+                NSNumber *band = candidates[index];
+                if ([NSDate date].timeIntervalSince1970 >= deadline) {
+                    stopReason = @"Tiempo máximo del barrido agotado; restaurando";
+                    break;
+                }
+                if ([self shouldStop]) { stopReason = @"Barrido cancelado"; break; }
+
+                NSDictionary *saved = BLScanReadJournal();
+                if (!saved) { stopReason = @"Journal de recuperación no disponible"; break; }
+                NSMutableDictionary *step = [saved mutableCopy];
+                step[@"phase"] = @"band_step_prepared";
+                step[@"target_band"] = band;
+                step[@"index"] = @(index);
+                if (!BLScanWriteJournal(step)) {
+                    stopReason = @"No se pudo actualizar el journal antes de cambiar de banda";
+                    break;
+                }
+
+                NSMutableDictionary *row = [@{
+                    @"rat": targetRAT,
+                    @"band": band,
+                    @"role": @"serving",
+                    @"source": @"band_sweep",
+                    @"status": @"no_signal"
+                } mutableCopy];
+                @synchronized(self) {
+                    self.scanState[@"message"] = [NSString stringWithFormat:
+                        @"%@ %@%@ · %lu/%lu",
+                        BLDisplayTargetRAT(targetRAT),
+                        [targetRAT isEqualToString:@"NR"] ? @"n" : @"B", band,
+                        (unsigned long)(index + 1), (unsigned long)candidates.count];
+                }
+
+                NSDictionary *writeQuery = [manager queryCoreTelephonyForPassiveObservation];
+                NSString *fingerprint = writeQuery[@"error"] ? nil : BLScanSubscriptionUUID(writeQuery);
+                BOOL conflictingServingRAT = !writeQuery[@"error"] &&
+                    BLScanHasConflictingServingRAT(manager, writeQuery, targetRAT);
+                if (writeQuery[@"error"] || ![fingerprint isEqualToString:subscription] ||
+                    !BLScanSingleActiveLine(writeQuery) || conflictingServingRAT) {
+                    row[@"status"] = @"query_failed";
+                    byBand[band] = row;
+                    stopReason = @"La línea cambió o el módem cayó a otra tecnología; restaurando";
+                    break;
+                }
+                NSString *writeError = nil;
+                if (![manager writeBands:@[band] forTargetRAT:targetRAT
+                              usingQuery:writeQuery errorText:&writeError]) {
+                    row[@"status"] = @"write_failed";
+                    byBand[band] = row;
+                    stopReason = writeError ?: @"La escritura de banda falló; restaurando";
+                    break;
+                }
+
+                BOOL readbackMatched = NO;
+                for (NSUInteger sample = 0; sample < 5; sample++) {
+                    if ([NSDate date].timeIntervalSince1970 >= deadline) {
+                        stopReason = @"Tiempo máximo del barrido agotado; restaurando";
+                        break;
+                    }
+                    if ([self shouldStop]) { stopReason = @"Barrido cancelado"; break; }
+                    [NSThread sleepForTimeInterval:0.8];
+                    NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
+                    if (readback[@"error"]) continue;
+                    NSString *readFingerprint = BLScanSubscriptionUUID(readback);
+                    if (readFingerprint.length && ![readFingerprint isEqualToString:subscription]) {
+                        stopReason = @"La línea de datos cambió durante el barrido";
+                        break;
+                    }
+                    if (!BLScanMatches([manager activeBandsForTargetRAT:targetRAT fromQuery:readback], @[band])) {
+                        continue;
+                    }
+                    readbackMatched = YES;
+                    for (NSDictionary *measurement in BLScanMeasurements(manager, readback)) {
+                        if (![measurement[@"rat"] isEqualToString:targetRAT] ||
+                            ![measurement[@"band"] isEqual:band] ||
+                            ![measurement[@"role"] isEqualToString:@"serving"]) continue;
+                        row[@"role"] = @"serving";
+                        row[@"source"] = measurement[@"source"] ?: @"cell_info";
+                        row[@"status"] = BLScanHasPower(measurement) ? @"measured" : @"detected";
+                        for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
+                            id value = measurement[metric];
+                            if ([value isKindOfClass:NSNumber.class]) row[metric] = value;
+                        }
+                        if ([row[@"status"] isEqualToString:@"measured"]) break;
+                    }
+                    if ([row[@"status"] isEqualToString:@"measured"]) break;
+                }
+                if (!readbackMatched && !stopReason) {
+                    row[@"status"] = @"readback_unverified";
+                    stopReason = @"La máscara de banda no pudo verificarse; restaurando";
+                }
+                byBand[band] = row;
+                @synchronized(self) {
+                    self.scanState[@"rows"] = BLSortedObservedBands(byBand);
+                    self.scanState[@"completed"] = @(index + 1);
+                }
+                if (stopReason) break;
+            }
+        } else if (!stopReason && targetObserved) {
+            // Some modem/OS combinations expose cell measurements but no
+            // writable 2G/3G band dictionary. Keep the directed RAT scan useful
+            // by collecting serving + neighbor bands, but label it non-exhaustive.
+            @synchronized(self) {
+                self.scanState[@"band_read_only"] = @YES;
+                self.scanState[@"message"] = [NSString stringWithFormat:
+                    @"%@ · el módem no expone bloqueo por banda; buscando celdas observables",
+                    BLDisplayTargetRAT(targetRAT)];
+            }
+        }
+
+        for (NSUInteger sample = 0;
+             !stopReason && targetObserved && !exhaustive && sample < BLTechnologyScanSamples;
+             sample++) {
+            @autoreleasepool {
+                if ([NSDate date].timeIntervalSince1970 >= deadline) {
+                    stopReason = @"Tiempo máximo del barrido agotado; restaurando";
+                    break;
+                }
+                if ([self shouldStop]) { stopReason = @"Barrido cancelado"; break; }
+                NSDictionary *query = [manager queryCoreTelephonyForPassiveObservation];
+                if (query[@"error"]) {
+                    stopReason = @"CoreTelephony dejó de responder; restaurando la red anterior";
+                    break;
+                }
+                NSString *fingerprint = BLScanSubscriptionUUID(query);
+                if (fingerprint.length && ![fingerprint isEqualToString:subscription]) {
+                    stopReason = @"La línea de datos cambió; restaurando la red anterior";
+                    break;
+                }
+                BOOL servingTarget = NO;
+                for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
+                    if ([measurement[@"rat"] isEqualToString:targetRAT] &&
+                        [measurement[@"role"] isEqualToString:@"serving"]) servingTarget = YES;
+                    BLMergeObservedBand(byBand, measurement, targetRAT);
+                }
+                if (!servingTarget && sample >= 2) {
+                    stopReason = @"La tecnología solicitada dejó de estar registrada; restaurando";
+                }
+                NSArray *rows = BLSortedObservedBands(byBand);
+                @synchronized(self) {
+                    self.scanState[@"rows"] = rows;
+                    self.scanState[@"completed"] = @(sample + 1);
+                    self.scanState[@"message"] = [NSString stringWithFormat:
+                        @"%@ · muestra %lu/%lu · %lu bandas detectadas",
+                        BLDisplayTargetRAT(targetRAT),
+                        (unsigned long)(sample + 1),
+                        (unsigned long)BLTechnologyScanSamples,
+                        (unsigned long)rows.count];
+                }
+                if (stopReason) break;
+                if (sample + 1 < BLTechnologyScanSamples) [NSThread sleepForTimeInterval:1.5];
+            }
+        }
+    } @catch (NSException *exception) {
+        stopReason = exception.reason ?: @"Error durante el barrido";
+    } @finally {
+        NSDictionary *saved = BLScanReadJournal();
+        if (saved) {
+            NSMutableDictionary *restoring = [saved mutableCopy];
+            restoring[@"phase"] = @"restoring";
+            (void)BLScanWriteJournal(restoring);
+        }
+        [self setPhase:@"restoring" message:[NSString stringWithFormat:
+            @"Restaurando modo %@…", restoreMode]];
+        BOOL restored = [self restoreJournalWithManager:manager];
+        NSArray *rows = BLSortedObservedBands(byBand);
+        @synchronized(self) {
+            self.running = NO;
+            self.cancelRequested = NO;
+            self.scanState[@"running"] = @NO;
+            self.scanState[@"rows"] = rows;
+            self.scanState[@"success"] = @(restored && targetObserved);
+            self.scanState[@"phase"] = restored ? @"complete" : @"recovery_required";
+            self.scanState[@"recovery_required"] = @(!restored);
+            self.scanState[@"message"] = restored
+                ? (stopReason ?: [NSString stringWithFormat:
+                    @"Barrido %@ completado · %lu bandas observadas · modo anterior solicitado de nuevo",
+                    BLDisplayTargetRAT(targetRAT), (unsigned long)rows.count])
+                : @"No se pudo volver a solicitar el modo anterior. Usa Recuperar antes de otro cambio.";
+        }
+    }
+}
+
 - (NSDictionary *)cancel {
     @synchronized(self) {
         if (self.running) {
@@ -614,7 +1123,94 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
 
 - (BOOL)restoreJournalWithManager:(BLTelephonyManager *)manager {
     NSDictionary *saved = BLScanReadJournal();
-    if (!saved || ![saved[@"version"] isEqual:@1]) return NO;
+    if (!saved) return NO;
+    if (([saved[@"version"] isEqual:@2] &&
+         [saved[@"scan_kind"] isEqualToString:@"technology_observation"]) ||
+        ([saved[@"version"] isEqual:@3] &&
+         [saved[@"scan_kind"] isEqualToString:@"technology_band_sweep"])) {
+        NSString *subscription = [saved[@"subscription_hash"] isKindOfClass:NSString.class]
+            ? saved[@"subscription_hash"] : nil;
+        NSString *restoreMode = [saved[@"original_mode"] isKindOfClass:NSString.class]
+            ? saved[@"original_mode"] : nil;
+        NSString *targetRAT = [saved[@"target_rat"] isKindOfClass:NSString.class]
+            ? saved[@"target_rat"] : nil;
+        NSSet *allowedModes = [NSSet setWithArray:
+            @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
+        if (subscription.length != 64 || ![allowedModes containsObject:restoreMode]) return NO;
+
+        NSDictionary *identity = nil;
+        for (NSUInteger attempt = 0; attempt < 5; attempt++) {
+            identity = [manager queryCoreTelephonyForPassiveObservation];
+            NSString *fingerprint = identity[@"error"] ? nil : BLScanSubscriptionUUID(identity);
+            if (fingerprint.length) break;
+            if (attempt < 4) [NSThread sleepForTimeInterval:1.0];
+        }
+        if (identity[@"error"] ||
+            ![[BLScanSubscriptionUUID(identity) ?: @""] isEqualToString:subscription]) return NO;
+        if (!BLScanSingleActiveLine(identity)) return NO;
+
+        if ([saved[@"version"] isEqual:@3]) {
+            NSDictionary *originalConfiguration =
+                [saved[@"original_band_config"] isKindOfClass:NSDictionary.class]
+                    ? saved[@"original_band_config"] : nil;
+            if (!targetRAT.length || !originalConfiguration) return NO;
+            if (!BLScanBandConfigurationMatches(manager, identity, originalConfiguration)) {
+                NSString *bandError = nil;
+                if (![manager restoreBandConfiguration:originalConfiguration
+                                            usingQuery:identity
+                                             errorText:&bandError]) return NO;
+                BOOL bandsRestored = NO;
+                for (NSUInteger check = 0; check < 10; check++) {
+                    [NSThread sleepForTimeInterval:0.8];
+                    NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
+                    if (readback[@"error"]) continue;
+                    NSString *fingerprint = BLScanSubscriptionUUID(readback);
+                    if (fingerprint.length && ![fingerprint isEqualToString:subscription]) return NO;
+                    if (!BLScanSingleActiveLine(readback)) return NO;
+                    if (BLScanBandConfigurationMatches(manager, readback, originalConfiguration)) {
+                        bandsRestored = YES;
+                        break;
+                    }
+                }
+                if (!bandsRestored) return NO;
+            }
+        }
+
+        NSString *restoreError = nil;
+        if (![manager setModeCodeSync:restoreMode errorText:&restoreError]) return NO;
+        NSString *expectedRAT = BLTargetRATForMode(restoreMode);
+        BOOL serviceRestored = NO;
+        for (NSUInteger check = 0; check < 10; check++) {
+            [NSThread sleepForTimeInterval:0.8];
+            NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
+            if (readback[@"error"]) continue;
+            NSString *fingerprint = BLScanSubscriptionUUID(readback);
+            if (fingerprint.length && ![fingerprint isEqualToString:subscription]) return NO;
+            if (!BLScanSingleActiveLine(readback)) return NO;
+            NSArray *measurements = BLScanMeasurements(manager, readback);
+            if (expectedRAT.length) {
+                if (BLScanHasServingRAT(manager, readback, expectedRAT)) {
+                    serviceRestored = YES;
+                    break;
+                }
+            } else {
+                for (NSDictionary *measurement in measurements) {
+                    if ([measurement[@"role"] isEqualToString:@"serving"] &&
+                        [measurement[@"rat"] isKindOfClass:NSString.class]) {
+                        serviceRestored = YES;
+                        break;
+                    }
+                }
+                if (serviceRestored) break;
+            }
+        }
+        // The private iOS18 selection getter may still be Unknown. Do not call
+        // the selection itself verified, but require cellular registration to
+        // converge after restoring the saved BandLock intent before clearing
+        // the crash-recovery journal.
+        return serviceRestored && BLScanClearJournal();
+    }
+    if (![saved[@"version"] isEqual:@1]) return NO;
     NSArray *original = BLSortedBands(saved[@"original_lte"]);
     NSString *subscription = saved[@"subscription_hash"];
     if (!original.count || original.count > 128 || ![subscription isKindOfClass:NSString.class] || subscription.length != 64) return NO;

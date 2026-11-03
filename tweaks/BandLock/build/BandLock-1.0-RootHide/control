@@ -1,8 +1,8 @@
 Package: com.gokuencinar.bandlock
 Name: BandLock (RootHide)
-Version: 1.6.0~rhui10
+Version: 1.6.0~rhui11
 Architecture: iphoneos-arm64e
-Description: Compact BandLock UI, LTE/NR signal diagnostics, passive band observation and guarded network mode changes on compatible devices.
+Description: Compact BandLock UI, guarded network mode changes and technology-directed 2G/3G/LTE/NR band diagnostics with recovery.
 Maintainer: Gokuencinar
 Author: Gokuencinar
 Section: Tweaks

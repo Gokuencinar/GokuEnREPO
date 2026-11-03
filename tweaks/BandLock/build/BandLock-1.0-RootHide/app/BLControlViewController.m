@@ -536,8 +536,8 @@
     self.signalValue = [self valueLabel];
     self.signalValue.textAlignment = NSTextAlignmentLeft;
     self.signalValue.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
-    self.signalValue.text = BLT(@"Consulta la señal o inicia un barrido pasivo.",
-                                @"Read signal or start a passive scan.");
+    self.signalValue.text = BLT(@"Consulta la señal o inicia un barrido por tecnología.",
+                                @"Read signal or start a technology scan.");
     NSMutableArray<UIView *> *diagnostics = [NSMutableArray arrayWithObject:probe];
     [diagnostics addObjectsFromArray:self.signalObserveButtons];
     [diagnostics addObject:self.signalStartButton];
@@ -856,20 +856,36 @@
     NSArray<NSString *> *technologyCodes = @[@"2G", @"3G", @"LTE", @"NR"];
     if (index < 0 || index >= (NSInteger)technologyCodes.count) return;
     NSString *rat = technologyCodes[(NSUInteger)index];
+    NSString *display = [rat isEqualToString:@"LTE"] ? @"4G" :
+        ([rat isEqualToString:@"NR"] ? @"5G" : rat);
+    NSString *warning = [NSString stringWithFormat:BLT(
+        @"BandLock cambiará temporalmente la línea a %@ para buscar bandas detectadas en celdas servidoras y vecinas. Durante el cambio puede perderse cobertura, llamadas o datos. Al terminar o cancelar se volverá a solicitar el modo anterior. ¿Iniciar barrido?",
+        @"BandLock will temporarily switch the line to %@ to find bands detected on serving and neighboring cells. Coverage, calls or data may be lost during the switch. When finished or cancelled, the previous mode will be requested again. Start scan?"), display];
+    UIAlertController *alert = [UIAlertController
+        alertControllerWithTitle:[NSString stringWithFormat:BLT(@"Barrido %@", @"%@ scan"), display]
+                         message:warning
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel")
+                                             style:UIAlertActionStyleCancel handler:nil]];
     __weak typeof(self) weakSelf = self;
-    [self.manager startPassiveSignalObservationForRAT:rat completion:^(NSDictionary *result) {
-        if (![result[@"success"] boolValue]) {
-            [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
-                ? result[@"message"] : @"Observation did not start"];
-            return;
-        }
-        weakSelf.signalRunning = YES;
-        weakSelf.signalValue.text = [NSString stringWithFormat:
-            BLT(@"Observando %@ (solo lectura)…", @"Observing %@ (read-only)…"),
-            [rat isEqualToString:@"LTE"] ? @"4G" : ([rat isEqualToString:@"NR"] ? @"5G" : rat)];
-        [weakSelf refreshDisplay];
-        [weakSelf startSignalPolling];
-    }];
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Iniciar", @"Start")
+                                             style:UIAlertActionStyleDestructive
+                                           handler:^(__unused UIAlertAction *action) {
+        [weakSelf.manager startTechnologySignalScanForRAT:rat completion:^(NSDictionary *result) {
+            if (![result[@"success"] boolValue]) {
+                [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
+                    ? result[@"message"] : @"Scan did not start"];
+                return;
+            }
+            weakSelf.signalRunning = YES;
+            weakSelf.signalValue.text = [NSString stringWithFormat:
+                BLT(@"Cambiando temporalmente a %@ y buscando bandas…",
+                    @"Temporarily switching to %@ and scanning bands…"), display];
+            [weakSelf refreshDisplay];
+            [weakSelf startSignalPolling];
+        }];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)signalScanCancelTapped:(UIButton *)sender {
@@ -931,6 +947,8 @@
             NSMutableString *line = [NSMutableString stringWithString:display];
             if ([row[@"band"] isKindOfClass:NSNumber.class])
                 [line appendFormat:@" %@%@", [rat isEqualToString:@"NR"] ? @"n" : @"B", row[@"band"]];
+            if ([row[@"role"] isEqualToString:@"neighbor"])
+                [line appendString:BLT(@" · Vecina", @" · Neighbor")];
             for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
                 NSNumber *value = row[metric];
                 if ([value isKindOfClass:NSNumber.class]) [line appendFormat:@" · %@ %.1f", metric.uppercaseString, value.doubleValue];

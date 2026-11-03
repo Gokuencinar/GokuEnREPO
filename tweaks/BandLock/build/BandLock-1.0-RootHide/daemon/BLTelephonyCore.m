@@ -13,7 +13,9 @@
 static NSString * const BLLTERAT = @"kCTRegistrationRadioAccessTechnologyLTE";
 static NSString * const BLNRRAT = @"kCTRegistrationRadioAccessTechnologyNR";
 static NSString * const BLUTRANRAT = @"kCTRegistrationRadioAccessTechnologyUTRAN";
+static NSString * const BLGSMRAT = @"kCTRegistrationRadioAccessTechnologyGSM";
 static NSString * const BLRATAutomatic = @"kCTRegistrationRATSelectionAutomatic";
+static NSString * const BLRATGSM = @"kCTRegistrationRATSelectionGSM";
 static NSString * const BLRATLTE = @"kCTRegistrationRATSelectionLTE";
 static NSString * const BLRATUMTS = @"kCTRegistrationRATSelectionUMTS";
 static NSString * const BLRATNR = @"kCTRegistrationRATSelectionNR";
@@ -105,6 +107,64 @@ static NSString *BLNRBandKey(NSDictionary *dictionary) {
 static NSArray<NSNumber *> *BLNRBandsFromDictionary(NSDictionary *dictionary) {
     NSString *key = BLNRBandKey(dictionary);
     return key.length ? BLSortedBands(dictionary[key]) : @[];
+}
+
+static NSString *BLBandKeyForTargetRAT(NSString *targetRAT, NSDictionary *dictionary) {
+    if (![targetRAT isKindOfClass:NSString.class] || ![dictionary isKindOfClass:NSDictionary.class]) return nil;
+    NSArray<NSString *> *exact = nil;
+    NSArray<NSString *> *tokens = nil;
+    if ([targetRAT isEqualToString:@"LTE"]) {
+        exact = @[BLLTERAT];
+        tokens = @[@"LTE"];
+    } else if ([targetRAT isEqualToString:@"NR"]) {
+        NSString *nr = BLNRBandKey(dictionary);
+        if (nr.length) return nr;
+        tokens = @[@"NR"];
+    } else if ([targetRAT isEqualToString:@"3G"]) {
+        exact = @[BLUTRANRAT];
+        tokens = @[@"UTRAN", @"UMTS", @"WCDMA"];
+    } else if ([targetRAT isEqualToString:@"2G"]) {
+        exact = @[BLGSMRAT];
+        tokens = @[@"GSM", @"GERAN"];
+    } else {
+        return nil;
+    }
+    for (NSString *key in exact ?: @[]) {
+        id value = dictionary[key];
+        if ([value isKindOfClass:NSArray.class] || [value isKindOfClass:NSSet.class]) return key;
+    }
+    NSString *matched = nil;
+    for (id rawKey in dictionary) {
+        if (![rawKey isKindOfClass:NSString.class]) continue;
+        id value = dictionary[rawKey];
+        if (![value isKindOfClass:NSArray.class] && ![value isKindOfClass:NSSet.class]) continue;
+        NSString *upper = [rawKey uppercaseString];
+        for (NSString *token in tokens ?: @[]) {
+            if (![upper containsString:token]) continue;
+            if (matched && ![matched isEqualToString:rawKey]) return nil;
+            matched = rawKey;
+            break;
+        }
+    }
+    return matched;
+}
+
+static NSDictionary *BLSafeBandDictionary(id raw) {
+    if (![raw isKindOfClass:NSDictionary.class]) return nil;
+    NSMutableDictionary *safe = [NSMutableDictionary dictionary];
+    if ([(NSDictionary *)raw count] > 32) return nil;
+    for (id rawKey in (NSDictionary *)raw) {
+        if (![rawKey isKindOfClass:NSString.class] || [(NSString *)rawKey length] > 160) return nil;
+        id rawBands = ((NSDictionary *)raw)[rawKey];
+        if (![rawBands isKindOfClass:NSArray.class] && ![rawBands isKindOfClass:NSSet.class]) return nil;
+        NSArray<NSNumber *> *bands = BLSortedBands(rawBands);
+        if (bands.count > 256) return nil;
+        for (NSNumber *band in bands) {
+            if (![band isKindOfClass:NSNumber.class] || band.integerValue <= 0 || band.integerValue > 1024) return nil;
+        }
+        safe[rawKey] = bands;
+    }
+    return safe;
 }
 
 static NSString *BLHumanRAT(id ratObject) {
@@ -669,6 +729,185 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     return YES;
 }
 
+- (BOOL)setModeCodeSync:(NSString *)mode errorText:(NSString **)errorText {
+    if (![mode isKindOfClass:NSString.class]) {
+        if (errorText) *errorText = @"Modo de red no válido";
+        return NO;
+    }
+    NSString *selection = BLRATAutomatic;
+    NSString *preferred = nil;
+    if ([mode isEqualToString:@"automatic"]) {
+        selection = BLRATAutomatic;
+    } else if ([mode isEqualToString:@"2g"]) {
+        selection = BLRATGSM;
+        preferred = BLGSMRAT;
+    } else if ([mode isEqualToString:@"3g"]) {
+        selection = BLRATUMTS;
+        preferred = BLUTRANRAT;
+    } else if ([mode isEqualToString:@"lte"]) {
+        selection = BLRATLTE;
+        preferred = BLLTERAT;
+    } else if ([mode isEqualToString:@"5g-auto"]) {
+        selection = BLRATAutomatic;
+        preferred = BLNRRAT;
+    } else if ([mode isEqualToString:@"5g-on"]) {
+        selection = BLRATNR;
+        preferred = BLNRRAT;
+    } else if ([mode isEqualToString:@"5g-only"]) {
+        selection = BLRATNRSA;
+        preferred = BLNRRAT;
+    } else {
+        if (errorText) *errorText = @"Modo de red no válido";
+        return NO;
+    }
+    return [self setRatSelectionSync:selection preferred:preferred errorText:errorText];
+}
+
+- (NSArray<NSNumber *> *)supportedBandsForTargetRAT:(NSString *)targetRAT
+                                          fromQuery:(NSDictionary *)query {
+    id bandInfo = query[@"bandInfo"];
+    SEL selector = NSSelectorFromString(@"supportedBands");
+    NSDictionary *supported = [bandInfo respondsToSelector:selector] ? BLMsg0(bandInfo, selector) : nil;
+    NSString *key = BLBandKeyForTargetRAT(targetRAT, supported);
+    return key.length ? BLSortedBands(supported[key]) : @[];
+}
+
+- (NSArray<NSNumber *> *)activeBandsForTargetRAT:(NSString *)targetRAT
+                                       fromQuery:(NSDictionary *)query {
+    id bandInfo = query[@"bandInfo"];
+    SEL selector = NSSelectorFromString(@"activeBands");
+    NSDictionary *active = [bandInfo respondsToSelector:selector] ? BLMsg0(bandInfo, selector) : nil;
+    NSString *key = BLBandKeyForTargetRAT(targetRAT, active);
+    return key.length ? BLSortedBands(active[key]) : @[];
+}
+
+- (BOOL)writeBands:(NSArray<NSNumber *> *)bands
+      forTargetRAT:(NSString *)targetRAT
+        usingQuery:(NSDictionary *)query
+         errorText:(NSString **)errorText {
+    id client = query[@"client"];
+    id context = query[@"context"];
+    id currentBandInfo = query[@"bandInfo"];
+    SEL activeSelector = NSSelectorFromString(@"activeBands");
+    SEL supportedSelector = NSSelectorFromString(@"supportedBands");
+    NSDictionary *currentActive = [currentBandInfo respondsToSelector:activeSelector]
+        ? BLMsg0(currentBandInfo, activeSelector) : nil;
+    NSDictionary *currentSupported = [currentBandInfo respondsToSelector:supportedSelector]
+        ? BLMsg0(currentBandInfo, supportedSelector) : nil;
+    if (![currentActive isKindOfClass:NSDictionary.class] ||
+        ![currentSupported isKindOfClass:NSDictionary.class]) {
+        if (errorText) *errorText = @"CTBandInfo no expone bandas configurables para este barrido";
+        return NO;
+    }
+    NSString *key = BLBandKeyForTargetRAT(targetRAT, currentSupported);
+    if (!key.length || !currentActive[key]) {
+        if (errorText) *errorText = @"El módem no expone una máscara configurable para esta tecnología";
+        return NO;
+    }
+    NSArray<NSNumber *> *supported = BLSortedBands(currentSupported[key]);
+    if (!bands.count || !supported.count) {
+        if (errorText) *errorText = @"Inventario de bandas vacío";
+        return NO;
+    }
+    NSSet *supportedSet = [NSSet setWithArray:supported];
+    for (NSNumber *band in bands) {
+        if (![band isKindOfClass:NSNumber.class] || band.integerValue <= 0 ||
+            band.integerValue > 1024 || ![supportedSet containsObject:band]) {
+            if (errorText) *errorText = @"La banda solicitada no está en el inventario del módem";
+            return NO;
+        }
+    }
+
+    NSMutableDictionary *newActive = [currentActive mutableCopy];
+    newActive[key] = BLSortedBands(bands);
+    id modifiedBandInfo = nil;
+    Class bandInfoClass = NSClassFromString(@"CTBandInfo");
+    SEL initSelector = NSSelectorFromString(@"initWithSupported:andActiveBands:");
+    id allocated = bandInfoClass ? [bandInfoClass alloc] : nil;
+    if (allocated && [allocated respondsToSelector:initSelector]) {
+        modifiedBandInfo = BLMsg2(allocated, initSelector, currentSupported, newActive);
+    }
+    if (!modifiedBandInfo) {
+        modifiedBandInfo = [currentBandInfo copy];
+        SEL setActiveDictionary = NSSelectorFromString(@"setFActiveBands:");
+        if (modifiedBandInfo && [modifiedBandInfo respondsToSelector:setActiveDictionary]) {
+            BLMsgSetObj(modifiedBandInfo, setActiveDictionary, newActive);
+        } else modifiedBandInfo = nil;
+    }
+    if (!modifiedBandInfo) {
+        if (errorText) *errorText = @"No se pudo construir CTBandInfo";
+        return NO;
+    }
+    SEL setter = NSSelectorFromString(@"setActiveBandInfo:bands:error:");
+    if (![client respondsToSelector:setter]) {
+        if (errorText) *errorText = @"setActiveBandInfo no está disponible";
+        return NO;
+    }
+    NSError *setError = nil;
+    BLMsgSetActiveBandInfo(client, setter, context, modifiedBandInfo, &setError);
+    if (setError) {
+        if (errorText) *errorText = setError.description;
+        return NO;
+    }
+    return YES;
+}
+
+- (NSDictionary *)bandConfigurationSnapshotFromQuery:(NSDictionary *)query {
+    id bandInfo = query[@"bandInfo"];
+    SEL activeSelector = NSSelectorFromString(@"activeBands");
+    SEL supportedSelector = NSSelectorFromString(@"supportedBands");
+    NSDictionary *active = [bandInfo respondsToSelector:activeSelector]
+        ? BLSafeBandDictionary(BLMsg0(bandInfo, activeSelector)) : nil;
+    NSDictionary *supported = [bandInfo respondsToSelector:supportedSelector]
+        ? BLSafeBandDictionary(BLMsg0(bandInfo, supportedSelector)) : nil;
+    if (!active || !supported) return nil;
+    return @{@"active": active, @"supported": supported};
+}
+
+- (BOOL)restoreBandConfiguration:(NSDictionary *)snapshot
+                      usingQuery:(NSDictionary *)query
+                       errorText:(NSString **)errorText {
+    NSDictionary *active = BLSafeBandDictionary(snapshot[@"active"]);
+    NSDictionary *supported = BLSafeBandDictionary(snapshot[@"supported"]);
+    if (!active || !supported) {
+        if (errorText) *errorText = @"Configuración de bandas de recuperación no válida";
+        return NO;
+    }
+    for (NSString *key in active) {
+        NSArray *activeBands = active[key];
+        NSArray *supportedBands = supported[key];
+        if (!supportedBands ||
+            ![[NSSet setWithArray:activeBands] isSubsetOfSet:[NSSet setWithArray:supportedBands]]) {
+            if (errorText) *errorText = @"La configuración original no es coherente con su inventario guardado";
+            return NO;
+        }
+    }
+
+    id client = query[@"client"];
+    id context = query[@"context"];
+    Class bandInfoClass = NSClassFromString(@"CTBandInfo");
+    SEL initSelector = NSSelectorFromString(@"initWithSupported:andActiveBands:");
+    id allocated = bandInfoClass ? [bandInfoClass alloc] : nil;
+    id restoredBandInfo = allocated && [allocated respondsToSelector:initSelector]
+        ? BLMsg2(allocated, initSelector, supported, active) : nil;
+    if (!restoredBandInfo) {
+        if (errorText) *errorText = @"No se pudo reconstruir CTBandInfo para recuperación";
+        return NO;
+    }
+    SEL setter = NSSelectorFromString(@"setActiveBandInfo:bands:error:");
+    if (![client respondsToSelector:setter]) {
+        if (errorText) *errorText = @"setActiveBandInfo no está disponible";
+        return NO;
+    }
+    NSError *setError = nil;
+    BLMsgSetActiveBandInfo(client, setter, context, restoredBandInfo, &setError);
+    if (setError) {
+        if (errorText) *errorText = setError.description;
+        return NO;
+    }
+    return YES;
+}
+
 - (void)setNetworkModeSelection:(NSString *)selection preferred:(NSString *)preferred completion:(BLActionCompletion)completion {
     if (self.busy) { if (completion) completion(NO, BLT(@"Hay una operación en curso.", @"An operation is already running.")); return; }
     self.busy = YES;
@@ -724,7 +963,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         SEL setActiveDictionary = NSSelectorFromString(@"setFActiveBands:");
         if (modifiedBandInfo && [modifiedBandInfo respondsToSelector:setActiveDictionary]) {
             BLMsgSetObj(modifiedBandInfo, setActiveDictionary, newActive);
-        }
+        } else modifiedBandInfo = nil;
     }
     if (!modifiedBandInfo) { if (errorText) *errorText = BLT(@"No se pudo construir CTBandInfo.", @"Could not construct CTBandInfo."); return NO; }
     SEL setter = NSSelectorFromString(@"setActiveBandInfo:bands:error:");
@@ -771,6 +1010,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         modifiedBandInfo = [currentBandInfo copy];
         SEL setActiveDictionary = NSSelectorFromString(@"setFActiveBands:");
         if (modifiedBandInfo && [modifiedBandInfo respondsToSelector:setActiveDictionary]) BLMsgSetObj(modifiedBandInfo, setActiveDictionary, newActive);
+        else modifiedBandInfo = nil;
     }
     if (!modifiedBandInfo) { if (errorText) *errorText = BLT(@"No se pudo construir CTBandInfo.", @"Could not construct CTBandInfo."); return NO; }
     SEL setter = NSSelectorFromString(@"setActiveBandInfo:bands:error:");

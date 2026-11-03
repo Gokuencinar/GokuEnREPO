@@ -21,6 +21,7 @@
 @interface BLCCModule ()
 @property (nonatomic, copy) NSString *currentModeCode;
 @property (nonatomic, copy) NSString *confirmedModeCode;
+@property (nonatomic, copy) NSString *pendingModeCode;
 @property (nonatomic, assign) BOOL supports5G;
 @property (nonatomic, assign) NSUInteger stateEpoch;
 @property (nonatomic, assign) NSTimeInterval statusRefreshNotBefore;
@@ -39,6 +40,7 @@
         // Never represent it as a freshly verified modem selection.
         _currentModeCode = @"automatic";
         _confirmedModeCode = nil;
+        _pendingModeCode = nil;
         _supports5G = NO;
         _stateEpoch = 0;
         _statusRefreshNotBefore = 0;
@@ -314,6 +316,7 @@
     self.stateEpoch += 1;
     NSUInteger epoch = self.stateEpoch;
     self.modeIntentPinnedUntil = CFAbsoluteTimeGetCurrent() + 8.0;
+    self.pendingModeCode = requestedMode;
 
     // Keep the UI responsive immediately, but perform the actual modem change
     // through BandLockDaemon. The app uses the same CoreTelephonyClient path
@@ -341,7 +344,9 @@
 
               if (!success) {
                   BOOL uncertain = [result[@"verification_pending"] boolValue];
-                  self.currentModeCode = uncertain ? @"automatic" : (self.confirmedModeCode ?: @"automatic");
+                  if (!uncertain) self.pendingModeCode = nil;
+                  self.currentModeCode = uncertain && self.pendingModeCode.length
+                      ? self.pendingModeCode : (self.confirmedModeCode ?: @"automatic");
                   [self bl_syncVisualSelection];
                   if (uncertain) {
                       // The setter may have taken effect but the private
@@ -378,10 +383,13 @@
             confirmed = [self bl_normalizedReportedMode:confirmed];
             BOOL verified = ![result[@"verification_pending"] boolValue] &&
                 ![confirmed isEqualToString:@"unknown"];
-            self.currentModeCode = verified ? confirmed : @"automatic";
+            self.currentModeCode = verified ? confirmed : requestedMode;
+            BLCCSetLastModeCode(requestedMode);
             if (verified) {
                 self.confirmedModeCode = confirmed;
-                BLCCSetLastModeCode(requestedMode);
+                self.pendingModeCode = nil;
+            } else {
+                self.pendingModeCode = requestedMode;
             }
             self.modeIntentPinnedUntil = CFAbsoluteTimeGetCurrent() + 8.0;
             self.statusRefreshNotBefore = self.modeIntentPinnedUntil;
@@ -413,6 +421,8 @@
         }
 
         NSString *modeCode = [result[@"mode_code"] isKindOfClass:NSString.class] ? result[@"mode_code"] : nil;
+        NSString *acceptedMode = [result[@"accepted_mode"] isKindOfClass:NSString.class]
+            ? result[@"accepted_mode"] : nil;
         BOOL supports5G = !BLDeviceIsKnownLTEOnly() && [result[@"supports_5g"] boolValue];
         if (!modeCode.length) {
             dispatch_async(dispatch_get_main_queue(), ^{ self.statusRefreshInFlight = NO; });
@@ -425,11 +435,28 @@
             if (epoch != self.stateEpoch) return;
             self.supports5G = supports5G;
             NSString *normalizedModeCode = [self bl_normalizedReportedMode:modeCode];
-            BOOL verified = ![normalizedModeCode isEqualToString:@"unknown"];
-            if (!verified) normalizedModeCode = @"automatic";
+            NSString *normalizedAccepted = acceptedMode.length
+                ? [self bl_normalizedReportedMode:acceptedMode] : nil;
+            BOOL hasAcceptedIntent = normalizedAccepted.length &&
+                ![normalizedAccepted isEqualToString:@"unknown"];
+            BOOL verified = ![normalizedModeCode isEqualToString:@"unknown"] &&
+                (!hasAcceptedIntent || [normalizedModeCode isEqualToString:normalizedAccepted]);
+            if (!verified && hasAcceptedIntent &&
+                ![normalizedAccepted isEqualToString:@"unknown"]) {
+                self.pendingModeCode = [normalizedAccepted isEqualToString:@"automatic"]
+                    ? nil : normalizedAccepted;
+                normalizedModeCode = normalizedAccepted;
+            } else if (!verified && self.pendingModeCode.length) {
+                normalizedModeCode = self.pendingModeCode;
+            } else if (!verified) {
+                normalizedModeCode = @"automatic";
+            }
             BOOL changed = ![self.currentModeCode isEqualToString:normalizedModeCode];
             self.currentModeCode = normalizedModeCode;
-            if (verified) self.confirmedModeCode = normalizedModeCode;
+            if (verified) {
+                self.confirmedModeCode = normalizedModeCode;
+                self.pendingModeCode = nil;
+            }
             if (changed) [self bl_syncVisualSelection];
         });
     });

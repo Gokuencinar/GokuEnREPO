@@ -10,6 +10,9 @@
 - (NSDictionary *)startWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager
                                               target:(NSString *)targetRAT;
+- (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
+                                           target:(NSString *)targetRAT
+                                      restoreMode:(NSString *)restoreMode;
 - (NSDictionary *)status;
 - (NSDictionary *)cancel;
 - (NSDictionary *)requestRecoveryWithManager:(BLTelephonyManager *)manager;

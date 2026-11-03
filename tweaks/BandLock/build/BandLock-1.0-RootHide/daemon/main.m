@@ -44,6 +44,7 @@ static void BLDaemonLog(const char *message) {
 - (NSDictionary *)queryCoreTelephonyForPassiveObservation;
 - (NSDictionary *)snapshotFromQuery:(NSDictionary *)query;
 - (BOOL)setRatSelectionSync:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText;
+- (BOOL)setModeCodeSync:(NSString *)mode errorText:(NSString **)errorText;
 - (BOOL)writeLTEBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
 - (NSArray<NSNumber *> *)activeLTEFromQuery:(NSDictionary *)query;
 - (BOOL)writeNRBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
@@ -61,6 +62,43 @@ static NSString * const BLRATLTE = @"kCTRegistrationRATSelectionLTE";
 static NSString * const BLRATUMTS = @"kCTRegistrationRATSelectionUMTS";
 static NSString * const BLRATNR = @"kCTRegistrationRATSelectionNR";
 static NSString * const BLRATNRSA = @"kCTRegistrationRATSelectionNRStandAlone";
+static NSString * const BLLastAcceptedModeDefaultsKey = @"BandLockLastAcceptedModeCode";
+static NSString * const BLLastAcceptedModeTimeDefaultsKey = @"BandLockLastAcceptedModeTime";
+
+static NSSet<NSString *> *BLAllowedModeCodes(void) {
+    static NSSet<NSString *> *allowed;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        allowed = [NSSet setWithArray:
+            @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
+    });
+    return allowed;
+}
+
+static NSString *BLStoredAcceptedModeCode(void) {
+    NSString *mode = [NSUserDefaults.standardUserDefaults stringForKey:BLLastAcceptedModeDefaultsKey];
+    return [BLAllowedModeCodes() containsObject:mode] ? mode : nil;
+}
+
+static NSString *BLLastAcceptedModeCode(void) {
+    return BLStoredAcceptedModeCode() ?: @"automatic";
+}
+
+static void BLRememberAcceptedModeCode(NSString *mode) {
+    if (![BLAllowedModeCodes() containsObject:mode]) return;
+    [NSUserDefaults.standardUserDefaults setObject:mode forKey:BLLastAcceptedModeDefaultsKey];
+    [NSUserDefaults.standardUserDefaults setDouble:[NSDate date].timeIntervalSince1970
+                                           forKey:BLLastAcceptedModeTimeDefaultsKey];
+}
+
+static NSString *BLRecentAcceptedModeCode(void) {
+    NSString *mode = BLStoredAcceptedModeCode();
+    if (!mode.length) return nil;
+    NSTimeInterval timestamp =
+        [NSUserDefaults.standardUserDefaults doubleForKey:BLLastAcceptedModeTimeDefaultsKey];
+    NSTimeInterval age = [NSDate date].timeIntervalSince1970 - timestamp;
+    return timestamp > 0 && age >= 0 && age <= 300.0 ? mode : nil;
+}
 
 static NSString *BLSocketPath(void) {
     NSString *resolved = jbroot(@"/tmp/com.gokuencinar.bandlockd.sock");
@@ -70,7 +108,7 @@ static NSString *BLSocketPath(void) {
 static NSDictionary *BLStatusPayload(BLTelephonyManager *manager, NSDictionary *query) {
     if (query[@"error"]) return @{@"success": @NO, @"message": [query[@"error"] description] ?: @"CoreTelephony error"};
     NSDictionary *snapshot = [manager snapshotFromQuery:query];
-    return @{
+    NSMutableDictionary *payload = [@{
         @"success": @YES,
         @"supported": snapshot[@"supported"] ?: @[],
         @"active": snapshot[@"active"] ?: @[],
@@ -81,7 +119,10 @@ static NSDictionary *BLStatusPayload(BLTelephonyManager *manager, NSDictionary *
         @"serving": snapshot[@"serving"] ?: @"—",
         @"mode": snapshot[@"mode"] ?: @"—",
         @"mode_code": snapshot[@"mode_code"] ?: @"unknown"
-    };
+    } mutableCopy];
+    NSString *acceptedMode = BLStoredAcceptedModeCode();
+    if (acceptedMode.length) payload[@"accepted_mode"] = acceptedMode;
+    return payload;
 }
 
 static NSDictionary *BLApplyNRBandsPayload(BLTelephonyManager *manager, NSArray<NSNumber *> *requested) {
@@ -186,6 +227,19 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
                 return @{@"success": @NO, @"message": @"Selecciona una tecnología 2G, 3G, 4G o 5G"};
             return [BLRHSignalScan.sharedScan startPassiveObservationWithManager:manager target:targetRAT];
         }
+        if ([command isEqualToString:@"scan_technology_start"]) {
+            NSString *targetRAT = [request[@"rat"] isKindOfClass:NSString.class] ? request[@"rat"] : @"";
+            if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT])
+                return @{@"success": @NO, @"message": @"Selecciona una tecnología 2G, 3G, 4G o 5G"};
+            NSString *restoreMode = BLRecentAcceptedModeCode();
+            if (!restoreMode.length) {
+                return @{@"success": @NO,
+                         @"message": @"Selecciona un modo de red en BandLock (por ejemplo Auto) justo antes del barrido para establecer un punto de retorno seguro."};
+            }
+            return [BLRHSignalScan.sharedScan startTechnologyScanWithManager:manager
+                                                                      target:targetRAT
+                                                                 restoreMode:restoreMode];
+        }
         if (([command isEqualToString:@"rat"] ||
              [command isEqualToString:@"apply"] ||
              [command isEqualToString:@"apply_nr"]) &&
@@ -212,9 +266,7 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
 
         if ([command isEqualToString:@"rat"]) {
             NSString *mode = [request[@"mode"] isKindOfClass:[NSString class]] ? request[@"mode"] : @"";
-            NSSet<NSString *> *allowed = [NSSet setWithArray:
-                @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
-            if (![allowed containsObject:mode])
+            if (![BLAllowedModeCodes() containsObject:mode])
                 return @{@"success": @NO, @"message": @"Modo de red no válido"};
             // 1.5 did not require an authoritative RAT readback before the
             // setter. The private getter is unreliable on iOS 18 and caused
@@ -230,19 +282,12 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
                     return @{@"success": @NO, @"message": @"This iPhone or active line does not report 5G support"};
                 }
             }
-            NSString *selection = BLRATAutomatic;
-            NSString *preferred = nil;
-            if ([mode isEqualToString:@"2g"]) { selection = BLRATGSM; preferred = BLGSMRAT; }
-            else if ([mode isEqualToString:@"lte"]) { selection = BLRATLTE; preferred = BLLTERAT; }
-            else if ([mode isEqualToString:@"3g"]) { selection = BLRATUMTS; preferred = BLUTRANRAT; }
-            else if ([mode isEqualToString:@"5g-auto"]) { selection = BLRATAutomatic; preferred = BLNRRAT; }
-            else if ([mode isEqualToString:@"5g-on"]) { selection = BLRATNR; preferred = BLNRRAT; }
-            else if ([mode isEqualToString:@"5g-only"]) { selection = BLRATNRSA; preferred = BLNRRAT; }
             NSString *errorText = nil;
-            if (![manager setRatSelectionSync:selection preferred:preferred errorText:&errorText]) {
+            if (![manager setModeCodeSync:mode errorText:&errorText]) {
                 BLDaemonLog("RAT setter failed; no automatic retry");
                 return @{@"success": @NO, @"message": errorText ?: @"RAT write failed"};
             }
+            BLRememberAcceptedModeCode(mode);
             BOOL isIOS18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
             // iOS18 RAT getters may produce EAGAIN even after a successful
             // setter callback. Do not mistake this for a failed write and do
@@ -251,6 +296,7 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
                 BLDaemonLog("RAT callback accepted; modem selection remains unverified");
                 return @{@"success": @YES, @"verification_pending": @YES,
                          @"mode_code": @"unknown",
+                         @"accepted_mode": mode,
                          @"message": @"Solicitud aceptada; modo aún sin confirmar"};
             }
             [NSThread sleepForTimeInterval:0.35];

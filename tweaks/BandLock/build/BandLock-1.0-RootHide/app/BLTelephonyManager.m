@@ -567,6 +567,15 @@ static NSString *BLDaemonSocketPath(void) {
     [self sendRequest:@{@"cmd": @"scan_observe_start", @"rat": rat} completion:completion];
 }
 
+- (void)startTechnologySignalScanForRAT:(NSString *)rat
+                              completion:(void (^)(NSDictionary *result))completion {
+    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat]) {
+        if (completion) completion(@{@"success": @NO, @"message": @"Tecnología no válida"});
+        return;
+    }
+    [self sendRequest:@{@"cmd": @"scan_technology_start", @"rat": rat} completion:completion];
+}
+
 - (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"scan_status"} completion:completion];
 }

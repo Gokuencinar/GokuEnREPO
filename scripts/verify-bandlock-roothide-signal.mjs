@@ -13,7 +13,7 @@ const manager = read('app/BLTelephonyManager.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui10$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui11$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -31,9 +31,14 @@ assert.match(manager, /startPassiveSignalObservationForRAT:/);
 assert.match(main, /scan_observe_start/);
 assert.match(scanHeader, /startPassiveObservationWithManager:/);
 const passiveStart = scan.indexOf('- (NSDictionary *)startPassiveObservationWithManager:');
-const passiveEnd = scan.indexOf('- (NSDictionary *)cancel {', passiveStart);
+const passiveEnd = scan.indexOf('- (NSDictionary *)startTechnologyScanWithManager:', passiveStart);
 assert.ok(passiveStart > 0 && passiveEnd > passiveStart, 'Passive observation must be isolated');
 const passive = scan.slice(passiveStart, passiveEnd);
+const technologyStart = passiveEnd;
+const technologyEnd = scan.indexOf('- (NSDictionary *)cancel {', technologyStart);
+assert.ok(technologyStart > 0 && technologyEnd > technologyStart,
+  'Technology scan must be isolated from legacy passive observation');
+const technologyScan = scan.slice(technologyStart, technologyEnd);
 assert.match(passive, /\[manager queryCoreTelephonyForPassiveObservation\]/);
 assert.doesNotMatch(passive, /\[manager queryCoreTelephony\]/,
   'Passive sampling must avoid the slow RAT getter');
@@ -374,3 +379,48 @@ assert.match(app, /\[weakSelf\.signalTimer invalidate\]/);
 assert.match(app, /if \(!weakSelf\.signalRunning && !weakSelf\.signalRecoveryRequired\)/);
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|setRatSelection|BLScanWriteJournal/);
 console.log('BandLock rhui10 RAT regression isolation and independent 2G–5G read-only scans: PASS');
+
+// rhui11: keep accepted user intent visible on iOS18 and make the four
+// diagnostic buttons technology-directed. Exhaustive band writes are allowed
+// only when CTBandInfo exposes a live supported/active inventory; otherwise the
+// scanner falls back to real serving/neighbor observations.
+assert.match(cc, /@property \(nonatomic, copy\) NSString \*pendingModeCode/);
+assert.match(cc, /self\.pendingModeCode = requestedMode/);
+assert.match(cc, /self\.currentModeCode = verified \? confirmed : requestedMode/);
+assert.match(cc, /if \(!verified && self\.pendingModeCode\.length\)/);
+assert.match(cc, /BLCCSetLastModeCode\(requestedMode\)/);
+assert.match(cc, /result\[@"accepted_mode"\]/);
+assert.match(cc, /normalizedAccepted/);
+assert.match(main, /\[command isEqualToString:@"scan_technology_start"\]/);
+assert.match(main, /BLRememberAcceptedModeCode\(mode\)/);
+assert.match(main, /if \(acceptedMode\.length\) payload\[@"accepted_mode"\] = acceptedMode/);
+assert.match(main, /BLRecentAcceptedModeCode\(\)/);
+assert.match(core, /- \(BOOL\)setModeCodeSync:/);
+for (const mapping of ['2g', '3g', 'lte', '5g-auto', '5g-on', '5g-only']) {
+  assert.match(core, new RegExp('isEqualToString:@"' + mapping.replace('-', '\\-') + '"'));
+}
+assert.match(manager, /startTechnologySignalScanForRAT:/);
+assert.match(app, /startTechnologySignalScanForRAT:rat/);
+assert.match(app, /cambiará temporalmente la línea a/);
+assert.match(technologyScan, /BLScanWriteJournal\(journal\)/);
+assert.match(technologyScan, /@"version": hasBandBaseline \? @3 : @2/);
+assert.match(technologyScan, /original_band_config/);
+assert.match(technologyScan, /setModeCodeSync:targetMode/);
+assert.match(technologyScan, /BLScanSingleActiveLine\(preflight\)/);
+assert.match(technologyScan, /BLMergeObservedBand\(byBand, measurement, targetRAT\)/);
+assert.match(technologyScan, /supportedBandsForTargetRAT:targetRAT/);
+assert.match(technologyScan, /activeBandsForTargetRAT:targetRAT/);
+assert.match(technologyScan, /writeBands:@\[band\] forTargetRAT:targetRAT/);
+assert.match(technologyScan, /readback_unverified/);
+assert.match(technologyScan, /candidates\.count <= 64/);
+assert.match(technologyScan, /Tiempo máximo del barrido agotado/);
+assert.match(technologyScan, /BLScanHasConflictingServingRAT\(manager, writeQuery, targetRAT\)/);
+assert.match(technologyScan, /!exhaustive && sample < BLTechnologyScanSamples/);
+assert.match(scan, /\[saved\[@"version"\] isEqual:@3\]/);
+assert.match(scan, /restoreBandConfiguration:originalConfiguration/);
+assert.match(scan, /BLScanBandConfigurationMatches\(manager, readback, originalConfiguration\)/);
+assert.match(scan, /serviceRestored && BLScanClearJournal\(\)/);
+assert.match(scan, /BLDeviceIsKnownLTEOnly\(\)/);
+assert.doesNotMatch(technologyScan, /countryBands/i,
+  'Technology scan candidates must come from the modem, not a country table');
+console.log('BandLock rhui11 pending RAT intent and technology-directed all-band diagnostics: PASS');
