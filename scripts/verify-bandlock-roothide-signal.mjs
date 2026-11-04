@@ -15,7 +15,7 @@ const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui15$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui16$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -188,8 +188,16 @@ assert.match(analyzer, /setNetworkModeAutomatic:/);
 assert.match(analyzer, /signalScanStatusWithCompletion:/);
 assert.match(analyzer, /cancelSignalScanWithCompletion:/);
 assert.match(analyzer, /recoverSignalScanWithCompletion:/);
-assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|applyPendingBands|applyBands|setRatSelectionSync)\b|@"(?:imsi|imei|cellId|subscriptionUUID|PCI|MCC|MNC|TAC|EARFCN|NRARFCN)"/i,
+assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|applyPendingBands|applyBands|setRatSelectionSync)\b|@"(?:imsi|imei|subscriptionUUID)"/i,
   'Analyzer may orchestrate guarded scans, but must not directly write the modem or persist private cell IDs');
+assert.match(analyzer, /BLCountryBandsForRAT/);
+assert.match(analyzer, /performWithoutAnimation/);
+assert.match(scan, /\[allowed containsObject:band\]/);
+assert.match(scan, /country_iso/);
+assert.match(core, /kCTCellMonitorCellId/);
+assert.match(core, /kCTCellMonitorPID/);
+assert.doesNotMatch(core.slice(core.indexOf('static NSDictionary *BLRHLegacySignalRow'), core.indexOf('@interface BLTelephonyManager')),
+  /@\"(?:IMSI|IMEI|ICCID|subscriptionUUID|subscriberIdentity)\"/i);
 assert.match(control, /firmware \(<= 18\.99\)/,
   'Experimental preview must explicitly recognize firmware 18.7.1');
 assert.match(main, /operatingSystemVersion\.majorVersion >= 18/);
@@ -410,7 +418,7 @@ for (const mapping of ['2g', '3g', 'lte', '5g-auto', '5g-on', '5g-only']) {
 }
 assert.match(manager, /startTechnologySignalScanForRAT:/);
 assert.match(analyzer, /startTechnologySignalScanForRAT:rat/);
-assert.match(analyzer, /cambiará temporalmente a/);
+assert.match(analyzer, /probará solo bandas de/);
 assert.match(technologyScan, /BLScanWriteJournal\(journal\)/);
 assert.match(technologyScan, /@"version": hasBandBaseline \? @3 : @2/);
 assert.match(technologyScan, /original_band_config/);

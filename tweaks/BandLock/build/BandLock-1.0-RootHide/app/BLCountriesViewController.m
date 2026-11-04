@@ -91,6 +91,11 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.selectCountryOnly) {
+        BLSetSelectedCountry(self.filteredCountries[indexPath.row]);
+        [self.navigationController popViewControllerAnimated:YES];
+        return;
+    }
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     @try {
         if (indexPath.row < 0 || indexPath.row >= (NSInteger)self.filteredCountries.count) return;

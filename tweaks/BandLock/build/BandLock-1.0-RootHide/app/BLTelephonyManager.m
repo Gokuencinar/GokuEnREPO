@@ -580,6 +580,19 @@ static NSString *BLDaemonSocketPath(void) {
     [self sendRequest:@{@"cmd": @"scan_status"} completion:completion];
 }
 
+- (void)startTechnologySignalScanForRAT:(NSString *)rat country:(NSString *)iso
+                            targetBands:(NSArray<NSNumber *> *)bands
+                             completion:(void (^)(NSDictionary *result))completion {
+    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat] ||
+        ![iso isKindOfClass:NSString.class] || iso.length != 2 ||
+        ![bands isKindOfClass:NSArray.class] || !bands.count || bands.count > 64) {
+        if (completion) completion(@{@"success": @NO, @"message": @"País, tecnología o bandas no válidos"});
+        return;
+    }
+    [self sendRequest:@{@"cmd": @"scan_technology_start", @"rat": rat,
+                        @"country_iso": iso, @"target_bands": bands} completion:completion];
+}
+
 - (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"scan_cancel"} completion:completion];
 }

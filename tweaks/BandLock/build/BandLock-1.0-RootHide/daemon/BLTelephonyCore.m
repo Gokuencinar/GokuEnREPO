@@ -214,7 +214,8 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
 }
 
 // RootHide signal diagnostic: never export raw CoreTelephony dictionaries,
-// SIM identifiers, cell identifiers, tower IDs or subscription UUIDs.
+// SIM identifiers, subscription UUIDs or other subscriber identity.
+// Explicitly allow bounded radio cell identifiers (not subscriber IDs).
 // Legacy RSRP/RSRQ/RSSI equal to zero are known placeholder values.
 static NSNumber *BLRHSignalNumber(id raw, double lower, double upper, BOOL rejectZero) {
     if (![raw isKindOfClass:NSNumber.class] ||
@@ -296,6 +297,36 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     if (snr) item[@"snr"] = snr;
     if (rscp) item[@"rscp"] = rscp;
     if (ecno) item[@"ecno"] = ecno;
+    // These are opt-in radio measurement fields only. A missing or nonnumeric
+    // CoreTelephony value stays absent; never derive IDs from band/frequency.
+    NSDictionary<NSString *, NSArray<NSString *> *> *aliases = @{
+        @"cell_id": @[@"kCTCellMonitorCellId"],
+        @"physical_cell_id": @[@"kCTCellMonitorPCI", @"kCTCellMonitorPID"],
+        @"psc": @[@"kCTCellMonitorPSC", @"kCTCellMonitorSCN"],
+        @"tac": @[@"kCTCellMonitorTAC"],
+        @"lac": @[@"kCTCellMonitorLAC"],
+        @"channel": [rat isEqualToString:@"NR"]
+          ? @[@"kCTCellMonitorNRARFCN", @"kCTCellMonitorChannelNumber"]
+          : ([rat isEqualToString:@"3G"]
+            ? @[@"kCTCellMonitorUARFCN", @"kCTCellMonitorChannelNumber"]
+            : @[@"kCTCellMonitorARFCN", @"kCTCellMonitorChannelNumber"])
+    };
+    for (NSString *field in aliases) {
+        if ([field isEqualToString:@"physical_cell_id"] &&
+            ![@[@"LTE", @"NR"] containsObject:rat]) continue;
+        if ([field isEqualToString:@"psc"] && ![rat isEqualToString:@"3G"]) continue;
+        double upper = [field isEqualToString:@"physical_cell_id"] ? 1007 :
+                       ([field isEqualToString:@"psc"] ? 511 :
+                        ([field isEqualToString:@"tac"] || [field isEqualToString:@"lac"] ? 65535 :
+                         ([field isEqualToString:@"cell_id"] ? 68719476735.0 : 3279165)));
+        for (NSString *key in aliases[field]) {
+            NSNumber *number = BLRHSignalNumber(row[key], 0, upper, NO);
+            if (!number || floor(number.doubleValue) != number.doubleValue) continue;
+            item[field] = number;
+            item[[field stringByAppendingString:@"_source_key"]] = key;
+            break;
+        }
+    }
     return item;
 }
 
@@ -1269,6 +1300,11 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
             @"role": @"serving", @"source": @"typed"
         } mutableCopy];
         if (serving[@"band"]) typedServing[@"band"] = serving[@"band"];
+        for (NSString *field in @[@"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel",
+                                  @"cell_id_source_key", @"physical_cell_id_source_key",
+                                  @"psc_source_key", @"tac_source_key", @"lac_source_key", @"channel_source_key"]) {
+            if (serving[field]) typedServing[field] = serving[field];
+        }
         NSNumber *rsrp = BLRHMetric(typed, @"rsrp", -200, -20, YES);
         NSNumber *rsrq = BLRHMetric(typed, @"rsrq", -60, 0, YES);
         NSNumber *rssi = BLRHMetric(typed, @"rssi", -200, -20, YES);
@@ -1294,7 +1330,10 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     NSMutableArray *available = [NSMutableArray array];
     for (NSDictionary *row in items) {
         if (row[@"rsrp"] || row[@"rsrq"] || row[@"rssi"] ||
-            row[@"snr"] || row[@"rscp"] || row[@"ecno"]) [available addObject:row];
+            row[@"snr"] || row[@"rscp"] || row[@"ecno"] ||
+            row[@"cell_id"] || row[@"physical_cell_id"] ||
+            row[@"psc"] || row[@"tac"] || row[@"lac"] || row[@"channel"])
+            [available addObject:row];
     }
     NSDictionary *diagnostics = @{
         @"typed_api": typedStatus,

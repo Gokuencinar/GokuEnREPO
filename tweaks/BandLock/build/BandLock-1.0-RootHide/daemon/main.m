@@ -235,7 +235,9 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             }
             return [BLRHSignalScan.sharedScan startTechnologyScanWithManager:manager
                                                                       target:targetRAT
-                                                                 restoreMode:restoreMode];
+                                                                 restoreMode:restoreMode
+                                                                  countryISO:request[@"country_iso"]
+                                                                 targetBands:request[@"target_bands"]];
         }
         if (([command isEqualToString:@"rat"] ||
              [command isEqualToString:@"apply"] ||

@@ -53,3 +53,23 @@ NSString *BLLocalizedCountryName(NSDictionary *country) {
     NSString *fallback = [country[@"name"] isKindOfClass:[NSString class]] ? country[@"name"] : nil;
     return fallback.length ? fallback : @"—";
 }
+
+NSArray<NSNumber *> *BLCountryBandsForRAT(NSDictionary *country, NSString *rat) {
+    if (![country isKindOfClass:NSDictionary.class] || ![rat isKindOfClass:NSString.class]) return @[];
+    id raw = nil;
+    if ([rat isEqualToString:@"LTE"]) raw = country[@"bands"];
+    else if ([rat isEqualToString:@"NR"]) raw = country[@"nr_bands"];
+    else if ([country[@"iso2"] isEqualToString:@"ES"]) {
+        // Spain GSM 900/DCS 1800 and UMTS I/VIII; actual service varies.
+        raw = [rat isEqualToString:@"2G"] ? @[@8, @3] :
+              ([rat isEqualToString:@"3G"] ? @[@1, @8] : nil);
+    }
+    if (![raw isKindOfClass:NSArray.class]) return @[];
+    NSMutableArray<NSNumber *> *validated = [NSMutableArray array];
+    for (id item in raw) {
+        if (![item isKindOfClass:NSNumber.class] || [item integerValue] < 1 ||
+            [item integerValue] > 1024 || ![item isEqual:@([item integerValue])]) continue;
+        if (![validated containsObject:item]) [validated addObject:item];
+    }
+    return validated;
+}

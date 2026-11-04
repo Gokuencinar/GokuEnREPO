@@ -208,6 +208,9 @@ static void BLMergeObservedBand(NSMutableDictionary<NSNumber *, NSDictionary *> 
         id value = measurement[metric];
         if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
     }
+    for (NSString *field in @[@"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel"]) {
+        if ([measurement[field] isKindOfClass:NSNumber.class]) record[field] = measurement[field];
+    }
 
     NSDictionary *existing = byBand[band];
     // Prefer serving-cell data over a neighbor row. Otherwise retain the
@@ -740,6 +743,27 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
 - (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
                                            target:(NSString *)targetRAT
                                       restoreMode:(NSString *)restoreMode {
+    return [self startTechnologyScanWithManager:manager target:targetRAT
+                                   restoreMode:restoreMode countryISO:nil targetBands:nil];
+}
+
+- (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
+                                           target:(NSString *)targetRAT
+                                      restoreMode:(NSString *)restoreMode
+                                       countryISO:(NSString *)countryISO
+                                      targetBands:(NSArray<NSNumber *> *)targetBands {
+    // Reject malformed client-supplied masks before any modem changes.
+    if (![countryISO isKindOfClass:NSString.class] || countryISO.length != 2 ||
+        ![targetBands isKindOfClass:NSArray.class] || !targetBands.count ||
+        targetBands.count > 64) {
+        return @{@"success": @NO, @"message": @"Selecciona país y bandas de referencia válidos"};
+    }
+    for (id band in targetBands) {
+        if (![band isKindOfClass:NSNumber.class] || [band integerValue] <= 0 ||
+            [band integerValue] > 1024 || ![band isEqual:@([band integerValue])]) {
+            return @{@"success": @NO, @"message": @"Lista de bandas inválida"};
+        }
+    }
     if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT]) {
         return @{@"success": @NO, @"message": @"Tecnología de red no válida"};
     }
@@ -772,6 +796,19 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         ? @[] : [manager supportedBandsForTargetRAT:targetRAT fromQuery:preflight];
     NSArray<NSNumber *> *baselineActive = preflight[@"error"]
         ? @[] : [manager activeBandsForTargetRAT:targetRAT fromQuery:preflight];
+    // Preserve only candidates in BOTH the reference country and modem inventory.
+    // Do not infer an available channel from a country allocation.
+    NSMutableArray *eligible = [NSMutableArray array];
+    BOOL modemInventoryAvailable = baselineSupported.count > 0;
+    for (NSNumber *band in targetBands) {
+        // 2G/3G firmware can omit the capability inventory entirely.
+        // Preserve reference bands for observation in that case, but never
+        // enable a band writer without a verified modem baseline below.
+        BOOL keepForObservation = !modemInventoryAvailable &&
+            ([@[@"2G", @"3G"] containsObject:targetRAT]);
+        if (([baselineSupported containsObject:band] || keepForObservation) &&
+            ![eligible containsObject:band]) [eligible addObject:band];
+    }
     BOOL hasBandBaseline = originalBandConfiguration && baselineSupported.count &&
         baselineActive.count && baselineActive.count <= 128 &&
         [[NSSet setWithArray:baselineActive]
@@ -782,6 +819,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         failure = @"El barrido requiere una única línea móvil activa";
     else if (subscription.length != 64)
         failure = @"No se pudo identificar de forma estable la línea móvil";
+    else if (!eligible.count)
+        failure = @"No hay bandas del país compatibles con el inventario del módem";
 
     if (failure.length) {
         @synchronized(self) {
@@ -796,6 +835,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         @"scan_kind": hasBandBaseline ? @"technology_band_sweep" : @"technology_observation",
         @"original_mode": restoreMode,
         @"target_rat": targetRAT,
+        @"country_iso": countryISO,
+        @"target_bands": eligible,
         @"target_mode": targetMode,
         @"scan_id": scanID,
         @"subscription_hash": subscription,
@@ -913,6 +954,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         // modem inventory, never from a hard-coded country list.
         NSDictionary *baselineJournal = BLScanReadJournal();
         NSArray<NSNumber *> *supported = BLSortedBands(baselineJournal[@"initial_supported_bands"]);
+        NSArray<NSNumber *> *allowed = BLSortedBands(baselineJournal[@"target_bands"]);
         NSArray<NSNumber *> *originalBands = BLSortedBands(baselineJournal[@"original_bands"]);
         NSDictionary *originalBandConfiguration =
             [baselineJournal[@"original_band_config"] isKindOfClass:NSDictionary.class]
@@ -920,7 +962,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         NSMutableArray<NSNumber *> *candidates = [NSMutableArray array];
         for (NSNumber *band in BLSortedBands(initialObservedBands.allKeys)) {
             NSDictionary *observed = initialObservedBands[band];
-            if (![supported containsObject:band] ||
+            if (![supported containsObject:band] || ![allowed containsObject:band] ||
                 ![observed[@"role"] isEqualToString:@"serving"] ||
                 !BLScanHasAnyMetric(observed)) continue;
             if ([targetRAT isEqualToString:@"LTE"] &&
@@ -930,6 +972,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             [candidates addObject:band];
         }
         for (NSNumber *band in supported) {
+            if (![allowed containsObject:band]) continue;
             if (![band isKindOfClass:NSNumber.class] || band.integerValue <= 0 || band.integerValue > 1024) continue;
             if ([targetRAT isEqualToString:@"LTE"] &&
                 [[BLGDuplexForBand(band) uppercaseString] isEqualToString:@"SDL"]) continue;
