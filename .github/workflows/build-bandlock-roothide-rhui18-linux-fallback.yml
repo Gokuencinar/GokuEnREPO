@@ -1,0 +1,51 @@
+name: Build BandLock RootHide rhui18 Linux fallback
+
+on:
+  push:
+    branches: [bandlock-1.5-roothide-signal-test]
+    paths:
+      - '.github/workflows/build-bandlock-roothide-rhui18-linux-fallback.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-roothide-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup RootHide Theos on Linux
+        uses: iossxx/theos-action@760b7475c8b98f4d8fd8d52735728e22186b2aeb
+        with:
+          theos-src: 'https://github.com/roothide/theos'
+          theos-sdks: 'https://github.com/theos/sdks'
+          theos-sdks-branch: 'master'
+          orion: 'false'
+      - name: Static and privacy gates
+        run: |
+          set -euo pipefail
+          node scripts/verify-bandlock-roothide-signal.mjs
+          d=tweaks/BandLock/build/BandLock-1.0-RootHide
+          grep -q '^Version: 1.6.0~rhui18$' "$d/control"
+          test -x "$d/layout/DEBIAN/prerm"
+      - name: Build RootHide rhui18
+        run: |
+          set -euo pipefail
+          cd tweaks/BandLock/build/BandLock-1.0-RootHide
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          deb='packages/com.gokuencinar.bandlock_1.6.0~rhui18_iphoneos-arm64e.deb'
+          test -s "$deb"
+          file "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)" | grep -q 'Mach-O'
+          test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~rhui18'
+          test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64e'
+          dpkg-deb -c "$deb" > /tmp/bandlock-contents
+          grep -q 'BandLockDaemon' /tmp/bandlock-contents
+          grep -q 'BandLock.app/BandLock' /tmp/bandlock-contents
+          grep -q 'BandLockCCModule' /tmp/bandlock-contents
+          dpkg-deb --ctrl-tarfile "$deb" | tar -tvf - | grep -q './prerm'
+          sha256sum "$deb"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-RootHide-1.6.0-rhui18-linux
+          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.6.0~rhui18_iphoneos-arm64e.deb
