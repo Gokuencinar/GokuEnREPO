@@ -5,19 +5,17 @@
 #import "BLGBandMetadata.h"
 #import "BLCountryProfile.h"
 #import "BLCountriesViewController.h"
+#import "BLAnalyzerCaptureStore.h"
+#import "BLAnalyzerCapturesViewController.h"
 #import "../../BLHardwareCapabilities.h"
 #import <QuartzCore/QuartzCore.h>
 #import <math.h>
 #import <float.h>
 
-// NetMonitor-inspired coverage view for the data CoreTelephony actually exposes
-// on iOS. Never invent PCI/TAC/CID/channel information when the modem does not
-// provide it. Persist sanitized measurement history and user-created PNG
-// snapshots, never SIM/subscription identifiers.
+// NetMonitor-inspired coverage view. Persist sanitized measurement history and
+// user-created snapshots, never SIM/subscription identifiers.
 static NSString *const BLAnalyzerHistoryKey = @"BLAnalyzerTypedLTEHistory.v1";
 static NSString *const BLAnalyzerLastScanIDKey = @"BLAnalyzerLastPersistedScanID.v1";
-static NSString *const BLAnalyzerCaptureIndexKey = @"BLAnalyzerCaptureIndex.v1";
-static NSString *const BLAnalyzerCaptureDirectoryName = @"BandLockAnalyzerCaptures";
 static NSUInteger const BLAnalyzerMaxSamples = 300;
 
 static UIColor *BLAnalyzerInk(void) { return [UIColor colorWithRed:0.06 green:0.10 blue:0.19 alpha:1]; }
@@ -198,13 +196,6 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 @property (nonatomic, strong) BLTelephonyManager *manager;
 @property (nonatomic, strong) UIScrollView *scroll;
 @property (nonatomic, strong) UIStackView *stack;
-@property (nonatomic, strong) UIScrollView *captureTabsScroll;
-@property (nonatomic, strong) UIStackView *captureTabsStack;
-@property (nonatomic, strong) UIScrollView *captureViewerScroll;
-@property (nonatomic, strong) UIStackView *captureViewerStack;
-@property (nonatomic, strong) UILabel *captureMetaLabel;
-@property (nonatomic, strong) UIImageView *captureImageView;
-@property (nonatomic, strong) NSLayoutConstraint *captureImageAspectConstraint;
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) UILabel *bandLabel;
 @property (nonatomic, strong) UILabel *qualityLabel;
@@ -242,8 +233,6 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 @property (nonatomic, copy) NSArray<NSDictionary *> *history;
 @property (nonatomic, copy) NSArray<NSDictionary *> *currentMeasurements;
 @property (nonatomic, copy) NSArray<NSDictionary *> *currentScanMeasurements;
-@property (nonatomic, copy) NSArray<NSDictionary *> *captures;
-@property (nonatomic, copy) NSString *selectedCaptureID;
 @property (nonatomic, copy) NSString *currentOperatorName;
 @property (nonatomic, copy) NSString *currentScanMode;
 @property (nonatomic, copy) NSString *lastPersistedScanID;
@@ -312,152 +301,13 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     return button;
 }
 
-- (NSURL *)captureDirectoryURL {
-    NSURL *base = [[NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory
-                                                        inDomains:NSUserDomainMask] firstObject];
-    if (!base) return nil;
-    NSURL *directory = [base URLByAppendingPathComponent:BLAnalyzerCaptureDirectoryName isDirectory:YES];
-    NSError *error = nil;
-    if (![NSFileManager.defaultManager createDirectoryAtURL:directory
-                                withIntermediateDirectories:YES attributes:nil error:&error]) return nil;
-    return directory;
-}
-
-- (NSURL *)captureURLForMetadata:(NSDictionary *)metadata {
-    NSString *filename = [metadata[@"filename"] isKindOfClass:NSString.class] ? metadata[@"filename"] : nil;
-    if (!filename.length || ![filename isEqualToString:filename.lastPathComponent] ||
-        [[filename pathExtension] caseInsensitiveCompare:@"png"] != NSOrderedSame) return nil;
-    NSURL *directory = [self captureDirectoryURL];
-    return directory ? [directory URLByAppendingPathComponent:filename isDirectory:NO] : nil;
-}
-
-- (NSArray<NSDictionary *> *)readCaptures {
-    NSArray *raw = [NSUserDefaults.standardUserDefaults arrayForKey:BLAnalyzerCaptureIndexKey];
-    if (![raw isKindOfClass:NSArray.class]) return @[];
-    NSMutableArray<NSDictionary *> *valid = [NSMutableArray array];
-    for (id candidate in raw) {
-        if (![candidate isKindOfClass:NSDictionary.class]) continue;
-        NSDictionary *item = candidate;
-        NSString *captureID = [item[@"id"] isKindOfClass:NSString.class] ? item[@"id"] : nil;
-        NSString *mode = [item[@"mode"] isKindOfClass:NSString.class] ? item[@"mode"] : nil;
-        NSNumber *created = [item[@"created_at"] isKindOfClass:NSNumber.class] ? item[@"created_at"] : nil;
-        NSURL *url = [self captureURLForMetadata:item];
-        if (!captureID.length || !mode.length || !created || !url ||
-            ![NSFileManager.defaultManager fileExistsAtPath:url.path]) continue;
-        [valid addObject:item];
-    }
-    [valid sortUsingComparator:^NSComparisonResult(NSDictionary *left, NSDictionary *right) {
-        return [right[@"created_at"] compare:left[@"created_at"]];
-    }];
-    return valid;
-}
-
-- (void)writeCaptureIndex {
-    [NSUserDefaults.standardUserDefaults setObject:self.captures ?: @[] forKey:BLAnalyzerCaptureIndexKey];
-}
-
-- (NSString *)displayCaptureMode:(NSString *)mode {
-    if ([mode isEqualToString:@"LTE"]) return @"4G";
-    if ([mode isEqualToString:@"NR"]) return @"5G";
-    if ([mode isEqualToString:@"AUTO"]) return @"Auto";
-    if ([mode isEqualToString:@"LIVE"]) return BLT(@"En vivo", @"Live");
-    return mode.length ? mode : BLT(@"Desconocido", @"Unknown");
-}
-
 - (NSString *)currentCaptureMode {
     return self.currentScanMode.length ? self.currentScanMode : @"AUTO";
 }
 
-- (NSString *)captureTabTitle:(NSDictionary *)capture {
-    NSDate *date = [NSDate dateWithTimeIntervalSince1970:[capture[@"created_at"] doubleValue]];
-    NSDateFormatter *formatter = [NSDateFormatter new];
-    formatter.dateFormat = @"dd/MM/yy HH:mm:ss";
-    return [NSString stringWithFormat:@"%@ · %@", [formatter stringFromDate:date],
-            [self displayCaptureMode:capture[@"mode"]]];
-}
-
-- (UIButton *)captureTabButtonWithTitle:(NSString *)title tag:(NSInteger)tag selected:(BOOL)selected {
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    button.tag = tag;
-    button.translatesAutoresizingMaskIntoConstraints = NO;
-    button.backgroundColor = selected ? BLAnalyzerTeal() : [UIColor colorWithWhite:1 alpha:0.08];
-    button.layer.cornerRadius = 10;
-    button.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightSemibold];
-    button.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    [button setTitle:title forState:UIControlStateNormal];
-    [button setTitleColor:selected ? BLAnalyzerInk() : UIColor.whiteColor forState:UIControlStateNormal];
-    button.accessibilityLabel = title;
-    [button.heightAnchor constraintEqualToConstant:34].active = YES;
-    [button.widthAnchor constraintLessThanOrEqualToConstant:190].active = YES;
-    [button addTarget:self action:@selector(captureTabTapped:) forControlEvents:UIControlEventTouchUpInside];
-    return button;
-}
-
-- (void)rebuildCaptureTabs {
-    if (!self.captureTabsStack) return;
-    for (UIView *view in self.captureTabsStack.arrangedSubviews.copy) {
-        [self.captureTabsStack removeArrangedSubview:view];
-        [view removeFromSuperview];
-    }
-    [self.captureTabsStack addArrangedSubview:
-        [self captureTabButtonWithTitle:BLT(@"En vivo", @"Live") tag:0 selected:!self.selectedCaptureID.length]];
-    [self.captures enumerateObjectsUsingBlock:^(NSDictionary *capture, NSUInteger index, BOOL *stop) {
-        NSString *captureID = [capture[@"id"] isKindOfClass:NSString.class] ? capture[@"id"] : @"";
-        BOOL selected = self.selectedCaptureID.length && [self.selectedCaptureID isEqualToString:captureID];
-        [self.captureTabsStack addArrangedSubview:
-            [self captureTabButtonWithTitle:[self captureTabTitle:capture]
-                                        tag:(NSInteger)index + 1 selected:selected]];
-    }];
-}
-
-- (void)showLiveAnalyzer {
-    self.selectedCaptureID = nil;
-    self.scroll.hidden = NO;
-    self.captureViewerScroll.hidden = YES;
-    [self rebuildCaptureTabs];
-}
-
-- (void)showCaptureAtIndex:(NSUInteger)index {
-    if (index >= self.captures.count) { [self showLiveAnalyzer]; return; }
-    NSDictionary *capture = self.captures[index];
-    NSURL *url = [self captureURLForMetadata:capture];
-    UIImage *image = url ? [UIImage imageWithContentsOfFile:url.path] : nil;
-    if (!image) {
-        [self showAlert:BLT(@"La captura ya no está disponible.", @"This capture is no longer available.")];
-        NSMutableArray *updated = [self.captures mutableCopy];
-        [updated removeObjectAtIndex:index];
-        self.captures = updated;
-        [self writeCaptureIndex];
-        [self showLiveAnalyzer];
-        return;
-    }
-    self.selectedCaptureID = capture[@"id"];
-    self.scroll.hidden = YES;
-    self.captureViewerScroll.hidden = NO;
-    self.captureImageView.image = image;
-    self.captureImageAspectConstraint.active = NO;
-    CGFloat ratio = image.size.width > 0 ? image.size.height / image.size.width : 1.0;
-    self.captureImageAspectConstraint =
-        [self.captureImageView.heightAnchor constraintEqualToAnchor:self.captureImageView.widthAnchor
-                                                          multiplier:MAX(0.25, ratio)];
-    self.captureImageAspectConstraint.active = YES;
-    NSDate *date = [NSDate dateWithTimeIntervalSince1970:[capture[@"created_at"] doubleValue]];
-    NSDateFormatter *formatter = [NSDateFormatter new];
-    formatter.dateStyle = NSDateFormatterMediumStyle;
-    formatter.timeStyle = NSDateFormatterMediumStyle;
-    NSString *operatorName = [capture[@"operator_name"] isKindOfClass:NSString.class] ? capture[@"operator_name"] : @"";
-    self.captureMetaLabel.text = operatorName.length
-        ? [NSString stringWithFormat:@"%@ · %@\n%@: %@", [formatter stringFromDate:date],
-           [self displayCaptureMode:capture[@"mode"]], BLT(@"Operador móvil", @"Mobile operator"), operatorName]
-        : [NSString stringWithFormat:@"%@ · %@", [formatter stringFromDate:date],
-           [self displayCaptureMode:capture[@"mode"]]];
-    self.captureViewerScroll.contentOffset = CGPointZero;
-    [self rebuildCaptureTabs];
-}
-
-- (void)captureTabTapped:(UIButton *)sender {
-    if (sender.tag <= 0) [self showLiveAnalyzer];
-    else [self showCaptureAtIndex:(NSUInteger)sender.tag - 1];
+- (void)viewCapturesTapped:(UIButton *)sender {
+    BLAnalyzerCapturesViewController *captures = [BLAnalyzerCapturesViewController new];
+    [self.navigationController pushViewController:captures animated:YES];
 }
 
 - (void)updateOperatorNameFromPayload:(NSDictionary *)payload {
@@ -480,21 +330,8 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     self.navigationController.navigationBar.largeTitleTextAttributes = @{NSForegroundColorAttributeName: UIColor.whiteColor};
     self.navigationController.navigationBar.titleTextAttributes = @{NSForegroundColorAttributeName: UIColor.whiteColor};
     self.history = [self readHistory];
-    self.captures = [self readCaptures];
     self.currentScanMode = @"AUTO";
     self.lastPersistedScanID = [NSUserDefaults.standardUserDefaults stringForKey:BLAnalyzerLastScanIDKey];
-
-    self.captureTabsScroll = [UIScrollView new];
-    self.captureTabsScroll.translatesAutoresizingMaskIntoConstraints = NO;
-    self.captureTabsScroll.showsHorizontalScrollIndicator = NO;
-    self.captureTabsScroll.alwaysBounceHorizontal = YES;
-    [self.view addSubview:self.captureTabsScroll];
-    self.captureTabsStack = [UIStackView new];
-    self.captureTabsStack.axis = UILayoutConstraintAxisHorizontal;
-    self.captureTabsStack.spacing = 7;
-    self.captureTabsStack.alignment = UIStackViewAlignmentCenter;
-    self.captureTabsStack.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.captureTabsScroll addSubview:self.captureTabsStack];
 
     self.scroll = [UIScrollView new];
     self.scroll.translatesAutoresizingMaskIntoConstraints = NO;
@@ -502,44 +339,16 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     self.stack = [self columnWithSpace:12];
     self.stack.translatesAutoresizingMaskIntoConstraints = NO;
     [self.scroll addSubview:self.stack];
-
-    self.captureViewerScroll = [UIScrollView new];
-    self.captureViewerScroll.translatesAutoresizingMaskIntoConstraints = NO;
-    self.captureViewerScroll.hidden = YES;
-    [self.view addSubview:self.captureViewerScroll];
-    self.captureViewerStack = [self columnWithSpace:12];
-    self.captureViewerStack.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.captureViewerScroll addSubview:self.captureViewerStack];
     [NSLayoutConstraint activateConstraints:@[
-        [self.captureTabsScroll.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
-        [self.captureTabsScroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [self.captureTabsScroll.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [self.captureTabsScroll.heightAnchor constraintEqualToConstant:44],
-        [self.captureTabsStack.leadingAnchor constraintEqualToAnchor:self.captureTabsScroll.contentLayoutGuide.leadingAnchor constant:12],
-        [self.captureTabsStack.trailingAnchor constraintEqualToAnchor:self.captureTabsScroll.contentLayoutGuide.trailingAnchor constant:-12],
-        [self.captureTabsStack.topAnchor constraintEqualToAnchor:self.captureTabsScroll.contentLayoutGuide.topAnchor constant:5],
-        [self.captureTabsStack.bottomAnchor constraintEqualToAnchor:self.captureTabsScroll.contentLayoutGuide.bottomAnchor constant:-5],
-        [self.captureTabsStack.heightAnchor constraintEqualToAnchor:self.captureTabsScroll.frameLayoutGuide.heightAnchor constant:-10],
-
-        [self.scroll.topAnchor constraintEqualToAnchor:self.captureTabsScroll.bottomAnchor],
-        [self.scroll.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+        [self.scroll.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+        [self.scroll.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor],
         [self.scroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [self.scroll.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
         [self.stack.topAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.topAnchor constant:12],
         [self.stack.bottomAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.bottomAnchor constant:-30],
         [self.stack.leadingAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.leadingAnchor constant:16],
         [self.stack.trailingAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.trailingAnchor constant:-16],
-        [self.stack.widthAnchor constraintEqualToAnchor:self.scroll.frameLayoutGuide.widthAnchor constant:-32],
-
-        [self.captureViewerScroll.topAnchor constraintEqualToAnchor:self.captureTabsScroll.bottomAnchor],
-        [self.captureViewerScroll.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-        [self.captureViewerScroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [self.captureViewerScroll.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [self.captureViewerStack.topAnchor constraintEqualToAnchor:self.captureViewerScroll.contentLayoutGuide.topAnchor constant:12],
-        [self.captureViewerStack.bottomAnchor constraintEqualToAnchor:self.captureViewerScroll.contentLayoutGuide.bottomAnchor constant:-30],
-        [self.captureViewerStack.leadingAnchor constraintEqualToAnchor:self.captureViewerScroll.contentLayoutGuide.leadingAnchor constant:16],
-        [self.captureViewerStack.trailingAnchor constraintEqualToAnchor:self.captureViewerScroll.contentLayoutGuide.trailingAnchor constant:-16],
-        [self.captureViewerStack.widthAnchor constraintEqualToAnchor:self.captureViewerScroll.frameLayoutGuide.widthAnchor constant:-32]
+        [self.stack.widthAnchor constraintEqualToAnchor:self.scroll.frameLayoutGuide.widthAnchor constant:-32]
     ]];
 
     self.bandLabel = [self text:@"—" size:28 color:UIColor.whiteColor weight:UIFontWeightBold];
@@ -547,7 +356,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     self.operatorLabel = [self text:BLT(@"Operador móvil · no disponible", @"Mobile operator · unavailable")
                                   size:13 color:UIColor.whiteColor weight:UIFontWeightSemibold];
     self.networkDetailLabel = [self text:@"—" size:13 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
-    self.caStatusLabel = [self text:BLT(@"CA: esperando información del módem", @"CA: waiting for modem information")
+    self.caStatusLabel = [self text:BLT(@"CA: esperando datos", @"CA: waiting for data")
                                   size:12 color:BLAnalyzerMuted() weight:UIFontWeightSemibold];
     self.statusLabel = [self text:BLT(@"Buscando celda servidora…", @"Looking for serving cell…")
         size:12 color:BLAnalyzerTeal() weight:UIFontWeightMedium];
@@ -633,8 +442,10 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     self.historyLabel = [self text:@"—" size:13 color:UIColor.whiteColor weight:UIFontWeightRegular];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"HISTORIAL", @"HISTORY") children:@[self.historyLabel]]];
 
-    UIButton *png = [self action:BLT(@"Guardar PNG", @"Save PNG") icon:@"photo.on.rectangle.angled"
+    UIButton *png = [self action:BLT(@"Guardar Captura", @"Save Capture") icon:@"photo.on.rectangle.angled"
                                selector:@selector(pngTapped:) strong:NO];
+    UIButton *captures = [self action:BLT(@"Ver capturas guardadas", @"View saved captures") icon:@"photo.stack"
+                                    selector:@selector(viewCapturesTapped:) strong:NO];
     UIButton *export = [self action:BLT(@"Exportar JSON", @"Export JSON") icon:@"square.and.arrow.up"
                                   selector:@selector(exportTapped:) strong:NO];
     UIButton *clear = [self action:BLT(@"Borrar historial", @"Clear history") icon:@"trash"
@@ -644,35 +455,14 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     exportActions.distribution = UIStackViewDistributionFillEqually;
     exportActions.spacing = 9;
     [exportActions addArrangedSubview:png];
-    [exportActions addArrangedSubview:export];
+    [exportActions addArrangedSubview:captures];
     [self.stack addArrangedSubview:exportActions];
+    [self.stack addArrangedSubview:export];
     [self.stack addArrangedSubview:clear];
-
-    self.captureMetaLabel = [self text:@"" size:13 color:BLAnalyzerMuted() weight:UIFontWeightSemibold];
-    [self.captureViewerStack addArrangedSubview:self.captureMetaLabel];
-    self.captureImageView = [UIImageView new];
-    self.captureImageView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.captureImageView.contentMode = UIViewContentModeScaleAspectFit;
-    self.captureImageView.backgroundColor = BLAnalyzerInk();
-    self.captureImageView.layer.cornerRadius = 14;
-    self.captureImageView.layer.masksToBounds = YES;
-    [self.captureViewerStack addArrangedSubview:self.captureImageView];
-    UIButton *shareCapture = [self action:BLT(@"Compartir PNG", @"Share PNG")
-                                      icon:@"square.and.arrow.up" selector:@selector(captureShareTapped:) strong:YES];
-    UIButton *deleteCapture = [self action:BLT(@"Eliminar captura", @"Delete capture")
-                                       icon:@"trash" selector:@selector(captureDeleteTapped:) strong:NO];
-    UIStackView *captureActions = [UIStackView new];
-    captureActions.axis = UILayoutConstraintAxisHorizontal;
-    captureActions.distribution = UIStackViewDistributionFillEqually;
-    captureActions.spacing = 9;
-    [captureActions addArrangedSubview:shareCapture];
-    [captureActions addArrangedSubview:deleteCapture];
-    [self.captureViewerStack addArrangedSubview:captureActions];
 
     [self rebuildMeasurementStack:self.cellsStack rows:@[] scan:NO];
     [self rebuildMeasurementStack:self.scanRowsStack rows:@[] scan:YES];
     [self refreshHistoryUI];
-    [self rebuildCaptureTabs];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -768,11 +558,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 
     NSString *detail = BLAnalyzerBandDetail(rat, band);
     if (!detail.length && referenceFrequency)
-        detail = [NSString stringWithFormat:@"%@ MHz · %@", referenceFrequency,
-                  BLT(@"frecuencia verificada por canal", @"frequency verified from channel")];
+        detail = [NSString stringWithFormat:@"%@ MHz", referenceFrequency];
     if (!detail.length && [row[@"frequency_unverified"] boolValue])
-        detail = BLT(@"Frecuencia no expuesta por CoreTelephony; la celda se conserva como diagnóstico",
-                     @"Frequency not exposed by CoreTelephony; the cell is kept as a diagnostic");
+        detail = BLT(@"Frecuencia no disponible", @"Frequency unavailable");
     if (detail.length) [body addArrangedSubview:[self text:detail size:11 color:BLAnalyzerMuted() weight:UIFontWeightSemibold]];
 
     NSString *primaryName = BLAnalyzerPrimaryMetricName(rat);
@@ -803,7 +591,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
                             value.doubleValue, BLAnalyzerMetricUnit(metric)]];
     }
     UILabel *metricLabel = [self text:(metrics.count ? [metrics componentsJoinedByString:@"   "] :
-                                      BLT(@"Sin métricas secundarias", @"No secondary metrics"))
+                                      BLT(@"Sin datos adicionales", @"No additional data"))
                                     size:11.5 color:UIColor.whiteColor weight:UIFontWeightMedium];
     metricLabel.tag = 712;
     metricLabel.font = [UIFont monospacedSystemFontOfSize:11.5 weight:UIFontWeightMedium];
@@ -867,7 +655,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
                 UILabel *metricLabel = (UILabel *)[card viewWithTag:712];
                 if ([metricLabel isKindOfClass:UILabel.class]) {
                     NSString *value = metrics.count ? [metrics componentsJoinedByString:@"   "] :
-                        BLT(@"Sin métricas secundarias", @"No secondary metrics");
+                        BLT(@"Sin datos adicionales", @"No additional data");
                     if (![metricLabel.text isEqualToString:value]) metricLabel.text = value;
                 }
                 UILabel *qualityLabel = (UILabel *)[card viewWithTag:713];
@@ -986,7 +774,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         detail = channel ? [NSString stringWithFormat:@"%@ MHz · %@ %@", referenceFrequency, channelName, channel]
                          : [NSString stringWithFormat:@"%@ MHz", referenceFrequency];
     }
-    self.networkDetailLabel.text = detail.length ? detail : BLT(@"Frecuencia no expuesta por CoreTelephony", @"Frequency not exposed by CoreTelephony");
+    self.networkDetailLabel.text = detail.length ? detail : BLT(@"Frecuencia no disponible", @"Frequency unavailable");
     BOOL g3 = [rat isEqualToString:@"3G"], g2 = [rat isEqualToString:@"2G"];
     self.rsrpTitleLabel.text = g3 ? @"RSCP · dBm" : (g2 ? @"RSSI · dBm" : @"RSRP · dBm");
     self.rsrqTitleLabel.text = g3 ? @"Ec/No · dB" : @"RSRQ · dB";
@@ -1036,10 +824,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         for (NSNumber *band in secondaryBands)
             [parts addObject:[NSString stringWithFormat:BLT(@"secundaria B%@", @"secondary B%@"), band]];
         NSString *carriers = parts.count ? [parts componentsJoinedByString:@" + "] : BLT(@"celda secundaria LTE", @"LTE secondary cell");
-        return [NSString stringWithFormat:BLT(@"Posible CA · CoreTelephony expone %@", @"Possible CA · CoreTelephony exposes %@"), carriers];
+        return [NSString stringWithFormat:BLT(@"Posible CA · %@", @"Possible CA · %@"), carriers];
     }
-    if (sawLTE) return BLT(@"CA: CoreTelephony no expone portadoras secundarias en esta lectura",
-                           @"CA: CoreTelephony does not expose secondary carriers in this reading");
+    if (sawLTE) return BLT(@"CA: no detectada", @"CA: not detected");
     return BLT(@"CA: disponible únicamente durante LTE/4G", @"CA: available only while on LTE/4G");
 }
 
@@ -1071,7 +858,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         NSDictionary *serving = [strongSelf preferredServingMeasurement:rows];
         if (!serving) {
             strongSelf.statusLabel.hidden = NO;
-            strongSelf.statusLabel.text = BLT(@"Sin celda servidora con métricas válidas", @"No serving cell with valid metrics");
+            strongSelf.statusLabel.text = BLT(@"No hay datos de señal disponibles", @"No signal data available");
             return;
         }
         [strongSelf updateCurrentFromMeasurement:serving];
@@ -1128,8 +915,8 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         self.scanCountryButton.enabled = NO;
         self.scanCountryButton.alpha = 0.45;
         self.scanBandsLabel.text = BLT(
-            @"Auto observa la red actual sin forzar 2G/3G/4G/5G ni tocar bandas. Muestra la tecnología que el módem esté usando en ese momento.",
-            @"Auto observes the current network without forcing 2G/3G/4G/5G or changing bands. It shows whichever technology the modem is currently using.");
+            @"Auto muestra la red y la tecnología activas sin cambiar bandas.",
+            @"Auto shows the active network and technology without changing bands.");
         [self.scanButton setTitle:BLT(@"Observar red en Auto", @"Observe network in Auto") forState:UIControlStateNormal];
         self.scanButton.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
         return;
@@ -1169,8 +956,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     if (self.scanRunning || self.recoveryRequired || self.manager.busy) return;
     NSString *rat = [self selectedScanRAT];
     if ([rat isEqualToString:@"AUTO"]) {
-        self.scanStatusLabel.text = BLT(@"Observando la red actual sin cambios de radio…",
-                                        @"Observing the current network without radio changes…");
+        self.scanStatusLabel.text = BLT(@"Observando la red actual…", @"Observing current network…");
         __weak typeof(self) weakSelf = self;
         [self.manager startPassiveSignalObservationForRAT:@"AUTO" completion:^(NSDictionary *result) {
             BLAnalyzerViewController *strongSelf = weakSelf;
@@ -1199,13 +985,13 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     }
     NSString *countryISO = country[@"iso2"];
     if ([rat isEqualToString:@"NR"] && BLDeviceIsKnownLTEOnly()) {
-        [self showAlert:BLT(@"Este iPhone no dispone de módem 5G.", @"This iPhone has no 5G modem.")];
+        [self showAlert:BLT(@"Este iPhone no es compatible con 5G.", @"This iPhone does not support 5G.")];
         return;
     }
     NSString *display = BLAnalyzerDisplayRAT(rat);
     NSString *warning = [NSString stringWithFormat:BLT(
-        @"El Analizador usará Auto como punto de retorno y limitará el barrido %@ a las frecuencias de referencia de %@. En 2G/3G solo se fijarán bandas si CoreTelephony expone un identificador verificado; si no, se hará observación dirigida sin inventar el mapeo. Puedes perder llamadas o datos mientras mide. ¿Iniciar?",
-        @"Analyzer will use Auto as the return point and limit the %@ scan to reference frequencies for %@. On 2G/3G, bands are locked only when CoreTelephony exposes a verified identifier; otherwise it uses directed observation without inventing a mapping. Calls or data may drop. Start?"), display, BLLocalizedCountryName(country)];
+        @"El barrido %@ usará las frecuencias de referencia de %@. Durante la medición puedes perder temporalmente llamadas o datos. ¿Iniciar?",
+        @"The %@ scan will use reference frequencies for %@. Calls or data may be temporarily interrupted during the measurement. Start?"), display, BLLocalizedCountryName(country)];
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:BLT(@"Barrido %@", @"%@ scan"), display]
                                                                     message:warning preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
@@ -1213,7 +999,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Iniciar", @"Start") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
         BLAnalyzerViewController *strongSelf = weakSelf;
         if (!strongSelf) return;
-        strongSelf.scanStatusLabel.text = BLT(@"Preparando Auto como punto de retorno…", @"Preparing Auto as return point…");
+        strongSelf.scanStatusLabel.text = BLT(@"Preparando el barrido…", @"Preparing scan…");
         [strongSelf.manager setNetworkModeAutomatic:^(BOOL success, NSString *message) {
             BLAnalyzerViewController *modeSelf = weakSelf;
             if (!modeSelf) return;
@@ -1224,13 +1010,14 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
                 BLAnalyzerViewController *scanSelf = weakSelf;
                 if (!scanSelf) return;
                 if (![result[@"success"] boolValue]) {
-                    [scanSelf showAlert:[result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"Scan did not start"];
+                    [scanSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
+                        ? result[@"message"] : BLT(@"No se pudo iniciar el barrido.", @"Could not start the scan.")];
                     return;
                 }
                 scanSelf.scanRunning = YES;
                 scanSelf.recoveryRequired = NO;
                 scanSelf.currentScanMode = rat;
-                scanSelf.scanStatusLabel.text = result[@"message"] ?: @"Scan started";
+                scanSelf.scanStatusLabel.text = result[@"message"] ?: BLT(@"Barrido iniciado.", @"Scan started.");
                 [scanSelf updateScanButtons];
                 [scanSelf startScanPolling];
             }];
@@ -1485,13 +1272,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     }
     if (self.currentScanMeasurements.count) {
         UIStackView *scanRows = [self reportRowsForMeasurements:self.currentScanMeasurements scan:YES];
-        [body addArrangedSubview:[self panelWithTitle:BLT(@"BARRIDO / OBSERVACIÓN", @"SCAN / OBSERVATION")
+        [body addArrangedSubview:[self panelWithTitle:BLT(@"RESULTADOS DEL BARRIDO", @"SCAN RESULTS")
                                              children:@[scanRows]]];
     }
-
-    [body addArrangedSubview:[self text:BLT(@"Solo se muestran datos realmente expuestos por CoreTelephony.",
-                                           @"Only data actually exposed by CoreTelephony is shown.")
-                                   size:10 color:BLAnalyzerMuted() weight:UIFontWeightMedium]];
 
     CGSize fitting = [report systemLayoutSizeFittingSize:CGSizeMake(width, UILayoutFittingCompressedSize.height)
                             withHorizontalFittingPriority:UILayoutPriorityRequired
@@ -1515,95 +1298,19 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 - (void)pngTapped:(UIButton *)sender {
     UIImage *image = [self pngReportImage];
     if (!image) {
-        [self showAlert:BLT(@"Haz al menos una lectura antes de guardar el PNG.",
-                            @"Take at least one reading before saving the PNG.")];
+        [self showAlert:BLT(@"Haz al menos una lectura antes de guardar una captura.",
+                            @"Take at least one reading before saving a capture.")];
         return;
     }
-    NSData *png = UIImagePNGRepresentation(image);
-    if (!png.length) {
-        [self showAlert:BLT(@"No se pudo generar la imagen PNG.", @"Could not generate the PNG image.")];
+    NSError *error = nil;
+    if (![BLAnalyzerCaptureStore saveImage:image mode:[self currentCaptureMode]
+                               operatorName:self.currentOperatorName error:&error]) {
+        [self showAlert:error.localizedDescription ?: BLT(@"No se pudo guardar la captura.",
+                                                          @"Could not save the capture.")];
         return;
     }
-    NSURL *directory = [self captureDirectoryURL];
-    if (!directory) {
-        [self showAlert:BLT(@"No se pudo preparar el almacenamiento de capturas.",
-                            @"Could not prepare capture storage.")];
-        return;
-    }
-    NSDate *now = NSDate.date;
-    NSString *captureID = NSUUID.UUID.UUIDString;
-    NSString *filename = [NSString stringWithFormat:@"%@.png", captureID];
-    NSURL *url = [directory URLByAppendingPathComponent:filename isDirectory:NO];
-    if (![png writeToURL:url atomically:YES]) {
-        [self showAlert:BLT(@"No se pudo guardar la captura PNG.", @"Could not save the PNG capture.")];
-        return;
-    }
-    NSMutableDictionary *metadata = [@{
-        @"id": captureID,
-        @"filename": filename,
-        @"created_at": @(now.timeIntervalSince1970),
-        @"mode": [self currentCaptureMode]
-    } mutableCopy];
-    if (self.currentOperatorName.length) metadata[@"operator_name"] = self.currentOperatorName;
-    NSMutableArray *captures = [self.captures mutableCopy] ?: [NSMutableArray array];
-    [captures insertObject:metadata atIndex:0];
-    self.captures = captures;
-    [self writeCaptureIndex];
-    [self rebuildCaptureTabs];
-    [self showCaptureAtIndex:0];
-}
-
-- (NSDictionary *)selectedCaptureMetadata {
-    if (!self.selectedCaptureID.length) return nil;
-    for (NSDictionary *capture in self.captures) {
-        if ([capture[@"id"] isKindOfClass:NSString.class] &&
-            [capture[@"id"] isEqualToString:self.selectedCaptureID]) return capture;
-    }
-    return nil;
-}
-
-- (void)captureShareTapped:(UIButton *)sender {
-    NSDictionary *capture = [self selectedCaptureMetadata];
-    NSURL *url = capture ? [self captureURLForMetadata:capture] : nil;
-    if (!url || ![NSFileManager.defaultManager fileExistsAtPath:url.path]) {
-        [self showAlert:BLT(@"La captura ya no está disponible.", @"This capture is no longer available.")];
-        return;
-    }
-    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[url]
-                                                                           applicationActivities:nil];
-    activity.popoverPresentationController.sourceView = sender;
-    activity.popoverPresentationController.sourceRect = sender.bounds;
-    [self presentViewController:activity animated:YES completion:nil];
-}
-
-- (void)captureDeleteTapped:(UIButton *)sender {
-    NSDictionary *capture = [self selectedCaptureMetadata];
-    if (!capture) return;
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Eliminar captura", @"Delete capture")
-       message:BLT(@"Se eliminará este PNG guardado del Analizador. Las mediciones históricas no se borrarán.",
-                   @"This saved Analyzer PNG will be deleted. Measurement history will be kept.")
-       preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel")
-                                              style:UIAlertActionStyleCancel handler:nil]];
-    __weak typeof(self) weakSelf = self;
-    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Eliminar", @"Delete")
-                                              style:UIAlertActionStyleDestructive
-                                            handler:^(__unused UIAlertAction *action) {
-        BLAnalyzerViewController *strongSelf = weakSelf;
-        if (!strongSelf) return;
-        NSURL *url = [strongSelf captureURLForMetadata:capture];
-        if (url) [NSFileManager.defaultManager removeItemAtURL:url error:nil];
-        NSMutableArray *captures = [strongSelf.captures mutableCopy] ?: [NSMutableArray array];
-        NSIndexSet *matches = [captures indexesOfObjectsPassingTest:^BOOL(id item, NSUInteger idx, BOOL *stop) {
-            return [item isKindOfClass:NSDictionary.class] &&
-                   [((NSDictionary *)item)[@"id"] isEqual:capture[@"id"]];
-        }];
-        if (matches.count) [captures removeObjectsAtIndexes:matches];
-        strongSelf.captures = captures;
-        [strongSelf writeCaptureIndex];
-        [strongSelf showLiveAnalyzer];
-    }]];
-    [self presentViewController:alert animated:YES completion:nil];
+    UINotificationFeedbackGenerator *feedback = [UINotificationFeedbackGenerator new];
+    [feedback notificationOccurred:UINotificationFeedbackTypeSuccess];
 }
 
 - (void)exportTapped:(UIButton *)sender {

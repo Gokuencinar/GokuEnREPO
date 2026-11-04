@@ -37,6 +37,16 @@
     UITabBarController *tabs = [[UITabBarController alloc] init];
     tabs.viewControllers = @[controlNav, analyzerNav, countriesNav, infoNav];
     tabs.tabBar.tintColor = [UIColor colorWithRed:0.05 green:0.72 blue:0.65 alpha:1];
+    // Keep the bottom navigation/home-indicator area opaque on every tab.
+    // iOS can otherwise use the scroll-edge appearance of a child scroll view
+    // and make the tab bar effectively transparent over the Analyzer.
+    UITabBarAppearance *tabAppearance = [[UITabBarAppearance alloc] init];
+    [tabAppearance configureWithOpaqueBackground];
+    tabAppearance.backgroundColor = UIColor.systemBackgroundColor;
+    tabs.tabBar.standardAppearance = tabAppearance;
+    tabs.tabBar.scrollEdgeAppearance = tabAppearance;
+    tabs.tabBar.translucent = NO;
+    tabs.tabBar.barTintColor = UIColor.systemBackgroundColor;
     if (selectedIndex < tabs.viewControllers.count) tabs.selectedIndex = selectedIndex;
 
     return tabs;

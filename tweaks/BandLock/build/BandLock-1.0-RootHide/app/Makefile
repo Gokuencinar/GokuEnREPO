@@ -11,6 +11,8 @@ BandLock_FILES = \
 	BLTelephonyManager.m \
 	BLControlViewController.m \
 	BLAnalyzerViewController.m \
+	BLAnalyzerCaptureStore.m \
+	BLAnalyzerCapturesViewController.m \
 	BLBandPickerViewController.m \
 	BLNRBandPickerViewController.m \
 	BLCountryBandsViewController.m \

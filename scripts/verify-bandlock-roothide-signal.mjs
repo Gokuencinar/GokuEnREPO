@@ -11,15 +11,25 @@ const prerm = read('layout/DEBIAN/prerm');
 const app = read('app/BLControlViewController.m');
 const manager = read('app/BLTelephonyManager.m');
 const analyzer = read('app/BLAnalyzerViewController.m');
+const captureStore = read('app/BLAnalyzerCaptureStore.m');
+const capturesController = read('app/BLAnalyzerCapturesViewController.m');
 const countryProfile = read('app/BLCountryProfile.m');
 const countriesController = read('app/BLCountriesViewController.m');
 const countrySpectrum = JSON.parse(read('app/Resources/country-spectrum.json'));
 const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
+const abiVerifier = readFileSync('scripts/verify-bandlock-arm64e-abi-v2.py', 'utf8');
+const macWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-signal-diagnostic.yml', 'utf8');
+const linuxWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-linux-diagnostic.yml', 'utf8');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui21$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui22$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
+assert.match(abiVerifier, /CPU_SUBTYPE_ARM64E_ABI_V2 = 0x80000002/);
+assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py "\$cc" "\$bridge"/);
+assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py \\\n\s+\/tmp\/bandlock-extracted\/Library\/ControlCenter\/Bundles\/BandLockCCModule\.bundle\/BandLockCCModule \\\n\s+\/tmp\/bandlock-extracted\/Library\/MobileSubstrate\/DynamicLibraries\/BandLockFieldBridge\.dylib/);
+assert.doesNotMatch(linuxWorkflow, /actions\/upload-artifact/);
+assert.match(linuxWorkflow, /Do not upload or install the generated DEB/);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
 assert.match(main, /jbroot\(@"\/tmp\/com\.gokuencinar\.bandlockd\.sock"\)/);
@@ -498,9 +508,10 @@ assert.match(core, /@"legacy_cell_types"/);
 assert.match(analyzer, /carrierAggregationSummaryForMeasurements/);
 assert.match(analyzer, /SECUNDARIA LTE/);
 assert.match(analyzer, /Posible CA/);
-assert.match(analyzer, /Guardar PNG/);
+assert.match(analyzer, /Guardar Captura/);
+assert.match(analyzer, /Ver capturas guardadas/);
 assert.match(analyzer, /UIGraphicsImageRenderer/);
-assert.match(analyzer, /UIImagePNGRepresentation/);
+assert.match(captureStore, /UIImagePNGRepresentation/);
 assert.match(analyzer, /currentScanMeasurements/);
 assert.match(core, /BLOperatorNameFromNetworkInfo/);
 assert.match(core, /dataServiceIdentifier/);
@@ -509,16 +520,38 @@ assert.match(core, /carrierName/);
 assert.match(core, /@"operator_name"/);
 assert.doesNotMatch(core, /allValues\.firstObject|providers\.allValues/,
   'Operator name must be resolved from the current data service, never the first configured SIM/eSIM');
-assert.match(analyzer, /BLAnalyzerCaptureIndexKey/);
-assert.match(analyzer, /BLAnalyzerCaptureDirectoryName/);
-assert.match(analyzer, /NSApplicationSupportDirectory/);
-assert.match(analyzer, /captureTabTitle/);
-assert.match(analyzer, /dd\/MM\/yy HH:mm:ss/);
-assert.match(analyzer, /showCaptureAtIndex/);
-assert.match(analyzer, /captureShareTapped/);
-assert.match(analyzer, /captureDeleteTapped/);
+assert.match(captureStore, /BLAnalyzerCaptureIndexKey/);
+assert.match(captureStore, /BLAnalyzerCaptureDirectoryName/);
+assert.match(captureStore, /NSApplicationSupportDirectory/);
+assert.match(captureStore, /dd\/MM\/yy HH:mm:ss/);
+assert.match(capturesController, /Capturas guardadas/);
+assert.match(capturesController, /Compartir captura/);
+assert.match(capturesController, /Eliminar captura/);
+assert.match(capturesController, /operator_name/);
+assert.match(read('app/Makefile'), /BLAnalyzerCaptureStore\.m/);
+assert.match(read('app/Makefile'), /BLAnalyzerCapturesViewController\.m/);
+for (const stale of [
+  'captureTabsScroll', 'captureTabsStack', 'rebuildCaptureTabs', 'captureTabTapped',
+  'captureViewerScroll', 'captureViewerStack', 'showCaptureAtIndex',
+  'captureShareTapped', 'captureDeleteTapped'
+]) {
+  assert.doesNotMatch(analyzer, new RegExp(stale));
+}
 assert.match(analyzer, /Operador móvil/);
-assert.match(analyzer, /En vivo/);
+assert.match(captureStore, /En vivo/);
+assert.doesNotMatch(analyzer, /Guardar PNG|Compartir PNG|CoreTelephony|módem|modem|diagnóstico|diagnostic/i);
+assert.doesNotMatch(capturesController, /CoreTelephony|módem|modem|daemon|socket|diagnóstico|diagnostic|API/i);
+assert.doesNotMatch(manager, /BandLock usa un daemon|BandLockDaemon cerró|No se pudo conectar con BandLockDaemon|La ruta del socket del daemon no es válida/i);
+assert.match(manager, /BLFriendlyResultMessage/);
+assert.match(manager, /BLResultForUserInterface/);
+assert.match(manager, /No se pudo leer la señal/);
+assert.match(manager, /Restaurando la configuración anterior/);
+assert.match(delegate, /UITabBarAppearance/);
+assert.match(delegate, /configureWithOpaqueBackground/);
+assert.match(delegate, /scrollEdgeAppearance = tabAppearance/);
+assert.match(delegate, /tabBar\.translucent = NO/);
+assert.match(analyzer, /scroll\.bottomAnchor constraintEqualToAnchor:self\.view\.safeAreaLayoutGuide\.bottomAnchor/);
+assert.match(capturesController, /scroll\.bottomAnchor constraintEqualToAnchor:self\.view\.safeAreaLayoutGuide\.bottomAnchor/);
 assert.match(scan, /measured_frequency_unknown/);
 assert.match(scan, /BLScanStatusIsMeasured/);
 assert.match(scan, /psc \? @\(2000000LL \+ psc\.longLongValue\)/);
@@ -526,7 +559,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui21 saved capture tabs and active data operator: PASS');
+console.log('BandLock rhui22 saved capture library, opaque tab bar and user-facing copy gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain

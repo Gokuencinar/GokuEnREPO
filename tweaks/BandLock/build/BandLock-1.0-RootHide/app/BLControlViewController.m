@@ -772,7 +772,8 @@
     __weak typeof(self) weakSelf = self;
     [self.manager signalProbeWithCompletion:^(NSDictionary *result) {
         if (![result[@"success"] boolValue]) {
-            [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"CoreTelephony error"];
+            [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
+                ? result[@"message"] : BLT(@"No se pudo leer la señal.", @"Could not read signal.")];
             return;
         }
         NSMutableArray *lines = [NSMutableArray array];
@@ -805,8 +806,8 @@
 - (void)signalScanStartTapped:(UIButton *)sender {
     if (self.signalRunning || self.signalRecoveryRequired || self.manager.busy) return;
     NSString *warning = BLT(
-        @"PRUEBA NO VALIDADA EN HARDWARE. Las dos bandas LTE se limitarán temporalmente una por una. Las llamadas, los datos y los servicios de emergencia pueden quedar sin cobertura. Debes tener otro teléfono disponible. No lo ejecutes durante llamadas o situaciones de emergencia. Selecciona «Solo LTE/4G» con una única SIM activa y buena cobertura (RSRP ≥ −115 dBm). La app intentará restaurar la configuración automáticamente, pero un fallo del módem puede impedirlo. ¿Iniciar?",
-        @"HARDWARE-UNVALIDATED TEST. Two LTE bands will temporarily be permitted one at a time. Calls, mobile data and emergency services may lose coverage. Have a second phone available. Never test during calls or emergencies. Select LTE/4G only, one active SIM and strong signal (RSRP ≥ −115 dBm). Automatic restoration will be attempted but cannot be guaranteed. Start?");
+        @"Prueba experimental de bandas LTE. Las bandas se limitarán temporalmente una por una y puedes perder llamadas, datos o cobertura de emergencia. No la ejecutes durante una llamada o situación de emergencia. BandLock intentará restaurar la configuración al terminar, pero la recuperación no está garantizada. ¿Iniciar?",
+        @"Experimental LTE band test. Bands will be limited one at a time and calls, data or emergency coverage may be interrupted. Do not run it during a call or emergency. BandLock will try to restore the previous configuration when finished, but recovery cannot be guaranteed. Start?");
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Posible pérdida total de cobertura", @"Possible total loss of service")
         message:warning preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
@@ -815,11 +816,12 @@
         style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
         [weakSelf.manager startSignalScanWithCompletion:^(NSDictionary *result) {
             if (![result[@"success"] boolValue]) {
-                [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"Scan not started"];
+                [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
+                    ? result[@"message"] : BLT(@"No se pudo iniciar el barrido.", @"Could not start the scan.")];
                 return;
             }
             weakSelf.signalRunning = YES;
-            weakSelf.signalValue.text = result[@"message"] ?: @"Scan started";
+            weakSelf.signalValue.text = result[@"message"] ?: BLT(@"Barrido iniciado.", @"Scan started.");
             [weakSelf refreshDisplay];
             [weakSelf startSignalPolling];
         }];
@@ -851,7 +853,7 @@
         [weakSelf.manager startTechnologySignalScanForRAT:rat completion:^(NSDictionary *result) {
             if (![result[@"success"] boolValue]) {
                 [weakSelf showAlert:[result[@"message"] isKindOfClass:NSString.class]
-                    ? result[@"message"] : @"Scan did not start"];
+                    ? result[@"message"] : BLT(@"No se pudo iniciar el barrido.", @"Could not start the scan.")];
                 return;
             }
             weakSelf.signalRunning = YES;
@@ -869,7 +871,7 @@
     if (!self.signalRunning) return;
     __weak typeof(self) weakSelf = self;
     [self.manager cancelSignalScanWithCompletion:^(NSDictionary *result) {
-        weakSelf.signalValue.text = result[@"message"] ?: @"Cancellation requested";
+        weakSelf.signalValue.text = result[@"message"] ?: BLT(@"Cancelación solicitada.", @"Cancellation requested.");
         [weakSelf startSignalPolling];
     }];
 }
@@ -878,7 +880,7 @@
     if (self.signalRunning) return;
     __weak typeof(self) weakSelf = self;
     [self.manager recoverSignalScanWithCompletion:^(NSDictionary *result) {
-        weakSelf.signalValue.text = result[@"message"] ?: @"Recovery requested";
+        weakSelf.signalValue.text = result[@"message"] ?: BLT(@"Recuperación solicitada.", @"Recovery requested.");
         [weakSelf startSignalPolling];
     }];
 }
