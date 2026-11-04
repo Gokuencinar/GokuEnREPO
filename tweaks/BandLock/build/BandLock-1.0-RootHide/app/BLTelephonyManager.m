@@ -560,7 +560,7 @@ static NSString *BLDaemonSocketPath(void) {
 
 - (void)startPassiveSignalObservationForRAT:(NSString *)rat
                                completion:(void (^)(NSDictionary *result))completion {
-    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat]) {
+    if (![@[@"AUTO", @"2G", @"3G", @"LTE", @"NR"] containsObject:rat]) {
         if (completion) completion(@{@"success": @NO, @"message": @"Tecnología no válida"});
         return;
     }

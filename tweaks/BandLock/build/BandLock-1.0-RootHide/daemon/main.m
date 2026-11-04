@@ -223,8 +223,8 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         }
         if ([command isEqualToString:@"scan_observe_start"]) {
             NSString *targetRAT = [request[@"rat"] isKindOfClass:NSString.class] ? request[@"rat"] : @"";
-            if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT])
-                return @{@"success": @NO, @"message": @"Selecciona una tecnología 2G, 3G, 4G o 5G"};
+            if (![@[@"AUTO", @"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT])
+                return @{@"success": @NO, @"message": @"Selecciona Auto, 2G, 3G, 4G o 5G"};
             return [BLRHSignalScan.sharedScan startPassiveObservationWithManager:manager target:targetRAT];
         }
         if ([command isEqualToString:@"scan_technology_start"]) {

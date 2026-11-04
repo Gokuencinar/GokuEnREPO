@@ -157,6 +157,13 @@ static BOOL BLScanHasAnyMetric(NSDictionary *row) {
     }
     return NO;
 }
+
+static BOOL BLScanStatusIsMeasured(id status) {
+    return [status isKindOfClass:NSString.class] &&
+        ([(NSString *)status isEqualToString:@"measured"] ||
+         [(NSString *)status isEqualToString:@"measured_frequency_unknown"] ||
+         [(NSString *)status isEqualToString:@"measured_pre_sweep"]);
+}
 static const NSUInteger BLPassiveMaxRows = 8;
 static const NSUInteger BLTechnologyScanSamples = 16;
 
@@ -169,6 +176,7 @@ static NSString *BLModeForTargetRAT(NSString *targetRAT) {
 }
 
 static NSString *BLDisplayTargetRAT(NSString *targetRAT) {
+    if ([targetRAT isEqualToString:@"AUTO"]) return @"Auto";
     if ([targetRAT isEqualToString:@"LTE"]) return @"4G";
     if ([targetRAT isEqualToString:@"NR"]) return @"5G";
     return targetRAT ?: @"Red";
@@ -227,11 +235,21 @@ static void BLMergeObservedBand(NSMutableDictionary<NSNumber *, NSDictionary *> 
     if (band && (band.integerValue < 1 ||
         band.integerValue > ([targetRAT isEqualToString:@"NR"] ? 1024 : 255))) return;
     NSNumber *referenceFrequency = BLReferenceFrequencyForMeasurement(measurement, targetRAT, allowedFrequencies);
+    BOOL legacyFrequencyUnknown = ([targetRAT isEqualToString:@"2G"] || [targetRAT isEqualToString:@"3G"]) &&
+        allowedFrequencies.count && !referenceFrequency;
     if (([targetRAT isEqualToString:@"2G"] || [targetRAT isEqualToString:@"3G"]) &&
-        allowedFrequencies.count &&
-        (!referenceFrequency || ![allowedFrequencies containsObject:referenceFrequency])) return;
+        referenceFrequency && allowedFrequencies.count &&
+        ![allowedFrequencies containsObject:referenceFrequency]) return;
     NSNumber *channel = [measurement[@"channel"] isKindOfClass:NSNumber.class] ? measurement[@"channel"] : nil;
-    NSNumber *rowKey = band ?: (channel ? @(1000000 + channel.integerValue) : nil);
+    NSNumber *psc = [measurement[@"psc"] isKindOfClass:NSNumber.class] ? measurement[@"psc"] : nil;
+    NSNumber *physicalCell = [measurement[@"physical_cell_id"] isKindOfClass:NSNumber.class]
+        ? measurement[@"physical_cell_id"] : nil;
+    NSNumber *cellID = [measurement[@"cell_id"] isKindOfClass:NSNumber.class] ? measurement[@"cell_id"] : nil;
+    NSNumber *rowKey = band ? band :
+        (channel ? @(1000000LL + channel.longLongValue) :
+        (psc ? @(2000000LL + psc.longLongValue) :
+        (physicalCell ? @(3000000LL + physicalCell.longLongValue) :
+        (cellID ? @(4000000LL + cellID.longLongValue) : nil))));
     if (!rowKey) return;
     NSString *role = [measurement[@"role"] isKindOfClass:NSString.class] ? measurement[@"role"] : @"unknown";
     if (![role isEqualToString:@"serving"] && ![role isEqualToString:@"neighbor"]) return;
@@ -240,10 +258,13 @@ static void BLMergeObservedBand(NSMutableDictionary<NSNumber *, NSDictionary *> 
         @"rat": targetRAT,
         @"role": role,
         @"source": [measurement[@"source"] isKindOfClass:NSString.class] ? measurement[@"source"] : @"unknown",
-        @"status": BLScanHasPower(measurement) ? @"measured" : @"detected"
+        @"status": legacyFrequencyUnknown
+            ? (BLScanHasPower(measurement) ? @"measured_frequency_unknown" : @"detected_frequency_unknown")
+            : (BLScanHasPower(measurement) ? @"measured" : @"detected")
     } mutableCopy];
     if (band) record[@"band"] = band;
     if (referenceFrequency) record[@"reference_frequency_mhz"] = referenceFrequency;
+    if (legacyFrequencyUnknown) record[@"frequency_unverified"] = @YES;
     for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
         id value = measurement[metric];
         if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
@@ -257,7 +278,7 @@ static void BLMergeObservedBand(NSMutableDictionary<NSNumber *, NSDictionary *> 
     // first real metric set instead of fabricating an average across cells.
     BOOL replace = !existing ||
         ([existing[@"role"] isEqualToString:@"neighbor"] && [role isEqualToString:@"serving"]) ||
-        (![existing[@"status"] isEqualToString:@"measured"] && [record[@"status"] isEqualToString:@"measured"]);
+        (!BLScanStatusIsMeasured(existing[@"status"]) && BLScanStatusIsMeasured(record[@"status"]));
     if (replace) byBand[rowKey] = record;
 }
 
@@ -674,7 +695,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
 
 - (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager
                                               target:(NSString *)targetRAT {
-    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT]) {
+    if (![@[@"AUTO", @"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT]) {
         return @{@"success": @NO, @"message": @"Tecnología de red no válida"};
     }
     if ([targetRAT isEqualToString:@"NR"] && BLDeviceIsKnownLTEOnly()) {
@@ -689,15 +710,17 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         self.cancelRequested = NO;
         self.scanState = [@{@"success": @YES, @"running": @YES,
             @"read_only": @YES, @"phase": @"observing",
-            @"rows": @[], @"total": @(BLPassiveMaxRows), @"completed": @0,
+            @"rows": @[], @"total": @12, @"completed": @0,
             @"target_rat": targetRAT,
-            @"message": [NSString stringWithFormat:@"Observando %@",
-                [targetRAT isEqualToString:@"LTE"] ? @"4G" : ([targetRAT isEqualToString:@"NR"] ? @"5G" : targetRAT)]} mutableCopy];
+            @"message": [targetRAT isEqualToString:@"AUTO"]
+                ? @"Observando la red actual en Auto"
+                : [NSString stringWithFormat:@"Observando %@", BLDisplayTargetRAT(targetRAT)]} mutableCopy];
     }
     dispatch_async(self.scanQueue, ^{
         NSMutableArray *rows = [NSMutableArray array];
         NSString *stop = nil;
         NSString *subscription = nil;
+        NSUInteger samplesCompleted = 0;
         @try {
             // 12 bounded observations. No retry may write bands or RAT.
             // On NR-capable hardware, collect real serving NR observations,
@@ -725,8 +748,14 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
                         if (rows.count >= BLPassiveMaxRows) break;
                         NSString *rat = measurement[@"rat"];
-                        if (![measurement[@"role"] isEqualToString:@"serving"] ||
-                            ![rat isEqualToString:targetRAT] ||
+                        BOOL matchesTarget = [targetRAT isEqualToString:@"AUTO"] ||
+                            [rat isEqualToString:targetRAT];
+                        NSString *role = [measurement[@"role"] isKindOfClass:NSString.class]
+                            ? measurement[@"role"] : @"";
+                        BOOL roleAllowed = [role isEqualToString:@"serving"] ||
+                            ([targetRAT isEqualToString:@"AUTO"] && [role isEqualToString:@"neighbor"]);
+                        if (!roleAllowed ||
+                            !matchesTarget ||
                             ([rat isEqualToString:@"NR"] && !supportsNR) ||
                             !BLScanHasPower(measurement)) continue;
                         // LTE requires a typed measurement. NR can use legacy
@@ -740,12 +769,24 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         BOOL seen = NO;
                         for (NSDictionary *previous in rows) {
                             if (((!band && !previous[@"band"]) || [previous[@"band"] isEqual:band]) &&
-                                [previous[@"rat"] isEqualToString:rat]) { seen = YES; break; }
+                                [previous[@"rat"] isEqualToString:rat] &&
+                                [previous[@"role"] isEqualToString:role] &&
+                                ((!measurement[@"cell_id"] && !previous[@"cell_id"]) ||
+                                 [previous[@"cell_id"] isEqual:measurement[@"cell_id"]]) &&
+                                ((!measurement[@"physical_cell_id"] && !previous[@"physical_cell_id"]) ||
+                                 [previous[@"physical_cell_id"] isEqual:measurement[@"physical_cell_id"]]) &&
+                                ((!measurement[@"psc"] && !previous[@"psc"]) ||
+                                 [previous[@"psc"] isEqual:measurement[@"psc"]]) &&
+                                ((!measurement[@"channel"] && !previous[@"channel"]) ||
+                                 [previous[@"channel"] isEqual:measurement[@"channel"]])) {
+                                seen = YES;
+                                break;
+                            }
                         }
                         if (!seen) {
                             NSMutableDictionary *record = [@{
                                 @"rat": rat,
-                                @"role": @"serving", @"source": measurement[@"source"] ?: @"legacy",
+                                @"role": role, @"source": measurement[@"source"] ?: @"legacy",
                             @"status": @"measured", @"read_only": @YES
                             } mutableCopy];
                             if (band) record[@"band"] = band;
@@ -761,10 +802,11 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         // LTE and NR may coexist in an NSA sample.
                     }
                     @synchronized(self) {
+                        samplesCompleted = sample + 1;
                         self.scanState[@"rows"] = [rows copy];
-                        self.scanState[@"completed"] = @(rows.count);
+                        self.scanState[@"completed"] = @(samplesCompleted);
                         self.scanState[@"message"] = [NSString stringWithFormat:
-                            @"Muestra %lu/12 · %lu bandas",
+                            @"Muestra %lu/12 · %lu celdas/portadoras",
                             (unsigned long)(sample + 1), (unsigned long)rows.count];
                     }
                     if (rows.count >= BLPassiveMaxRows) break;
@@ -779,7 +821,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                 self.cancelRequested = NO;
                 self.scanState[@"running"] = @NO;
                 self.scanState[@"rows"] = [rows copy];
-                self.scanState[@"completed"] = @(rows.count);
+                self.scanState[@"completed"] = @(samplesCompleted);
                 BOOL cancelled = [stop isEqualToString:@"Observation cancelled"];
                 self.scanState[@"success"] = @(!stop || cancelled);
                 self.scanState[@"phase"] = stop
@@ -787,11 +829,12 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     : @"observation_complete";
                 self.scanState[@"message"] = stop ? stop :
                     (rows.count
-                     ? @"Observación completada"
-                     : [NSString stringWithFormat:
-                         @"No se ha observado señal %@ en la conexión actual; no se ha forzado ninguna red",
-                         [targetRAT isEqualToString:@"LTE"] ? @"4G" :
-                         ([targetRAT isEqualToString:@"NR"] ? @"5G" : targetRAT)]);
+                     ? ([targetRAT isEqualToString:@"AUTO"] ? @"Observación Auto completada" : @"Observación completada")
+                     : ([targetRAT isEqualToString:@"AUTO"]
+                        ? @"No se ha observado una celda servidora con métricas válidas; no se ha modificado la red"
+                        : [NSString stringWithFormat:
+                            @"No se ha observado señal %@ en la conexión actual; no se ha forzado ninguna red",
+                            BLDisplayTargetRAT(targetRAT)]));
                 self.scanState[@"recovery_required"] = @NO;
             }
         }
@@ -959,6 +1002,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     NSString *stopReason = nil;
     NSString *targetMode = BLModeForTargetRAT(targetRAT);
     BOOL targetObserved = NO;
+    BOOL targetMeasurementSeen = NO;
+    NSString *lastServingRAT = nil;
     NSDictionary *scanJournal = BLScanReadJournal();
     NSArray<NSNumber *> *allowedFrequencies =
         BLSortedBands(scanJournal[@"target_frequencies_mhz"]);
@@ -972,7 +1017,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         // The private RAT getter is unreliable on iOS 18. Do not call a
         // successful setter a verified mode change: wait for an actual serving
         // cell of the requested technology before beginning the scan window.
-        for (NSUInteger wait = 0; !stopReason && wait < 12; wait++) {
+        NSUInteger registrationWaits = [targetRAT isEqualToString:@"3G"] ? 24 : 12;
+        for (NSUInteger wait = 0; !stopReason && wait < registrationWaits; wait++) {
             if ([NSDate date].timeIntervalSince1970 >= deadline) {
                 stopReason = @"Tiempo máximo del barrido agotado";
                 break;
@@ -991,6 +1037,11 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             }
             NSArray *measurements = BLScanMeasurements(manager, query);
             for (NSDictionary *measurement in measurements) {
+                NSString *measurementRAT = [measurement[@"rat"] isKindOfClass:NSString.class]
+                    ? measurement[@"rat"] : nil;
+                if ([measurementRAT isEqualToString:targetRAT]) targetMeasurementSeen = YES;
+                if ([measurement[@"role"] isEqualToString:@"serving"] && measurementRAT.length)
+                    lastServingRAT = measurementRAT;
                 if ([measurement[@"rat"] isEqualToString:targetRAT] &&
                     [measurement[@"role"] isEqualToString:@"serving"]) {
                     targetObserved = YES;
@@ -1000,16 +1051,31 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             @synchronized(self) {
                 self.scanState[@"rows"] = BLSortedObservedBands(byBand);
                 self.scanState[@"message"] = [NSString stringWithFormat:
-                    @"Esperando registro %@ · %lu referencias del país observadas",
-                    BLDisplayTargetRAT(targetRAT), (unsigned long)byBand.count];
+                    @"Esperando registro %@ · %lu/%lu s · %lu referencias del país observadas",
+                    BLDisplayTargetRAT(targetRAT), (unsigned long)(wait + 1),
+                    (unsigned long)registrationWaits, (unsigned long)byBand.count];
             }
             if (targetObserved) break;
-            if (wait < 11) [NSThread sleepForTimeInterval:1.0];
+            if (wait + 1 < registrationWaits) [NSThread sleepForTimeInterval:1.0];
         }
         if (!stopReason && !targetObserved) {
-            stopReason = [NSString stringWithFormat:
-                @"No se registró una celda %@ tras solicitar el cambio; se restaura el modo anterior",
-                BLDisplayTargetRAT(targetRAT)];
+            if ([targetRAT isEqualToString:@"3G"]) {
+                if (targetMeasurementSeen) {
+                    stopReason = @"Se detectó información 3G, pero el módem no llegó a registrar una celda 3G servidora. Se restaura el modo anterior.";
+                } else if (lastServingRAT.length) {
+                    stopReason = [NSString stringWithFormat:
+                        @"El cambio a 3G fue aceptado, pero no apareció ninguna celda 3G en %lu s (la última celda servidora seguía en %@). Es probable que no haya 3G disponible o activo en esta zona/operador. Se restaura el modo anterior.",
+                        (unsigned long)registrationWaits, BLDisplayTargetRAT(lastServingRAT)];
+                } else {
+                    stopReason = [NSString stringWithFormat:
+                        @"El cambio a 3G fue aceptado, pero no apareció ninguna celda 3G en %lu s. Puede no haber cobertura 3G o la red del operador puede tener 3G retirado. Se restaura el modo anterior.",
+                        (unsigned long)registrationWaits];
+                }
+            } else {
+                stopReason = [NSString stringWithFormat:
+                    @"No se registró una celda %@ tras solicitar el cambio; se restaura el modo anterior",
+                    BLDisplayTargetRAT(targetRAT)];
+            }
         }
 
         // Preserve the first real serving measurements. When a band sweep is

@@ -18,7 +18,7 @@ const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui17$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui18$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -29,7 +29,7 @@ assert.match(analyzer, /Actualizar ahora/);
 assert.match(analyzer, /signalProbeWithCompletion:/);
 assert.match(analyzer, /scanTapped:/);
 assert.match(analyzer, /scanCancelTapped:/);
-assert.match(analyzer, /initWithItems:@\[@"2G", @"3G", @"4G", @"5G"\]/);
+assert.match(analyzer, /initWithItems:@\[@"Auto", @"2G", @"3G", @"4G", @"5G"\]/);
 assert.doesNotMatch(app, /disclosure:BLT\(@"Diagnóstico"/);
 assert.match(manager, /startPassiveSignalObservationForRAT:/);
 assert.match(main, /scan_observe_start/);
@@ -389,12 +389,12 @@ assert.match(cc, /_currentModeCode = @"automatic"/);
 assert.doesNotMatch(cc, /text = @"(?:Red|\?)"/);
 assert.match(main, /\[command isEqualToString:@"scan_observe_start"\]/);
 assert.match(main, /@"rat"\]/);
-for (const [rat, display] of [['2G','2G'], ['3G','3G'], ['LTE','4G'], ['NR','5G']]) {
+for (const [rat, display] of [['AUTO','Auto'], ['2G','2G'], ['3G','3G'], ['LTE','4G'], ['NR','5G']]) {
   assert.match(manager, new RegExp('@"' + rat + '"'));
   assert.match(analyzer, new RegExp('@"' + display + '"'));
 }
-assert.match(analyzer, /NSArray \*rats = @\[@"2G", @"3G", @"LTE", @"NR"\]/);
-assert.match(passive, /\[rat isEqualToString:targetRAT\]/);
+assert.match(analyzer, /NSArray \*rats = @\[@"AUTO", @"2G", @"3G", @"LTE", @"NR"\]/);
+assert.match(passive, /\[targetRAT isEqualToString:@"AUTO"\] \|\|/);
 assert.match(passive, /No se ha observado señal/);
 assert.match(app, /\[weakSelf\.signalTimer invalidate\]/);
 assert.match(app, /if \(!weakSelf\.signalRunning && !weakSelf\.signalRecoveryRequired\)/);
@@ -468,6 +468,31 @@ assert.match(main, /band_inventory_diagnostic/);
 assert.match(scan, /Sanitized CTBandInfo inventory/);
 assert.match(metadata, /@10:\s+@\{@"frequency": @"AWS 1700\/2100 MHz"/);
 assert.match(metadata, /@44:\s+@\{@"frequency": @"700 MHz \(703–803\)"/);
+assert.match(analyzer, /setTitle:@"5G —" forSegmentAtIndex:4/);
+assert.match(analyzer, /UIControlStateDisabled/);
+assert.match(analyzer, /startPassiveSignalObservationForRAT:@"AUTO"/);
+assert.match(analyzer, /BLAnalyzerSignalProgress/);
+assert.match(analyzer, /viewWithTag:711/);
+assert.match(analyzer, /viewWithTag:715/);
+assert.match(analyzer, /UIColor\.systemYellowColor/);
+assert.match(analyzer, /@"ARFCN"/);
+assert.match(analyzer, /@"EARFCN"/);
+assert.match(analyzer, /@"UARFCN"/);
+assert.match(analyzer, /BLAnalyzerReferenceFrequencyForRow/);
+assert.match(scan, /registrationWaits = \[targetRAT isEqualToString:@"3G"\] \? 24 : 12/);
+assert.match(scan, /El cambio a 3G fue aceptado/);
+assert.match(passive, /Observando la red actual en Auto/);
+assert.match(passive, /\[targetRAT isEqualToString:@"AUTO"\] && \[role isEqualToString:@"neighbor"\]/);
+assert.match(passive, /@"total": @12/);
+assert.match(passive, /samplesCompleted = sample \+ 1/);
+assert.match(scan, /measured_frequency_unknown/);
+assert.match(scan, /BLScanStatusIsMeasured/);
+assert.match(scan, /psc \? @\(2000000LL \+ psc\.longLongValue\)/);
+assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
+assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
+assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
+  'Auto observation must stay read-only and never write RAT/bands');
+console.log('BandLock rhui18 Auto analyzer, disabled 5G and NetMonitor-style measurement cards: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain
@@ -556,7 +581,7 @@ console.log('BandLock rhui14 scan metrics and LTE apply regression checks: PASS'
 // rhui15: NetMonitor-inspired coverage Analyzer is the single measurement UI.
 // It shows live serving/neighbor rows, quality categories, band details and
 // technology scans, while Control keeps only the emergency recovery action.
-for (const label of ['CELDA SERVIDORA Y VECINAS', 'BARRIDO POR TECNOLOGÍA', 'COMPARATIVA POR BANDA']) {
+for (const label of ['CELDA SERVIDORA Y VECINAS', 'RED Y BARRIDO', 'COMPARATIVA POR BANDA']) {
   assert.match(analyzer, new RegExp(label));
 }
 for (const quality of ['Excelente', 'Buena', 'Moderada', 'Mala', 'Muy mala']) {
