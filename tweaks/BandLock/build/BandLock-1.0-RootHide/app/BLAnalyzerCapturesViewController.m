@@ -1,6 +1,6 @@
 #import "BLAnalyzerCapturesViewController.h"
 #import "BLAnalyzerCaptureStore.h"
-#import "BLLocalization.h"
+#import "BLCommon.h"
 
 static UIColor *BLCaptureInk(void) { return [UIColor colorWithRed:0.06 green:0.10 blue:0.19 alpha:1]; }
 static UIColor *BLCapturePanel(void) { return [UIColor colorWithRed:0.10 green:0.16 blue:0.27 alpha:1]; }

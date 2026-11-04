@@ -1,5 +1,5 @@
 #import "BLAnalyzerCaptureStore.h"
-#import "BLLocalization.h"
+#import "BLCommon.h"
 
 static NSString *const BLAnalyzerCaptureIndexKey = @"BLAnalyzerCaptureIndex.v1";
 static NSString *const BLAnalyzerCaptureDirectoryName = @"BandLockAnalyzerCaptures";

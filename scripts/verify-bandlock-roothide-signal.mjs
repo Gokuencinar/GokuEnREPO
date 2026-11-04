@@ -525,8 +525,10 @@ assert.doesNotMatch(core, /allValues\.firstObject|providers\.allValues/,
 assert.match(captureStore, /BLAnalyzerCaptureIndexKey/);
 assert.match(captureStore, /BLAnalyzerCaptureDirectoryName/);
 assert.match(captureStore, /NSApplicationSupportDirectory/);
+assert.match(captureStore, /#import "BLCommon\.h"/);
 assert.match(captureStore, /dd\/MM\/yy HH:mm:ss/);
 assert.match(capturesController, /Capturas guardadas/);
+assert.match(capturesController, /#import "BLCommon\.h"/);
 assert.match(capturesController, /Compartir captura/);
 assert.match(capturesController, /Eliminar captura/);
 assert.match(capturesController, /operator_name/);
