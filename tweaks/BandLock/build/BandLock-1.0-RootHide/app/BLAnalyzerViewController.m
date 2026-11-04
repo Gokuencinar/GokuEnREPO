@@ -496,6 +496,7 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
                     } else if (child.tag == 714 && [child isKindOfClass:UILabel.class]) {
                         UILabel *label = (UILabel *)child;
                         NSDictionary *names = @{@"measured": BLT(@"Medida", @"Measured"),
+                            @"measured_pre_sweep": BLT(@"Medida previa", @"Pre-sweep reading"),
                             @"detected": BLT(@"Registrada sin métrica", @"Registered without metric"),
                             @"no_signal": BLT(@"Sin señal", @"No signal"),
                             @"query_failed": BLT(@"Consulta fallida", @"Query failed"),
@@ -817,6 +818,7 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
 
 - (void)updateScanButtons {
     self.scanTechnology.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
+    self.scanCountryButton.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
     self.scanButton.enabled = BLCountryBandsForRAT(BLSelectedCountryRecord(), [self selectedScanRAT]).count > 0 &&
                               !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
     self.scanCancelButton.hidden = !self.scanRunning;

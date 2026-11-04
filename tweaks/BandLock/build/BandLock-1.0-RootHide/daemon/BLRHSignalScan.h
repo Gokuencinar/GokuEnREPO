@@ -12,9 +12,6 @@
                                               target:(NSString *)targetRAT;
 - (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
                                            target:(NSString *)targetRAT
-                                      restoreMode:(NSString *)restoreMode;
-- (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
-                                           target:(NSString *)targetRAT
                                       restoreMode:(NSString *)restoreMode
                                       countryISO:(NSString *)countryISO
                                      targetBands:(NSArray<NSNumber *> *)targetBands;

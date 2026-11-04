@@ -696,6 +696,9 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                                 id value = measurement[metric];
                                 if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
                             }
+                            for (NSString *field in @[@"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel"]) {
+                                if ([measurement[field] isKindOfClass:NSNumber.class]) record[field] = measurement[field];
+                            }
                             [rows addObject:record];
                         }
                         // LTE and NR may coexist in an NSA sample.
@@ -738,13 +741,6 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     });
     return @{@"success": @YES, @"read_only": @YES,
              @"message": @"Observación de señal iniciada"};
-}
-
-- (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
-                                           target:(NSString *)targetRAT
-                                      restoreMode:(NSString *)restoreMode {
-    return [self startTechnologyScanWithManager:manager target:targetRAT
-                                   restoreMode:restoreMode countryISO:nil targetBands:nil];
 }
 
 - (NSDictionary *)startTechnologyScanWithManager:(BLTelephonyManager *)manager
@@ -1102,6 +1098,9 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                             id value = measurement[metric];
                             if ([value isKindOfClass:NSNumber.class]) row[metric] = value;
                         }
+                        for (NSString *field in @[@"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel"]) {
+                            if ([measurement[field] isKindOfClass:NSNumber.class]) row[field] = measurement[field];
+                        }
                         if ([row[@"status"] isEqualToString:@"measured"]) break;
                     }
                     if ([row[@"status"] isEqualToString:@"measured"]) break;
@@ -1117,6 +1116,9 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
                             id value = seed[metric];
                             if ([value isKindOfClass:NSNumber.class]) row[metric] = value;
+                        }
+                        for (NSString *field in @[@"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel"]) {
+                            if ([seed[field] isKindOfClass:NSNumber.class]) row[field] = seed[field];
                         }
                     }
                 }
