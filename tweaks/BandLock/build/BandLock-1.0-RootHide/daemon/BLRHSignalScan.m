@@ -776,6 +776,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         stop = @"CoreTelephony temporarily unavailable; observation stopped";
                         break;
                     }
+                    NSString *operatorName = [query[@"operatorName"] isKindOfClass:NSString.class]
+                        ? query[@"operatorName"] : nil;
                     // Read-only observation does not require a writable band
                     // context. Keep the identity invariant when available,
                     // but do not reject older 2G/3G observations simply
@@ -846,6 +848,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         samplesCompleted = sample + 1;
                         self.scanState[@"rows"] = [rows copy];
                         self.scanState[@"completed"] = @(samplesCompleted);
+                        if (operatorName.length) self.scanState[@"operator_name"] = operatorName;
+                        else [self.scanState removeObjectForKey:@"operator_name"];
                         self.scanState[@"message"] = [NSString stringWithFormat:
                             @"Muestra %lu/12 · %lu celdas/portadoras",
                             (unsigned long)(sample + 1), (unsigned long)rows.count];
@@ -932,6 +936,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     }
 
     NSDictionary *preflight = [manager queryCoreTelephonyForPassiveObservation];
+    NSString *operatorName = [preflight[@"operatorName"] isKindOfClass:NSString.class]
+        ? preflight[@"operatorName"] : nil;
     NSString *scanID = [[NSUUID UUID] UUIDString];
     NSString *subscription = preflight[@"error"] ? nil : BLScanSubscriptionUUID(preflight);
     NSDictionary *originalBandConfiguration = preflight[@"error"]
@@ -1018,6 +1024,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             @"message": [NSString stringWithFormat:@"Cambiando temporalmente a %@…",
                 BLDisplayTargetRAT(targetRAT)]
         } mutableCopy];
+        if (operatorName.length) self.scanState[@"operator_name"] = operatorName;
     }
 
     dispatch_async(self.scanQueue, ^{

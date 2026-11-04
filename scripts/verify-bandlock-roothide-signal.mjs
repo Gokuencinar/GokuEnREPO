@@ -18,7 +18,7 @@ const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui20$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui21$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -502,6 +502,23 @@ assert.match(analyzer, /Guardar PNG/);
 assert.match(analyzer, /UIGraphicsImageRenderer/);
 assert.match(analyzer, /UIImagePNGRepresentation/);
 assert.match(analyzer, /currentScanMeasurements/);
+assert.match(core, /BLOperatorNameFromNetworkInfo/);
+assert.match(core, /dataServiceIdentifier/);
+assert.match(core, /serviceSubscriberCellularProviders/);
+assert.match(core, /carrierName/);
+assert.match(core, /@"operator_name"/);
+assert.doesNotMatch(core, /allValues\.firstObject|providers\.allValues/,
+  'Operator name must be resolved from the current data service, never the first configured SIM/eSIM');
+assert.match(analyzer, /BLAnalyzerCaptureIndexKey/);
+assert.match(analyzer, /BLAnalyzerCaptureDirectoryName/);
+assert.match(analyzer, /NSApplicationSupportDirectory/);
+assert.match(analyzer, /captureTabTitle/);
+assert.match(analyzer, /dd\/MM\/yy HH:mm:ss/);
+assert.match(analyzer, /showCaptureAtIndex/);
+assert.match(analyzer, /captureShareTapped/);
+assert.match(analyzer, /captureDeleteTapped/);
+assert.match(analyzer, /Operador móvil/);
+assert.match(analyzer, /En vivo/);
 assert.match(scan, /measured_frequency_unknown/);
 assert.match(scan, /BLScanStatusIsMeasured/);
 assert.match(scan, /psc \? @\(2000000LL \+ psc\.longLongValue\)/);
@@ -509,7 +526,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui20 compact analyzer, CA visibility and PNG export: PASS');
+console.log('BandLock rhui21 saved capture tabs and active data operator: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain

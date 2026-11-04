@@ -213,6 +213,32 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     return title;
 }
 
+// Resolve only the carrier attached to the current data service. The provider
+// dictionary can also contain inactive/disabled eSIM plans, so never pick the
+// first carrier and never export the service identifier itself.
+static NSString *BLOperatorNameFromNetworkInfo(id networkInfo) {
+    if (!networkInfo) return nil;
+    SEL dataSelector = NSSelectorFromString(@"dataServiceIdentifier");
+    SEL providersSelector = NSSelectorFromString(@"serviceSubscriberCellularProviders");
+    if (![networkInfo respondsToSelector:dataSelector] ||
+        ![networkInfo respondsToSelector:providersSelector]) return nil;
+    id dataService = BLMsg0(networkInfo, dataSelector);
+    id rawProviders = BLMsg0(networkInfo, providersSelector);
+    if (![dataService isKindOfClass:NSString.class] || ![dataService length] ||
+        ![rawProviders isKindOfClass:NSDictionary.class]) return nil;
+    id carrier = ((NSDictionary *)rawProviders)[dataService];
+    id confirmedDataService = BLMsg0(networkInfo, dataSelector);
+    if (![confirmedDataService isKindOfClass:NSString.class] ||
+        ![confirmedDataService isEqualToString:dataService]) return nil;
+    SEL nameSelector = NSSelectorFromString(@"carrierName");
+    if (!carrier || ![carrier respondsToSelector:nameSelector]) return nil;
+    id rawName = BLMsg0(carrier, nameSelector);
+    if (![rawName isKindOfClass:NSString.class]) return nil;
+    NSString *name = [rawName stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (!name.length || name.length > 96) return nil;
+    return name;
+}
+
 // RootHide signal diagnostic: never export raw CoreTelephony dictionaries,
 // SIM identifiers, subscription UUIDs or other subscriber identity.
 // Explicitly allow bounded radio cell identifiers (not subscriber IDs).
@@ -553,9 +579,10 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     if (!handle) return @{@"error": BLT(@"No se pudo cargar CoreTelephony.", @"Could not load CoreTelephony.")};
 
     id ratRaw = nil;
+    id networkInfo = nil;
     Class networkInfoClass = NSClassFromString(@"CTTelephonyNetworkInfo");
     if (networkInfoClass) {
-        id networkInfo = [[networkInfoClass alloc] init];
+        networkInfo = [[networkInfoClass alloc] init];
         SEL ratSelector = NSSelectorFromString(@"serviceCurrentRadioAccessTechnology");
         if ([networkInfo respondsToSelector:ratSelector]) ratRaw = BLMsg0(networkInfo, ratSelector);
     }
@@ -620,11 +647,13 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
             @"sync_status": @"not_needed", @"async_kind": @"not_needed",
             @"async_status": @"not_needed"};
     id cellInfo = [self copyCellInfoFromClient:client context:context];
+    NSString *operatorName = BLOperatorNameFromNetworkInfo(networkInfo);
     return @{@"client": client,
              @"context": context,
              @"bandInfo": bandInfo ?: NSNull.null,
              @"ratRaw": ratRaw ?: NSNull.null,
              @"cellInfo": cellInfo ?: NSNull.null,
+             @"operatorName": operatorName ?: NSNull.null,
              @"ratSelection": ratSelection[@"selection"] ?: @"—",
              @"ratPreferred": ratSelection[@"preferred"] ?: @"—",
              @"ratReadSource": ratSelection[@"source"] ?: @"none",
@@ -681,6 +710,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
              @"supports_5g": @(supports5G),
              @"rat": BLHumanRAT(ratRaw) ?: @"—",
              @"serving": BLServingBandFromCellInfo(cellInfo) ?: @"—",
+             @"operator_name": [query[@"operatorName"] isKindOfClass:NSString.class] ? query[@"operatorName"] : @"",
              @"mode": mode,
              @"mode_code": modeCode};
 }
@@ -1365,6 +1395,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
         @"success": @YES,
         @"measurements": available,
         @"diagnostics": diagnostics,
+        @"operator_name": [query[@"operatorName"] isKindOfClass:NSString.class] ? query[@"operatorName"] : @"",
         @"supports_nr": @(supportsNR),
         @"supported_nr": supportsNR ? (capabilities[@"supported_nr"] ?: @[]) : @[],
         @"has_serving_power": @(hasPower),
