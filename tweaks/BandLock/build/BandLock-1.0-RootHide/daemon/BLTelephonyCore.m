@@ -277,10 +277,16 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     NSString *rat = BLRHSignalRAT(rawRAT);
     NSString *type = row[@"kCTCellMonitorCellType"];
     NSString *role = [type isKindOfClass:NSString.class] ?
-        ([type rangeOfString:@"Serving" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"serving" :
-         ([type rangeOfString:@"Neighbor" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"neighbor" : nil)) : nil;
+        ([type rangeOfString:@"Secondary" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"secondary" :
+         ([type rangeOfString:@"Serving" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"serving" :
+          ([type rangeOfString:@"Neighbor" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"neighbor" : nil))) : nil;
     if (!rat || !role) return nil;
     NSMutableDictionary *item = [@{@"rat": rat, @"role": role, @"source": @"legacy"} mutableCopy];
+    // Preserve the private CoreTelephony cell-type token for read-only
+    // diagnostics. A "Secondary" token is useful evidence, but is not enough
+    // by itself to claim a validated LTE SCC/PCC mapping on every firmware.
+    if ([type isKindOfClass:NSString.class] && type.length > 0 && type.length <= 96)
+        item[@"cell_type_raw"] = type;
     NSNumber *band = BLRHSignalNumber(row[@"kCTCellMonitorBandInfo"], 1, 1024, YES);
     if (band && floor(band.doubleValue) == band.doubleValue) item[@"band"] = band;
     NSNumber *rsrp = BLRHLegacyMetric(row, @[@"kCTCellMonitorRSRP", @"RSRP", @"rsrp"], -200, -20, YES);
@@ -1232,8 +1238,12 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
 
     NSMutableArray *items = [NSMutableArray array];
     NSDictionary *servingLegacy = nil;
+    NSMutableOrderedSet<NSString *> *legacyCellTypes = [NSMutableOrderedSet orderedSet];
     for (id raw in legacyInfo) {
         if (![raw isKindOfClass:NSDictionary.class]) continue;
+        NSString *rawType = [raw[@"kCTCellMonitorCellType"] isKindOfClass:NSString.class]
+            ? raw[@"kCTCellMonitorCellType"] : nil;
+        if (rawType.length && rawType.length <= 96) [legacyCellTypes addObject:rawType];
         NSDictionary *legacy = BLRHLegacySignalRow(raw);
         if (!legacy) continue;
         if ([legacy[@"rat"] isEqualToString:@"NR"] && !supportsNR) continue;
@@ -1338,6 +1348,7 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
     NSDictionary *diagnostics = @{
         @"typed_api": typedStatus,
         @"legacy_rows": @(legacyInfo.count),
+        @"legacy_cell_types": legacyCellTypes.array ?: @[],
         @"legacy_serving_rsrp": servingLegacy ? BLRHMetricPresence(servingLegacy, @[@"kCTCellMonitorRSRP", @"RSRP", @"rsrp"]) : @"no_serving_row",
         @"legacy_serving_rsrq": servingLegacy ? BLRHMetricPresence(servingLegacy, @[@"kCTCellMonitorRSRQ", @"RSRQ", @"rsrq"]) : @"no_serving_row",
         @"legacy_serving_rssi": servingLegacy ? BLRHMetricPresence(servingLegacy, @[@"kCTCellMonitorRSSI", @"RSSI", @"rssi"]) : @"no_serving_row",

@@ -18,7 +18,7 @@ const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui19$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui20$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -484,14 +484,24 @@ assert.match(scan, /registrationWaits = \[targetRAT isEqualToString:@"3G"\] \? 2
 assert.match(technologyScan, /if \(wait \+ 1 < registrationWaits\)/);
 assert.match(scan, /El cambio a 3G fue aceptado/);
 assert.match(passive, /Observando la red actual en Auto/);
-assert.match(passive, /\[targetRAT isEqualToString:@"AUTO"\] && \[role isEqualToString:@"neighbor"\]/);
+assert.match(passive, /\[role isEqualToString:@"neighbor"\] \|\| \[role isEqualToString:@"secondary"\]/);
 assert.match(passive, /@"total": @12/);
 assert.match(passive, /samplesCompleted = sample \+ 1/);
 assert.match(passive, /BLPassiveCellMatches/);
 assert.match(passive, /BLEnrichPassiveCell/);
 assert.doesNotMatch(passive, /if \(rows\.count >= BLPassiveMaxRows\) break;/,
   'Auto must keep sampling to enrich already-known cells even when the visible row cap is reached');
-assert.match(passive, /autoLegacyLTENeighbor/);
+assert.match(passive, /autoLegacyLTEAuxiliary/);
+assert.match(core, /rangeOfString:@"Secondary"/);
+assert.match(core, /@"cell_type_raw"\] = type/);
+assert.match(core, /@"legacy_cell_types"/);
+assert.match(analyzer, /carrierAggregationSummaryForMeasurements/);
+assert.match(analyzer, /SECUNDARIA LTE/);
+assert.match(analyzer, /Posible CA/);
+assert.match(analyzer, /Guardar PNG/);
+assert.match(analyzer, /UIGraphicsImageRenderer/);
+assert.match(analyzer, /UIImagePNGRepresentation/);
+assert.match(analyzer, /currentScanMeasurements/);
 assert.match(scan, /measured_frequency_unknown/);
 assert.match(scan, /BLScanStatusIsMeasured/);
 assert.match(scan, /psc \? @\(2000000LL \+ psc\.longLongValue\)/);
@@ -499,7 +509,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui19 Auto analyzer, disabled 5G and NetMonitor-style measurement cards: PASS');
+console.log('BandLock rhui20 compact analyzer, CA visibility and PNG export: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain
@@ -588,7 +598,7 @@ console.log('BandLock rhui14 scan metrics and LTE apply regression checks: PASS'
 // rhui15: NetMonitor-inspired coverage Analyzer is the single measurement UI.
 // It shows live serving/neighbor rows, quality categories, band details and
 // technology scans, while Control keeps only the emergency recovery action.
-for (const label of ['CELDA SERVIDORA Y VECINAS', 'RED Y BARRIDO', 'COMPARATIVA POR BANDA']) {
+for (const label of ['CELDAS Y PORTADORAS', 'RED Y BARRIDO', 'COMPARATIVA POR BANDA']) {
   assert.match(analyzer, new RegExp(label));
 }
 for (const quality of ['Excelente', 'Buena', 'Moderada', 'Mala', 'Muy mala']) {

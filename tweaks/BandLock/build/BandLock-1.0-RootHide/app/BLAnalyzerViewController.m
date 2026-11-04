@@ -6,6 +6,7 @@
 #import "BLCountryProfile.h"
 #import "BLCountriesViewController.h"
 #import "../../BLHardwareCapabilities.h"
+#import <QuartzCore/QuartzCore.h>
 #import <math.h>
 #import <float.h>
 
@@ -18,7 +19,7 @@ static NSUInteger const BLAnalyzerMaxSamples = 300;
 
 static UIColor *BLAnalyzerInk(void) { return [UIColor colorWithRed:0.06 green:0.10 blue:0.19 alpha:1]; }
 static UIColor *BLAnalyzerTeal(void) { return [UIColor colorWithRed:0.05 green:0.74 blue:0.66 alpha:1]; }
-static UIColor *BLAnalyzerMuted(void) { return [UIColor colorWithRed:0.59 green:0.65 blue:0.73 alpha:1]; }
+static UIColor *BLAnalyzerMuted(void) { return [UIColor colorWithRed:0.78 green:0.82 blue:0.89 alpha:1]; }
 
 static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     if (![candidate isKindOfClass:NSNumber.class]) return nil;
@@ -198,6 +199,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 @property (nonatomic, strong) UILabel *bandLabel;
 @property (nonatomic, strong) UILabel *qualityLabel;
 @property (nonatomic, strong) UILabel *networkDetailLabel;
+@property (nonatomic, strong) UILabel *caStatusLabel;
 @property (nonatomic, strong) UILabel *rsrpLabel;
 @property (nonatomic, strong) UILabel *rsrpTitleLabel;
 @property (nonatomic, strong) UILabel *snrLabel;
@@ -228,6 +230,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 @property (nonatomic, assign) BOOL recoveryRequired;
 @property (nonatomic, copy) NSArray<NSDictionary *> *history;
 @property (nonatomic, copy) NSArray<NSDictionary *> *currentMeasurements;
+@property (nonatomic, copy) NSArray<NSDictionary *> *currentScanMeasurements;
 @property (nonatomic, copy) NSString *lastPersistedScanID;
 @end
 
@@ -251,9 +254,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 
 - (UIStackView *)metricWithTitle:(NSString *)title valueLabel:(UILabel * __strong *)outLabel
                      titleLabel:(UILabel * __strong *)outTitle {
-    UIStackView *item = [self columnWithSpace:5];
-    UILabel *heading = [self text:title size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
-    UILabel *value = [self text:@"—" size:22 color:UIColor.whiteColor weight:UIFontWeightBold];
+    UIStackView *item = [self columnWithSpace:3];
+    UILabel *heading = [self text:title size:11 color:BLAnalyzerMuted() weight:UIFontWeightSemibold];
+    UILabel *value = [self text:@"—" size:20 color:UIColor.whiteColor weight:UIFontWeightBold];
     [item addArrangedSubview:heading];
     [item addArrangedSubview:value];
     if (outLabel) *outLabel = value;
@@ -264,17 +267,17 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 - (UIView *)panelWithTitle:(NSString *)title children:(NSArray<UIView *> *)children {
     UIView *panel = [UIView new];
     panel.backgroundColor = [UIColor colorWithRed:0.10 green:0.16 blue:0.27 alpha:1];
-    panel.layer.cornerRadius = 20;
-    UIStackView *body = [self columnWithSpace:12];
+    panel.layer.cornerRadius = 16;
+    UIStackView *body = [self columnWithSpace:9];
     body.translatesAutoresizingMaskIntoConstraints = NO;
-    [body addArrangedSubview:[self text:title size:13 color:BLAnalyzerMuted() weight:UIFontWeightBold]];
+    [body addArrangedSubview:[self text:title size:12 color:BLAnalyzerMuted() weight:UIFontWeightBold]];
     for (UIView *child in children) [body addArrangedSubview:child];
     [panel addSubview:body];
     [NSLayoutConstraint activateConstraints:@[
-        [body.leadingAnchor constraintEqualToAnchor:panel.leadingAnchor constant:18],
-        [body.trailingAnchor constraintEqualToAnchor:panel.trailingAnchor constant:-18],
-        [body.topAnchor constraintEqualToAnchor:panel.topAnchor constant:18],
-        [body.bottomAnchor constraintEqualToAnchor:panel.bottomAnchor constant:-18]
+        [body.leadingAnchor constraintEqualToAnchor:panel.leadingAnchor constant:14],
+        [body.trailingAnchor constraintEqualToAnchor:panel.trailingAnchor constant:-14],
+        [body.topAnchor constraintEqualToAnchor:panel.topAnchor constant:12],
+        [body.bottomAnchor constraintEqualToAnchor:panel.bottomAnchor constant:-12]
     ]];
     return panel;
 }
@@ -309,7 +312,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     self.scroll = [UIScrollView new];
     self.scroll.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:self.scroll];
-    self.stack = [self columnWithSpace:16];
+    self.stack = [self columnWithSpace:12];
     self.stack.translatesAutoresizingMaskIntoConstraints = NO;
     [self.scroll addSubview:self.stack];
     [NSLayoutConstraint activateConstraints:@[
@@ -317,16 +320,18 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         [self.scroll.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
         [self.scroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [self.scroll.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [self.stack.topAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.topAnchor constant:16],
+        [self.stack.topAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.topAnchor constant:12],
         [self.stack.bottomAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.bottomAnchor constant:-30],
         [self.stack.leadingAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.leadingAnchor constant:16],
         [self.stack.trailingAnchor constraintEqualToAnchor:self.scroll.contentLayoutGuide.trailingAnchor constant:-16],
         [self.stack.widthAnchor constraintEqualToAnchor:self.scroll.frameLayoutGuide.widthAnchor constant:-32]
     ]];
 
-    self.bandLabel = [self text:@"—" size:31 color:UIColor.whiteColor weight:UIFontWeightBold];
+    self.bandLabel = [self text:@"—" size:28 color:UIColor.whiteColor weight:UIFontWeightBold];
     self.qualityLabel = [self text:BLT(@"Sin datos", @"No data") size:15 color:BLAnalyzerTeal() weight:UIFontWeightBold];
     self.networkDetailLabel = [self text:@"—" size:13 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
+    self.caStatusLabel = [self text:BLT(@"CA: esperando información del módem", @"CA: waiting for modem information")
+                                  size:12 color:BLAnalyzerMuted() weight:UIFontWeightSemibold];
     self.statusLabel = [self text:BLT(@"Buscando celda servidora…", @"Looking for serving cell…")
         size:12 color:BLAnalyzerTeal() weight:UIFontWeightMedium];
     UIStackView *metricRow = [UIStackView new];
@@ -342,10 +347,10 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     [minorRow addArrangedSubview:[self metricWithTitle:@"RSRQ · dB" valueLabel:&_rsrqLabel titleLabel:&_rsrqTitleLabel]];
     [minorRow addArrangedSubview:[self metricWithTitle:@"RSSI · dBm" valueLabel:&_rssiLabel titleLabel:&_rssiTitleLabel]];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"COBERTURA ACTUAL", @"CURRENT COVERAGE")
-        children:@[self.bandLabel, self.qualityLabel, self.networkDetailLabel, self.statusLabel, metricRow, minorRow]]];
+        children:@[self.bandLabel, self.qualityLabel, self.networkDetailLabel, self.caStatusLabel, self.statusLabel, metricRow, minorRow]]];
 
-    self.cellsStack = [self columnWithSpace:9];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"CELDA SERVIDORA Y VECINAS", @"SERVING & NEIGHBOR CELLS")
+    self.cellsStack = [self columnWithSpace:6];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"CELDAS Y PORTADORAS", @"CELLS & CARRIERS")
         children:@[self.cellsStack]]];
 
     self.readButton = [self action:BLT(@"Actualizar ahora", @"Refresh now") icon:@"arrow.clockwise"
@@ -390,7 +395,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     self.scanStatusLabel = [self text:BLT(@"Usa Auto para observar la red actual o elige una tecnología para hacer un barrido dirigido.",
                                               @"Use Auto to observe the current network or choose a technology for a directed scan.")
                                   size:13 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
-    self.scanRowsStack = [self columnWithSpace:9];
+    self.scanRowsStack = [self columnWithSpace:6];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"RED Y BARRIDO", @"NETWORK & SCAN")
         children:@[self.scanCountryButton, self.scanTechnology, self.scanBandsLabel,
                    self.scanButton, self.scanCancelButton, self.scanRecoverButton,
@@ -411,11 +416,19 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     self.historyLabel = [self text:@"—" size:13 color:UIColor.whiteColor weight:UIFontWeightRegular];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"HISTORIAL", @"HISTORY") children:@[self.historyLabel]]];
 
-    UIButton *export = [self action:BLT(@"Compartir mediciones", @"Share measurements") icon:@"square.and.arrow.up"
+    UIButton *png = [self action:BLT(@"Guardar PNG", @"Save PNG") icon:@"photo.on.rectangle.angled"
+                               selector:@selector(pngTapped:) strong:NO];
+    UIButton *export = [self action:BLT(@"Exportar JSON", @"Export JSON") icon:@"square.and.arrow.up"
                                   selector:@selector(exportTapped:) strong:NO];
     UIButton *clear = [self action:BLT(@"Borrar historial", @"Clear history") icon:@"trash"
                                  selector:@selector(clearTapped:) strong:NO];
-    [self.stack addArrangedSubview:export];
+    UIStackView *exportActions = [UIStackView new];
+    exportActions.axis = UILayoutConstraintAxisHorizontal;
+    exportActions.distribution = UIStackViewDistributionFillEqually;
+    exportActions.spacing = 9;
+    [exportActions addArrangedSubview:png];
+    [exportActions addArrangedSubview:export];
+    [self.stack addArrangedSubview:exportActions];
     [self.stack addArrangedSubview:clear];
     [self rebuildMeasurementStack:self.cellsStack rows:@[] scan:NO];
     [self rebuildMeasurementStack:self.scanRowsStack rows:@[] scan:YES];
@@ -442,28 +455,30 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 - (UIView *)measurementCard:(NSDictionary *)row scan:(BOOL)scan {
     UIView *card = [UIView new];
     BOOL serving = [row[@"role"] isEqualToString:@"serving"];
-    UIColor *roleColor = serving ? BLAnalyzerTeal() : UIColor.systemYellowColor;
+    BOOL secondary = [row[@"role"] isEqualToString:@"secondary"];
+    UIColor *roleColor = serving ? BLAnalyzerTeal() : (secondary ? UIColor.systemCyanColor : UIColor.systemYellowColor);
     card.backgroundColor = serving
-        ? [UIColor colorWithWhite:1 alpha:0.085]
-        : [UIColor colorWithWhite:1 alpha:0.045];
-    card.layer.cornerRadius = 15;
+        ? [UIColor colorWithWhite:1 alpha:0.10]
+        : [UIColor colorWithWhite:1 alpha:(secondary ? 0.085 : 0.065)];
+    card.layer.cornerRadius = 12;
     card.layer.borderWidth = serving ? 1.0 : 0.5;
-    card.layer.borderColor = [roleColor colorWithAlphaComponent:serving ? 0.35 : 0.22].CGColor;
-    UIStackView *body = [self columnWithSpace:8];
+    card.layer.borderColor = [roleColor colorWithAlphaComponent:serving ? 0.48 : 0.34].CGColor;
+    UIStackView *body = [self columnWithSpace:5];
     body.translatesAutoresizingMaskIntoConstraints = NO;
     [card addSubview:body];
     [NSLayoutConstraint activateConstraints:@[
-        [body.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:14],
-        [body.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-14],
-        [body.topAnchor constraintEqualToAnchor:card.topAnchor constant:12],
-        [body.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-12]
+        [body.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:11],
+        [body.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-11],
+        [body.topAnchor constraintEqualToAnchor:card.topAnchor constant:8],
+        [body.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-8]
     ]];
     NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"";
     NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
     NSNumber *referenceFrequency = [row[@"reference_frequency_mhz"] isKindOfClass:NSNumber.class]
         ? row[@"reference_frequency_mhz"] : nil;
     if (!referenceFrequency) referenceFrequency = BLAnalyzerReferenceFrequencyForRow(row);
-    NSString *role = [row[@"role"] isEqualToString:@"neighbor"] ? BLT(@"VECINA", @"NEIGHBOR") : BLT(@"SERVIDORA", @"SERVING");
+    NSString *role = secondary ? BLT(@"SECUNDARIA LTE", @"LTE SECONDARY") :
+        ([row[@"role"] isEqualToString:@"neighbor"] ? BLT(@"VECINA", @"NEIGHBOR") : BLT(@"SERVIDORA", @"SERVING"));
     NSString *prefix = BLAnalyzerDisplayRAT(rat);
     NSString *bandText = @"";
     if (band) {
@@ -474,9 +489,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     UIStackView *header = [UIStackView new];
     header.axis = UILayoutConstraintAxisHorizontal;
     header.alignment = UIStackViewAlignmentCenter;
-    header.spacing = 8;
+    header.spacing = 6;
     UILabel *title = [self text:[NSString stringWithFormat:@"%@ · %@%@", role, prefix, bandText]
-                             size:15 color:roleColor weight:UIFontWeightBold];
+                             size:13 color:roleColor weight:UIFontWeightBold];
     [header addArrangedSubview:title];
     UIView *spacer = [UIView new];
     [spacer setContentHuggingPriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
@@ -493,18 +508,18 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
             @"write_failed": BLT(@"NO FIJADA", @"NOT LOCKED"),
             @"readback_unverified": BLT(@"NO VERIFICADA", @"UNVERIFIED")
         };
-        UILabel *state = [self text:[NSString stringWithFormat:@"  %@  ", labels[row[@"status"]] ?: @""]
-                               size:10 color:BLAnalyzerMuted() weight:UIFontWeightBold];
-        state.backgroundColor = [UIColor colorWithWhite:1 alpha:0.07];
-        state.layer.cornerRadius = 9;
+        UILabel *state = [self text:[NSString stringWithFormat:@" %@ ", labels[row[@"status"]] ?: @""]
+                               size:10 color:UIColor.whiteColor weight:UIFontWeightBold];
+        state.backgroundColor = [UIColor colorWithWhite:1 alpha:0.16];
+        state.layer.cornerRadius = 7;
         state.layer.masksToBounds = YES;
         state.tag = 714;
         [header addArrangedSubview:state];
     } else {
-        UILabel *quality = [self text:[NSString stringWithFormat:@"  %@  ", BLAnalyzerQuality(row)]
+        UILabel *quality = [self text:[NSString stringWithFormat:@" %@ ", BLAnalyzerQuality(row)]
                                  size:11 color:BLAnalyzerQualityColor(row) weight:UIFontWeightBold];
-        quality.backgroundColor = [BLAnalyzerQualityColor(row) colorWithAlphaComponent:0.12];
-        quality.layer.cornerRadius = 9;
+        quality.backgroundColor = [BLAnalyzerQualityColor(row) colorWithAlphaComponent:0.20];
+        quality.layer.cornerRadius = 7;
         quality.layer.masksToBounds = YES;
         quality.tag = 713;
         [header addArrangedSubview:quality];
@@ -518,7 +533,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     if (!detail.length && [row[@"frequency_unverified"] boolValue])
         detail = BLT(@"Frecuencia no expuesta por CoreTelephony; la celda se conserva como diagnóstico",
                      @"Frequency not exposed by CoreTelephony; the cell is kept as a diagnostic");
-    if (detail.length) [body addArrangedSubview:[self text:detail size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium]];
+    if (detail.length) [body addArrangedSubview:[self text:detail size:11 color:BLAnalyzerMuted() weight:UIFontWeightSemibold]];
 
     NSString *primaryName = BLAnalyzerPrimaryMetricName(rat);
     NSNumber *primaryValue = BLAnalyzerMetric(row[primaryName], primaryName);
@@ -526,9 +541,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         ? [NSString stringWithFormat:@"%@  %.1f %@", primaryName.uppercaseString,
                                       primaryValue.doubleValue, BLAnalyzerMetricUnit(primaryName)]
         : [NSString stringWithFormat:@"%@  —", primaryName.uppercaseString];
-    UILabel *primaryLabel = [self text:primaryText size:(serving ? 25 : 20)
+    UILabel *primaryLabel = [self text:primaryText size:(serving ? 21 : 18)
                                  color:UIColor.whiteColor weight:UIFontWeightBold];
-    primaryLabel.font = [UIFont monospacedSystemFontOfSize:(serving ? 25 : 20) weight:UIFontWeightBold];
+    primaryLabel.font = [UIFont monospacedSystemFontOfSize:(serving ? 21 : 18) weight:UIFontWeightBold];
     primaryLabel.tag = 711;
     [body addArrangedSubview:primaryLabel];
 
@@ -549,9 +564,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     }
     UILabel *metricLabel = [self text:(metrics.count ? [metrics componentsJoinedByString:@"   "] :
                                       BLT(@"Sin métricas secundarias", @"No secondary metrics"))
-                                    size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
+                                    size:11.5 color:UIColor.whiteColor weight:UIFontWeightMedium];
     metricLabel.tag = 712;
-    metricLabel.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightMedium];
+    metricLabel.font = [UIFont monospacedSystemFontOfSize:11.5 weight:UIFontWeightMedium];
     [body addArrangedSubview:metricLabel];
 
     NSMutableArray *identity = [NSMutableArray array];
@@ -567,14 +582,10 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     }
     if (identity.count) {
         UILabel *technicalLabel = [self text:[identity componentsJoinedByString:@"   "]
-                                        size:11 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
-        technicalLabel.font = [UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightMedium];
+                                        size:10.5 color:BLAnalyzerMuted() weight:UIFontWeightSemibold];
+        technicalLabel.font = [UIFont monospacedSystemFontOfSize:10.5 weight:UIFontWeightSemibold];
         [body addArrangedSubview:technicalLabel];
     }
-    else if ([row[@"role"] isEqualToString:@"serving"])
-        [body addArrangedSubview:[self text:BLT(@"Identificadores de celda no disponibles en esta lectura",
-                                                @"Cell identifiers unavailable in this reading")
-                                      size:12 color:BLAnalyzerMuted() weight:UIFontWeightRegular]];
     return card;
 }
 
@@ -622,10 +633,10 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
                 UILabel *qualityLabel = (UILabel *)[card viewWithTag:713];
                 if ([qualityLabel isKindOfClass:UILabel.class]) {
                     UIColor *qualityColor = BLAnalyzerQualityColor(row);
-                    NSString *value = [NSString stringWithFormat:@"  %@  ", BLAnalyzerQuality(row)];
+                    NSString *value = [NSString stringWithFormat:@" %@ ", BLAnalyzerQuality(row)];
                     if (![qualityLabel.text isEqualToString:value]) qualityLabel.text = value;
                     qualityLabel.textColor = qualityColor;
-                    qualityLabel.backgroundColor = [qualityColor colorWithAlphaComponent:0.12];
+                    qualityLabel.backgroundColor = [qualityColor colorWithAlphaComponent:0.20];
                 }
                 UILabel *stateLabel = (UILabel *)[card viewWithTag:714];
                 if ([stateLabel isKindOfClass:UILabel.class]) {
@@ -764,6 +775,34 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     return best;
 }
 
+- (NSString *)carrierAggregationSummaryForMeasurements:(NSArray<NSDictionary *> *)rows {
+    NSNumber *primaryBand = nil;
+    NSMutableOrderedSet<NSNumber *> *secondaryBands = [NSMutableOrderedSet orderedSet];
+    BOOL sawLTE = NO;
+    BOOL sawSecondary = NO;
+    for (NSDictionary *row in rows) {
+        if (![row isKindOfClass:NSDictionary.class] || ![row[@"rat"] isEqualToString:@"LTE"]) continue;
+        sawLTE = YES;
+        NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
+        if ([row[@"role"] isEqualToString:@"serving"] && !primaryBand && band) primaryBand = band;
+        if ([row[@"role"] isEqualToString:@"secondary"]) {
+            sawSecondary = YES;
+            if (band) [secondaryBands addObject:band];
+        }
+    }
+    if (sawSecondary) {
+        NSMutableArray<NSString *> *parts = [NSMutableArray array];
+        if (primaryBand) [parts addObject:[NSString stringWithFormat:@"principal B%@", primaryBand]];
+        for (NSNumber *band in secondaryBands)
+            [parts addObject:[NSString stringWithFormat:@"secundaria B%@", band]];
+        NSString *carriers = parts.count ? [parts componentsJoinedByString:@" + "] : BLT(@"celda secundaria LTE", @"LTE secondary cell");
+        return [NSString stringWithFormat:BLT(@"Posible CA · CoreTelephony expone %@", @"Possible CA · CoreTelephony exposes %@"), carriers];
+    }
+    if (sawLTE) return BLT(@"CA: CoreTelephony no expone portadoras secundarias en esta lectura",
+                           @"CA: CoreTelephony does not expose secondary carriers in this reading");
+    return BLT(@"CA: disponible únicamente durante LTE/4G", @"CA: available only while on LTE/4G");
+}
+
 - (void)readTapped:(UIButton *)sender { [self takeReading]; }
 
 - (void)takeReading {
@@ -786,6 +825,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         }
         NSArray *rows = [result[@"measurements"] isKindOfClass:NSArray.class] ? result[@"measurements"] : @[];
         strongSelf.currentMeasurements = rows;
+        strongSelf.caStatusLabel.text = [strongSelf carrierAggregationSummaryForMeasurements:rows];
         [strongSelf rebuildMeasurementStack:strongSelf.cellsStack rows:rows scan:NO];
         NSDictionary *serving = [strongSelf preferredServingMeasurement:rows];
         if (!serving) {
@@ -995,6 +1035,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
                 BLT(@"Progreso", @"Progress"), (long)completed.integerValue, (long)total.integerValue];
         } else if (message.length) strongSelf.scanStatusLabel.text = message;
         NSArray *rows = [status[@"rows"] isKindOfClass:NSArray.class] ? status[@"rows"] : @[];
+        strongSelf.currentScanMeasurements = rows;
         [strongSelf rebuildMeasurementStack:strongSelf.scanRowsStack rows:rows scan:YES];
         if (!rows.count && !strongSelf.scanRunning && !strongSelf.recoveryRequired &&
             strongSelf.scanRowsStack.arrangedSubviews.count == 1 &&
@@ -1132,6 +1173,115 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
             [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
     }
     self.comparisonLabel.text = comparison.count ? [comparison componentsJoinedByString:@"\n"] : BLT(@"Sin datos", @"No data");
+}
+
+- (UIStackView *)reportRowsForMeasurements:(NSArray<NSDictionary *> *)rows scan:(BOOL)scan {
+    UIStackView *stack = [self columnWithSpace:6];
+    if (!rows.count) {
+        [stack addArrangedSubview:[self text:BLT(@"Sin mediciones disponibles", @"No measurements available")
+                                      size:12 color:BLAnalyzerMuted() weight:UIFontWeightSemibold]];
+        return stack;
+    }
+    for (NSDictionary *row in rows) {
+        if (![row isKindOfClass:NSDictionary.class]) continue;
+        [stack addArrangedSubview:[self measurementCard:row scan:scan]];
+    }
+    return stack;
+}
+
+- (UIImage *)pngReportImage {
+    if (!self.currentMeasurements.count && !self.currentScanMeasurements.count) return nil;
+
+    CGFloat width = 390.0;
+    UIView *report = [UIView new];
+    report.backgroundColor = BLAnalyzerInk();
+    UIStackView *body = [self columnWithSpace:10];
+    body.translatesAutoresizingMaskIntoConstraints = NO;
+    [report addSubview:body];
+    [NSLayoutConstraint activateConstraints:@[
+        [body.leadingAnchor constraintEqualToAnchor:report.leadingAnchor constant:14],
+        [body.trailingAnchor constraintEqualToAnchor:report.trailingAnchor constant:-14],
+        [body.topAnchor constraintEqualToAnchor:report.topAnchor constant:16],
+        [body.bottomAnchor constraintEqualToAnchor:report.bottomAnchor constant:-16]
+    ]];
+
+    UILabel *title = [self text:@"BandLock · Analizador" size:25 color:UIColor.whiteColor weight:UIFontWeightBold];
+    [body addArrangedSubview:title];
+
+    NSDateFormatter *formatter = [NSDateFormatter new];
+    formatter.dateStyle = NSDateFormatterMediumStyle;
+    formatter.timeStyle = NSDateFormatterMediumStyle;
+    UILabel *timestamp = [self text:[formatter stringFromDate:NSDate.date]
+                                size:11 color:BLAnalyzerMuted() weight:UIFontWeightSemibold];
+    [body addArrangedSubview:timestamp];
+
+    NSString *ca = [self carrierAggregationSummaryForMeasurements:self.currentMeasurements ?: @[]];
+    if (ca.length) {
+        UILabel *caLabel = [self text:ca size:12 color:UIColor.whiteColor weight:UIFontWeightSemibold];
+        caLabel.backgroundColor = [UIColor colorWithWhite:1 alpha:0.08];
+        caLabel.layer.cornerRadius = 8;
+        caLabel.layer.masksToBounds = YES;
+        [body addArrangedSubview:caLabel];
+    }
+
+    if (self.currentMeasurements.count) {
+        UIStackView *rows = [self reportRowsForMeasurements:self.currentMeasurements scan:NO];
+        [body addArrangedSubview:[self panelWithTitle:BLT(@"MEDICIÓN ACTUAL", @"CURRENT MEASUREMENT")
+                                             children:@[rows]]];
+    }
+    if (self.currentScanMeasurements.count) {
+        UIStackView *scanRows = [self reportRowsForMeasurements:self.currentScanMeasurements scan:YES];
+        [body addArrangedSubview:[self panelWithTitle:BLT(@"BARRIDO / OBSERVACIÓN", @"SCAN / OBSERVATION")
+                                             children:@[scanRows]]];
+    }
+
+    [body addArrangedSubview:[self text:BLT(@"Solo se muestran datos realmente expuestos por CoreTelephony.",
+                                           @"Only data actually exposed by CoreTelephony is shown.")
+                                   size:10 color:BLAnalyzerMuted() weight:UIFontWeightMedium]];
+
+    CGSize fitting = [report systemLayoutSizeFittingSize:CGSizeMake(width, UILayoutFittingCompressedSize.height)
+                            withHorizontalFittingPriority:UILayoutPriorityRequired
+                                  verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
+    CGFloat height = MAX(1.0, ceil(fitting.height));
+    report.bounds = CGRectMake(0, 0, width, height);
+    [report setNeedsLayout];
+    [report layoutIfNeeded];
+
+    UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat preferredFormat];
+    format.opaque = YES;
+    format.scale = 3.0;
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:report.bounds.size format:format];
+    return [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+        [report.layer renderInContext:context.CGContext];
+    }];
+}
+
+- (void)pngTapped:(UIButton *)sender {
+    UIImage *image = [self pngReportImage];
+    if (!image) {
+        [self showAlert:BLT(@"Haz al menos una lectura antes de guardar el PNG.",
+                            @"Take at least one reading before saving the PNG.")];
+        return;
+    }
+    NSData *png = UIImagePNGRepresentation(image);
+    if (!png.length) {
+        [self showAlert:BLT(@"No se pudo generar la imagen PNG.", @"Could not generate the PNG image.")];
+        return;
+    }
+    NSDateFormatter *nameFormatter = [NSDateFormatter new];
+    nameFormatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    nameFormatter.dateFormat = @"yyyyMMdd-HHmmss";
+    NSString *name = [NSString stringWithFormat:@"BandLock-%@.png", [nameFormatter stringFromDate:NSDate.date]];
+    NSURL *url = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:name]];
+    if (![png writeToURL:url atomically:YES]) {
+        [self showAlert:BLT(@"No se pudo guardar temporalmente el PNG.", @"Could not save the PNG temporarily.")];
+        return;
+    }
+    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[url]
+                                                                           applicationActivities:nil];
+    activity.popoverPresentationController.sourceView = sender;
+    activity.popoverPresentationController.sourceRect = sender.bounds;
+    [self presentViewController:activity animated:YES completion:nil];
 }
 
 - (void)exportTapped:(UIButton *)sender {

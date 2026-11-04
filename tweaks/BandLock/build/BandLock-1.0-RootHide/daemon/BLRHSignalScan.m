@@ -228,6 +228,8 @@ static void BLEnrichPassiveCell(NSMutableDictionary *record, NSDictionary *measu
         id value = measurement[metric];
         if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
     }
+    if ([measurement[@"cell_type_raw"] isKindOfClass:NSString.class])
+        record[@"cell_type_raw"] = measurement[@"cell_type_raw"];
     if ([measurement[@"source"] isEqualToString:@"typed"] ||
         ![record[@"source"] isKindOfClass:NSString.class]) {
         record[@"source"] = measurement[@"source"] ?: @"legacy";
@@ -793,7 +795,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         NSString *role = [measurement[@"role"] isKindOfClass:NSString.class]
                             ? measurement[@"role"] : @"";
                         BOOL roleAllowed = [role isEqualToString:@"serving"] ||
-                            ([targetRAT isEqualToString:@"AUTO"] && [role isEqualToString:@"neighbor"]);
+                            ([targetRAT isEqualToString:@"AUTO"] &&
+                             ([role isEqualToString:@"neighbor"] || [role isEqualToString:@"secondary"]));
                         if (!roleAllowed ||
                             !matchesTarget ||
                             ([rat isEqualToString:@"NR"] && !supportsNR) ||
@@ -801,12 +804,12 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         // LTE requires a typed measurement. NR can use legacy
                         // values when CoreTelephony supplies a genuinely
                         // identified serving NR cell, never a guessed band.
-                        BOOL autoLegacyLTENeighbor = [targetRAT isEqualToString:@"AUTO"] &&
+                        BOOL autoLegacyLTEAuxiliary = [targetRAT isEqualToString:@"AUTO"] &&
                             [rat isEqualToString:@"LTE"] &&
-                            [role isEqualToString:@"neighbor"];
+                            ([role isEqualToString:@"neighbor"] || [role isEqualToString:@"secondary"]);
                         if ([rat isEqualToString:@"LTE"] &&
                             ![measurement[@"source"] isEqualToString:@"typed"] &&
-                            !autoLegacyLTENeighbor) continue;
+                            !autoLegacyLTEAuxiliary) continue;
                         NSNumber *band = measurement[@"band"];
                         if (band && (band.integerValue < 1 ||
                             band.integerValue > ([rat isEqual:@"NR"] ? 1024 : 255))) continue;
@@ -833,6 +836,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                             for (NSString *field in @[@"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel"]) {
                                 if ([measurement[field] isKindOfClass:NSNumber.class]) record[field] = measurement[field];
                             }
+                            if ([measurement[@"cell_type_raw"] isKindOfClass:NSString.class])
+                                record[@"cell_type_raw"] = measurement[@"cell_type_raw"];
                             [rows addObject:record];
                         }
                         // LTE and NR may coexist in an NSA sample.
