@@ -792,9 +792,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     }
     if (sawSecondary) {
         NSMutableArray<NSString *> *parts = [NSMutableArray array];
-        if (primaryBand) [parts addObject:[NSString stringWithFormat:@"principal B%@", primaryBand]];
+        if (primaryBand) [parts addObject:[NSString stringWithFormat:BLT(@"principal B%@", @"primary B%@"), primaryBand]];
         for (NSNumber *band in secondaryBands)
-            [parts addObject:[NSString stringWithFormat:@"secundaria B%@", band]];
+            [parts addObject:[NSString stringWithFormat:BLT(@"secundaria B%@", @"secondary B%@"), band]];
         NSString *carriers = parts.count ? [parts componentsJoinedByString:@" + "] : BLT(@"celda secundaria LTE", @"LTE secondary cell");
         return [NSString stringWithFormat:BLT(@"Posible CA · CoreTelephony expone %@", @"Possible CA · CoreTelephony exposes %@"), carriers];
     }
