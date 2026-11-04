@@ -1020,7 +1020,9 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
         !([phase isEqualToString:@"complete"] || [phase isEqualToString:@"observation_complete"])) return;
     BOOL added = NO;
     for (NSDictionary *row in rows) {
-        if (![row isKindOfClass:NSDictionary.class] || !BLAnalyzerPrimaryMetric(row)) continue;
+        if (![row isKindOfClass:NSDictionary.class] ||
+            ![row[@"role"] isEqualToString:@"serving"] ||
+            !BLAnalyzerPrimaryMetric(row)) continue;
         [self appendMeasurement:row source:@"scan" scanID:scanID];
         added = YES;
     }

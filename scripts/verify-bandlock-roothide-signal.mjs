@@ -55,7 +55,7 @@ assert.doesNotMatch(passive, /BLScanSingleActiveLine\(query\)/,
 assert.match(passive, /BLScanSubscriptionUUID\(query\)/);
 assert.match(passive, /@"source"\] isEqualToString:@"typed"/);
 assert.match(passive, /sample < 12/);
-assert.match(passive, /rows\.count >= BLPassiveMaxRows/);
+assert.match(passive, /rows\.count < BLPassiveMaxRows/);
 assert.match(passive, /@"read_only": @YES/);
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|BLScanWriteJournal|setRatSelection|setActiveBandInfo/,
   'Passive mode must never mutate radio selection or write recovery journal');
@@ -331,7 +331,7 @@ assert.match(core, /Only label typed metrics as NR when an actual serving NR row
 assert.match(scan, /#import "\.\.\/\.\.\/BLHardwareCapabilities\.h"/);
 assert.match(passive, /\(\[rat isEqualToString:@"NR"\] && !supportsNR\)/);
 assert.match(passive, /band\.integerValue > \(\[rat isEqual:@"NR"\] \? 1024 : 255\)/);
-assert.match(passive, /\[previous\[@"rat"\] isEqualToString:rat\]/);
+assert.match(passive, /BLPassiveCellMatches\(previous, measurement\)/);
 assert.match(analyzer, /@"5G"/);
 assert.doesNotMatch(app, /@"API: "|@"legacy %@/);
 assert.match(analyzer, /@"timestamp": @\(\[NSDate date\]\.timeIntervalSince1970\), @"rat": rat/);
@@ -471,6 +471,7 @@ assert.match(metadata, /@44:\s+@\{@"frequency": @"700 MHz \(703–803\)"/);
 assert.match(analyzer, /setTitle:@"5G —" forSegmentAtIndex:4/);
 assert.match(analyzer, /UIControlStateDisabled/);
 assert.match(analyzer, /startPassiveSignalObservationForRAT:@"AUTO"/);
+assert.match(analyzer, /!\[row\[@"role"\] isEqualToString:@"serving"\]/);
 assert.match(analyzer, /BLAnalyzerSignalProgress/);
 assert.match(analyzer, /viewWithTag:711/);
 assert.match(analyzer, /viewWithTag:715/);
@@ -480,11 +481,17 @@ assert.match(analyzer, /@"EARFCN"/);
 assert.match(analyzer, /@"UARFCN"/);
 assert.match(analyzer, /BLAnalyzerReferenceFrequencyForRow/);
 assert.match(scan, /registrationWaits = \[targetRAT isEqualToString:@"3G"\] \? 24 : 12/);
+assert.match(technologyScan, /if \(wait \+ 1 < registrationWaits\)/);
 assert.match(scan, /El cambio a 3G fue aceptado/);
 assert.match(passive, /Observando la red actual en Auto/);
 assert.match(passive, /\[targetRAT isEqualToString:@"AUTO"\] && \[role isEqualToString:@"neighbor"\]/);
 assert.match(passive, /@"total": @12/);
 assert.match(passive, /samplesCompleted = sample \+ 1/);
+assert.match(passive, /BLPassiveCellMatches/);
+assert.match(passive, /BLEnrichPassiveCell/);
+assert.doesNotMatch(passive, /if \(rows\.count >= BLPassiveMaxRows\) break;/,
+  'Auto must keep sampling to enrich already-known cells even when the visible row cap is reached');
+assert.match(passive, /autoLegacyLTENeighbor/);
 assert.match(scan, /measured_frequency_unknown/);
 assert.match(scan, /BLScanStatusIsMeasured/);
 assert.match(scan, /psc \? @\(2000000LL \+ psc\.longLongValue\)/);

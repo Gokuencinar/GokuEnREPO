@@ -194,6 +194,47 @@ static NSArray<NSDictionary *> *BLSortedObservedBands(NSDictionary<NSNumber *, N
     return rows;
 }
 
+static BOOL BLPassiveCellMatches(NSDictionary *existing, NSDictionary *measurement) {
+    if (![existing isKindOfClass:NSDictionary.class] || ![measurement isKindOfClass:NSDictionary.class]) return NO;
+    if (![existing[@"rat"] isEqual:measurement[@"rat"]] ||
+        ![existing[@"role"] isEqual:measurement[@"role"]]) return NO;
+    NSNumber *existingBand = [existing[@"band"] isKindOfClass:NSNumber.class] ? existing[@"band"] : nil;
+    NSNumber *newBand = [measurement[@"band"] isKindOfClass:NSNumber.class] ? measurement[@"band"] : nil;
+    if (existingBand && newBand && ![existingBand isEqual:newBand]) return NO;
+
+    BOOL sharedIdentity = NO;
+    for (NSString *key in @[@"cell_id", @"physical_cell_id", @"psc", @"channel"]) {
+        NSNumber *left = [existing[key] isKindOfClass:NSNumber.class] ? existing[key] : nil;
+        NSNumber *right = [measurement[key] isKindOfClass:NSNumber.class] ? measurement[key] : nil;
+        if (!left || !right) continue;
+        sharedIdentity = YES;
+        if (![left isEqual:right]) return NO;
+    }
+    if (sharedIdentity) return YES;
+
+    // There is only one serving cell per RAT in a passive snapshot. When
+    // CoreTelephony reveals identifiers gradually, keep enriching that row
+    // instead of creating duplicate cards. Neighbours require a shared ID.
+    return [existing[@"role"] isEqualToString:@"serving"];
+}
+
+static void BLEnrichPassiveCell(NSMutableDictionary *record, NSDictionary *measurement) {
+    if (![record isKindOfClass:NSMutableDictionary.class] || ![measurement isKindOfClass:NSDictionary.class]) return;
+    for (NSString *field in @[@"band", @"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel"]) {
+        id value = measurement[field];
+        if ([value isKindOfClass:NSNumber.class] && !record[field]) record[field] = value;
+    }
+    for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
+        id value = measurement[metric];
+        if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
+    }
+    if ([measurement[@"source"] isEqualToString:@"typed"] ||
+        ![record[@"source"] isKindOfClass:NSString.class]) {
+        record[@"source"] = measurement[@"source"] ?: @"legacy";
+    }
+    record[@"status"] = @"measured";
+}
+
 static NSNumber *BLReferenceFrequencyForMeasurement(NSDictionary *measurement,
                                                     NSString *targetRAT,
                                                     NSArray<NSNumber *> *allowedFrequencies) {
@@ -746,7 +787,6 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     BOOL supportsNR = !BLDeviceIsKnownLTEOnly() &&
                         [[manager snapshotFromQuery:query][@"supports_5g"] boolValue];
                     for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
-                        if (rows.count >= BLPassiveMaxRows) break;
                         NSString *rat = measurement[@"rat"];
                         BOOL matchesTarget = [targetRAT isEqualToString:@"AUTO"] ||
                             [rat isEqualToString:targetRAT];
@@ -761,29 +801,25 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         // LTE requires a typed measurement. NR can use legacy
                         // values when CoreTelephony supplies a genuinely
                         // identified serving NR cell, never a guessed band.
+                        BOOL autoLegacyLTENeighbor = [targetRAT isEqualToString:@"AUTO"] &&
+                            [rat isEqualToString:@"LTE"] &&
+                            [role isEqualToString:@"neighbor"];
                         if ([rat isEqualToString:@"LTE"] &&
-                            ![measurement[@"source"] isEqualToString:@"typed"]) continue;
+                            ![measurement[@"source"] isEqualToString:@"typed"] &&
+                            !autoLegacyLTENeighbor) continue;
                         NSNumber *band = measurement[@"band"];
                         if (band && (band.integerValue < 1 ||
                             band.integerValue > ([rat isEqual:@"NR"] ? 1024 : 255))) continue;
-                        BOOL seen = NO;
-                        for (NSDictionary *previous in rows) {
-                            if (((!band && !previous[@"band"]) || [previous[@"band"] isEqual:band]) &&
-                                [previous[@"rat"] isEqualToString:rat] &&
-                                [previous[@"role"] isEqualToString:role] &&
-                                ((!measurement[@"cell_id"] && !previous[@"cell_id"]) ||
-                                 [previous[@"cell_id"] isEqual:measurement[@"cell_id"]]) &&
-                                ((!measurement[@"physical_cell_id"] && !previous[@"physical_cell_id"]) ||
-                                 [previous[@"physical_cell_id"] isEqual:measurement[@"physical_cell_id"]]) &&
-                                ((!measurement[@"psc"] && !previous[@"psc"]) ||
-                                 [previous[@"psc"] isEqual:measurement[@"psc"]]) &&
-                                ((!measurement[@"channel"] && !previous[@"channel"]) ||
-                                 [previous[@"channel"] isEqual:measurement[@"channel"]])) {
-                                seen = YES;
+                        NSMutableDictionary *matched = nil;
+                        for (NSMutableDictionary *previous in rows) {
+                            if (BLPassiveCellMatches(previous, measurement)) {
+                                matched = previous;
                                 break;
                             }
                         }
-                        if (!seen) {
+                        if (matched) {
+                            BLEnrichPassiveCell(matched, measurement);
+                        } else if (rows.count < BLPassiveMaxRows) {
                             NSMutableDictionary *record = [@{
                                 @"rat": rat,
                                 @"role": role, @"source": measurement[@"source"] ?: @"legacy",
@@ -809,7 +845,6 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                             @"Muestra %lu/12 · %lu celdas/portadoras",
                             (unsigned long)(sample + 1), (unsigned long)rows.count];
                     }
-                    if (rows.count >= BLPassiveMaxRows) break;
                     if (sample < 11) [NSThread sleepForTimeInterval:2.0];
                 } // Release CoreTelephony objects from this sample promptly.
             }
@@ -1026,7 +1061,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             if ([self shouldStop]) { stopReason = @"Barrido cancelado"; break; }
             NSDictionary *query = [manager queryCoreTelephonyForPassiveObservation];
             if (query[@"error"]) {
-                if (wait < 11) { [NSThread sleepForTimeInterval:1.0]; continue; }
+                if (wait + 1 < registrationWaits) { [NSThread sleepForTimeInterval:1.0]; continue; }
                 stopReason = @"CoreTelephony no respondió al comprobar el cambio de tecnología";
                 break;
             }
