@@ -615,6 +615,23 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     return BLRHLineDiagnostics(query);
 }
 
+- (NSDictionary *)bandInventoryWithManager:(BLTelephonyManager *)manager {
+    if ([self isRunning] || [self isRecovering] || [self hasPendingRecovery])
+        return @{@"success": @NO, @"message": @"Wait for scan/recovery to finish"};
+    NSDictionary *query = [manager queryCoreTelephonyForPassiveObservation];
+    if (query[@"error"])
+        return @{@"success": @NO, @"read_only": @YES,
+                 @"message": @"CoreTelephony band inventory unavailable"};
+    NSMutableDictionary *rats = [NSMutableDictionary dictionary];
+    for (NSString *rat in @[@"2G", @"3G", @"LTE", @"NR"]) {
+        NSArray *supported = [manager supportedBandsForTargetRAT:rat fromQuery:query] ?: @[];
+        NSArray *active = [manager activeBandsForTargetRAT:rat fromQuery:query] ?: @[];
+        rats[rat] = @{@"supported": supported, @"active": active};
+    }
+    return @{@"success": @YES, @"read_only": @YES,
+             @"message": @"Sanitized CTBandInfo inventory", @"rats": rats};
+}
+
 - (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager
                                               target:(NSString *)targetRAT {
     if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT]) {
@@ -747,17 +764,25 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                                            target:(NSString *)targetRAT
                                       restoreMode:(NSString *)restoreMode
                                        countryISO:(NSString *)countryISO
-                                      targetBands:(NSArray<NSNumber *> *)targetBands {
+                                      targetBands:(NSArray<NSNumber *> *)targetBands
+                                targetFrequencies:(NSArray<NSNumber *> *)targetFrequencies {
     // Reject malformed client-supplied masks before any modem changes.
     if (![countryISO isKindOfClass:NSString.class] || countryISO.length != 2 ||
-        ![targetBands isKindOfClass:NSArray.class] || !targetBands.count ||
-        targetBands.count > 64) {
-        return @{@"success": @NO, @"message": @"Selecciona país y bandas de referencia válidos"};
+        ![targetBands isKindOfClass:NSArray.class] || targetBands.count > 64 ||
+        ![targetFrequencies isKindOfClass:NSArray.class] || targetFrequencies.count > 64 ||
+        (!targetBands.count && !targetFrequencies.count)) {
+        return @{@"success": @NO, @"message": @"Selecciona país y frecuencias de referencia válidos"};
     }
     for (id band in targetBands) {
         if (![band isKindOfClass:NSNumber.class] || [band integerValue] <= 0 ||
             [band integerValue] > 1024 || ![band isEqual:@([band integerValue])]) {
             return @{@"success": @NO, @"message": @"Lista de bandas inválida"};
+        }
+    }
+    for (id mhz in targetFrequencies) {
+        if (![mhz isKindOfClass:NSNumber.class] || [mhz integerValue] < 300 ||
+            [mhz integerValue] > 100000 || ![mhz isEqual:@([mhz integerValue])]) {
+            return @{@"success": @NO, @"message": @"Lista de frecuencias inválida"};
         }
     }
     if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT]) {
@@ -805,7 +830,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         if (([baselineSupported containsObject:band] || keepForObservation) &&
             ![eligible containsObject:band]) [eligible addObject:band];
     }
-    BOOL hasBandBaseline = originalBandConfiguration && baselineSupported.count &&
+    BOOL hasBandBaseline = eligible.count && originalBandConfiguration && baselineSupported.count &&
         baselineActive.count && baselineActive.count <= 128 &&
         [[NSSet setWithArray:baselineActive]
             isSubsetOfSet:[NSSet setWithArray:baselineSupported]];
@@ -815,8 +840,6 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         failure = @"El barrido requiere una única línea móvil activa";
     else if (subscription.length != 64)
         failure = @"No se pudo identificar de forma estable la línea móvil";
-    else if (!eligible.count)
-        failure = @"No hay bandas del país compatibles con el inventario del módem";
 
     if (failure.length) {
         @synchronized(self) {
@@ -833,6 +856,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         @"target_rat": targetRAT,
         @"country_iso": countryISO,
         @"target_bands": eligible,
+        @"requested_target_bands": targetBands,
+        @"target_frequencies_mhz": targetFrequencies,
         @"target_mode": targetMode,
         @"scan_id": scanID,
         @"subscription_hash": subscription,
@@ -859,6 +884,8 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             @"phase": @"switching_rat",
             @"scan_id": scanID,
             @"target_rat": targetRAT,
+            @"country_iso": countryISO,
+            @"target_frequencies_mhz": targetFrequencies,
             @"rows": @[],
             @"total": @(BLTechnologyScanSamples),
             @"completed": @0,

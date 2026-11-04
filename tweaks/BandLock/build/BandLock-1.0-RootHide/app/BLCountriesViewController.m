@@ -35,13 +35,9 @@
 }
 
 - (void)loadDataset {
-    NSString *path = [NSBundle.mainBundle pathForResource:@"countries" ofType:@"json"];
-    NSData *data = path ? [NSData dataWithContentsOfFile:path] : nil;
-    NSDictionary *root = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
-    NSArray *countries = [root[@"countries"] isKindOfClass:[NSArray class]] ? root[@"countries"] : @[];
-    self.datasetDate = [root[@"last_updated"] isKindOfClass:[NSString class]] ? root[@"last_updated"] : @"—";
-    NSDictionary *source = [root[@"source"] isKindOfClass:[NSDictionary class]] ? root[@"source"] : @{};
-    self.sourceName = [source[@"name"] isKindOfClass:[NSString class]] ? source[@"name"] : @"—";
+    NSArray *countries = BLAllCountryRecords();
+    self.datasetDate = @"2026-10-21";
+    self.sourceName = @"MCC-MNC.org + BandLock LTE/NR references";
     self.countries = [countries sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
         return [[self localizedNameForCountry:a] localizedCaseInsensitiveCompare:[self localizedNameForCountry:b]];
     }];
@@ -78,12 +74,17 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *country = self.filteredCountries[indexPath.row];
+    NSArray *gsm = BLCountryFrequenciesForRAT(country, @"2G");
+    NSArray *umts = BLCountryFrequenciesForRAT(country, @"3G");
     NSArray *bands = BLSortedBands(country[@"bands"]);
     NSArray *nrBands = BLSortedBands(country[@"nr_bands"]);
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.textLabel.text = [self localizedNameForCountry:country];
-    cell.detailTextLabel.text = [NSString stringWithFormat:BLT(@"LTE: %lu · 5G: %lu", @"LTE: %lu · 5G: %lu"),
-                                 (unsigned long)bands.count, (unsigned long)nrBands.count];
+    cell.detailTextLabel.text = [NSString stringWithFormat:
+        BLT(@"2G: %lu frec. · 3G: %lu frec. · LTE: %lu · 5G: %lu",
+            @"2G: %lu freq. · 3G: %lu freq. · LTE: %lu · 5G: %lu"),
+        (unsigned long)gsm.count, (unsigned long)umts.count,
+        (unsigned long)bands.count, (unsigned long)nrBands.count];
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
     cell.detailTextLabel.numberOfLines = 2;
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;

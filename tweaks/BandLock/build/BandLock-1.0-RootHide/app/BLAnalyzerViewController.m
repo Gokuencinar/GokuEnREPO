@@ -685,20 +685,31 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
                            forState:UIControlStateNormal];
     NSString *rat = [self selectedScanRAT];
     NSArray *bands = BLCountryBandsForRAT(country, rat);
+    NSArray *frequencies = BLCountryFrequenciesForRAT(country, rat);
     NSMutableArray *labels = [NSMutableArray array];
-    for (NSNumber *band in bands) {
-        NSString *freq = [rat isEqualToString:@"LTE"] ? BLGFrequencyForBand(band) :
-                         ([rat isEqualToString:@"NR"] ? BLGNRFrequencyForBand(band) : @"");
-        [labels addObject:[NSString stringWithFormat:@"%@%@%@", [rat isEqualToString:@"NR"] ? @"n" : @"B",
-                          band, freq.length ? [NSString stringWithFormat:@" (%@)",freq] : @""]];
+    if ([rat isEqualToString:@"2G"] || [rat isEqualToString:@"3G"]) {
+        for (NSNumber *mhz in frequencies) {
+            NSString *prefix = [rat isEqualToString:@"2G"] ? @"GSM" : @"UMTS";
+            [labels addObject:[NSString stringWithFormat:@"%@ %@ MHz", prefix, mhz]];
+        }
+    } else {
+        for (NSNumber *band in bands) {
+            NSString *freq = [rat isEqualToString:@"LTE"] ? BLGFrequencyForBand(band) :
+                             ([rat isEqualToString:@"NR"] ? BLGNRFrequencyForBand(band) : @"");
+            [labels addObject:[NSString stringWithFormat:@"%@%@%@", [rat isEqualToString:@"NR"] ? @"n" : @"B",
+                              band, freq.length ? [NSString stringWithFormat:@" (%@)",freq] : @""]];
+        }
+        if (!labels.count) for (NSNumber *mhz in frequencies)
+            [labels addObject:[NSString stringWithFormat:@"%@ MHz", mhz]];
     }
-    self.scanBandsLabel.text = bands.count
-        ? [NSString stringWithFormat:BLT(@"Bandas de referencia a comprobar: %@. No implica emisión local.",
-                                         @"Reference bands to check: %@. Does not imply local transmission."),
+    BOOL hasReference = bands.count || frequencies.count;
+    self.scanBandsLabel.text = hasReference
+        ? [NSString stringWithFormat:BLT(@"Frecuencias/bandas de referencia: %@. No implica emisión local.",
+                                         @"Reference frequencies/bands: %@. Does not imply local transmission."),
                                      [labels componentsJoinedByString:@" · "]]
-        : BLT(@"No hay bandas de referencia verificadas para este país y tecnología.",
-              @"No verified reference bands for this country and technology.");
-    self.scanButton.enabled = bands.count > 0 && !self.scanRunning && !self.recoveryRequired;
+        : BLT(@"No hay frecuencias de referencia disponibles para este país y tecnología.",
+              @"No reference frequencies are available for this country and technology.");
+    self.scanButton.enabled = hasReference && !self.scanRunning && !self.recoveryRequired;
 }
 
 - (void)scanTapped:(UIButton *)sender {
@@ -706,9 +717,10 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
     NSString *rat = [self selectedScanRAT];
     NSDictionary *country = BLSelectedCountryRecord();
     NSArray *bands = BLCountryBandsForRAT(country, rat);
-    if (!country || !bands.count) {
-        [self showAlert:BLT(@"Elige un país con bandas de referencia para esta tecnología.",
-                            @"Choose a country with reference bands for this technology.")];
+    NSArray *frequencies = BLCountryFrequenciesForRAT(country, rat);
+    if (!country || (!bands.count && !frequencies.count)) {
+        [self showAlert:BLT(@"Elige un país con frecuencias de referencia para esta tecnología.",
+                            @"Choose a country with reference frequencies for this technology.")];
         return;
     }
     NSString *countryISO = country[@"iso2"];
@@ -718,8 +730,8 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
     }
     NSString *display = BLAnalyzerDisplayRAT(rat);
     NSString *warning = [NSString stringWithFormat:BLT(
-        @"El Analizador usará Auto como punto de retorno y probará solo bandas de %@ compatibles con el módem para %@. Puedes perder llamadas o datos mientras mide. Una banda de referencia no confirma cobertura local. ¿Iniciar?",
-        @"Analyzer will use Auto as the return point and try only %@ bands compatible with the modem for %@. Calls or data may drop. Reference bands do not confirm local coverage. Start?"), display, BLLocalizedCountryName(country)];
+        @"El Analizador usará Auto como punto de retorno y limitará el barrido %@ a las frecuencias de referencia de %@. En 2G/3G solo se fijarán bandas si CoreTelephony expone un identificador verificado; si no, se hará observación dirigida sin inventar el mapeo. Puedes perder llamadas o datos mientras mide. ¿Iniciar?",
+        @"Analyzer will use Auto as the return point and limit the %@ scan to reference frequencies for %@. On 2G/3G, bands are locked only when CoreTelephony exposes a verified identifier; otherwise it uses directed observation without inventing a mapping. Calls or data may drop. Start?"), display, BLLocalizedCountryName(country)];
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:BLT(@"Barrido %@", @"%@ scan"), display]
                                                                     message:warning preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
@@ -732,7 +744,9 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
             BLAnalyzerViewController *modeSelf = weakSelf;
             if (!modeSelf) return;
             if (!success) { [modeSelf showAlert:message ?: BLT(@"No se pudo preparar Auto.", @"Could not prepare Auto.")]; return; }
-            [modeSelf.manager startTechnologySignalScanForRAT:rat country:countryISO targetBands:bands completion:^(NSDictionary *result) {
+            [modeSelf.manager startTechnologySignalScanForRAT:rat country:countryISO
+                                                   targetBands:bands targetFrequencies:frequencies
+                                                    completion:^(NSDictionary *result) {
                 BLAnalyzerViewController *scanSelf = weakSelf;
                 if (!scanSelf) return;
                 if (![result[@"success"] boolValue]) {
@@ -819,7 +833,11 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
 - (void)updateScanButtons {
     self.scanTechnology.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
     self.scanCountryButton.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
-    self.scanButton.enabled = BLCountryBandsForRAT(BLSelectedCountryRecord(), [self selectedScanRAT]).count > 0 &&
+    NSDictionary *country = BLSelectedCountryRecord();
+    NSString *rat = [self selectedScanRAT];
+    BOOL hasReference = BLCountryBandsForRAT(country, rat).count > 0 ||
+                        BLCountryFrequenciesForRAT(country, rat).count > 0;
+    self.scanButton.enabled = hasReference &&
                               !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
     self.scanCancelButton.hidden = !self.scanRunning;
     self.scanCancelButton.enabled = self.scanRunning && !self.manager.busy;

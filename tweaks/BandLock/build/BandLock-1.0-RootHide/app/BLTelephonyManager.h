@@ -47,6 +47,7 @@ typedef void (^BLActionCompletion)(BOOL success, NSString *message);
                               completion:(void (^)(NSDictionary *result))completion;
 - (void)startTechnologySignalScanForRAT:(NSString *)rat country:(NSString *)iso
                             targetBands:(NSArray<NSNumber *> *)bands
+                      targetFrequencies:(NSArray<NSNumber *> *)frequencies
                              completion:(void (^)(NSDictionary *result))completion;
 - (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *result))completion;
 - (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *result))completion;

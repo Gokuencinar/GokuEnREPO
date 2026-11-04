@@ -211,6 +211,9 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         if ([command isEqualToString:@"scan_line_diagnostic"]) {
             return [BLRHSignalScan.sharedScan lineDiagnosticsWithManager:manager];
         }
+        if ([command isEqualToString:@"band_inventory_diagnostic"]) {
+            return [BLRHSignalScan.sharedScan bandInventoryWithManager:manager];
+        }
         if ([command isEqualToString:@"scan_cancel"]) return [BLRHSignalScan.sharedScan cancel];
         if ([command isEqualToString:@"scan_recover"]) {
             return [BLRHSignalScan.sharedScan requestRecoveryWithManager:manager];
@@ -237,7 +240,8 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
                                                                       target:targetRAT
                                                                  restoreMode:restoreMode
                                                                   countryISO:request[@"country_iso"]
-                                                                 targetBands:request[@"target_bands"]];
+                                                                 targetBands:request[@"target_bands"]
+                                                           targetFrequencies:request[@"target_frequencies_mhz"]];
         }
         if (([command isEqualToString:@"rat"] ||
              [command isEqualToString:@"apply"] ||

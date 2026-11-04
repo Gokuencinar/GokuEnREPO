@@ -11,11 +11,14 @@ const prerm = read('layout/DEBIAN/prerm');
 const app = read('app/BLControlViewController.m');
 const manager = read('app/BLTelephonyManager.m');
 const analyzer = read('app/BLAnalyzerViewController.m');
+const countryProfile = read('app/BLCountryProfile.m');
+const countriesController = read('app/BLCountriesViewController.m');
+const countrySpectrum = JSON.parse(read('app/Resources/country-spectrum.json'));
 const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui16$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui17$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -191,6 +194,7 @@ assert.match(analyzer, /recoverSignalScanWithCompletion:/);
 assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|applyPendingBands|applyBands|setRatSelectionSync)\b|@"(?:imsi|imei|subscriptionUUID)"/i,
   'Analyzer may orchestrate guarded scans, but must not directly write the modem or persist private cell IDs');
 assert.match(analyzer, /BLCountryBandsForRAT/);
+assert.match(analyzer, /BLCountryFrequenciesForRAT/);
 assert.match(analyzer, /performWithoutAnimation/);
 assert.match(scan, /\[allowed containsObject:band\]/);
 assert.match(scan, /country_iso/);
@@ -418,7 +422,7 @@ for (const mapping of ['2g', '3g', 'lte', '5g-auto', '5g-on', '5g-only']) {
 }
 assert.match(manager, /startTechnologySignalScanForRAT:/);
 assert.match(analyzer, /startTechnologySignalScanForRAT:rat/);
-assert.match(analyzer, /probará solo bandas de/);
+assert.match(analyzer, /frecuencias de referencia/);
 assert.match(technologyScan, /BLScanWriteJournal\(journal\)/);
 assert.match(technologyScan, /@"version": hasBandBaseline \? @3 : @2/);
 assert.match(technologyScan, /original_band_config/);
@@ -439,8 +443,21 @@ assert.match(scan, /BLScanBandConfigurationMatches\(manager, readback, originalC
 assert.match(scan, /if \(!serviceRestored\)/);
 assert.match(scan, /if \(!BLScanClearJournal\(\)\)/);
 assert.match(scan, /BLDeviceIsKnownLTEOnly\(\)/);
-assert.doesNotMatch(technologyScan, /countryBands/i,
-  'Technology scan candidates must come from the modem, not a country table');
+assert.match(technologyScan, /target_frequencies_mhz/);
+assert.match(technologyScan, /eligible\.count && originalBandConfiguration/);
+assert.doesNotMatch(countryProfile, /iso2.*ES.*2G/s,
+  '2G/3G country data must not be hard-coded only for Spain');
+assert.match(countryProfile, /CoreTelephony uses a private numeric namespace for GSM\/UTRAN/);
+assert.match(countriesController, /BLAllCountryRecords/);
+assert.ok(countrySpectrum.countries.length >= 220, 'Country spectrum should cover at least 220 markets');
+const esSpectrum = countrySpectrum.countries.find(country => country.iso2 === 'ES');
+assert.deepEqual(esSpectrum?.frequencies_mhz?.['2G'], [900, 1800]);
+assert.deepEqual(esSpectrum?.frequencies_mhz?.['3G'], [900, 2100]);
+assert.equal(countrySpectrum.source?.name, 'MCC-MNC.org networks bulk export');
+assert.match(main, /band_inventory_diagnostic/);
+assert.match(scan, /Sanitized CTBandInfo inventory/);
+assert.match(metadata, /@10:\s+@\{@"frequency": @"AWS 1700\/2100 MHz"/);
+assert.match(metadata, /@44:\s+@\{@"frequency": @"700 MHz \(703–803\)"/);
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain

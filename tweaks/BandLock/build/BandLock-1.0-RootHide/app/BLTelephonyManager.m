@@ -582,15 +582,19 @@ static NSString *BLDaemonSocketPath(void) {
 
 - (void)startTechnologySignalScanForRAT:(NSString *)rat country:(NSString *)iso
                             targetBands:(NSArray<NSNumber *> *)bands
+                      targetFrequencies:(NSArray<NSNumber *> *)frequencies
                              completion:(void (^)(NSDictionary *result))completion {
     if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat] ||
         ![iso isKindOfClass:NSString.class] || iso.length != 2 ||
-        ![bands isKindOfClass:NSArray.class] || !bands.count || bands.count > 64) {
-        if (completion) completion(@{@"success": @NO, @"message": @"País, tecnología o bandas no válidos"});
+        ![bands isKindOfClass:NSArray.class] || bands.count > 64 ||
+        ![frequencies isKindOfClass:NSArray.class] || frequencies.count > 64 ||
+        (!bands.count && !frequencies.count)) {
+        if (completion) completion(@{@"success": @NO, @"message": @"País, tecnología o frecuencias no válidos"});
         return;
     }
     [self sendRequest:@{@"cmd": @"scan_technology_start", @"rat": rat,
-                        @"country_iso": iso, @"target_bands": bands} completion:completion];
+                        @"country_iso": iso, @"target_bands": bands,
+                        @"target_frequencies_mhz": frequencies} completion:completion];
 }
 
 - (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {

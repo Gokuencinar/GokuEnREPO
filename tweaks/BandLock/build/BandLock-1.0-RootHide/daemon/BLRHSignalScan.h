@@ -7,6 +7,7 @@
 + (instancetype)sharedScan;
 - (NSDictionary *)probeWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)lineDiagnosticsWithManager:(BLTelephonyManager *)manager;
+- (NSDictionary *)bandInventoryWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)startWithManager:(BLTelephonyManager *)manager;
 - (NSDictionary *)startPassiveObservationWithManager:(BLTelephonyManager *)manager
                                               target:(NSString *)targetRAT;
@@ -14,7 +15,8 @@
                                            target:(NSString *)targetRAT
                                       restoreMode:(NSString *)restoreMode
                                       countryISO:(NSString *)countryISO
-                                     targetBands:(NSArray<NSNumber *> *)targetBands;
+                                     targetBands:(NSArray<NSNumber *> *)targetBands
+                               targetFrequencies:(NSArray<NSNumber *> *)targetFrequencies;
 - (NSDictionary *)status;
 - (NSDictionary *)cancel;
 - (NSDictionary *)requestRecoveryWithManager:(BLTelephonyManager *)manager;
