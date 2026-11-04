@@ -10,10 +10,11 @@ const scanHeader = read('daemon/BLRHSignalScan.h');
 const prerm = read('layout/DEBIAN/prerm');
 const app = read('app/BLControlViewController.m');
 const manager = read('app/BLTelephonyManager.m');
+const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui13$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui14$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
@@ -186,8 +187,8 @@ assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|startSignalScan|s
 assert.match(control, /firmware \(<= 18\.99\)/,
   'Experimental preview must explicitly recognize firmware 18.7.1');
 assert.match(main, /operatingSystemVersion\.majorVersion >= 18/);
-assert.match(main, /@\[@"apply", @"apply_nr", @"scan_start"\] containsObject:command/,
-  'iOS18 must block unverified band writes and active scans');
+assert.match(main, /@\[@"apply_nr", @"scan_start"\] containsObject:command/,
+  'iOS18 must keep NR writes and the obsolete two-band experiment blocked');
 assert.doesNotMatch(main, /No se puede verificar el modo actual en iOS 18/,
   'The old iOS18 RAT preflight must not reject changes before calling the 1.5 setter');
 console.log('RootHide LTE 1.6 analyzer UI and read-only data gates: PASS');
@@ -210,9 +211,9 @@ for (const title of ['Modo de red', 'Detalles de red', 'Restauración y segurida
   assert.ok(app.includes('disclosure:BLT(@"' + title + '"'), title + ' must be collapsible');
 }
 assert.match(app, /openAnalyzerTapped:/);
-assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
+assert.match(app, /self\.applyLTEButton\.hidden = NO/);
 assert.match(app, /self\.signalStartButton\.hidden = readOnly18/);
-assert.match(main, /@\[@"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
+assert.match(main, /@\[@"apply_nr", @"scan_start"\] containsObject:command/);
 console.log('BandLock compact Control and historical no-switch regression: PASS');
 
 // rhui4: the hero must not truncate a long heading on narrow iPhones.
@@ -227,7 +228,7 @@ assert.match(app, /self\.manager\.pendingBands\.count/);
 assert.doesNotMatch(app, /self\.pendingValue\.text = BLBandList\(/);
 assert.match(app, /detail\.hidden = subtitle\.length == 0/);
 assert.match(app, /Cambio de modo sujeto a verificación/);
-assert.match(app, /self\.applyLTEButton\.hidden = readOnly18/);
+assert.match(app, /self\.applyLTEButton\.hidden = NO/);
 console.log('BandLock rhui4 concise UI and truncated header regression: PASS');
 
 // rhui5 removes verbose text-only UI, not the privacy/persistence restrictions.
@@ -294,7 +295,7 @@ for (const mode of ['2g','3g','lte']) {
 }
 assert.match(cc, /self\.statusRefreshNotBefore = CFAbsoluteTimeGetCurrent\(\) \+ 20\.0/);
 assert.match(cc, /\.tv_sec = ios18 \? \(backgroundStatus \? 3 : 12\) : 30/);
-assert.match(main, /@\[@"apply", @"apply_nr", @"scan_start"\] containsObject:command/);
+assert.match(main, /@\[@"apply_nr", @"scan_start"\] containsObject:command/);
 const statusHandler = main.slice(main.indexOf('if ([command isEqualToString:@"status"])'),
                                  main.indexOf('if ([command isEqualToString:@"rat"])'));
 assert.match(statusHandler, /operatingSystemVersion\.majorVersion >= 18/);
@@ -446,7 +447,7 @@ const recovery = scan.slice(recoveryStart, recoveryEnd);
 assert.match(recovery, /writeBands:originalBands\s+forTargetRAT:targetRAT/);
 assert.doesNotMatch(recovery, /\[manager restoreBandConfiguration:/);
 assert.ok(recovery.indexOf('writeBands:originalBands') < recovery.indexOf('setModeCodeSync:restoreMode'));
-assert.match(recovery, /check < 30/);
+assert.match(recovery, /check < 60/);
 assert.match(recovery, /if \(\[saved\[@"version"\] isEqual:@3\] && !bandsRestored\)/);
 assert.match(recovery, /if \(!serviceRestored\)/);
 assert.ok(recovery.indexOf('if (!serviceRestored)') < recovery.indexOf('if (!BLScanClearJournal())'));
@@ -463,6 +464,48 @@ assert.match(scan, /activeCount > 1/);
 assert.match(recovery, /!BLScanRecoveryIdentityCompatible\(identity, subscription\)/);
 assert.match(recovery, /!BLScanRecoveryIdentityCompatible\(readback, subscription\)/);
 assert.doesNotMatch(recovery, /if \(!BLScanSingleActiveLine\(identity\)\)/);
-assert.match(recovery, /check < 30/);
-assert.match(recovery, /dentro de 30 s/);
+assert.match(recovery, /check < 60/);
+assert.match(recovery, /dentro de 60 s/);
 console.log('BandLock rhui13 detached-RAT recovery gate: PASS');
+
+// rhui14: restore the 1.5 LTE selection workflow on iOS18. LTE apply keeps
+// the scan/recovery exclusion and daemon-side subset/readback validation; only
+// NR writes and the obsolete two-band experiment stay blocked by the iOS18 gate.
+assert.match(app, /Aplicar selección/);
+assert.match(app, /self\.applyLTEButton\.hidden = NO/);
+assert.match(app, /self\.restoreLTEPreviousButton\.hidden = NO/);
+assert.match(app, /self\.restoreLTEAllButton\.hidden = NO/);
+const ios18GateStart = main.indexOf('if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18');
+const ios18GateEnd = main.indexOf('if ([command isEqualToString:@"signal_probe"]', ios18GateStart);
+assert.ok(ios18GateStart >= 0 && ios18GateEnd > ios18GateStart);
+const ios18Gate = main.slice(ios18GateStart, ios18GateEnd);
+assert.doesNotMatch(ios18Gate, /@"apply"/);
+assert.match(ios18Gate, /@"apply_nr"/);
+assert.match(main, /\[command isEqualToString:@"apply"\]/);
+const applyStart = main.indexOf('if ([command isEqualToString:@"apply"])');
+const applyEnd = main.indexOf('if ([command isEqualToString:@"apply_nr"])', applyStart);
+assert.ok(applyStart >= 0 && applyEnd > applyStart);
+const applyHandler = main.slice(applyStart, applyEnd);
+assert.match(applyHandler, /passiveApplyQuery/);
+assert.match(applyHandler, /queryCoreTelephonyForPassiveObservation/);
+assert.match(applyHandler, /requestedSet/);
+assert.match(applyHandler, /matches = \[requestedSet isEqualToSet:/);
+
+// rhui14: a verified single-band mask may supply the missing band identity for
+// a same-RAT typed signal sample. Prioritize the already-serving band, wait a
+// longer bounded window, and make no-signal/error rows explicit instead of
+// rendering bare band numbers with no explanation.
+assert.match(scan, /static BOOL BLScanHasAnyMetric/);
+assert.match(scan, /initialObservedBands/);
+assert.match(scan, /BLSortedBands\(initialObservedBands\.allKeys\)/);
+assert.match(scan, /reportedBand && !\[reportedBand isEqual:band\]/);
+assert.match(scan, /band_inferred_from_active_mask/);
+assert.match(scan, /sample < 8/);
+assert.match(scan, /measured_pre_sweep/);
+assert.match(app, /Registrada sin métrica/);
+assert.match(app, /Sin señal/);
+assert.match(app, /Banda no verificada/);
+assert.match(app, /value\.doubleValue, dbm \? @"dBm" : @"dB"/);
+assert.match(app, /BLGFrequencyForBand\(band\)/);
+assert.match(metadata, /@6:\s+@\{@"frequency": @"800 MHz"/);
+console.log('BandLock rhui14 scan metrics and LTE apply regression checks: PASS');

@@ -150,6 +150,13 @@ static BOOL BLScanHasPower(NSDictionary *row) {
            [row[@"rssi"] isKindOfClass:NSNumber.class] ||
            [row[@"rscp"] isKindOfClass:NSNumber.class];
 }
+
+static BOOL BLScanHasAnyMetric(NSDictionary *row) {
+    for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
+        if ([row[metric] isKindOfClass:NSNumber.class]) return YES;
+    }
+    return NO;
+}
 static const NSUInteger BLPassiveMaxRows = 8;
 static const NSUInteger BLTechnologyScanSamples = 16;
 
@@ -842,7 +849,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     NSString *stopReason = nil;
     NSString *targetMode = BLModeForTargetRAT(targetRAT);
     BOOL targetObserved = NO;
-    NSTimeInterval deadline = [NSDate date].timeIntervalSince1970 + 240.0;
+    NSTimeInterval deadline = [NSDate date].timeIntervalSince1970 + 360.0;
     @try {
         NSString *setError = nil;
         if (![manager setModeCodeSync:targetMode errorText:&setError]) {
@@ -892,6 +899,11 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                 BLDisplayTargetRAT(targetRAT)];
         }
 
+        // Preserve the first real serving measurements. When a band sweep is
+        // available, scan the already-serving band first so the user gets at
+        // least one useful reference reading before trying unavailable bands.
+        NSDictionary<NSNumber *, NSDictionary *> *initialObservedBands = [byBand copy];
+
         // If CTBandInfo exposes a writable band inventory for this RAT, sweep
         // every safe modem-reported band one by one. This is the exhaustive
         // path the UI calls "todas las bandas": candidates come from the live
@@ -903,12 +915,24 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             [baselineJournal[@"original_band_config"] isKindOfClass:NSDictionary.class]
                 ? baselineJournal[@"original_band_config"] : nil;
         NSMutableArray<NSNumber *> *candidates = [NSMutableArray array];
+        for (NSNumber *band in BLSortedBands(initialObservedBands.allKeys)) {
+            NSDictionary *observed = initialObservedBands[band];
+            if (![supported containsObject:band] ||
+                ![observed[@"role"] isEqualToString:@"serving"] ||
+                !BLScanHasAnyMetric(observed)) continue;
+            if ([targetRAT isEqualToString:@"LTE"] &&
+                [[BLGDuplexForBand(band) uppercaseString] isEqualToString:@"SDL"]) continue;
+            if ([targetRAT isEqualToString:@"NR"] &&
+                [[BLGNRDuplexForBand(band) uppercaseString] hasPrefix:@"SDL"]) continue;
+            [candidates addObject:band];
+        }
         for (NSNumber *band in supported) {
             if (![band isKindOfClass:NSNumber.class] || band.integerValue <= 0 || band.integerValue > 1024) continue;
             if ([targetRAT isEqualToString:@"LTE"] &&
                 [[BLGDuplexForBand(band) uppercaseString] isEqualToString:@"SDL"]) continue;
             if ([targetRAT isEqualToString:@"NR"] &&
                 [[BLGNRDuplexForBand(band) uppercaseString] hasPrefix:@"SDL"]) continue;
+            if ([candidates containsObject:band]) continue;
             [candidates addObject:band];
         }
         BOOL exhaustive = !stopReason && targetObserved &&
@@ -996,13 +1020,13 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                 }
 
                 BOOL readbackMatched = NO;
-                for (NSUInteger sample = 0; sample < 5; sample++) {
+                for (NSUInteger sample = 0; sample < 8; sample++) {
                     if ([NSDate date].timeIntervalSince1970 >= deadline) {
                         stopReason = @"Tiempo máximo del barrido agotado; restaurando";
                         break;
                     }
                     if ([self shouldStop]) { stopReason = @"Barrido cancelado"; break; }
-                    [NSThread sleepForTimeInterval:0.8];
+                    [NSThread sleepForTimeInterval:1.0];
                     NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
                     if (readback[@"error"]) continue;
                     NSString *readFingerprint = BLScanSubscriptionUUID(readback);
@@ -1016,11 +1040,18 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     readbackMatched = YES;
                     for (NSDictionary *measurement in BLScanMeasurements(manager, readback)) {
                         if (![measurement[@"rat"] isEqualToString:targetRAT] ||
-                            ![measurement[@"band"] isEqual:band] ||
                             ![measurement[@"role"] isEqualToString:@"serving"]) continue;
+                        NSNumber *reportedBand = [measurement[@"band"] isKindOfClass:NSNumber.class]
+                            ? measurement[@"band"] : nil;
+                        // If CTBandInfo positively read back exactly one active
+                        // band, a same-RAT serving metric without a band field can
+                        // safely be attributed to that selected band. A reported
+                        // but different band is never accepted.
+                        if (reportedBand && ![reportedBand isEqual:band]) continue;
                         row[@"role"] = @"serving";
                         row[@"source"] = measurement[@"source"] ?: @"cell_info";
-                        row[@"status"] = BLScanHasPower(measurement) ? @"measured" : @"detected";
+                        if (!reportedBand) row[@"band_inferred_from_active_mask"] = @YES;
+                        row[@"status"] = BLScanHasAnyMetric(measurement) ? @"measured" : @"detected";
                         for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
                             id value = measurement[metric];
                             if ([value isKindOfClass:NSNumber.class]) row[metric] = value;
@@ -1028,6 +1059,20 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                         if ([row[@"status"] isEqualToString:@"measured"]) break;
                     }
                     if ([row[@"status"] isEqualToString:@"measured"]) break;
+                }
+                if (readbackMatched && ![row[@"status"] isEqualToString:@"measured"]) {
+                    NSDictionary *seed = initialObservedBands[band];
+                    if ([seed[@"rat"] isEqualToString:targetRAT] &&
+                        [seed[@"role"] isEqualToString:@"serving"] &&
+                        BLScanHasAnyMetric(seed)) {
+                        row[@"source"] = seed[@"source"] ?: @"pre_sweep";
+                        row[@"status"] = @"measured_pre_sweep";
+                        row[@"pre_sweep"] = @YES;
+                        for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
+                            id value = seed[metric];
+                            if ([value isKindOfClass:NSNumber.class]) row[metric] = value;
+                        }
+                    }
                 }
                 if (!readbackMatched && !stopReason) {
                     row[@"status"] = @"readback_unverified";
@@ -1263,8 +1308,10 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         BOOL serviceRestored = NO;
         // A 3G-only scan can leave the modem fully detached on carriers where
         // 3G is unavailable. Allow the saved Auto/LTE request to execute first,
-        // then give registration a bounded 30 s convergence window.
-        for (NSUInteger check = 0; check < 30; check++) {
+        // then give registration a bounded 60 s convergence window. Physical
+        // rhui13 testing showed registration can return after the old 30 s
+        // window even though the restored mode/bands are already correct.
+        for (NSUInteger check = 0; check < 60; check++) {
             [NSThread sleepForTimeInterval:1.0];
             NSDictionary *readback = [manager queryCoreTelephonyForPassiveObservation];
             if (readback[@"error"]) continue;
@@ -1307,7 +1354,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             return NO;
         }
         if (!serviceRestored) {
-            if (failureReason) *failureReason = @"El modo anterior fue solicitado, pero el servicio móvil no volvió a registrarse dentro de 30 s. Usa Recuperar de nuevo.";
+            if (failureReason) *failureReason = @"El modo anterior fue solicitado, pero el servicio móvil no volvió a registrarse dentro de 60 s. Usa Recuperar de nuevo.";
             return NO;
         }
         // The private iOS18 selection getter may still be Unknown. Do not call

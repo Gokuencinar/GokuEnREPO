@@ -13,6 +13,7 @@ static NSDictionary<NSNumber *, NSDictionary<NSString *, NSString *> *> *BLGMeta
             @3:  @{@"frequency": @"1800 MHz",          @"duplex": @"FDD"},
             @4:  @{@"frequency": @"AWS-1 1700/2100",   @"duplex": @"FDD"},
             @5:  @{@"frequency": @"850 MHz",           @"duplex": @"FDD"},
+            @6:  @{@"frequency": @"800 MHz",           @"duplex": @"FDD"},
             @7:  @{@"frequency": @"2600 MHz",          @"duplex": @"FDD"},
             @8:  @{@"frequency": @"900 MHz",           @"duplex": @"FDD"},
             @11: @{@"frequency": @"1500 MHz",          @"duplex": @"FDD"},

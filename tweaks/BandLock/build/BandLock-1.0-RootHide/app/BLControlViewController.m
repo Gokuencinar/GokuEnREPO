@@ -6,6 +6,7 @@
 #import "BLCountryBandsViewController.h"
 #import "BLCountryProfile.h"
 #import "BLCommon.h"
+#import "BLGBandMetadata.h"
 #import "BLBreadcrumb.h"
 #import "../../BLHardwareCapabilities.h"
 #import <QuartzCore/QuartzCore.h>
@@ -576,10 +577,14 @@
     self.radioAutomaticButton.enabled = !self.manager.busy;
     self.radioLTEButton.enabled = !self.manager.busy;
     self.fiveGModeButton.enabled = !self.manager.busy;
-    self.applyLTEButton.hidden = readOnly18;
-    self.applyLTEButton.enabled = !readOnly18 && !self.manager.busy;
-    self.restoreLTEPreviousButton.hidden = readOnly18;
-    self.restoreLTEAllButton.hidden = readOnly18;
+    // LTE selection worked in 1.5 and is again supported on iOS 18. Keep NR
+    // writes gated separately; LTE apply/restore use the verified LTE writer.
+    self.applyLTEButton.hidden = NO;
+    self.applyLTEButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
+    self.restoreLTEPreviousButton.hidden = NO;
+    self.restoreLTEPreviousButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
+    self.restoreLTEAllButton.hidden = NO;
+    self.restoreLTEAllButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
     NSDictionary *selectedCountry = BLSelectedCountryRecord();
     self.countryManageButton.hidden = selectedCountry == nil;
     if (selectedCountry) {
@@ -945,13 +950,36 @@
             NSString *display = [rat isEqualToString:@"NR"] ? @"5G" :
                 ([rat isEqualToString:@"LTE"] ? @"4G" : (rat ?: @"Red"));
             NSMutableString *line = [NSMutableString stringWithString:display];
-            if ([row[@"band"] isKindOfClass:NSNumber.class])
+            NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
+            if (band)
                 [line appendFormat:@" %@%@", [rat isEqualToString:@"NR"] ? @"n" : @"B", row[@"band"]];
+            if (band && ([rat isEqualToString:@"LTE"] || [rat isEqualToString:@"3G"])) {
+                NSString *frequency = BLGFrequencyForBand(band);
+                NSString *duplex = BLGDuplexForBand(band);
+                if (frequency.length) [line appendFormat:@" · %@", frequency];
+                if (duplex.length) [line appendFormat:@" · %@", duplex];
+            }
             if ([row[@"role"] isEqualToString:@"neighbor"])
                 [line appendString:BLT(@" · Vecina", @" · Neighbor")];
+            NSString *statusCode = [row[@"status"] isKindOfClass:NSString.class] ? row[@"status"] : @"";
+            NSDictionary *statusLabels = @{
+                @"measured": BLT(@"Medida", @"Measured"),
+                @"measured_pre_sweep": BLT(@"Medida previa", @"Pre-sweep reading"),
+                @"detected": BLT(@"Registrada sin métrica", @"Registered without metric"),
+                @"no_signal": BLT(@"Sin señal", @"No signal"),
+                @"query_failed": BLT(@"Consulta fallida", @"Query failed"),
+                @"write_failed": BLT(@"No se pudo fijar", @"Could not lock"),
+                @"readback_unverified": BLT(@"Banda no verificada", @"Band not verified")
+            };
+            NSString *statusLabel = statusLabels[statusCode];
+            if (statusLabel.length) [line appendFormat:@" · %@", statusLabel];
             for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
                 NSNumber *value = row[metric];
-                if ([value isKindOfClass:NSNumber.class]) [line appendFormat:@" · %@ %.1f", metric.uppercaseString, value.doubleValue];
+                if (![value isKindOfClass:NSNumber.class]) continue;
+                BOOL dbm = [metric isEqualToString:@"rsrp"] || [metric isEqualToString:@"rssi"] ||
+                           [metric isEqualToString:@"rscp"];
+                [line appendFormat:@" · %@ %.1f %@", metric.uppercaseString,
+                    value.doubleValue, dbm ? @"dBm" : @"dB"];
             }
             [lines addObject:line];
         }

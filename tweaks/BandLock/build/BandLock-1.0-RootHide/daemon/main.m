@@ -187,13 +187,14 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         BLTelephonyManager *manager = BLTelephonyManager.sharedManager;
 
         // This is a modem capability / safety gate, NOT a filesystem
-        // permissions error. Preferences, reports and passive diagnostics
-        // remain writable. Unverified private RAT setters on iOS 18 can
-        // disconnect the cellular radio or block CoreTelephony.
+        // permissions error. NR writes and the old two-band experiment remain
+        // disabled on iOS 18. LTE apply is intentionally allowed again: the
+        // same LTE band writer is now exercised by the guarded technology scan
+        // and apply has its own subset validation + positive readback loop.
         // Leave emergency journal recovery available: preventing restoration
         // after a previous build wrote bands would be unsafe.
         if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 &&
-            [@[@"apply", @"apply_nr", @"scan_start"] containsObject:command]) {
+            [@[@"apply_nr", @"scan_start"] containsObject:command]) {
             return @{@"success": @NO, @"unsupported_modem_write": @YES,
                      @"message": @"El cambio de red no está verificado en este iOS"};
         }
@@ -314,7 +315,10 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             }
             if (allSDL) return @{@"success": @NO, @"message": @"SDL-only LTE selections are not allowed"};
 
-            NSDictionary *query = [manager queryCoreTelephony];
+            BOOL passiveApplyQuery = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+            NSDictionary *query = passiveApplyQuery
+                ? [manager queryCoreTelephonyForPassiveObservation]
+                : [manager queryCoreTelephony];
             if (query[@"error"]) return @{@"success": @NO, @"message": [query[@"error"] description] ?: @"CoreTelephony error"};
             NSDictionary *before = [manager snapshotFromQuery:query];
             NSArray<NSNumber *> *supported = before[@"supported"] ?: @[];
@@ -341,7 +345,9 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             // a bounded window and perform only one fresh-query retry write.
             for (NSInteger attempt = 1; attempt <= 40; attempt++) {
                 [NSThread sleepForTimeInterval:0.5];
-                NSDictionary *candidate = [manager queryCoreTelephony];
+                NSDictionary *candidate = passiveApplyQuery
+                    ? [manager queryCoreTelephonyForPassiveObservation]
+                    : [manager queryCoreTelephony];
                 if (candidate[@"error"]) {
                     lastVerifyError = [candidate[@"error"] description];
                     BLDaemonLog([[NSString stringWithFormat:@"apply verify attempt=%ld error=%@", (long)attempt, lastVerifyError ?: @"unknown"] UTF8String]);
