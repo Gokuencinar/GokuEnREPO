@@ -89,7 +89,7 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
         if (frequency.length && duplex.length) return [NSString stringWithFormat:@"%@ · %@", frequency, duplex];
         return frequency.length ? frequency : duplex;
     }
-    if ([rat isEqualToString:@"LTE"] || [rat isEqualToString:@"3G"]) {
+    if ([rat isEqualToString:@"LTE"]) {
         NSString *frequency = BLGFrequencyForBand(band);
         NSString *duplex = BLGDuplexForBand(band);
         if (frequency.length && duplex.length) return [NSString stringWithFormat:@"%@ · %@", frequency, duplex];
@@ -399,13 +399,23 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
     ]];
     NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"";
     NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
+    NSNumber *referenceFrequency = [row[@"reference_frequency_mhz"] isKindOfClass:NSNumber.class]
+        ? row[@"reference_frequency_mhz"] : nil;
     NSString *role = [row[@"role"] isEqualToString:@"neighbor"] ? BLT(@"VECINA", @"NEIGHBOR") : BLT(@"SERVIDORA", @"SERVING");
     NSString *prefix = BLAnalyzerDisplayRAT(rat);
-    NSString *bandText = band ? [NSString stringWithFormat:@" %@%@", [rat isEqualToString:@"NR"] ? @"n" : @"B", band] : @"";
+    NSString *bandText = @"";
+    if (band) {
+        if ([rat isEqualToString:@"NR"]) bandText = [NSString stringWithFormat:@" n%@", band];
+        else if ([rat isEqualToString:@"LTE"]) bandText = [NSString stringWithFormat:@" B%@", band];
+        else bandText = [NSString stringWithFormat:@" · CT %@", band];
+    }
     UILabel *title = [self text:[NSString stringWithFormat:@"%@ · %@%@", role, prefix, bandText]
                              size:15 color:UIColor.whiteColor weight:UIFontWeightBold];
     [body addArrangedSubview:title];
     NSString *detail = BLAnalyzerBandDetail(rat, band);
+    if (!detail.length && referenceFrequency)
+        detail = [NSString stringWithFormat:@"%@ MHz · %@", referenceFrequency,
+                  BLT(@"frecuencia verificada por canal", @"frequency verified from channel")];
     if (detail.length) [body addArrangedSubview:[self text:detail size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium]];
     NSMutableArray<NSString *> *metrics = [NSMutableArray array];
     for (NSString *metric in @[@"rsrp", @"rscp", @"rssi", @"rsrq", @"ecno", @"snr"]) {
@@ -422,9 +432,12 @@ static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
         [body addArrangedSubview:metricLabel];
     }
     NSMutableArray *identity = [NSMutableArray array];
+    NSString *channelLabel = [rat isEqualToString:@"2G"] ? @"ARFCN" :
+                             ([rat isEqualToString:@"3G"] ? @"UARFCN" :
+                              ([rat isEqualToString:@"NR"] ? @"NRARFCN" : @"Canal"));
     NSDictionary *technical = @{@"cell_id": @"Cell ID", @"physical_cell_id": @"PCI",
                                  @"psc": @"PSC", @"tac": @"TAC", @"lac": @"LAC",
-                                 @"channel": @"Canal"};
+                                 @"channel": channelLabel};
     for (NSString *key in @[@"cell_id", @"physical_cell_id", @"psc", @"tac", @"lac", @"channel"]) {
         if ([row[key] isKindOfClass:NSNumber.class])
             [identity addObject:[NSString stringWithFormat:@"%@ %@", technical[key], row[key]]];

@@ -428,7 +428,7 @@ assert.match(technologyScan, /@"version": hasBandBaseline \? @3 : @2/);
 assert.match(technologyScan, /original_band_config/);
 assert.match(technologyScan, /setModeCodeSync:targetMode/);
 assert.match(technologyScan, /BLScanSingleActiveLine\(preflight\)/);
-assert.match(technologyScan, /BLMergeObservedBand\(byBand, measurement, targetRAT\)/);
+assert.match(technologyScan, /BLMergeObservedBand\(byBand, measurement, targetRAT, allowedFrequencies\)/);
 assert.match(technologyScan, /supportedBandsForTargetRAT:targetRAT/);
 assert.match(technologyScan, /activeBandsForTargetRAT:targetRAT/);
 assert.match(technologyScan, /writeBands:@\[band\] forTargetRAT:targetRAT/);
@@ -445,6 +445,16 @@ assert.match(scan, /if \(!BLScanClearJournal\(\)\)/);
 assert.match(scan, /BLDeviceIsKnownLTEOnly\(\)/);
 assert.match(technologyScan, /target_frequencies_mhz/);
 assert.match(technologyScan, /eligible\.count && originalBandConfiguration/);
+assert.match(scan, /BLReferenceFrequencyForMeasurement/);
+assert.match(scan, /allowedFrequencies containsObject:referenceFrequency/);
+assert.match(scan, /No hay bandas exactas del país compatibles con el inventario del módem/);
+assert.match(scan, /n >= 10562 && n <= 10838/);
+assert.match(scan, /n >= 2937 && n <= 3088/);
+assert.match(scan, /n >= 512 && n <= 810/);
+assert.match(analyzer, /@"ARFCN"/);
+assert.match(analyzer, /@"UARFCN"/);
+assert.doesNotMatch(analyzer, /\[rat isEqualToString:@"LTE"\] \|\| \[rat isEqualToString:@"3G"\]/,
+  '3G must never reuse LTE band metadata');
 assert.doesNotMatch(countryProfile, /iso2.*ES.*2G/s,
   '2G/3G country data must not be hard-coded only for Spain');
 assert.match(countryProfile, /CoreTelephony uses a private numeric namespace for GSM\/UTRAN/);

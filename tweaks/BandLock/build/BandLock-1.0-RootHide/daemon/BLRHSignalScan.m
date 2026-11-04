@@ -186,24 +186,64 @@ static NSArray<NSDictionary *> *BLSortedObservedBands(NSDictionary<NSNumber *, N
     return rows;
 }
 
+static NSNumber *BLReferenceFrequencyForMeasurement(NSDictionary *measurement,
+                                                    NSString *targetRAT,
+                                                    NSArray<NSNumber *> *allowedFrequencies) {
+    NSNumber *channel = [measurement[@"channel"] isKindOfClass:NSNumber.class] ? measurement[@"channel"] : nil;
+    if (!channel) return nil;
+    NSInteger n = channel.integerValue;
+    if ([targetRAT isEqualToString:@"2G"]) {
+        if ((n >= 0 && n <= 124) || (n >= 975 && n <= 1023)) return @900;
+        if (n >= 128 && n <= 251) return @850;
+        if (n >= 811 && n <= 885) return @1800;
+        if (n >= 512 && n <= 810) {
+            BOOL dcs = [allowedFrequencies containsObject:@1800];
+            BOOL pcs = [allowedFrequencies containsObject:@1900];
+            if (dcs != pcs) return dcs ? @1800 : @1900;
+            return nil; // Same ARFCN range: country profile must disambiguate.
+        }
+        return nil;
+    }
+    if ([targetRAT isEqualToString:@"3G"]) {
+        // 3GPP TS 25.101 general downlink UARFCN ranges.
+        if (n >= 10562 && n <= 10838) return @2100; // UTRA I
+        if (n >= 9662 && n <= 9938) return @1900;  // UTRA II
+        if (n >= 1162 && n <= 1513) return @1800;  // UTRA III
+        if (n >= 1537 && n <= 1738) return @1700;  // UTRA IV / AWS
+        if (n >= 4357 && n <= 4458) return @850;   // UTRA V
+        if (n >= 2937 && n <= 3088) return @900;   // UTRA VIII
+        return nil;
+    }
+    return nil;
+}
+
 static void BLMergeObservedBand(NSMutableDictionary<NSNumber *, NSDictionary *> *byBand,
                                 NSDictionary *measurement,
-                                NSString *targetRAT) {
+                                NSString *targetRAT,
+                                NSArray<NSNumber *> *allowedFrequencies) {
     if (![measurement isKindOfClass:NSDictionary.class] ||
         ![measurement[@"rat"] isEqualToString:targetRAT]) return;
     NSNumber *band = [measurement[@"band"] isKindOfClass:NSNumber.class] ? measurement[@"band"] : nil;
-    if (!band || band.integerValue < 1 ||
-        band.integerValue > ([targetRAT isEqualToString:@"NR"] ? 1024 : 255)) return;
+    if (band && (band.integerValue < 1 ||
+        band.integerValue > ([targetRAT isEqualToString:@"NR"] ? 1024 : 255))) return;
+    NSNumber *referenceFrequency = BLReferenceFrequencyForMeasurement(measurement, targetRAT, allowedFrequencies);
+    if (([targetRAT isEqualToString:@"2G"] || [targetRAT isEqualToString:@"3G"]) &&
+        allowedFrequencies.count &&
+        (!referenceFrequency || ![allowedFrequencies containsObject:referenceFrequency])) return;
+    NSNumber *channel = [measurement[@"channel"] isKindOfClass:NSNumber.class] ? measurement[@"channel"] : nil;
+    NSNumber *rowKey = band ?: (channel ? @(1000000 + channel.integerValue) : nil);
+    if (!rowKey) return;
     NSString *role = [measurement[@"role"] isKindOfClass:NSString.class] ? measurement[@"role"] : @"unknown";
     if (![role isEqualToString:@"serving"] && ![role isEqualToString:@"neighbor"]) return;
 
     NSMutableDictionary *record = [@{
-        @"band": band,
         @"rat": targetRAT,
         @"role": role,
         @"source": [measurement[@"source"] isKindOfClass:NSString.class] ? measurement[@"source"] : @"unknown",
         @"status": BLScanHasPower(measurement) ? @"measured" : @"detected"
     } mutableCopy];
+    if (band) record[@"band"] = band;
+    if (referenceFrequency) record[@"reference_frequency_mhz"] = referenceFrequency;
     for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
         id value = measurement[metric];
         if ([value isKindOfClass:NSNumber.class]) record[metric] = value;
@@ -212,13 +252,13 @@ static void BLMergeObservedBand(NSMutableDictionary<NSNumber *, NSDictionary *> 
         if ([measurement[field] isKindOfClass:NSNumber.class]) record[field] = measurement[field];
     }
 
-    NSDictionary *existing = byBand[band];
+    NSDictionary *existing = byBand[rowKey];
     // Prefer serving-cell data over a neighbor row. Otherwise retain the
     // first real metric set instead of fabricating an average across cells.
     BOOL replace = !existing ||
         ([existing[@"role"] isEqualToString:@"neighbor"] && [role isEqualToString:@"serving"]) ||
         (![existing[@"status"] isEqualToString:@"measured"] && [record[@"status"] isEqualToString:@"measured"]);
-    if (replace) byBand[band] = record;
+    if (replace) byBand[rowKey] = record;
 }
 
 static NSNumber *BLRHSlotNumber(id context) {
@@ -840,6 +880,9 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         failure = @"El barrido requiere una única línea móvil activa";
     else if (subscription.length != 64)
         failure = @"No se pudo identificar de forma estable la línea móvil";
+    else if (([targetRAT isEqualToString:@"LTE"] || [targetRAT isEqualToString:@"NR"]) &&
+             !eligible.count)
+        failure = @"No hay bandas exactas del país compatibles con el inventario del módem";
 
     if (failure.length) {
         @synchronized(self) {
@@ -916,6 +959,9 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     NSString *stopReason = nil;
     NSString *targetMode = BLModeForTargetRAT(targetRAT);
     BOOL targetObserved = NO;
+    NSDictionary *scanJournal = BLScanReadJournal();
+    NSArray<NSNumber *> *allowedFrequencies =
+        BLSortedBands(scanJournal[@"target_frequencies_mhz"]);
     NSTimeInterval deadline = [NSDate date].timeIntervalSince1970 + 360.0;
     @try {
         NSString *setError = nil;
@@ -949,12 +995,12 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     [measurement[@"role"] isEqualToString:@"serving"]) {
                     targetObserved = YES;
                 }
-                BLMergeObservedBand(byBand, measurement, targetRAT);
+                BLMergeObservedBand(byBand, measurement, targetRAT, allowedFrequencies);
             }
             @synchronized(self) {
                 self.scanState[@"rows"] = BLSortedObservedBands(byBand);
                 self.scanState[@"message"] = [NSString stringWithFormat:
-                    @"Esperando registro %@ · %lu bandas detectadas",
+                    @"Esperando registro %@ · %lu referencias del país observadas",
                     BLDisplayTargetRAT(targetRAT), (unsigned long)byBand.count];
             }
             if (targetObserved) break;
@@ -1195,7 +1241,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                 for (NSDictionary *measurement in BLScanMeasurements(manager, query)) {
                     if ([measurement[@"rat"] isEqualToString:targetRAT] &&
                         [measurement[@"role"] isEqualToString:@"serving"]) servingTarget = YES;
-                    BLMergeObservedBand(byBand, measurement, targetRAT);
+                    BLMergeObservedBand(byBand, measurement, targetRAT, allowedFrequencies);
                 }
                 if (!servingTarget && sample >= 2) {
                     stopReason = @"La tecnología solicitada dejó de estar registrada; restaurando";
@@ -1205,7 +1251,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
                     self.scanState[@"rows"] = rows;
                     self.scanState[@"completed"] = @(sample + 1);
                     self.scanState[@"message"] = [NSString stringWithFormat:
-                        @"%@ · muestra %lu/%lu · %lu bandas detectadas",
+                        @"%@ · muestra %lu/%lu · %lu referencias del país observadas",
                         BLDisplayTargetRAT(targetRAT),
                         (unsigned long)(sample + 1),
                         (unsigned long)BLTechnologyScanSamples,
