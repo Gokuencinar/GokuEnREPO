@@ -2,11 +2,16 @@
 #import "BLTelephonyManager.h"
 #import "BLCommon.h"
 #import "BLLocalization.h"
+#import "BLGBandMetadata.h"
+#import "../../BLHardwareCapabilities.h"
 #import <math.h>
+#import <float.h>
 
-// This page intentionally does not expose any band/mode changing command.
-// The persisted schema allows only RAT, optional band and physical metrics.
+// NetMonitor-inspired coverage view for the data CoreTelephony actually exposes
+// on iOS. Never invent PCI/TAC/CID/channel information when the modem does not
+// provide it. Persist only RAT, band and physical signal metrics.
 static NSString *const BLAnalyzerHistoryKey = @"BLAnalyzerTypedLTEHistory.v1";
+static NSString *const BLAnalyzerLastScanIDKey = @"BLAnalyzerLastPersistedScanID.v1";
 static NSUInteger const BLAnalyzerMaxSamples = 300;
 
 static UIColor *BLAnalyzerInk(void) { return [UIColor colorWithRed:0.06 green:0.10 blue:0.19 alpha:1]; }
@@ -26,6 +31,60 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     return @(value);
 }
 
+static NSString *BLAnalyzerDisplayRAT(NSString *rat) {
+    if ([rat isEqualToString:@"LTE"]) return @"4G";
+    if ([rat isEqualToString:@"NR"]) return @"5G";
+    return rat.length ? rat : @"Red";
+}
+
+static NSString *BLAnalyzerPrimaryMetricName(NSString *rat) {
+    if ([rat isEqualToString:@"3G"]) return @"rscp";
+    if ([rat isEqualToString:@"2G"]) return @"rssi";
+    return @"rsrp";
+}
+
+static NSNumber *BLAnalyzerPrimaryMetric(NSDictionary *row) {
+    NSString *name = BLAnalyzerPrimaryMetricName(row[@"rat"]);
+    return BLAnalyzerMetric(row[name], name);
+}
+
+static NSString *BLAnalyzerQuality(NSDictionary *row) {
+    NSNumber *primary = BLAnalyzerPrimaryMetric(row);
+    if (!primary) return BLT(@"Sin dato", @"No data");
+    double value = primary.doubleValue;
+    NSString *rat = row[@"rat"];
+    double great = -80, good = -90, moderate = -100, poor = -110;
+    if ([rat isEqualToString:@"3G"]) { great = -70; good = -85; moderate = -95; poor = -105; }
+    else if ([rat isEqualToString:@"2G"]) { great = -65; good = -75; moderate = -85; poor = -95; }
+    if (value >= great) return BLT(@"Excelente", @"Great");
+    if (value >= good) return BLT(@"Buena", @"Good");
+    if (value >= moderate) return BLT(@"Moderada", @"Moderate");
+    if (value >= poor) return BLT(@"Mala", @"Poor");
+    return BLT(@"Muy mala", @"Very poor");
+}
+
+static NSString *BLAnalyzerMetricUnit(NSString *metric) {
+    return ([metric isEqualToString:@"rsrp"] || [metric isEqualToString:@"rssi"] ||
+            [metric isEqualToString:@"rscp"]) ? @"dBm" : @"dB";
+}
+
+static NSString *BLAnalyzerBandDetail(NSString *rat, NSNumber *band) {
+    if (!band) return @"";
+    if ([rat isEqualToString:@"NR"]) {
+        NSString *frequency = BLGNRFrequencyForBand(band);
+        NSString *duplex = BLGNRDuplexForBand(band);
+        if (frequency.length && duplex.length) return [NSString stringWithFormat:@"%@ · %@", frequency, duplex];
+        return frequency.length ? frequency : duplex;
+    }
+    if ([rat isEqualToString:@"LTE"] || [rat isEqualToString:@"3G"]) {
+        NSString *frequency = BLGFrequencyForBand(band);
+        NSString *duplex = BLGDuplexForBand(band);
+        if (frequency.length && duplex.length) return [NSString stringWithFormat:@"%@ · %@", frequency, duplex];
+        return frequency.length ? frequency : duplex;
+    }
+    return @"";
+}
+
 @interface BLAnalyzerGraph : UIView
 @property (nonatomic, copy) NSArray<NSDictionary *> *samples;
 @end
@@ -36,68 +95,77 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     [super drawRect:rect];
     CGContextRef context = UIGraphicsGetCurrentContext();
     if (!context) return;
-    CGFloat x0 = 14, x1 = CGRectGetWidth(rect) - 14, y0 = 14, y1 = CGRectGetHeight(rect) - 14;
+    CGFloat x0 = 14, x1 = CGRectGetWidth(rect)-14, y0 = 14, y1 = CGRectGetHeight(rect)-14;
     if (x1 <= x0 || y1 <= y0) return;
     CGContextSetLineWidth(context, 1);
     CGContextSetStrokeColorWithColor(context, [UIColor colorWithWhite:1 alpha:0.13].CGColor);
-    for (NSUInteger i = 0; i <= 3; i++) {
-        CGFloat y = y0 + (y1-y0)*i/3.0;
+    for (NSUInteger i = 0; i <= 4; i++) {
+        CGFloat y = y0 + (y1-y0)*i/4.0;
         CGContextMoveToPoint(context, x0, y);
         CGContextAddLineToPoint(context, x1, y);
     }
     CGContextStrokePath(context);
     NSMutableArray<NSNumber *> *values = [NSMutableArray array];
     for (NSDictionary *sample in self.samples) {
-        NSString *rat = sample[@"rat"] ?: @"LTE";
-        NSString *metric = [rat isEqual:@"3G"] ? @"rscp" :
-            ([rat isEqual:@"2G"] ? @"rssi" : @"rsrp");
-        NSNumber *v = BLAnalyzerMetric(sample[metric], metric);
-        if (v) [values addObject:v];
+        NSNumber *value = BLAnalyzerPrimaryMetric(sample);
+        if (value) [values addObject:value];
     }
     if (!values.count) return;
-    double lowest = -135, highest = -75;
-    for (NSNumber *v in values) {
-        lowest = MIN(lowest, floor(v.doubleValue / 10.0) * 10.0);
-        highest = MAX(highest, ceil(v.doubleValue / 10.0) * 10.0);
+    double lowest = -130, highest = -60;
+    for (NSNumber *value in values) {
+        lowest = MIN(lowest, floor(value.doubleValue/10.0)*10.0);
+        highest = MAX(highest, ceil(value.doubleValue/10.0)*10.0);
     }
+    if (highest-lowest < 20) { highest += 10; lowest -= 10; }
     CGContextSetLineWidth(context, 2.5);
     CGContextSetLineCap(context, kCGLineCapRound);
     CGContextSetLineJoin(context, kCGLineJoinRound);
     CGContextSetStrokeColorWithColor(context, BLAnalyzerTeal().CGColor);
     for (NSUInteger i = 0; i < values.count; i++) {
-        CGFloat x = values.count == 1 ? (x0 + x1)/2.0 : x0 + (x1-x0) * i/(values.count-1.0);
-        CGFloat y = y1 - (y1-y0)*(values[i].doubleValue-lowest)/(highest-lowest);
-        if (i == 0) CGContextMoveToPoint(context, x, y);
-        else CGContextAddLineToPoint(context, x, y);
+        CGFloat x = values.count == 1 ? (x0+x1)/2.0 : x0+(x1-x0)*i/(values.count-1.0);
+        CGFloat y = y1-(y1-y0)*(values[i].doubleValue-lowest)/(highest-lowest);
+        if (!i) CGContextMoveToPoint(context, x, y); else CGContextAddLineToPoint(context, x, y);
     }
     CGContextStrokePath(context);
-    CGFloat lastX = values.count == 1 ? (x0+x1)/2.0 : x1;
-    CGFloat lastY = y1-(y1-y0)*(values.lastObject.doubleValue-lowest)/(highest-lowest);
-    CGContextSetFillColorWithColor(context, BLAnalyzerTeal().CGColor);
-    CGContextFillEllipseInRect(context, CGRectMake(lastX-4, lastY-4, 8, 8));
 }
 @end
 
 @interface BLAnalyzerViewController ()
+@property (nonatomic, strong) BLTelephonyManager *manager;
 @property (nonatomic, strong) UIScrollView *scroll;
 @property (nonatomic, strong) UIStackView *stack;
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) UILabel *bandLabel;
+@property (nonatomic, strong) UILabel *qualityLabel;
+@property (nonatomic, strong) UILabel *networkDetailLabel;
 @property (nonatomic, strong) UILabel *rsrpLabel;
 @property (nonatomic, strong) UILabel *rsrpTitleLabel;
 @property (nonatomic, strong) UILabel *snrLabel;
 @property (nonatomic, strong) UILabel *rsrqLabel;
 @property (nonatomic, strong) UILabel *rsrqTitleLabel;
 @property (nonatomic, strong) UILabel *rssiLabel;
+@property (nonatomic, strong) UIStackView *cellsStack;
+@property (nonatomic, strong) UILabel *scanStatusLabel;
+@property (nonatomic, strong) UIStackView *scanRowsStack;
+@property (nonatomic, strong) UISegmentedControl *scanTechnology;
+@property (nonatomic, strong) UIButton *scanButton;
+@property (nonatomic, strong) UIButton *scanCancelButton;
+@property (nonatomic, strong) UIButton *scanRecoverButton;
 @property (nonatomic, strong) UILabel *historyLabel;
 @property (nonatomic, strong) UILabel *comparisonLabel;
 @property (nonatomic, strong) BLAnalyzerGraph *graph;
+@property (nonatomic, strong) UILabel *graphStatsLabel;
 @property (nonatomic, strong) UIButton *monitorButton;
 @property (nonatomic, strong) UIButton *readButton;
 @property (nonatomic, strong) NSTimer *timer;
+@property (nonatomic, strong) NSTimer *scanTimer;
 @property (nonatomic, assign) BOOL monitoring;
 @property (nonatomic, assign) BOOL requesting;
+@property (nonatomic, assign) BOOL scanRunning;
+@property (nonatomic, assign) BOOL recoveryRequired;
 @property (nonatomic, copy) NSArray<NSDictionary *> *history;
+@property (nonatomic, copy) NSArray<NSDictionary *> *currentMeasurements;
+@property (nonatomic, copy) NSString *lastPersistedScanID;
 @end
 
 @implementation BLAnalyzerViewController
@@ -122,8 +190,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
                      titleLabel:(UILabel * __strong *)outTitle {
     UIStackView *item = [self columnWithSpace:5];
     UILabel *heading = [self text:title size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
-    [item addArrangedSubview:heading];
     UILabel *value = [self text:@"—" size:22 color:UIColor.whiteColor weight:UIFontWeightBold];
+    [item addArrangedSubview:heading];
     [item addArrangedSubview:value];
     if (outLabel) *outLabel = value;
     if (outTitle) *outTitle = heading;
@@ -158,8 +226,6 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     [button setTitle:title forState:UIControlStateNormal];
     [button setImage:[UIImage systemImageNamed:symbol] forState:UIControlStateNormal];
     button.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    // The button's minimum-height constraint supplies generous touch area
-    // without deprecated contentEdgeInsets (Theos builds with -Werror).
     [button addTarget:self action:selector forControlEvents:UIControlEventTouchUpInside];
     [button.heightAnchor constraintGreaterThanOrEqualToConstant:48].active = YES;
     return button;
@@ -167,6 +233,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.manager = BLTelephonyManager.sharedManager;
     self.title = BLT(@"Analizador", @"Analyzer");
     self.view.backgroundColor = BLAnalyzerInk();
     self.navigationController.navigationBar.prefersLargeTitles = YES;
@@ -174,6 +241,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     self.navigationController.navigationBar.largeTitleTextAttributes = @{NSForegroundColorAttributeName: UIColor.whiteColor};
     self.navigationController.navigationBar.titleTextAttributes = @{NSForegroundColorAttributeName: UIColor.whiteColor};
     self.history = [self readHistory];
+    self.lastPersistedScanID = [NSUserDefaults.standardUserDefaults stringForKey:BLAnalyzerLastScanIDKey];
 
     self.scroll = [UIScrollView new];
     self.scroll.translatesAutoresizingMaskIntoConstraints = NO;
@@ -194,7 +262,9 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     ]];
 
     self.bandLabel = [self text:@"—" size:31 color:UIColor.whiteColor weight:UIFontWeightBold];
-    self.statusLabel = [self text:BLT(@"Sin lectura todavía", @"No reading yet")
+    self.qualityLabel = [self text:BLT(@"Sin datos", @"No data") size:15 color:BLAnalyzerTeal() weight:UIFontWeightBold];
+    self.networkDetailLabel = [self text:@"—" size:13 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
+    self.statusLabel = [self text:BLT(@"Buscando celda servidora…", @"Looking for serving cell…")
         size:12 color:BLAnalyzerTeal() weight:UIFontWeightMedium];
     UIStackView *metricRow = [UIStackView new];
     metricRow.axis = UILayoutConstraintAxisHorizontal;
@@ -202,90 +272,251 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     metricRow.spacing = 12;
     [metricRow addArrangedSubview:[self metricWithTitle:@"RSRP · dBm" valueLabel:&_rsrpLabel titleLabel:&_rsrpTitleLabel]];
     [metricRow addArrangedSubview:[self metricWithTitle:@"SNR · dB" valueLabel:&_snrLabel titleLabel:NULL]];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"SEÑAL ACTUAL", @"CURRENT SIGNAL")
-                                          children:@[self.bandLabel, self.statusLabel, metricRow]]];
-
     UIStackView *minorRow = [UIStackView new];
     minorRow.axis = UILayoutConstraintAxisHorizontal;
     minorRow.spacing = 12;
     minorRow.distribution = UIStackViewDistributionFillEqually;
     [minorRow addArrangedSubview:[self metricWithTitle:@"RSRQ · dB" valueLabel:&_rsrqLabel titleLabel:&_rsrqTitleLabel]];
     [minorRow addArrangedSubview:[self metricWithTitle:@"RSSI · dBm" valueLabel:&_rssiLabel titleLabel:NULL]];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"MÉTRICAS ADICIONALES", @"ADDITIONAL METRICS") children:@[minorRow]]];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"COBERTURA ACTUAL", @"CURRENT COVERAGE")
+        children:@[self.bandLabel, self.qualityLabel, self.networkDetailLabel, self.statusLabel, metricRow, minorRow]]];
 
-    self.readButton = [self action:BLT(@"Tomar lectura", @"Take reading") icon:@"waveform.path.ecg"
-                         selector:@selector(readTapped:) strong:YES];
-    self.monitorButton = [self action:BLT(@"Iniciar monitor", @"Start monitor") icon:@"play.circle.fill"
-                         selector:@selector(monitorTapped:) strong:NO];
-    UIStackView *actions = [self columnWithSpace:9];
-    [actions addArrangedSubview:self.readButton];
-    [actions addArrangedSubview:self.monitorButton];
-    [self.stack addArrangedSubview:actions];
+    self.cellsStack = [self columnWithSpace:9];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"CELDA SERVIDORA Y VECINAS", @"SERVING & NEIGHBOR CELLS")
+        children:@[self.cellsStack]]];
+
+    self.readButton = [self action:BLT(@"Actualizar ahora", @"Refresh now") icon:@"arrow.clockwise"
+                                selector:@selector(readTapped:) strong:YES];
+    self.monitorButton = [self action:BLT(@"Pausar monitor", @"Pause monitor") icon:@"pause.circle.fill"
+                                   selector:@selector(monitorTapped:) strong:NO];
+    UIStackView *liveActions = [UIStackView new];
+    liveActions.axis = UILayoutConstraintAxisHorizontal;
+    liveActions.distribution = UIStackViewDistributionFillEqually;
+    liveActions.spacing = 9;
+    [liveActions addArrangedSubview:self.readButton];
+    [liveActions addArrangedSubview:self.monitorButton];
+    [self.stack addArrangedSubview:liveActions];
+
+    self.scanTechnology = [[UISegmentedControl alloc] initWithItems:@[@"2G", @"3G", @"4G", @"5G"]];
+    self.scanTechnology.selectedSegmentIndex = 2;
+    self.scanTechnology.selectedSegmentTintColor = BLAnalyzerTeal();
+    [self.scanTechnology setTitleTextAttributes:@{NSForegroundColorAttributeName: BLAnalyzerInk(),
+                                                   NSFontAttributeName: [UIFont systemFontOfSize:13 weight:UIFontWeightBold]}
+                                        forState:UIControlStateSelected];
+    [self.scanTechnology setTitleTextAttributes:@{NSForegroundColorAttributeName: UIColor.whiteColor}
+                                        forState:UIControlStateNormal];
+    if (BLDeviceIsKnownLTEOnly()) [self.scanTechnology setEnabled:NO forSegmentAtIndex:3];
+    self.scanButton = [self action:BLT(@"Iniciar barrido de cobertura", @"Start coverage scan")
+                                 icon:@"antenna.radiowaves.left.and.right" selector:@selector(scanTapped:) strong:YES];
+    self.scanCancelButton = [self action:BLT(@"Cancelar y restaurar", @"Cancel & restore")
+                                       icon:@"xmark.circle" selector:@selector(scanCancelTapped:) strong:NO];
+    self.scanRecoverButton = [self action:BLT(@"Recuperar configuración original", @"Recover original configuration")
+                                        icon:@"arrow.uturn.backward.circle" selector:@selector(scanRecoverTapped:) strong:NO];
+    self.scanStatusLabel = [self text:BLT(@"Selecciona una tecnología para medir sus bandas.",
+                                              @"Choose a technology to measure its bands.")
+                                  size:13 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
+    self.scanRowsStack = [self columnWithSpace:9];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"BARRIDO POR TECNOLOGÍA", @"TECHNOLOGY SCAN")
+        children:@[self.scanTechnology, self.scanButton, self.scanCancelButton, self.scanRecoverButton,
+                   self.scanStatusLabel, self.scanRowsStack]]];
+    [self updateScanButtons];
 
     self.graph = [BLAnalyzerGraph new];
     self.graph.backgroundColor = UIColor.clearColor;
     self.graph.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.graph.heightAnchor constraintEqualToConstant:148].active = YES;
+    [self.graph.heightAnchor constraintEqualToConstant:160].active = YES;
+    self.graphStatsLabel = [self text:@"—" size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"EVOLUCIÓN DE SEÑAL", @"SIGNAL TREND")
-        children:@[self.graph]]];
+        children:@[self.graphStatsLabel, self.graph]]];
 
     self.comparisonLabel = [self text:@"—" size:14 color:UIColor.whiteColor weight:UIFontWeightMedium];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"COMPARATIVA", @"COMPARISON") children:@[self.comparisonLabel]]];
+    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"COMPARATIVA POR BANDA", @"BAND COMPARISON") children:@[self.comparisonLabel]]];
     self.historyLabel = [self text:@"—" size:13 color:UIColor.whiteColor weight:UIFontWeightRegular];
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"HISTORIAL", @"HISTORY") children:@[self.historyLabel]]];
 
-    UIButton *export = [self action:BLT(@"Compartir lecturas", @"Share readings") icon:@"square.and.arrow.up"
-                             selector:@selector(exportTapped:) strong:NO];
+    UIButton *export = [self action:BLT(@"Compartir mediciones", @"Share measurements") icon:@"square.and.arrow.up"
+                                  selector:@selector(exportTapped:) strong:NO];
     UIButton *clear = [self action:BLT(@"Borrar historial", @"Clear history") icon:@"trash"
-                            selector:@selector(clearTapped:) strong:NO];
+                                 selector:@selector(clearTapped:) strong:NO];
     [self.stack addArrangedSubview:export];
     [self.stack addArrangedSubview:clear];
+    [self rebuildMeasurementStack:self.cellsStack rows:@[] scan:NO];
+    [self rebuildMeasurementStack:self.scanRowsStack rows:@[] scan:YES];
     [self refreshHistoryUI];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self startMonitoring];
+    [self scanPoll:nil];
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
-    [self stopMonitoring];
+    [self.timer invalidate];
+    self.timer = nil;
+    [self.scanTimer invalidate];
+    self.scanTimer = nil;
 }
 
-- (void)dealloc { [self.timer invalidate]; }
+- (void)dealloc { [self.timer invalidate]; [self.scanTimer invalidate]; }
+
+- (UIView *)measurementCard:(NSDictionary *)row scan:(BOOL)scan {
+    UIView *card = [UIView new];
+    card.backgroundColor = [UIColor colorWithWhite:1 alpha:0.06];
+    card.layer.cornerRadius = 13;
+    UIStackView *body = [self columnWithSpace:5];
+    body.translatesAutoresizingMaskIntoConstraints = NO;
+    [card addSubview:body];
+    [NSLayoutConstraint activateConstraints:@[
+        [body.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:12],
+        [body.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-12],
+        [body.topAnchor constraintEqualToAnchor:card.topAnchor constant:10],
+        [body.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-10]
+    ]];
+    NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"";
+    NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
+    NSString *role = [row[@"role"] isEqualToString:@"neighbor"] ? BLT(@"VECINA", @"NEIGHBOR") : BLT(@"SERVIDORA", @"SERVING");
+    NSString *prefix = BLAnalyzerDisplayRAT(rat);
+    NSString *bandText = band ? [NSString stringWithFormat:@" %@%@", [rat isEqualToString:@"NR"] ? @"n" : @"B", band] : @"";
+    UILabel *title = [self text:[NSString stringWithFormat:@"%@ · %@%@", role, prefix, bandText]
+                             size:15 color:UIColor.whiteColor weight:UIFontWeightBold];
+    [body addArrangedSubview:title];
+    NSString *detail = BLAnalyzerBandDetail(rat, band);
+    if (detail.length) [body addArrangedSubview:[self text:detail size:12 color:BLAnalyzerMuted() weight:UIFontWeightMedium]];
+    NSMutableArray<NSString *> *metrics = [NSMutableArray array];
+    for (NSString *metric in @[@"rsrp", @"rscp", @"rssi", @"rsrq", @"ecno", @"snr"]) {
+        NSNumber *value = BLAnalyzerMetric(row[metric], metric);
+        if (!value) continue;
+        [metrics addObject:[NSString stringWithFormat:@"%@ %.1f %@", metric.uppercaseString,
+                            value.doubleValue, BLAnalyzerMetricUnit(metric)]];
+    }
+    if (metrics.count) {
+        UILabel *metricLabel = [self text:[metrics componentsJoinedByString:@"  ·  "] size:12
+                                    color:UIColor.whiteColor weight:UIFontWeightMedium];
+        metricLabel.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightMedium];
+        [body addArrangedSubview:metricLabel];
+    }
+    if (scan) {
+        NSDictionary *labels = @{
+            @"measured": BLT(@"Medida", @"Measured"),
+            @"measured_pre_sweep": BLT(@"Medida previa", @"Pre-sweep reading"),
+            @"detected": BLT(@"Registrada sin métrica", @"Registered without metric"),
+            @"no_signal": BLT(@"Sin señal", @"No signal"),
+            @"query_failed": BLT(@"Consulta fallida", @"Query failed"),
+            @"write_failed": BLT(@"No se pudo fijar", @"Could not lock"),
+            @"readback_unverified": BLT(@"Banda no verificada", @"Band not verified")
+        };
+        NSString *state = labels[row[@"status"]];
+        if (state.length) [body addArrangedSubview:[self text:state size:12 color:BLAnalyzerMuted() weight:UIFontWeightSemibold]];
+    } else if (BLAnalyzerPrimaryMetric(row)) {
+        [body addArrangedSubview:[self text:[NSString stringWithFormat:BLT(@"Calidad: %@", @"Quality: %@"), BLAnalyzerQuality(row)]
+                                     size:12 color:BLAnalyzerTeal() weight:UIFontWeightSemibold]];
+    }
+    return card;
+}
+
+- (void)rebuildMeasurementStack:(UIStackView *)stack rows:(NSArray<NSDictionary *> *)rows scan:(BOOL)scan {
+    for (UIView *view in [stack.arrangedSubviews copy]) { [stack removeArrangedSubview:view]; [view removeFromSuperview]; }
+    if (!rows.count) {
+        [stack addArrangedSubview:[self text:(scan ? BLT(@"Sin resultados todavía", @"No results yet")
+                                                   : BLT(@"No hay celdas con métricas disponibles", @"No cells with metrics available"))
+                                      size:13 color:BLAnalyzerMuted() weight:UIFontWeightMedium]];
+        return;
+    }
+    for (NSDictionary *row in rows) if ([row isKindOfClass:NSDictionary.class])
+        [stack addArrangedSubview:[self measurementCard:row scan:scan]];
+}
 
 - (NSArray<NSDictionary *> *)readHistory {
     id saved = [NSUserDefaults.standardUserDefaults objectForKey:BLAnalyzerHistoryKey];
     if (![saved isKindOfClass:NSArray.class]) return @[];
     NSMutableArray *safe = [NSMutableArray array];
     NSArray *input = (NSArray *)saved;
-    NSUInteger start = input.count > BLAnalyzerMaxSamples ? input.count - BLAnalyzerMaxSamples : 0;
+    NSUInteger start = input.count > BLAnalyzerMaxSamples ? input.count-BLAnalyzerMaxSamples : 0;
     for (NSUInteger i = start; i < input.count; i++) {
         NSDictionary *row = input[i];
         if (![row isKindOfClass:NSDictionary.class]) continue;
         NSNumber *band = row[@"band"], *timestamp = row[@"timestamp"];
         NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : @"LTE";
-        if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat] ||
-            ![timestamp isKindOfClass:NSNumber.class]) continue;
-        if (band && (![band isKindOfClass:NSNumber.class] ||
-            band.integerValue < 1 || band.integerValue > ([rat isEqual:@"NR"] ? 1024 : 256))) continue;
+        if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat] || ![timestamp isKindOfClass:NSNumber.class]) continue;
+        if (band && (![band isKindOfClass:NSNumber.class] || band.integerValue < 1 ||
+            band.integerValue > ([rat isEqualToString:@"NR"] ? 1024 : 256))) continue;
         NSMutableDictionary *clean = [@{@"timestamp": timestamp, @"rat": rat} mutableCopy];
         if (band) clean[@"band"] = band;
         for (NSString *name in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
             NSNumber *value = BLAnalyzerMetric(row[name], name);
             if (value) clean[name] = value;
         }
-        if (clean[@"rsrp"] || clean[@"rssi"] || clean[@"rscp"]) [safe addObject:clean];
+        for (NSString *name in @[@"source", @"role", @"scan_id"]) {
+            if ([row[name] isKindOfClass:NSString.class]) clean[name] = row[name];
+        }
+        if (BLAnalyzerPrimaryMetric(clean)) [safe addObject:clean];
     }
     return safe;
+}
+
+- (void)appendMeasurement:(NSDictionary *)row source:(NSString *)source scanID:(NSString *)scanID {
+    NSNumber *primary = BLAnalyzerPrimaryMetric(row);
+    NSString *rat = [row[@"rat"] isKindOfClass:NSString.class] ? row[@"rat"] : nil;
+    if (!primary || ![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat]) return;
+    NSMutableDictionary *saved = [@{@"timestamp": @([NSDate date].timeIntervalSince1970), @"rat": rat} mutableCopy];
+    if ([row[@"band"] isKindOfClass:NSNumber.class]) saved[@"band"] = row[@"band"];
+    for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
+        NSNumber *value = BLAnalyzerMetric(row[metric], metric);
+        if (value) saved[metric] = value;
+    }
+    if (source.length) saved[@"source"] = source;
+    if ([row[@"role"] isKindOfClass:NSString.class]) saved[@"role"] = row[@"role"];
+    if (scanID.length) saved[@"scan_id"] = scanID;
+    NSMutableArray *history = [self.history mutableCopy] ?: [NSMutableArray array];
+    [history addObject:saved];
+    if (history.count > BLAnalyzerMaxSamples) [history removeObjectsInRange:NSMakeRange(0, history.count-BLAnalyzerMaxSamples)];
+    self.history = history;
+    [NSUserDefaults.standardUserDefaults setObject:history forKey:BLAnalyzerHistoryKey];
+}
+
+- (void)updateCurrentFromMeasurement:(NSDictionary *)row {
+    NSString *rat = row[@"rat"];
+    NSNumber *band = [row[@"band"] isKindOfClass:NSNumber.class] ? row[@"band"] : nil;
+    NSString *prefix = BLAnalyzerDisplayRAT(rat);
+    self.bandLabel.text = band ? [NSString stringWithFormat:@"%@ · %@%@", prefix,
+        [rat isEqualToString:@"NR"] ? @"n" : @"B", band] : prefix;
+    self.qualityLabel.text = [NSString stringWithFormat:BLT(@"Calidad %@", @"%@ quality"), BLAnalyzerQuality(row)];
+    NSString *detail = BLAnalyzerBandDetail(rat, band);
+    self.networkDetailLabel.text = detail.length ? detail : BLT(@"Frecuencia no expuesta por CoreTelephony", @"Frequency not exposed by CoreTelephony");
+    BOOL g3 = [rat isEqualToString:@"3G"], g2 = [rat isEqualToString:@"2G"];
+    self.rsrpTitleLabel.text = g3 ? @"RSCP · dBm" : (g2 ? @"RSSI · dBm" : @"RSRP · dBm");
+    self.rsrqTitleLabel.text = g3 ? @"Ec/No · dB" : @"RSRQ · dB";
+    self.rsrpLabel.text = [self displayMetric:row[g3 ? @"rscp" : (g2 ? @"rssi" : @"rsrp")]];
+    self.snrLabel.text = [self displayMetric:row[@"snr"]];
+    self.rsrqLabel.text = [self displayMetric:row[g3 ? @"ecno" : @"rsrq"]];
+    self.rssiLabel.text = [self displayMetric:row[@"rssi"]];
+    self.statusLabel.text = @"";
+    self.statusLabel.hidden = YES;
+}
+
+- (NSDictionary *)preferredServingMeasurement:(NSArray<NSDictionary *> *)rows {
+    NSDictionary *best = nil;
+    for (NSDictionary *row in rows) {
+        if (![row isKindOfClass:NSDictionary.class] || ![row[@"role"] isEqualToString:@"serving"] || !BLAnalyzerPrimaryMetric(row)) continue;
+        if ([row[@"rat"] isEqualToString:@"NR"]) return row;
+        if ([row[@"rat"] isEqualToString:@"LTE"] && [row[@"source"] isEqualToString:@"typed"]) best = row;
+        else if (!best) best = row;
+    }
+    return best;
 }
 
 - (void)readTapped:(UIButton *)sender { [self takeReading]; }
 
 - (void)takeReading {
-    if (self.requesting || BLTelephonyManager.sharedManager.busy) return;
+    if (self.requesting || self.manager.busy || self.scanRunning || self.recoveryRequired) return;
     self.requesting = YES;
     self.readButton.enabled = NO;
     self.statusLabel.hidden = NO;
-    self.statusLabel.text = BLT(@"Consultando señal…", @"Reading signal…");
+    self.statusLabel.text = BLT(@"Actualizando cobertura…", @"Refreshing coverage…");
     __weak typeof(self) weakSelf = self;
-    [BLTelephonyManager.sharedManager signalProbeWithCompletion:^(NSDictionary *result) {
+    [self.manager signalProbeWithCompletion:^(NSDictionary *result) {
         BLAnalyzerViewController *strongSelf = weakSelf;
         if (!strongSelf) return;
         strongSelf.requesting = NO;
@@ -295,60 +526,16 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
             return;
         }
         NSArray *rows = [result[@"measurements"] isKindOfClass:NSArray.class] ? result[@"measurements"] : @[];
-        NSDictionary *typed = nil;
-        BOOL supportsNR = [result[@"supports_nr"] boolValue];
-        for (id candidate in rows) {
-            if (![candidate isKindOfClass:NSDictionary.class]) continue;
-            NSDictionary *row = candidate;
-            NSNumber *band = row[@"band"];
-            BOOL lte = [row[@"rat"] isEqual:@"LTE"];
-            BOOL nr = supportsNR && [row[@"rat"] isEqual:@"NR"];
-            BOOL legacy = [row[@"rat"] isEqual:@"2G"] || [row[@"rat"] isEqual:@"3G"];
-            if (![row[@"role"] isEqual:@"serving"] || !(lte || nr || legacy) ||
-                (band && (![band isKindOfClass:NSNumber.class] ||
-                    band.integerValue < 1 || band.integerValue > (nr ? 1024 : 256)))) continue;
-            // LTE needs a typed sample. 5G may be an explicitly identified
-            // serving NR row with validated (non-placeholder) legacy metrics.
-            if (lte && ![row[@"source"] isEqual:@"typed"]) continue;
-            if (BLAnalyzerMetric(row[@"rsrp"], @"rsrp") ||
-                BLAnalyzerMetric(row[@"rssi"], @"rssi") ||
-                BLAnalyzerMetric(row[@"rscp"], @"rscp")) {
-                if (!typed || nr) typed = row;
-                if (nr) break; // Prefer an actual NR serving cell when available.
-            }
-        }
-        if (!typed) {
-            strongSelf.statusLabel.text = BLT(@"Sin mediciones", @"No measurements");
+        strongSelf.currentMeasurements = rows;
+        [strongSelf rebuildMeasurementStack:strongSelf.cellsStack rows:rows scan:NO];
+        NSDictionary *serving = [strongSelf preferredServingMeasurement:rows];
+        if (!serving) {
+            strongSelf.statusLabel.hidden = NO;
+            strongSelf.statusLabel.text = BLT(@"Sin celda servidora con métricas válidas", @"No serving cell with valid metrics");
             return;
         }
-        NSMutableDictionary *saved = [@{@"timestamp": @([NSDate date].timeIntervalSince1970),
-                                          @"rat": typed[@"rat"]} mutableCopy];
-        if (typed[@"band"]) saved[@"band"] = typed[@"band"];
-        for (NSString *metric in @[@"rsrp", @"rsrq", @"rssi", @"snr", @"rscp", @"ecno"]) {
-            NSNumber *value = BLAnalyzerMetric(typed[metric], metric);
-            if (value) saved[metric] = value;
-        }
-        NSMutableArray *history = [strongSelf.history mutableCopy];
-        [history addObject:saved];
-        if (history.count > BLAnalyzerMaxSamples)
-            [history removeObjectsInRange:NSMakeRange(0, history.count-BLAnalyzerMaxSamples)];
-        strongSelf.history = history;
-        [NSUserDefaults.standardUserDefaults setObject:history forKey:BLAnalyzerHistoryKey];
-        NSString *rat = saved[@"rat"];
-        NSString *prefix = [rat isEqual:@"NR"] ? @"5G" : ([rat isEqual:@"LTE"] ? @"4G" : rat);
-        strongSelf.bandLabel.text = saved[@"band"]
-            ? [NSString stringWithFormat:@"%@ · %@%@", prefix,
-                [rat isEqual:@"NR"] ? @"n" : @"B", saved[@"band"]]
-            : prefix;
-        BOOL g3 = [rat isEqual:@"3G"], g2 = [rat isEqual:@"2G"];
-        strongSelf.rsrpTitleLabel.text = g3 ? @"RSCP · dBm" : (g2 ? @"RSSI · dBm" : @"RSRP · dBm");
-        strongSelf.rsrqTitleLabel.text = g3 ? @"Ec/No · dB" : @"RSRQ · dB";
-        strongSelf.rsrpLabel.text = [strongSelf displayMetric:saved[g3 ? @"rscp" : (g2 ? @"rssi" : @"rsrp")]];
-        strongSelf.snrLabel.text = [strongSelf displayMetric:saved[@"snr"]];
-        strongSelf.rsrqLabel.text = [strongSelf displayMetric:saved[g3 ? @"ecno" : @"rsrq"]];
-        strongSelf.rssiLabel.text = [strongSelf displayMetric:saved[@"rssi"]];
-        strongSelf.statusLabel.text = @"";
-        strongSelf.statusLabel.hidden = YES;
+        [strongSelf updateCurrentFromMeasurement:serving];
+        [strongSelf appendMeasurement:serving source:@"live" scanID:nil];
         [strongSelf refreshHistoryUI];
     }];
 }
@@ -358,23 +545,153 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
 }
 
 - (void)monitorTapped:(UIButton *)sender {
-    if (self.monitoring) { [self stopMonitoring]; return; }
-    self.monitoring = YES;
-    [self.monitorButton setTitle:BLT(@"Detener monitor", @"Stop monitor") forState:UIControlStateNormal];
-    [self.monitorButton setImage:[UIImage systemImageNamed:@"stop.circle.fill"] forState:UIControlStateNormal];
-    [self takeReading];
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:12 target:self selector:@selector(monitorTick:)
-                                               userInfo:nil repeats:YES];
+    if (self.monitoring) [self stopMonitoring]; else [self startMonitoring];
 }
 
-- (void)monitorTick:(NSTimer *)timer { if (!self.requesting) [self takeReading]; }
+- (void)startMonitoring {
+    self.monitoring = YES;
+    [self.monitorButton setTitle:BLT(@"Pausar monitor", @"Pause monitor") forState:UIControlStateNormal];
+    [self.monitorButton setImage:[UIImage systemImageNamed:@"pause.circle.fill"] forState:UIControlStateNormal];
+    if (!self.timer) self.timer = [NSTimer scheduledTimerWithTimeInterval:6.0 target:self selector:@selector(monitorTick:) userInfo:nil repeats:YES];
+    [self takeReading];
+}
+
+- (void)monitorTick:(NSTimer *)timer { if (self.monitoring && !self.requesting) [self takeReading]; }
 
 - (void)stopMonitoring {
     [self.timer invalidate];
     self.timer = nil;
     self.monitoring = NO;
-    [self.monitorButton setTitle:BLT(@"Iniciar monitor", @"Start monitor") forState:UIControlStateNormal];
+    [self.monitorButton setTitle:BLT(@"Reanudar monitor", @"Resume monitor") forState:UIControlStateNormal];
     [self.monitorButton setImage:[UIImage systemImageNamed:@"play.circle.fill"] forState:UIControlStateNormal];
+}
+
+- (NSString *)selectedScanRAT {
+    NSArray *rats = @[@"2G", @"3G", @"LTE", @"NR"];
+    NSInteger index = self.scanTechnology.selectedSegmentIndex;
+    return index >= 0 && index < (NSInteger)rats.count ? rats[(NSUInteger)index] : @"LTE";
+}
+
+- (void)scanTapped:(UIButton *)sender {
+    if (self.scanRunning || self.recoveryRequired || self.manager.busy) return;
+    NSString *rat = [self selectedScanRAT];
+    if ([rat isEqualToString:@"NR"] && BLDeviceIsKnownLTEOnly()) {
+        [self showAlert:BLT(@"Este iPhone no dispone de módem 5G.", @"This iPhone has no 5G modem.")];
+        return;
+    }
+    NSString *display = BLAnalyzerDisplayRAT(rat);
+    NSString *warning = [NSString stringWithFormat:BLT(
+        @"El Analizador usará Auto como punto de retorno, cambiará temporalmente a %@ y probará las bandas que expone el módem. Puedes perder llamadas o datos mientras mide. Las bandas sin registro se marcarán como sin señal; no se inventarán métricas. ¿Iniciar?",
+        @"Analyzer will use Auto as the return point, temporarily switch to %@ and try the bands exposed by the modem. Calls or data may drop while measuring. Unregistered bands will be marked as no signal; metrics will never be invented. Start?"), display];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:BLT(@"Barrido %@", @"%@ scan"), display]
+                                                                    message:warning preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    __weak typeof(self) weakSelf = self;
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Iniciar", @"Start") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+        BLAnalyzerViewController *strongSelf = weakSelf;
+        if (!strongSelf) return;
+        strongSelf.scanStatusLabel.text = BLT(@"Preparando Auto como punto de retorno…", @"Preparing Auto as return point…");
+        [strongSelf.manager setNetworkModeAutomatic:^(BOOL success, NSString *message) {
+            BLAnalyzerViewController *modeSelf = weakSelf;
+            if (!modeSelf) return;
+            if (!success) { [modeSelf showAlert:message ?: BLT(@"No se pudo preparar Auto.", @"Could not prepare Auto.")]; return; }
+            [modeSelf.manager startTechnologySignalScanForRAT:rat completion:^(NSDictionary *result) {
+                BLAnalyzerViewController *scanSelf = weakSelf;
+                if (!scanSelf) return;
+                if (![result[@"success"] boolValue]) {
+                    [scanSelf showAlert:[result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"Scan did not start"];
+                    return;
+                }
+                scanSelf.scanRunning = YES;
+                scanSelf.recoveryRequired = NO;
+                scanSelf.scanStatusLabel.text = result[@"message"] ?: @"Scan started";
+                [scanSelf updateScanButtons];
+                [scanSelf startScanPolling];
+            }];
+        }];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)scanCancelTapped:(UIButton *)sender {
+    if (!self.scanRunning || self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager cancelSignalScanWithCompletion:^(NSDictionary *result) {
+        weakSelf.scanStatusLabel.text = result[@"message"] ?: BLT(@"Cancelación solicitada", @"Cancellation requested");
+        [weakSelf startScanPolling];
+    }];
+}
+
+- (void)scanRecoverTapped:(UIButton *)sender {
+    if (self.scanRunning || self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager recoverSignalScanWithCompletion:^(NSDictionary *result) {
+        weakSelf.scanStatusLabel.text = result[@"message"] ?: BLT(@"Recuperación solicitada", @"Recovery requested");
+        [weakSelf startScanPolling];
+    }];
+}
+
+- (void)startScanPolling {
+    if (!self.scanTimer) self.scanTimer = [NSTimer scheduledTimerWithTimeInterval:2.5 target:self selector:@selector(scanPoll:) userInfo:nil repeats:YES];
+    [self scanPoll:nil];
+}
+
+- (void)scanPoll:(NSTimer *)timer {
+    if (self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager signalScanStatusWithCompletion:^(NSDictionary *status) {
+        BLAnalyzerViewController *strongSelf = weakSelf;
+        if (!strongSelf || ![status[@"phase"] isKindOfClass:NSString.class]) return;
+        strongSelf.scanRunning = [status[@"running"] boolValue];
+        strongSelf.recoveryRequired = [status[@"recovery_required"] boolValue];
+        NSString *message = [status[@"message"] isKindOfClass:NSString.class] ? status[@"message"] : @"";
+        NSNumber *completed = [status[@"completed"] isKindOfClass:NSNumber.class] ? status[@"completed"] : nil;
+        NSNumber *total = [status[@"total"] isKindOfClass:NSNumber.class] ? status[@"total"] : nil;
+        if (completed && total && total.integerValue > 0) {
+            strongSelf.scanStatusLabel.text = [NSString stringWithFormat:@"%@\n%@ %ld/%ld", message,
+                BLT(@"Progreso", @"Progress"), (long)completed.integerValue, (long)total.integerValue];
+        } else if (message.length) strongSelf.scanStatusLabel.text = message;
+        NSArray *rows = [status[@"rows"] isKindOfClass:NSArray.class] ? status[@"rows"] : @[];
+        [strongSelf rebuildMeasurementStack:strongSelf.scanRowsStack rows:rows scan:YES];
+        [strongSelf persistCompletedScanIfNeeded:status rows:rows];
+        [strongSelf updateScanButtons];
+        if (!strongSelf.scanRunning && !strongSelf.recoveryRequired) {
+            [strongSelf.scanTimer invalidate];
+            strongSelf.scanTimer = nil;
+            if (strongSelf.monitoring) [strongSelf takeReading];
+        }
+    }];
+}
+
+- (void)persistCompletedScanIfNeeded:(NSDictionary *)status rows:(NSArray<NSDictionary *> *)rows {
+    NSString *phase = status[@"phase"];
+    NSString *scanID = [status[@"scan_id"] isKindOfClass:NSString.class] ? status[@"scan_id"] : nil;
+    if (!scanID.length || [scanID isEqualToString:self.lastPersistedScanID] ||
+        !([phase isEqualToString:@"complete"] || [phase isEqualToString:@"observation_complete"])) return;
+    BOOL added = NO;
+    for (NSDictionary *row in rows) {
+        if (![row isKindOfClass:NSDictionary.class] || !BLAnalyzerPrimaryMetric(row)) continue;
+        [self appendMeasurement:row source:@"scan" scanID:scanID];
+        added = YES;
+    }
+    self.lastPersistedScanID = scanID;
+    [NSUserDefaults.standardUserDefaults setObject:scanID forKey:BLAnalyzerLastScanIDKey];
+    if (added) [self refreshHistoryUI];
+}
+
+- (void)updateScanButtons {
+    self.scanTechnology.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
+    self.scanButton.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
+    self.scanCancelButton.hidden = !self.scanRunning;
+    self.scanCancelButton.enabled = self.scanRunning && !self.manager.busy;
+    self.scanRecoverButton.hidden = !self.recoveryRequired;
+    self.scanRecoverButton.enabled = self.recoveryRequired && !self.scanRunning && !self.manager.busy;
+}
+
+- (void)showAlert:(NSString *)message {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"BandLock" message:message ?: @"" preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Aceptar", @"OK") style:UIAlertActionStyleDefault handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)refreshHistoryUI {
@@ -382,6 +699,7 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     if (!count) {
         self.historyLabel.text = BLT(@"Sin lecturas", @"No readings");
         self.comparisonLabel.text = BLT(@"Sin datos", @"No data");
+        self.graphStatsLabel.text = @"—";
         self.graph.samples = @[];
         return;
     }
@@ -389,41 +707,51 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
     formatter.dateStyle = NSDateFormatterNoStyle;
     formatter.timeStyle = NSDateFormatterShortStyle;
     NSMutableArray<NSString *> *lines = [NSMutableArray array];
-    NSInteger start = MAX((NSInteger)count-8, 0);
+    NSInteger start = MAX((NSInteger)count-10, 0);
     for (NSInteger index = (NSInteger)count-1; index >= start; index--) {
         NSDictionary *item = self.history[(NSUInteger)index];
         NSDate *date = [NSDate dateWithTimeIntervalSince1970:[item[@"timestamp"] doubleValue]];
-        NSString *metric = [item[@"rat"] isEqual:@"3G"] ? @"rscp" :
-            ([item[@"rat"] isEqual:@"2G"] ? @"rssi" : @"rsrp");
-        NSString *power = item[metric] ? [NSString stringWithFormat:@"%@ dBm", [self displayMetric:item[metric]]] : @"—";
-        NSString *bandName = item[@"band"] ?
-            [NSString stringWithFormat:@"%@%@", [item[@"rat"] isEqual:@"NR"] ? @"n" : @"B", item[@"band"]] :
-            (item[@"rat"] ?: @"—");
-        [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %@",
-            [formatter stringFromDate:date], bandName, power]];
+        NSNumber *power = BLAnalyzerPrimaryMetric(item);
+        NSString *rat = item[@"rat"] ?: @"LTE";
+        NSString *bandName = item[@"band"] ? [NSString stringWithFormat:@"%@ %@%@", BLAnalyzerDisplayRAT(rat),
+            [rat isEqualToString:@"NR"] ? @"n" : @"B", item[@"band"]] : BLAnalyzerDisplayRAT(rat);
+        NSString *source = [item[@"source"] isEqualToString:@"scan"] ? BLT(@"barrido", @"scan") : BLT(@"vivo", @"live");
+        [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %.1f dBm · %@ · %@",
+            [formatter stringFromDate:date], bandName, power.doubleValue, BLAnalyzerQuality(item), source]];
     }
     self.historyLabel.text = [lines componentsJoinedByString:@"\n"];
-    NSUInteger chartStart = count > 40 ? count-40 : 0;
-    // A single trace is for the last naturally observed band only: do not join
-    // unrelated serving-cell/band measurements into a fabricated signal trend.
+
+    NSUInteger chartStart = count > 61 ? count-61 : 0;
     NSNumber *latestBand = self.history.lastObject[@"band"];
     NSString *latestRAT = self.history.lastObject[@"rat"] ?: @"LTE";
     NSMutableArray *sameBand = [NSMutableArray array];
     for (NSUInteger i = chartStart; i < count; i++) {
         NSDictionary *sample = self.history[i];
-        if (latestBand && [sample[@"band"] isEqual:latestBand] &&
-            [(sample[@"rat"] ?: @"LTE") isEqual:latestRAT]) [sameBand addObject:sample];
+        if (latestBand && [sample[@"band"] isEqual:latestBand] && [(sample[@"rat"] ?: @"LTE") isEqual:latestRAT]) [sameBand addObject:sample];
     }
     self.graph.samples = sameBand;
+    if (sameBand.count) {
+        double minValue = DBL_MAX, maxValue = -DBL_MAX, sum = 0;
+        NSUInteger valid = 0;
+        for (NSDictionary *sample in sameBand) {
+            NSNumber *value = BLAnalyzerPrimaryMetric(sample);
+            if (!value) continue;
+            minValue = MIN(minValue, value.doubleValue);
+            maxValue = MAX(maxValue, value.doubleValue);
+            sum += value.doubleValue;
+            valid++;
+        }
+        self.graphStatsLabel.text = valid ? [NSString stringWithFormat:
+            BLT(@"Últimas %lu · mín %.1f · media %.1f · máx %.1f dBm",
+                @"Last %lu · min %.1f · avg %.1f · max %.1f dBm"),
+            (unsigned long)valid, minValue, sum/valid, maxValue] : @"—";
+    } else self.graphStatsLabel.text = @"—";
 
     NSMutableDictionary<NSString *, NSMutableDictionary *> *groups = [NSMutableDictionary dictionary];
     for (NSDictionary *sample in self.history) {
+        NSNumber *value = BLAnalyzerPrimaryMetric(sample), *band = sample[@"band"];
         NSString *rat = sample[@"rat"] ?: @"LTE";
-        NSString *metric = [rat isEqual:@"3G"] ? @"rscp" : ([rat isEqual:@"2G"] ? @"rssi" : @"rsrp");
-        NSNumber *value = BLAnalyzerMetric(sample[metric], metric);
-        if (!value) continue;
-        NSNumber *band = sample[@"band"];
-        if (!band) continue; // Different cells cannot be compared by a fake band.
+        if (!value || !band) continue;
         NSString *key = [NSString stringWithFormat:@"%@:%@", rat, band];
         NSMutableDictionary *group = groups[key];
         if (!group) { group = [@{@"sum": @0.0, @"count": @0} mutableCopy]; groups[key] = group; }
@@ -431,25 +759,23 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
         group[@"count"] = @([group[@"count"] integerValue]+1);
     }
     NSMutableArray *comparison = [NSMutableArray array];
-    NSArray *sorted = [groups.allKeys sortedArrayUsingSelector:@selector(compare:)];
-    for (NSString *key in sorted) {
+    for (NSString *key in [groups.allKeys sortedArrayUsingSelector:@selector(compare:)]) {
         NSDictionary *group = groups[key];
         NSInteger n = [group[@"count"] integerValue];
         if (!n) continue;
         NSArray *parts = [key componentsSeparatedByString:@":"];
-        NSString *display = [NSString stringWithFormat:@"%@ %@%@",
-            [parts.firstObject isEqual:@"NR"] ? @"5G" : ([parts.firstObject isEqual:@"LTE"] ? @"4G" : parts.firstObject),
-            [parts.firstObject isEqual:@"NR"] ? @"n" : @"B", parts.lastObject];
-        [comparison addObject:[NSString stringWithFormat:@"%@   %.1f dBm · %ld %@",
-            display, [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
+        NSString *rat = parts.firstObject;
+        NSString *display = [NSString stringWithFormat:@"%@ %@%@", BLAnalyzerDisplayRAT(rat),
+            [rat isEqualToString:@"NR"] ? @"n" : @"B", parts.lastObject];
+        [comparison addObject:[NSString stringWithFormat:@"%@   %.1f dBm · %ld %@", display,
+            [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
     }
-    self.comparisonLabel.text = comparison.count ? [comparison componentsJoinedByString:@"\n"] :
-        BLT(@"Sin datos", @"No data");
+    self.comparisonLabel.text = comparison.count ? [comparison componentsJoinedByString:@"\n"] : BLT(@"Sin datos", @"No data");
 }
 
 - (void)exportTapped:(UIButton *)sender {
     if (!self.history.count) return;
-    NSDictionary *safe = @{@"schema": @"bandlock.cell-signal-history.v2", @"measurements": self.history};
+    NSDictionary *safe = @{@"schema": @"bandlock.cell-signal-history.v3", @"measurements": self.history};
     NSData *data = [NSJSONSerialization dataWithJSONObject:safe options:NSJSONWritingPrettyPrinted error:nil];
     if (!data) return;
     NSString *text = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -462,8 +788,8 @@ static NSNumber *BLAnalyzerMetric(id candidate, NSString *name) {
 
 - (void)clearTapped:(UIButton *)sender {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Borrar historial", @"Clear history")
-       message:BLT(@"Se eliminarán todas las muestras guardadas en este iPhone.",
-                   @"All locally stored samples will be removed from this iPhone.") preferredStyle:UIAlertControllerStyleAlert];
+       message:BLT(@"Se eliminarán todas las mediciones guardadas en este iPhone.",
+                   @"All locally stored measurements will be removed from this iPhone.") preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
     __weak typeof(self) weakSelf = self;
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Borrar", @"Clear") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {

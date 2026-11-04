@@ -513,42 +513,14 @@
         subtitle:nil symbol:@"wrench.and.screwdriver" views:@[field]];
     [self.stackView addArrangedSubview:toolsCard];
 
-    UIButton *probe = [self buttonWithTitle:BLT(@"Consultar intensidad", @"Read signal")
-                                     symbol:@"waveform.path.ecg" selector:@selector(signalProbeTapped:) destructive:NO];
-    self.signalStartButton = [self buttonWithTitle:BLT(@"Medir señal de bandas (2 LTE, PRUEBA)", @"Measure band signal (2 LTE, TEST)")
-                                              symbol:@"antenna.radiowaves.left.and.right" selector:@selector(signalScanStartTapped:) destructive:NO];
-    NSMutableArray<UIButton *> *technologyButtons = [NSMutableArray array];
-    NSArray<NSString *> *technologyLabels = @[
-        BLT(@"Barrido 2G · GSM/EDGE", @"2G scan · GSM/EDGE"),
-        BLT(@"Barrido 3G · UMTS/HSPA", @"3G scan · UMTS/HSPA"),
-        BLT(@"Barrido 4G · LTE", @"4G scan · LTE"),
-        BLT(@"Barrido 5G · NR", @"5G scan · NR")];
-    for (NSUInteger i = 0; i < technologyLabels.count; i++) {
-        UIButton *option = [self buttonWithTitle:technologyLabels[i]
-                   symbol:@"waveform.path" selector:@selector(signalObserveTapped:) destructive:NO];
-        option.tag = (NSInteger)i + 2;
-        [technologyButtons addObject:option];
-    }
-    self.signalObserveButtons = technologyButtons;
-    self.signalCancelButton = [self buttonWithTitle:BLT(@"Cancelar barrido y restaurar", @"Cancel scan and restore")
-                                               symbol:@"xmark.circle" selector:@selector(signalScanCancelTapped:) destructive:YES];
+    // Coverage measurements, live cells and technology scans now live in the
+    // Analyzer tab. Control keeps only the emergency recovery action so a
+    // pending journal can always be resolved even if Analyzer is unavailable.
     UIButton *restore = [self buttonWithTitle:BLT(@"Recuperar bandas originales", @"Recover original bands")
                                        symbol:@"arrow.uturn.backward.circle" selector:@selector(signalScanRecoverTapped:) destructive:NO];
-    self.signalValue = [self valueLabel];
-    self.signalValue.textAlignment = NSTextAlignmentLeft;
-    self.signalValue.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightRegular];
-    self.signalValue.text = BLT(@"Consulta la señal o inicia un barrido por tecnología.",
-                                @"Read signal or start a technology scan.");
-    NSMutableArray<UIView *> *diagnostics = [NSMutableArray arrayWithObject:probe];
-    [diagnostics addObjectsFromArray:self.signalObserveButtons];
-    [diagnostics addObject:self.signalStartButton];
-    [diagnostics addObject:self.signalValue];
-    self.signalSection = [self disclosure:BLT(@"Diagnóstico", @"Diagnostics")
-        subtitle:nil symbol:@"waveform.path" views:diagnostics];
-    [self.stackView addArrangedSubview:self.signalSection];
     self.safetySection = [self disclosure:BLT(@"Restauración y seguridad", @"Recovery and safety")
         subtitle:nil
-        symbol:@"cross.case" views:@[restorePrevious, restoreAll, self.signalCancelButton, restore]];
+        symbol:@"cross.case" views:@[restorePrevious, restoreAll, restore]];
     [self.stackView addArrangedSubview:self.safetySection];
 
 }

@@ -10,24 +10,24 @@ const scanHeader = read('daemon/BLRHSignalScan.h');
 const prerm = read('layout/DEBIAN/prerm');
 const app = read('app/BLControlViewController.m');
 const manager = read('app/BLTelephonyManager.m');
+const analyzer = read('app/BLAnalyzerViewController.m');
 const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui14$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui15$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
 assert.match(main, /jbroot\(@"\/tmp\/com\.gokuencinar\.bandlockd\.sock"\)/);
 assert.match(manager, /BLRootHidePhysicalRootFromEnvironment/);
 assert.match(manager, /signalProbeWithCompletion:/);
-assert.match(app, /Consultar intensidad/);
-assert.doesNotMatch(app, /Consultar intensidad \(RootHide\)/);
-assert.match(app, /signalProbeTapped:/);
-assert.match(app, /signalScanStartTapped:/);
-assert.match(app, /signalScanCancelTapped:/);
-assert.match(app, /Barrido 2G/);
-assert.match(app, /signalObserveTapped:/);
+assert.match(analyzer, /Actualizar ahora/);
+assert.match(analyzer, /signalProbeWithCompletion:/);
+assert.match(analyzer, /scanTapped:/);
+assert.match(analyzer, /scanCancelTapped:/);
+assert.match(analyzer, /initWithItems:@\[@"2G", @"3G", @"4G", @"5G"\]/);
+assert.doesNotMatch(app, /disclosure:BLT\(@"Diagnóstico"/);
 assert.match(manager, /startPassiveSignalObservationForRAT:/);
 assert.match(main, /scan_observe_start/);
 assert.match(scanHeader, /startPassiveObservationWithManager:/);
@@ -57,6 +57,7 @@ assert.match(passive, /@"read_only": @YES/);
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|BLScanWriteJournal|setRatSelection|setActiveBandInfo/,
   'Passive mode must never mutate radio selection or write recovery journal');
 assert.match(app, /signalScanRecoverTapped:/);
+assert.match(analyzer, /scanRecoverTapped:/);
 assert.match(core, /descriptorWithSubscriptionContext:/);
 assert.match(core, /getSignalStrengthMeasurements:error:/);
 assert.match(core, /getRatSelectionMask:error:/);
@@ -165,25 +166,30 @@ assert.doesNotMatch(probe, /setActiveBandInfo|writeLTEBands|writeNRBands|setRatS
 assert.doesNotMatch(probe, /@"(uuid|slotID|cellId|PCI|MCC|MNC|TAC|EARFCN|NRARFCN)"/);
 console.log('RootHide experimental two-band scan regression checks: PASS');
 
-// UI analyzer should never include a radio-modifying client action or private identifiers.
-const analyzer = read('app/BLAnalyzerViewController.m');
+// Analyzer owns signal measurement and the guarded technology-scan workflow,
+// but it must never bypass the manager with direct modem writes or store cell IDs.
 const delegate = read('app/BLAppDelegate.m');
 assert.match(read('app/Makefile'), /BLAnalyzerViewController\.m/);
 assert.match(delegate, /BLAnalyzerViewController/);
 assert.match(delegate, /@\[controlNav, analyzerNav, countriesNav, infoNav\]/);
 assert.match(analyzer, /signalProbeWithCompletion:/);
-assert.match(analyzer, /scheduledTimerWithTimeInterval:12/);
+assert.match(analyzer, /scheduledTimerWithTimeInterval:6\.0/);
 assert.match(analyzer, /BLAnalyzerMaxSamples = 300/);
-assert.match(analyzer, /@"source"\] isEqual:@"typed"/);
-assert.match(analyzer, /@"rat"\] isEqual:@"LTE"/);
-assert.match(analyzer, /@"rat"\] isEqual:@"NR"/);
-assert.match(analyzer, /@"role"\] isEqual:@"serving"/);
+assert.match(analyzer, /row\[@"source"\] isEqualToString:@"typed"/);
+assert.match(analyzer, /\[rat isEqualToString:@"LTE"\]/);
+assert.match(analyzer, /\[rat isEqualToString:@"NR"\]/);
+assert.match(analyzer, /row\[@"role"\] isEqualToString:@"serving"/);
 assert.match(analyzer, /viewWillDisappear:/);
 assert.match(analyzer, /stopMonitoring/);
 assert.match(analyzer, /removeObjectForKey:BLAnalyzerHistoryKey/);
 assert.match(analyzer, /NSJSONSerialization/);
-assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|startSignalScan|startPassiveSignalObservation|setNetworkMode|applyPendingBands|scan_start|scan_recover|setRatSelectionSync)\b|@"(?:imsi|imei|cellId|subscriptionUUID)"/i,
-  'Analyzer may only request typed passive signal, never mutate the modem or store private cell IDs');
+assert.match(analyzer, /startTechnologySignalScanForRAT:rat/);
+assert.match(analyzer, /setNetworkModeAutomatic:/);
+assert.match(analyzer, /signalScanStatusWithCompletion:/);
+assert.match(analyzer, /cancelSignalScanWithCompletion:/);
+assert.match(analyzer, /recoverSignalScanWithCompletion:/);
+assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|applyPendingBands|applyBands|setRatSelectionSync)\b|@"(?:imsi|imei|cellId|subscriptionUUID|PCI|MCC|MNC|TAC|EARFCN|NRARFCN)"/i,
+  'Analyzer may orchestrate guarded scans, but must not directly write the modem or persist private cell IDs');
 assert.match(control, /firmware \(<= 18\.99\)/,
   'Experimental preview must explicitly recognize firmware 18.7.1');
 assert.match(main, /operatingSystemVersion\.majorVersion >= 18/);
@@ -207,9 +213,11 @@ for (const file of [
   assert.match(source, /didSelectRowAtIndexPath:/);
 }
 assert.match(app, /@interface BLControlDisclosure : UIView/);
-for (const title of ['Modo de red', 'Detalles de red', 'Restauración y seguridad', 'Diagnóstico']) {
+for (const title of ['Modo de red', 'Detalles de red', 'Restauración y seguridad']) {
   assert.ok(app.includes('disclosure:BLT(@"' + title + '"'), title + ' must be collapsible');
 }
+assert.doesNotMatch(app, /disclosure:BLT\(@"Diagnóstico"/,
+  'Coverage diagnostics must live in Analyzer, not be duplicated in Control');
 assert.match(app, /openAnalyzerTapped:/);
 assert.match(app, /self\.applyLTEButton\.hidden = NO/);
 assert.match(app, /self\.signalStartButton\.hidden = readOnly18/);
@@ -235,10 +243,10 @@ console.log('BandLock rhui4 concise UI and truncated header regression: PASS');
 assert.doesNotMatch(analyzer, /Solo se guardan fecha|Only time, band and valid|Observa\. Compara\. Entiende\.|Observe\. Compare\. Understand\./);
 assert.doesNotMatch(analyzer, /Gráfica de muestras válidas|Graph of valid samples|CoreTelephony · Tipado · Lectura pasiva/);
 assert.doesNotMatch(analyzer, /Mediciones LTE pasivas · Sin modificar|Passive LTE measurements · No band/);
-assert.match(analyzer, /strongSelf\.statusLabel\.hidden = YES/);
+assert.match(analyzer, /self\.statusLabel\.hidden = YES/);
 assert.match(analyzer, /self\.statusLabel\.hidden = NO/);
 assert.match(analyzer, /BLAnalyzerHistoryKey/);
-assert.match(analyzer, /BLAnalyzerMetric\(typed\[metric\], metric\)/);
+assert.match(analyzer, /appendMeasurement:serving source:@"live"/);
 assert.match(analyzer, /\[self stopMonitoring\]/);
 const countries = read('app/BLCountriesViewController.m');
 assert.match(countries, /LTE: %lu · 5G: %lu/);
@@ -312,10 +320,10 @@ assert.match(scan, /#import "\.\.\/\.\.\/BLHardwareCapabilities\.h"/);
 assert.match(passive, /\(\[rat isEqualToString:@"NR"\] && !supportsNR\)/);
 assert.match(passive, /band\.integerValue > \(\[rat isEqual:@"NR"\] \? 1024 : 255\)/);
 assert.match(passive, /\[previous\[@"rat"\] isEqualToString:rat\]/);
-assert.match(app, /Barrido 5G/);
+assert.match(analyzer, /@"5G"/);
 assert.doesNotMatch(app, /@"API: "|@"legacy %@/);
-assert.match(analyzer, /@"rat": typed\[@"rat"\]/);
-assert.match(analyzer, /bandlock\.cell-signal-history\.v2/);
+assert.match(analyzer, /@"timestamp": @\(\[NSDate date\]\.timeIntervalSince1970\), @"rat": rat/);
+assert.match(analyzer, /bandlock\.cell-signal-history\.v3/);
 assert.match(main, /@"unsupported_modem_write": @YES/);
 assert.doesNotMatch(main, /if \(!\[allowed containsObject:previous\]\)/);
 assert.doesNotMatch(passive, /setActiveBandInfo|setRatSelection:|BLScanWriteJournal/);
@@ -371,9 +379,9 @@ assert.match(main, /\[command isEqualToString:@"scan_observe_start"\]/);
 assert.match(main, /@"rat"\]/);
 for (const [rat, display] of [['2G','2G'], ['3G','3G'], ['LTE','4G'], ['NR','5G']]) {
   assert.match(manager, new RegExp('@"' + rat + '"'));
-  assert.match(app, new RegExp('Barrido ' + display));
+  assert.match(analyzer, new RegExp('@"' + display + '"'));
 }
-assert.match(app, /technologyCodes = @\[@"2G", @"3G", @"LTE", @"NR"\]/);
+assert.match(analyzer, /NSArray \*rats = @\[@"2G", @"3G", @"LTE", @"NR"\]/);
 assert.match(passive, /\[rat isEqualToString:targetRAT\]/);
 assert.match(passive, /No se ha observado señal/);
 assert.match(app, /\[weakSelf\.signalTimer invalidate\]/);
@@ -401,8 +409,8 @@ for (const mapping of ['2g', '3g', 'lte', '5g-auto', '5g-on', '5g-only']) {
   assert.match(core, new RegExp('isEqualToString:@"' + mapping.replace('-', '\\-') + '"'));
 }
 assert.match(manager, /startTechnologySignalScanForRAT:/);
-assert.match(app, /startTechnologySignalScanForRAT:rat/);
-assert.match(app, /cambiará temporalmente la línea a/);
+assert.match(analyzer, /startTechnologySignalScanForRAT:rat/);
+assert.match(analyzer, /cambiará temporalmente a/);
 assert.match(technologyScan, /BLScanWriteJournal\(journal\)/);
 assert.match(technologyScan, /@"version": hasBandBaseline \? @3 : @2/);
 assert.match(technologyScan, /original_band_config/);
@@ -509,3 +517,22 @@ assert.match(app, /value\.doubleValue, dbm \? @"dBm" : @"dB"/);
 assert.match(app, /BLGFrequencyForBand\(band\)/);
 assert.match(metadata, /@6:\s+@\{@"frequency": @"800 MHz"/);
 console.log('BandLock rhui14 scan metrics and LTE apply regression checks: PASS');
+
+// rhui15: NetMonitor-inspired coverage Analyzer is the single measurement UI.
+// It shows live serving/neighbor rows, quality categories, band details and
+// technology scans, while Control keeps only the emergency recovery action.
+for (const label of ['CELDA SERVIDORA Y VECINAS', 'BARRIDO POR TECNOLOGÍA', 'COMPARATIVA POR BANDA']) {
+  assert.match(analyzer, new RegExp(label));
+}
+for (const quality of ['Excelente', 'Buena', 'Moderada', 'Mala', 'Muy mala']) {
+  assert.match(analyzer, new RegExp(quality));
+}
+assert.match(analyzer, /row\[@"role"\] isEqualToString:@"neighbor"/);
+assert.match(analyzer, /BLGFrequencyForBand\(band\)/);
+assert.match(analyzer, /BLGNRFrequencyForBand\(band\)/);
+assert.match(analyzer, /BLAnalyzerLastPersistedScanID/);
+assert.match(analyzer, /persistCompletedScanIfNeeded:/);
+assert.match(scan, /@"scan_id": scanID/);
+assert.match(scan, /self\.scanState\[@"scan_id"\] = scanID/);
+assert.doesNotMatch(app, /\[self\.stackView addArrangedSubview:self\.signalSection\]/);
+console.log('BandLock rhui15 unified NetMonitor-style coverage Analyzer: PASS');

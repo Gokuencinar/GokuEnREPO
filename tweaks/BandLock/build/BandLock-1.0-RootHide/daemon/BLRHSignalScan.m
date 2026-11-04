@@ -764,6 +764,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
     }
 
     NSDictionary *preflight = [manager queryCoreTelephonyForPassiveObservation];
+    NSString *scanID = [[NSUUID UUID] UUIDString];
     NSString *subscription = preflight[@"error"] ? nil : BLScanSubscriptionUUID(preflight);
     NSDictionary *originalBandConfiguration = preflight[@"error"]
         ? nil : [manager bandConfigurationSnapshotFromQuery:preflight];
@@ -796,6 +797,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
         @"original_mode": restoreMode,
         @"target_rat": targetRAT,
         @"target_mode": targetMode,
+        @"scan_id": scanID,
         @"subscription_hash": subscription,
         @"started": @([[NSDate date] timeIntervalSince1970])
     } mutableCopy];
@@ -818,6 +820,7 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
             @"read_only": @NO,
             @"band_read_only": @YES,
             @"phase": @"switching_rat",
+            @"scan_id": scanID,
             @"target_rat": targetRAT,
             @"rows": @[],
             @"total": @(BLTechnologyScanSamples),
@@ -1424,6 +1427,9 @@ static NSDictionary *BLRHWritableQuery(BLTelephonyManager *manager,
 
 - (void)recoverIfNeededWithManager:(BLTelephonyManager *)manager {
     if (![self hasPendingRecovery] || [self isRunning]) return;
+    NSDictionary *pending = BLScanReadJournal();
+    NSString *scanID = [pending[@"scan_id"] isKindOfClass:NSString.class] ? pending[@"scan_id"] : nil;
+    if (scanID.length) @synchronized(self) { self.scanState[@"scan_id"] = scanID; }
     [self setPhase:@"restoring" message:@"Recovering bands left by an interrupted scan"];
     NSString *recoveryFailure = nil;
     BOOL restored = [self restoreJournalWithManager:manager failure:&recoveryFailure];
