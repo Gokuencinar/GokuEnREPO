@@ -386,7 +386,6 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     button.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     [button setTitle:title forState:UIControlStateNormal];
     [button setTitleColor:selected ? BLAnalyzerInk() : UIColor.whiteColor forState:UIControlStateNormal];
-    button.contentEdgeInsets = UIEdgeInsetsMake(7, 11, 7, 11);
     button.accessibilityLabel = title;
     [button.heightAnchor constraintEqualToConstant:34].active = YES;
     [button.widthAnchor constraintLessThanOrEqualToConstant:190].active = YES;
