@@ -1247,7 +1247,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     UILabel *timestamp = [self text:[formatter stringFromDate:NSDate.date]
                                 size:11 color:BLAnalyzerMuted() weight:UIFontWeightSemibold];
     [body addArrangedSubview:timestamp];
-    NSString *mode = [self displayCaptureMode:[self currentCaptureMode]];
+    NSString *mode = [BLAnalyzerCaptureStore displayMode:[self currentCaptureMode]];
     NSString *operatorName = self.currentOperatorName.length
         ? self.currentOperatorName : BLT(@"No disponible", @"Unavailable");
     UILabel *network = [self text:[NSString stringWithFormat:BLT(@"Modo · %@\nOperador móvil · %@",

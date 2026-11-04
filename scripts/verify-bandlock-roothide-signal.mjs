@@ -510,6 +510,8 @@ assert.match(analyzer, /SECUNDARIA LTE/);
 assert.match(analyzer, /Posible CA/);
 assert.match(analyzer, /Guardar Captura/);
 assert.match(analyzer, /Ver capturas guardadas/);
+assert.match(analyzer, /\[BLAnalyzerCaptureStore displayMode:\[self currentCaptureMode\]\]/);
+assert.doesNotMatch(analyzer, /displayCaptureMode:/);
 assert.match(analyzer, /UIGraphicsImageRenderer/);
 assert.match(captureStore, /UIImagePNGRepresentation/);
 assert.match(analyzer, /currentScanMeasurements/);
