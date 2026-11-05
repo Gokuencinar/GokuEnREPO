@@ -1,8 +1,8 @@
 Package: com.gokuencinar.bandlock.dopamine
-Name: BandLock (Dopamine Signal Test)
-Version: 1.5.1~sigtest1
+Name: BandLock (Dopamine)
+Version: 1.6.0~dopipc1
 Architecture: iphoneos-arm64
-Description: Experimental signal measurements and two-band LTE test with original-band recovery. Replaces public Dopamine BandLock temporarily and can interrupt cellular and emergency service. For controlled tester use only, not a stable release.
+Description: BandLock 1.6 for Dopamine rootless with launchd-managed daemon IPC, guarded radio controls and diagnostics.
 Maintainer: Gokuencinar
 Author: Gokuencinar
 Section: Tweaks

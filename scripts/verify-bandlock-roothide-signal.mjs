@@ -22,9 +22,15 @@ const control = read('control');
 const abiVerifier = readFileSync('scripts/verify-bandlock-arm64e-abi-v2.py', 'utf8');
 const macWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-signal-diagnostic.yml', 'utf8');
 const linuxWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-linux-diagnostic.yml', 'utf8');
+const dopamineRoot = 'tweaks/BandLock/build/BandLock-1.0-Dopamine/';
+const dopamineMain = readFileSync(dopamineRoot + 'daemon/main.m', 'utf8');
+const dopaminePlist = readFileSync(dopamineRoot + 'layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist', 'utf8');
+const dopaminePostinst = readFileSync(dopamineRoot + 'layout/DEBIAN/postinst', 'utf8');
+const dopamineControl = readFileSync(dopamineRoot + 'control', 'utf8');
+const rootHidePlist = read('layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui25$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui26$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(abiVerifier, /CPU_SUBTYPE_ARM64E_ABI_V2 = 0x80000002/);
 assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py "\$cc" "\$bridge"/);
@@ -34,6 +40,30 @@ assert.match(linuxWorkflow, /Do not upload or install the generated DEB/);
 assert.match(read('Makefile'), /THEOS_PACKAGE_SCHEME = roothide/);
 assert.match(main, /#import <roothide\.h>/);
 assert.match(main, /jbroot\(@"\/tmp\/com\.gokuencinar\.bandlockd\.sock"\)/);
+assert.doesNotMatch(rootHidePlist, /<key>Sockets<\/key>/,
+  'RootHide must keep the dynamic jbroot socket namespace and manual bind fallback');
+assert.match(main, /launch_activate_socket/);
+assert.match(main, /BLLegacyServerSocket/);
+assert.match(manager, /attempt < 30/);
+assert.match(read('layout/DEBIAN/postinst'), /launchctl kickstart -k/);
+assert.match(read('layout/DEBIAN/postinst'), /wait_for_socket/);
+assert.match(read('layout/DEBIAN/postinst'), /command -v jbroot/);
+assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc1$/m);
+assert.match(dopaminePlist, /<key>Sockets<\/key>/);
+assert.match(dopaminePlist, /<key>BandLockListener<\/key>/);
+assert.match(dopaminePlist, /<string>\/tmp\/com\.gokuencinar\.bandlockd\.dopamine\.sock<\/string>/);
+assert.match(dopaminePlist, /<key>SockPathOwner<\/key>\s*<integer>501<\/integer>/);
+assert.match(dopaminePlist, /<key>SockPathMode<\/key>\s*<integer>384<\/integer>/);
+assert.match(dopaminePlist, /<key>SockPassive<\/key>\s*<true\/>/);
+assert.match(dopamineMain, /activate\("BandLockListener", &fds, &count\)/);
+assert.match(dopamineMain, /if \(serverFD == -1\) serverFD = BLLegacyServerSocket\(path\)/);
+assert.match(dopamineMain, /fallbackAllowed = \(rc == ENOENT \|\| rc == ESRCH\)/);
+assert.match(dopamineMain, /SO_ACCEPTCONN/);
+assert.match(dopamineMain, /BLPathIsSocket/);
+assert.match(dopaminePostinst, /wait_for_socket/);
+assert.match(dopaminePostinst, /retrying system domain/);
+assert.match(dopaminePostinst, /job registered domain=/);
+console.log('BandLock 1.6 launchd IPC hardening gates: PASS');
 assert.match(manager, /BLRootHidePhysicalRootFromEnvironment/);
 assert.match(manager, /signalProbeWithCompletion:/);
 assert.match(analyzer, /Actualizar ahora/);
@@ -598,7 +628,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui25 non-truncating frequency info and rhui24 regression gates: PASS');
+console.log('BandLock rhui26 non-truncating frequency info and rhui24 regression gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain

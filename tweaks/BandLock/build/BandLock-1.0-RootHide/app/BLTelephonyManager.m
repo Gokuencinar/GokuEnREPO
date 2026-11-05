@@ -301,7 +301,7 @@ static NSDictionary *BLResultForUserInterface(NSDictionary *result, NSString *co
     strlcpy(address.sun_path, path, sizeof(address.sun_path));
 
     int connected = -1;
-    for (NSInteger attempt = 0; attempt < 5; attempt++) {
+    for (NSInteger attempt = 0; attempt < 30; attempt++) {
         BLBreadcrumbf("connect begin attempt=%ld", (long)attempt + 1);
         connected = connect(fd, (struct sockaddr *)&address, sizeof(address));
         BLBreadcrumbf("connect end attempt=%ld rc=%d errno=%d",
@@ -310,7 +310,7 @@ static NSDictionary *BLResultForUserInterface(NSDictionary *result, NSString *co
                       connected == 0 ? 0 : errno);
         if (connected == 0) break;
         if (errno != ENOENT && errno != ECONNREFUSED) break;
-        usleep(150000);
+        usleep(200000);
     }
     if (connected != 0) {
         int savedErrno = errno;

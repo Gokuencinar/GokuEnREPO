@@ -7,6 +7,21 @@ OLD_SOCKET="/tmp/com.gokuencinar.bandlockd.sock"
 USER_DOMAIN="user/501"
 SYSTEM_DOMAIN="system"
 DOMAIN="$USER_DOMAIN"
+BOOTSTRAP_LOG="/tmp/BandLock-bootstrap.log"
+
+log() {
+    printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z' 2>/dev/null || date)" "$*" >> "$BOOTSTRAP_LOG" 2>/dev/null || true
+}
+
+wait_for_socket() {
+    i=0
+    while [ "$i" -lt 30 ]; do
+        [ -S "$SOCKET" ] && return 0
+        sleep 0.1
+        i=$((i + 1))
+    done
+    return 1
+}
 
 if ! launchctl print "$USER_DOMAIN" >/dev/null 2>&1; then
     DOMAIN="$SYSTEM_DOMAIN"
@@ -16,16 +31,41 @@ launchctl bootout "${USER_DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
 launchctl bootout "${SYSTEM_DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
 rm -f "$SOCKET" >/dev/null 2>&1 || true
 rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
+log "install start plist=$PLIST"
 
-launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
-if ! launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1; then
+if launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1; then
+    log "enable ok domain=$DOMAIN"
+else
+    log "enable failed rc=$? domain=$DOMAIN"
+fi
+if launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1; then
+    log "bootstrap ok domain=$DOMAIN"
+else
+    rc=$?
+    log "bootstrap failed rc=$rc domain=$DOMAIN"
     if [ "$DOMAIN" != "$SYSTEM_DOMAIN" ]; then
         DOMAIN="$SYSTEM_DOMAIN"
-        launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
-        launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || true
+        launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || log "system enable failed rc=$?"
+        launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || log "system bootstrap failed rc=$?"
     fi
 fi
-launchctl kickstart -k "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+launchctl kickstart -k "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || log "kickstart failed rc=$? domain=$DOMAIN"
+launchctl print "${DOMAIN}/${LABEL}" >/dev/null 2>&1 && log "job registered domain=$DOMAIN" || log "job missing domain=$DOMAIN"
+if ! wait_for_socket && [ "$DOMAIN" != "$SYSTEM_DOMAIN" ]; then
+    log "socket missing in $DOMAIN; retrying system domain"
+    launchctl bootout "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
+    DOMAIN="$SYSTEM_DOMAIN"
+    launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || log "retry enable failed rc=$? domain=$DOMAIN"
+    launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || log "retry bootstrap failed rc=$? domain=$DOMAIN"
+    launchctl kickstart -k "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || log "retry kickstart failed rc=$? domain=$DOMAIN"
+    launchctl print "${DOMAIN}/${LABEL}" >/dev/null 2>&1 && log "retry job registered domain=$DOMAIN" || log "retry job missing domain=$DOMAIN"
+    wait_for_socket || true
+fi
+if [ -S "$SOCKET" ]; then
+    log "socket ready domain=$DOMAIN"
+else
+    log "socket missing after bootstrap domain=$DOMAIN"
+fi
 
 # Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.
 exit 0

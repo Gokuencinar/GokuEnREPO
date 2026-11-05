@@ -5,16 +5,44 @@ PLIST="/Library/LaunchDaemons/${LABEL}.plist"
 SOCKET="/tmp/${LABEL}.sock"
 OLD_SOCKET="/tmp/bandlockd.sock"
 DOMAIN="user/501"
+BOOTSTRAP_LOG="/tmp/BandLock-bootstrap.log"
+
+log() {
+    printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z' 2>/dev/null || date)" "$*" >> "$BOOTSTRAP_LOG" 2>/dev/null || true
+}
+
+wait_for_socket() {
+    socket_path="$SOCKET"
+    if command -v jbroot >/dev/null 2>&1; then
+        resolved="$(jbroot "$SOCKET" 2>/dev/null || true)"
+        [ -n "$resolved" ] && socket_path="$resolved"
+    fi
+    i=0
+    while [ "$i" -lt 30 ]; do
+        [ -S "$socket_path" ] && return 0
+        sleep 0.1
+        i=$((i + 1))
+    done
+    return 1
+}
 
 launchctl bootout "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
 rm -f "$SOCKET" >/dev/null 2>&1 || true
 rm -f "$OLD_SOCKET" >/dev/null 2>&1 || true
+log "install start plist=$PLIST"
 
-launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || true
-launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || true
+launchctl enable "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || log "enable failed rc=$? domain=$DOMAIN"
+launchctl bootstrap "$DOMAIN" "$PLIST" >/dev/null 2>&1 || log "bootstrap failed rc=$? domain=$DOMAIN"
+launchctl kickstart -k "${DOMAIN}/${LABEL}" >/dev/null 2>&1 || log "kickstart failed rc=$? domain=$DOMAIN"
+launchctl print "${DOMAIN}/${LABEL}" >/dev/null 2>&1 && log "job registered domain=$DOMAIN" || log "job missing domain=$DOMAIN"
+if wait_for_socket; then
+    log "socket ready domain=$DOMAIN"
+else
+    log "socket missing after bootstrap domain=$DOMAIN"
+fi
 
 
 
 
-# Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.\n
+# Keep maintainer scripts UI-neutral; reload UI manually after dpkg exits.
 exit 0

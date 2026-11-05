@@ -14,6 +14,8 @@
 #import <stdio.h>
 #import <sys/time.h>
 #import <string.h>
+#import <dlfcn.h>
+#import <stdlib.h>
 
 static void BLDaemonLog(const char *message) {
     NSString *resolvedLogPath = jbroot(@"/tmp/BandLock-daemon.log");
@@ -99,6 +101,83 @@ static NSString *BLRecentAcceptedModeCode(void) {
 static NSString *BLSocketPath(void) {
     NSString *resolved = jbroot(@"/tmp/com.gokuencinar.bandlockd.sock");
     return resolved.length ? resolved : @"/tmp/com.gokuencinar.bandlockd.sock";
+}
+
+static int BLLaunchdActivatedSocket(void) {
+    typedef int (*BLLaunchActivateSocketFn)(const char *, int **, size_t *);
+    BLLaunchActivateSocketFn activate = (BLLaunchActivateSocketFn)dlsym(RTLD_DEFAULT, "launch_activate_socket");
+    void *xpcHandle = NULL;
+    if (!activate) {
+        xpcHandle = dlopen("/usr/lib/system/libxpc.dylib", RTLD_LAZY | RTLD_LOCAL);
+        if (xpcHandle) activate = (BLLaunchActivateSocketFn)dlsym(xpcHandle, "launch_activate_socket");
+    }
+    if (!activate) {
+        BLDaemonLog("launch_activate_socket unavailable; using legacy bind");
+        if (xpcHandle) dlclose(xpcHandle);
+        return -1;
+    }
+    int *fds = NULL;
+    size_t count = 0;
+    int rc = activate("BandLockListener", &fds, &count);
+    if (xpcHandle) dlclose(xpcHandle);
+    if (rc != 0 || !fds || count == 0) {
+        BOOL fallbackAllowed = (rc == ENOENT || rc == ESRCH);
+        BLDaemonLog([[NSString stringWithFormat:@"launch socket activation rc=%d count=%lu fallback=%d",
+                      rc, (unsigned long)count, fallbackAllowed ? 1 : 0] UTF8String]);
+        if (fds) free(fds);
+        return fallbackAllowed ? -1 : -2;
+    }
+    if (count != 1) {
+        for (size_t i = 0; i < count; i++) close(fds[i]);
+        free(fds);
+        BLDaemonLog("launch socket activation returned unexpected descriptor count");
+        return -2;
+    }
+    int serverFD = fds[0];
+    free(fds);
+    int socketType = 0;
+    int accepting = 0;
+    socklen_t optionLength = sizeof(int);
+    struct sockaddr_un boundAddress;
+    socklen_t addressLength = sizeof(boundAddress);
+    memset(&boundAddress, 0, sizeof(boundAddress));
+    if (getsockopt(serverFD, SOL_SOCKET, SO_TYPE, &socketType, &optionLength) != 0 ||
+        socketType != SOCK_STREAM ||
+        getsockopt(serverFD, SOL_SOCKET, SO_ACCEPTCONN, &accepting, &optionLength) != 0 ||
+        !accepting ||
+        getsockname(serverFD, (struct sockaddr *)&boundAddress, &addressLength) != 0 ||
+        boundAddress.sun_family != AF_UNIX) {
+        BLDaemonLog("launch socket activation returned invalid listener");
+        close(serverFD);
+        return -2;
+    }
+    BLDaemonLog("launch socket activation acquired BandLockListener");
+    return serverFD;
+}
+
+static int BLLegacyServerSocket(const char *path) {
+    int serverFD = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (serverFD < 0) return -1;
+    unlink(path);
+
+    struct sockaddr_un address;
+    memset(&address, 0, sizeof(address));
+    address.sun_family = AF_UNIX;
+    strlcpy(address.sun_path, path, sizeof(address.sun_path));
+    if (bind(serverFD, (struct sockaddr *)&address, sizeof(address)) != 0) {
+        BLDaemonLog([[NSString stringWithFormat:@"legacy bind failed errno=%d", errno] UTF8String]);
+        close(serverFD);
+        return -1;
+    }
+    chmod(path, 0600);
+    if (listen(serverFD, 8) != 0) {
+        BLDaemonLog([[NSString stringWithFormat:@"legacy listen failed errno=%d", errno] UTF8String]);
+        close(serverFD);
+        unlink(path);
+        return -1;
+    }
+    BLDaemonLog("legacy socket listening");
+    return serverFD;
 }
 
 static NSDictionary *BLStatusPayload(BLTelephonyManager *manager, NSDictionary *query) {
@@ -471,18 +550,13 @@ int main(int argc, char *argv[]) {
         const char *path = socketPath.fileSystemRepresentation;
         if (!path || strlen(path) >= sizeof(((struct sockaddr_un *)0)->sun_path)) return 70;
 
-        int serverFD = socket(AF_UNIX, SOCK_STREAM, 0);
-        if (serverFD < 0) return 71;
-        unlink(path);
-
-        struct sockaddr_un address;
-        memset(&address, 0, sizeof(address));
-        address.sun_family = AF_UNIX;
-        strlcpy(address.sun_path, path, sizeof(address.sun_path));
-
-        if (bind(serverFD, (struct sockaddr *)&address, sizeof(address)) != 0) { close(serverFD); return 72; }
-        chmod(path, 0600);
-        if (listen(serverFD, 8) != 0) { close(serverFD); unlink(path); return 73; }
+        // RootHide intentionally keeps the proven jbroot-aware bind path. If a
+        // future launchd environment advertises BandLockListener, the daemon can
+        // consume it; otherwise launch_activate_socket returns ENOENT and we
+        // fall back without changing the socket namespace.
+        int serverFD = BLLaunchdActivatedSocket();
+        if (serverFD == -1) serverFD = BLLegacyServerSocket(path);
+        if (serverFD < 0) return 72;
         BLDaemonLog("daemon listening");
         if ([BLRHSignalScan.sharedScan hasPendingRecovery]) {
             // The recovery queue is single-flight. Set 'recovering'

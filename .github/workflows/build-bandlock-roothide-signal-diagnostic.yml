@@ -1,11 +1,11 @@
-name: Build BandLock RootHide experimental LTE scan
+name: Build BandLock 1.6 IPC hardening
 
 on:
   push:
     branches: [bandlock-1.5-roothide-signal-test]
     paths:
       - 'tweaks/BandLock/build/BandLock-1.0-RootHide/**'
-      - 'tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m'
+      - 'tweaks/BandLock/build/BandLock-1.0-Dopamine/**'
       - 'tweaks/BandLock/build/BLHardwareCapabilities.h'
       - 'scripts/verify-bandlock-roothide-signal.mjs'
       - '.github/workflows/build-bandlock-roothide-signal-diagnostic.yml'
@@ -33,15 +33,18 @@ jobs:
           d=tweaks/BandLock/build/BandLock-1.0-RootHide
           plutil -lint "$d/app/Resources/Info.plist"
           plutil -lint "$d/daemon/Entitlements.plist"
-          grep -q '^Version: 1.6.0~rhui25$' "$d/control"
+          plutil -lint "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist"
+          sh -n "$d/layout/DEBIAN/postinst"
+          grep -q '^Version: 1.6.0~rhui26$' "$d/control"
           grep -q '<key>CFBundleShortVersionString</key><string>1.6.0</string>' "$d/app/Resources/Info.plist"
           test -x "$d/layout/DEBIAN/prerm"
+          ! grep -q '<key>Sockets</key>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist"
       - name: Build RootHide LTE scan experiment
         run: |
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-RootHide
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
-          deb='packages/com.gokuencinar.bandlock_1.6.0~rhui25_iphoneos-arm64e.deb'
+          deb='packages/com.gokuencinar.bandlock_1.6.0~rhui26_iphoneos-arm64e.deb'
           test -s "$deb"
           test -f "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
           file "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)" | grep -q Mach-O
@@ -52,8 +55,8 @@ jobs:
           python3 ../../../../scripts/verify-bandlock-arm64e-abi-v2.py "$cc" "$bridge"
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-RootHide-1.6.0-rhui25
-          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.6.0~rhui25_iphoneos-arm64e.deb
+          name: BandLock-RootHide-1.6.0-rhui26
+          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.6.0~rhui26_iphoneos-arm64e.deb
 
   verify-deb:
     needs: build-roothide
@@ -62,15 +65,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-RootHide-1.6.0-rhui25
+          name: BandLock-RootHide-1.6.0-rhui26
           path: /tmp/bandlock
       - name: Check RootHide DEB metadata
         run: |
           set -euo pipefail
-          deb='/tmp/bandlock/com.gokuencinar.bandlock_1.6.0~rhui25_iphoneos-arm64e.deb'
+          deb='/tmp/bandlock/com.gokuencinar.bandlock_1.6.0~rhui26_iphoneos-arm64e.deb'
           test -s "$deb"
           test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock'
-          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~rhui25'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~rhui26'
           test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64e'
           dpkg-deb -c "$deb" > /tmp/bandlock-contents
           grep -q 'BandLockDaemon' /tmp/bandlock-contents
@@ -82,4 +85,74 @@ jobs:
           python3 scripts/verify-bandlock-arm64e-abi-v2.py \
             /tmp/bandlock-extracted/Library/ControlCenter/Bundles/BandLockCCModule.bundle/BandLockCCModule \
             /tmp/bandlock-extracted/Library/MobileSubstrate/DynamicLibraries/BandLockFieldBridge.dylib
+          sha256sum "$deb"
+
+  build-dopamine:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+      - name: Dopamine IPC static gates
+        run: |
+          set -euo pipefail
+          d=tweaks/BandLock/build/BandLock-1.0-Dopamine
+          plutil -lint "$d/app/Resources/Info.plist"
+          plutil -lint "$d/daemon/Entitlements.plist"
+          plutil -lint "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
+          sh -n "$d/layout/DEBIAN/postinst"
+          grep -q '^Version: 1.6.0~dopipc1$' "$d/control"
+          grep -q '^Architecture: iphoneos-arm64$' "$d/control"
+          grep -q '<key>BandLockListener</key>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
+          grep -q '<key>SockPathOwner</key>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
+          grep -q '<integer>501</integer>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
+          grep -q '<integer>384</integer>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
+          grep -q 'launch_activate_socket' "$d/daemon/main.m"
+          grep -q 'BLLegacyServerSocket' "$d/daemon/main.m"
+          grep -q 'wait_for_socket' "$d/layout/DEBIAN/postinst"
+          grep -q 'retrying system domain' "$d/layout/DEBIAN/postinst"
+      - name: Build Dopamine IPC candidate
+        run: |
+          set -euo pipefail
+          cd tweaks/BandLock/build/BandLock-1.0-Dopamine
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          deb='packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc1_iphoneos-arm64.deb'
+          test -s "$deb"
+          daemon="$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
+          test -n "$daemon"
+          file "$daemon" | grep -q Mach-O
+          codesign -d --entitlements :- "$daemon" > /tmp/bandlock-dopamine-entitlements.plist 2>/dev/null
+          grep -q 'com.apple.private.memorystatus' /tmp/bandlock-dopamine-entitlements.plist
+          grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-dopamine-entitlements.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.6.0-dopipc1
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc1_iphoneos-arm64.deb
+
+  verify-dopamine-deb:
+    needs: build-dopamine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.6.0-dopipc1
+          path: /tmp/bandlock-dopamine
+      - name: Check Dopamine DEB metadata and launchd socket
+        run: |
+          set -euo pipefail
+          deb='/tmp/bandlock-dopamine/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc1_iphoneos-arm64.deb'
+          test -s "$deb"
+          test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock.dopamine'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~dopipc1'
+          test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64'
+          rm -rf /tmp/bandlock-dopamine-extracted
+          dpkg-deb -x "$deb" /tmp/bandlock-dopamine-extracted
+          plist='/tmp/bandlock-dopamine-extracted/var/jb/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist'
+          grep -q 'BandLockListener' "$plist"
+          grep -q '/tmp/com.gokuencinar.bandlockd.dopamine.sock' "$plist"
           sha256sum "$deb"

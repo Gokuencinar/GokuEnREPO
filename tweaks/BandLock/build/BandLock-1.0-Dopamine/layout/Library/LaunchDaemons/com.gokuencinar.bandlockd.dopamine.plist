@@ -12,6 +12,22 @@
     <true/>
     <key>KeepAlive</key>
     <true/>
+    <key>Sockets</key>
+    <dict>
+        <key>BandLockListener</key>
+        <dict>
+            <key>SockPathName</key>
+            <string>/tmp/com.gokuencinar.bandlockd.dopamine.sock</string>
+            <key>SockPathOwner</key>
+            <integer>501</integer>
+            <key>SockPathMode</key>
+            <integer>384</integer>
+            <key>SockType</key>
+            <string>stream</string>
+            <key>SockPassive</key>
+            <true/>
+        </dict>
+    </dict>
     <key>UserName</key>
     <string>mobile</string>
     <key>ProcessType</key>
