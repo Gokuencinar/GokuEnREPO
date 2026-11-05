@@ -348,9 +348,10 @@
         caption.font = [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold];
         [column addArrangedSubview:caption];
         UILabel *item = values[i];
-        item.numberOfLines = 1;
+        item.numberOfLines = 2;
+        item.lineBreakMode = NSLineBreakByWordWrapping;
         item.adjustsFontSizeToFitWidth = YES;
-        item.minimumScaleFactor = 0.78;
+        item.minimumScaleFactor = 0.72;
         item.textColor = UIColor.whiteColor;
         item.font = [UIFont systemFontOfSize:21 weight:UIFontWeightBold];
         [column addArrangedSubview:item];

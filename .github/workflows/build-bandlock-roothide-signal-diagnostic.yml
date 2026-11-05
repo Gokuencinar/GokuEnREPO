@@ -107,7 +107,7 @@ jobs:
           plutil -lint "$d/daemon/Entitlements.plist"
           plutil -lint "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
           sh -n "$d/layout/DEBIAN/postinst"
-          grep -q '^Version: 1.6.0~dopipc4$' "$d/control"
+          grep -q '^Version: 1.6.0~dopipc5$' "$d/control"
           grep -q '^Architecture: iphoneos-arm64$' "$d/control"
           grep -q 'BLAnalyzerViewController.m' "$d/app/Makefile"
           grep -q 'BLAnalyzerCaptureStore.m' "$d/app/Makefile"
@@ -124,7 +124,7 @@ jobs:
           for f in \
             BLAppDelegate.h BLAppDelegate.m \
             BLBandPickerViewController.h BLBandPickerViewController.m \
-            BLControlViewController.h BLControlViewController.m \
+            BLControlViewController.h \
             BLCountriesViewController.h BLCountriesViewController.m \
             BLCountryBandsViewController.h BLCountryBandsViewController.m \
             BLCountryDetailViewController.h BLCountryDetailViewController.m \
@@ -159,7 +159,7 @@ jobs:
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          deb='packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc4_iphoneos-arm64.deb'
+          deb='packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc5_iphoneos-arm64.deb'
           test -s "$deb"
           daemon="$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
           test -n "$daemon"
@@ -171,8 +171,8 @@ jobs:
           grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-dopamine-entitlements.plist
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.6.0-dopipc4
-          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc4_iphoneos-arm64.deb
+          name: BandLock-Dopamine-1.6.0-dopipc5
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc5_iphoneos-arm64.deb
 
   verify-dopamine-deb:
     needs: build-dopamine
@@ -180,15 +180,15 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Dopamine-1.6.0-dopipc4
+          name: BandLock-Dopamine-1.6.0-dopipc5
           path: /tmp/bandlock-dopamine
       - name: Check Dopamine DEB metadata and launchd socket
         run: |
           set -euo pipefail
-          deb='/tmp/bandlock-dopamine/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc4_iphoneos-arm64.deb'
+          deb='/tmp/bandlock-dopamine/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc5_iphoneos-arm64.deb'
           test -s "$deb"
           test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock.dopamine'
-          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~dopipc4'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~dopipc5'
           test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64'
           rm -rf /tmp/bandlock-dopamine-extracted
           dpkg-deb -x "$deb" /tmp/bandlock-dopamine-extracted

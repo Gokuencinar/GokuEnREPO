@@ -183,9 +183,14 @@ static NSString *BLHumanRAT(id ratObject) {
     if ([raw rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"LTE / 4G";
     if ([raw rangeOfString:@"HSDPA" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"HSDPA / 3G";
     if ([raw rangeOfString:@"HSUPA" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"HSUPA / 3G";
+    if ([raw rangeOfString:@"HSPA" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"HSPA / 3G";
     if ([raw rangeOfString:@"WCDMA" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"WCDMA / 3G";
+    if ([raw rangeOfString:@"UMTS" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+        [raw rangeOfString:@"UTRAN" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"UMTS / 3G";
     if ([raw rangeOfString:@"Edge" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"EDGE / 2G";
     if ([raw rangeOfString:@"GPRS" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"GPRS / 2G";
+    if ([raw rangeOfString:@"GSM" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+        [raw rangeOfString:@"GERAN" options:NSCaseInsensitiveSearch].location != NSNotFound) return @"GSM / 2G";
     return raw;
 }
 
@@ -277,24 +282,24 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     if ([ratKind isEqualToString:@"2G"] || [ratKind isEqualToString:@"3G"]) {
         NSNumber *channel = BLLegacyChannelFromRow(row, ratKind, nil);
         NSDictionary *derived = BLDerivedLegacyBand(ratKind, channel);
-        NSString *humanRAT = BLHumanRAT(rawRAT);
         if (derived) {
-            return [NSString stringWithFormat:@"%@ · %@ MHz · %@",
-                    derived[@"label"], derived[@"frequency_mhz"], humanRAT ?: ratKind];
+            // The dashboard already shows RAT in its own column. Keep the
+            // serving-band value focused on band/frequency so it remains
+            // readable on compact iPhone widths and never exposes CT tokens.
+            return [NSString stringWithFormat:@"%@ · %@ MHz",
+                    derived[@"label"], derived[@"frequency_mhz"]];
         }
         if (channel) {
             NSString *channelName = [ratKind isEqualToString:@"2G"] ? @"ARFCN" : @"UARFCN";
-            return [NSString stringWithFormat:@"%@ %@ · %@", channelName, channel, humanRAT ?: ratKind];
+            return [NSString stringWithFormat:@"%@ %@", channelName, channel];
         }
         return BLT(@"No disponible", @"Unavailable");
     }
     id band = row[@"kCTCellMonitorBandInfo"];
     if (![band respondsToSelector:@selector(integerValue)] || [band integerValue] <= 0) return BLT(@"No disponible", @"Unavailable");
     NSNumber *bandNumber = @([band integerValue]);
-    NSString *rat = rawRAT;
     BOOL isNR = [ratKind isEqualToString:@"NR"];
     NSString *title = isNR ? BLGNRBandTitle(bandNumber) : BLGBandTitle(bandNumber);
-    if ([rat isKindOfClass:[NSString class]] && rat.length) return [NSString stringWithFormat:@"%@ · %@", title, ([rat rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"LTE" : rat)];
     return title;
 }
 

@@ -27,6 +27,7 @@ const dopamineMain = readFileSync(dopamineRoot + 'daemon/main.m', 'utf8');
 const dopamineCore = readFileSync(dopamineRoot + 'daemon/BLTelephonyCore.m', 'utf8');
 const dopamineScan = readFileSync(dopamineRoot + 'daemon/BLRHSignalScan.m', 'utf8');
 const dopamineDaemonMakefile = readFileSync(dopamineRoot + 'daemon/Makefile', 'utf8');
+const dopamineApp = readFileSync(dopamineRoot + 'app/BLControlViewController.m', 'utf8');
 const dopamineManager = readFileSync(dopamineRoot + 'app/BLTelephonyManager.m', 'utf8');
 const dopamineAppMakefile = readFileSync(dopamineRoot + 'app/Makefile', 'utf8');
 const dopamineAnalyzer = readFileSync(dopamineRoot + 'app/BLAnalyzerViewController.m', 'utf8');
@@ -39,7 +40,6 @@ const dopamineControl = readFileSync(dopamineRoot + 'control', 'utf8');
 const rootHidePlist = read('layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist');
 for (const relative of [
   'app/BLAppDelegate.m',
-  'app/BLControlViewController.m',
   'app/BLAnalyzerViewController.m',
   'app/BLAnalyzerCaptureStore.m',
   'app/BLAnalyzerCapturesViewController.m',
@@ -76,7 +76,7 @@ assert.match(manager, /attempt < 30/);
 assert.match(read('layout/DEBIAN/postinst'), /launchctl kickstart -k/);
 assert.match(read('layout/DEBIAN/postinst'), /wait_for_socket/);
 assert.match(read('layout/DEBIAN/postinst'), /command -v jbroot/);
-assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc4$/m);
+assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc5$/m);
 assert.match(dopamineCore, /static NSDictionary \*BLDerivedLegacyBand\(NSString \*rat, NSNumber \*channel\)/);
 assert.match(dopamineCore, /@"GSM 900"/);
 assert.match(dopamineCore, /@"DCS 1800"/);
@@ -85,6 +85,15 @@ assert.match(dopamineCore, /@"UTRA VIII"/);
 assert.match(dopamineCore, /512-810 is shared by DCS 1800 and PCS 1900/);
 assert.match(dopamineCore, /rangeOfString:@"Serving" options:NSCaseInsensitiveSearch/);
 assert.match(dopamineCore, /item\[@"band_source"\] = derivedBand\[@"source"\]/);
+const dopamineServingStart = dopamineCore.indexOf('static NSString *BLServingBandFromCellInfo');
+const dopamineServingEnd = dopamineCore.indexOf('// Resolve only the carrier', dopamineServingStart);
+assert.ok(dopamineServingStart >= 0 && dopamineServingEnd > dopamineServingStart);
+const dopamineServing = dopamineCore.slice(dopamineServingStart, dopamineServingEnd);
+assert.match(dopamineServing, /@"%@ · %@ MHz"/);
+assert.match(dopamineServing, /return title;/);
+assert.doesNotMatch(dopamineServing, /humanRAT|kCTCellMonitorRadioAccessTechnology/);
+assert.match(dopamineApp, /item\.numberOfLines = 2;/);
+assert.match(dopamineApp, /item\.lineBreakMode = NSLineBreakByWordWrapping;/);
 assert.match(dopamineMain, /RAT setter accepted mode=/);
 assert.match(dopamineMain, /payload\[@"success"\] = @YES/);
 assert.match(dopamineMain, /payload\[@"verification_pending"\] = @\(!verified\)/);
@@ -452,7 +461,7 @@ console.log('BandLock rhui8 NR diagnostics, concise UI, dynamic paths, guarded m
 // rhui9: unknown RAT selections are not user-visible "?" or verified mode.
 assert.doesNotMatch(cc, /text = @"\?"/);
 assert.doesNotMatch(cc, /text = @"Red"/);
-assert.match(cc, /_currentModeCode = @"automatic"/);
+assert.match(cc, /_currentModeCode = savedMode\.length \? \[savedMode copy\] : @"automatic"/);
 assert.match(cc, /_confirmedModeCode = nil/);
 assert.match(cc, /if \(uncertain\) \{/);
 assert.match(cc, /\[result\[@"verification_pending"\] boolValue\]/);
@@ -492,7 +501,7 @@ assert.doesNotMatch(main, /for \(NSUInteger attempt = 0; attempt < \(isIOS18/);
 assert.match(core, /callbackError.code == EAGAIN/);
 assert.match(core, /if \(!bandInfo && includeRatSelection\) return/);
 assert.match(core, /@"bandInfo": bandInfo \?: NSNull\.null/);
-assert.match(cc, /_currentModeCode = @"automatic"/);
+assert.match(cc, /_currentModeCode = savedMode\.length \? \[savedMode copy\] : @"automatic"/);
 assert.doesNotMatch(cc, /text = @"(?:Red|\?)"/);
 assert.match(main, /\[command isEqualToString:@"scan_observe_start"\]/);
 assert.match(main, /@"rat"\]/);
@@ -700,6 +709,15 @@ console.log('BandLock rhui12 pending RAT intent and technology-directed all-band
 // may drain after the previous callback, even when that earlier write failed;
 // the same failed mode must never be automatically retried.
 assert.match(cc, /@property \(nonatomic, assign\) BOOL modeWriteInFlight/);
+assert.match(cc, /NSString \*savedMode = BLCCLastModeCode\(\)/);
+assert.match(cc, /_currentModeCode = savedMode\.length \? \[savedMode copy\] : @"automatic"/);
+const ccApplyStart = cc.indexOf('- (void)bl_applyMode:(NSString *)requestedMode');
+const ccApplyEnd = cc.indexOf('- (void)bl_applyModeThroughDaemon:', ccApplyStart);
+assert.ok(ccApplyStart >= 0 && ccApplyEnd > ccApplyStart);
+const ccApply = cc.slice(ccApplyStart, ccApplyEnd);
+assert.ok(ccApply.indexOf('BLCCSetLastModeCode(requestedMode)') < ccApply.indexOf('if (self.modeWriteInFlight)'),
+  'Control Center must persist the explicit visual intent before async/coalesced IPC');
+assert.match(cc, /BLCCSetLastModeCode\(self\.confirmedModeCode \?: @"automatic"\)/);
 assert.match(cc, /if \(self\.modeWriteInFlight\)\s*\{\s*self\.queuedModeCode = requestedMode;\s*return;/);
 assert.match(cc, /if \(queued\.length && !\[queued isEqualToString:requestedMode\]\)/);
 assert.match(cc, /else if \(success && queued\.length && \[queued isEqualToString:requestedMode\]\)/);

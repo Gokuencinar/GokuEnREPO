@@ -38,9 +38,22 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        // Saved preference is merely an intent from a previous session.
-        // Never represent it as a freshly verified modem selection.
-        _currentModeCode = @"automatic";
+        // Saved mode is visual intent, not modem proof. Control Center can
+        // recreate the module while an accepted RAT write is completing; start
+        // from that intent so the tile does not flash/revert to the old mode.
+        BLCCSynchronizePreferences();
+        NSString *savedMode = BLCCLastModeCode();
+        BOOL validSavedMode = [savedMode isEqualToString:@"automatic"] ||
+            [savedMode isEqualToString:@"2g"] || [savedMode isEqualToString:@"3g"] ||
+            [savedMode isEqualToString:@"lte"] || [savedMode hasPrefix:@"5g-"];
+        if (!validSavedMode ||
+            ([savedMode isEqualToString:@"2g"] && !BLCCShow2G()) ||
+            ([savedMode isEqualToString:@"3g"] && !BLCCShow3G()) ||
+            ([savedMode isEqualToString:@"lte"] && !BLCCShowLTE()) ||
+            ([savedMode hasPrefix:@"5g-"] && (BLDeviceIsKnownLTEOnly() || !BLCCShow5G()))) {
+            savedMode = @"automatic";
+        }
+        _currentModeCode = savedMode.length ? [savedMode copy] : @"automatic";
         _confirmedModeCode = nil;
         _pendingModeCode = nil;
         _supports5G = NO;
@@ -321,6 +334,11 @@
     NSUInteger epoch = self.stateEpoch;
     self.modeIntentPinnedUntil = CFAbsoluteTimeGetCurrent() + 8.0;
     self.pendingModeCode = requestedMode;
+    // Persist the explicit tap before the action sheet disappears. SpringBoard
+    // may recreate the module before the daemon callback arrives; the new
+    // instance must still paint the user's requested mode. Hard failures roll
+    // this visual intent back below without retrying the RAT setter.
+    BLCCSetLastModeCode(requestedMode);
 
     // Keep the UI responsive immediately, but perform the actual modem change
     // through BandLockDaemon. The app uses the same CoreTelephonyClient path
@@ -359,7 +377,10 @@
 
               if (!success) {
                   BOOL uncertain = [result[@"verification_pending"] boolValue];
-                  if (!uncertain) self.pendingModeCode = nil;
+                  if (!uncertain) {
+                      self.pendingModeCode = nil;
+                      BLCCSetLastModeCode(self.confirmedModeCode ?: @"automatic");
+                  }
                   self.currentModeCode = uncertain && self.pendingModeCode.length
                       ? self.pendingModeCode : (self.confirmedModeCode ?: @"automatic");
                   [self bl_syncVisualSelection];
@@ -399,7 +420,6 @@
             BOOL verified = ![result[@"verification_pending"] boolValue] &&
                 ![confirmed isEqualToString:@"unknown"];
             self.currentModeCode = verified ? confirmed : requestedMode;
-            BLCCSetLastModeCode(requestedMode);
             if (verified) {
                 self.confirmedModeCode = confirmed;
                 self.pendingModeCode = nil;
