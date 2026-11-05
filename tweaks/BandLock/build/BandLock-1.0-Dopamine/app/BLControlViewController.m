@@ -332,6 +332,7 @@
     [body addArrangedSubview:eyebrow];
     UIStackView *status = [UIStackView new];
     status.axis = UILayoutConstraintAxisHorizontal;
+    status.alignment = UIStackViewAlignmentTop;
     status.distribution = UIStackViewDistributionFillEqually;
     status.spacing = 16;
     self.heroNetworkValue = [UILabel new];

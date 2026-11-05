@@ -1,6 +1,6 @@
 Package: com.gokuencinar.bandlock.dopamine
 Name: BandLock (Dopamine)
-Version: 1.6.0~dopipc5
+Version: 1.6.0~dopipc6
 Architecture: iphoneos-arm64
 Description: BandLock 1.6 for Dopamine rootless, based on the rhui26 feature set with launchd-managed daemon IPC, Analyzer and guarded radio diagnostics.
 Maintainer: Gokuencinar
