@@ -8,7 +8,6 @@
 - Improved the Control Center network mode selector and mode state handling.
 - Improved daemon communication and recovery when changing network modes.
 - Fixed several issues with band detection, network mode changes and interface state.
-- Updated the RootHide, Dopamine rootless and Rootful packages for BandLock 1.6.
 
 ---
 

@@ -302,7 +302,7 @@ SHA1: 2bc270a44d106b248203662ce5e5c94e8796871b
 SHA256: f69d648eb2359b04fea9203ac68020303be76b385d565f836d408c1fe1a5f0c1
 Section: Tweaks
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
-Description: BandLock 1.6 for RootHide with network mode controls, LTE/5G band selection, Analyzer and diagnostics.
+Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.
 Author: Gokuencinar
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
@@ -484,7 +484,7 @@ SHA1: e9902e83e685f1e2822a36eb77f6d87a3d25f1bc
 SHA256: 41259fd9bda5296ea3c8eb866176105f3ca42e92772d86c30d4881c43f70e4cb
 Section: Tweaks
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
-Description: BandLock 1.6 for Dopamine rootless with network mode controls, LTE/5G band selection, Analyzer and diagnostics.
+Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.
 Author: Gokuencinar
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
@@ -545,7 +545,7 @@ SHA1: c34f1a0cf4e20acb51d92b432da347706f1c1e86
 SHA256: cbec4265fd8a5822777990543289c07367f71f1b3f8d9be5dbcf884b057cc3d5
 Section: Tweaks
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/BANDLOCK.md
-Description: Standalone BandLock Global app for iOS 15-16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
+Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.
 Author: Gokuencinar
 Depiction: https://gokuencinar.github.io/GokuEnREPO/bandlock.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/assets/bandlock/icon.png
@@ -629,7 +629,7 @@ SHA1: b893ebd4b8e31959ca3f612f3db7472c153ffbbc
 SHA256: 1af5a93726f9af258c5a96b94dec792a3a7073a350dbadf819f1009fae4bf099
 Section: Tweaks
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
-Description: Standalone BandLock Global app for iOS 15-16 rootful jailbreaks with isolated LTE/4G and 5G NR modem control, worldwide band references, Field Test, multilingual UI and write verification
+Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.
 Author: Gokuencinar
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png

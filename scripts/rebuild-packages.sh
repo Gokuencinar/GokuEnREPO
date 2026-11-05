@@ -50,6 +50,21 @@ for block in blocks:
               f"{fields.get('Version', '<missing>')}", file=sys.stderr)
         continue
 
+    if package in {
+        "com.gokuencinar.bandlock",
+        "com.gokuencinar.bandlock.dopamine",
+        "com.gokuencinar.bandlock.rootful",
+    }:
+        description = (
+            "Control cellular network modes and LTE/5G bands, monitor live signal data "
+            "with the Analyzer, check country band compatibility, and access quick "
+            "network controls from Control Center."
+        )
+        block = "\n".join(
+            f"Description: {description}" if line.startswith("Description: ") else line
+            for line in block.splitlines()
+        )
+
     if package == "com.gokuencinar.nukewireless":
         variant = {"iphoneos-arm64":"Dopamine", "iphoneos-arm64e":"RootHide", "iphoneos-arm":"Rootful"}[fields["Architecture"]]
         rewritten = [line for line in block.splitlines()
