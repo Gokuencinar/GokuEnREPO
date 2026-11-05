@@ -301,7 +301,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for spec in +            'com.gokuencinar.bandlock_1.6_iphoneos-arm64e.deb com.gokuencinar.bandlock iphoneos-arm64e /tmp/root' +            'com.gokuencinar.bandlock.dopamine_1.6_iphoneos-arm64.deb com.gokuencinar.bandlock.dopamine iphoneos-arm64 /tmp/dop' +            'com.gokuencinar.bandlock.rootful_1.6_iphoneos-arm.deb com.gokuencinar.bandlock.rootful iphoneos-arm /tmp/rootful'; do
+          specs=(
+            'com.gokuencinar.bandlock_1.6_iphoneos-arm64e.deb com.gokuencinar.bandlock iphoneos-arm64e /tmp/root'
+            'com.gokuencinar.bandlock.dopamine_1.6_iphoneos-arm64.deb com.gokuencinar.bandlock.dopamine iphoneos-arm64 /tmp/dop'
+            'com.gokuencinar.bandlock.rootful_1.6_iphoneos-arm.deb com.gokuencinar.bandlock.rootful iphoneos-arm /tmp/rootful'
+          )
+          for spec in "${specs[@]}"; do
             read -r filename package arch folder <<< "$spec"
             deb="$folder/$filename"
             test -s "$deb"
