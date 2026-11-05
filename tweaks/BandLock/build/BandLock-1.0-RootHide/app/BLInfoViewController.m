@@ -110,8 +110,11 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
 }
 
 - (UITableViewCell *)valueCell:(NSString *)title detail:(NSString *)detail symbol:(NSString *)symbol disclosure:(BOOL)disclosure {
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+    UITableViewCellStyle style = detail.length ? UITableViewCellStyleValue1 : UITableViewCellStyleDefault;
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:style reuseIdentifier:nil];
     cell.textLabel.text = title;
+    cell.textLabel.adjustsFontSizeToFitWidth = YES;
+    cell.textLabel.minimumScaleFactor = 0.82;
     cell.detailTextLabel.text = detail;
     cell.imageView.image = symbol.length ? [UIImage systemImageNamed:symbol] : nil;
     cell.imageView.tintColor = UIColor.systemBlueColor;
@@ -210,8 +213,18 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
     if (indexPath.section == 3 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];
     if (indexPath.section == 3) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
     if (indexPath.section == 4 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];
-    if (indexPath.section == 4) return [self valueCell:BLT(@"Información sobre las frecuencias", @"Frequency information") detail:nil symbol:@"info.circle" disclosure:YES];
+    if (indexPath.section == 4) {
+        UITableViewCell *cell = [self valueCell:BLT(@"Información sobre las frecuencias", @"Frequency information") detail:nil symbol:@"info.circle" disclosure:YES];
+        cell.textLabel.numberOfLines = 2;
+        cell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        cell.textLabel.adjustsFontSizeToFitWidth = NO;
+        return cell;
+    }
     return [self valueCell:@"Buy Me a Coffee" detail:nil symbol:@"heart.circle.fill" disclosure:YES];
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return indexPath.section == 4 && indexPath.row == 1 ? 64.0 : UITableViewAutomaticDimension;
 }
 
 - (void)showMessage:(NSString *)message {
@@ -295,11 +308,15 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
     }
     if (indexPath.section == 3 && indexPath.row == 0) { [self checkForUpdates]; return; }
     if (indexPath.section == 3 && indexPath.row == 1) {
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BLT(@"Atrás", @"Back")
+                                                                         style:UIBarButtonItemStylePlain target:nil action:nil];
         [self.navigationController pushViewController:[[BLReleaseNotesViewController alloc] init] animated:YES];
         return;
     }
     if (indexPath.section == 4 && indexPath.row == 0) { [self openRepository]; return; }
     if (indexPath.section == 4 && indexPath.row == 1) {
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BLT(@"Atrás", @"Back")
+                                                                         style:UIBarButtonItemStylePlain target:nil action:nil];
         [self.navigationController pushViewController:[[BLFrequencyGlossaryViewController alloc] initWithStyle:UITableViewStyleInsetGrouped] animated:YES];
         return;
     }

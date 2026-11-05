@@ -24,7 +24,7 @@ const macWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-sign
 const linuxWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-linux-diagnostic.yml', 'utf8');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui24$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui25$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(abiVerifier, /CPU_SUBTYPE_ARM64E_ABI_V2 = 0x80000002/);
 assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py "\$cc" "\$bridge"/);
@@ -533,7 +533,14 @@ assert.match(countriesController, /BLSelectedCountryISO/);
 assert.match(countriesController, /UITableViewCellAccessoryCheckmark/);
 assert.match(info, /Información sobre las frecuencias/);
 assert.doesNotMatch(info, /Más información sobre las frecuencias/);
-assert.match(app, /backButtonTitle = BLT\(@"Atrás", @"Back"\)/);
+assert.match(info, /UITableViewCellStyle style = detail\.length \? UITableViewCellStyleValue1 : UITableViewCellStyleDefault/);
+assert.match(info, /textLabel\.adjustsFontSizeToFitWidth = YES/);
+assert.match(info, /textLabel\.minimumScaleFactor = 0\.82/);
+assert.match(info, /textLabel\.numberOfLines = 2/);
+assert.match(info, /textLabel\.lineBreakMode = NSLineBreakByWordWrapping/);
+assert.match(info, /heightForRowAtIndexPath:[\s\S]*indexPath\.section == 4 && indexPath\.row == 1 \? 64\.0/);
+assert.match(info, /backBarButtonItem = \[\[UIBarButtonItem alloc\] initWithTitle:BLT\(@"Atrás", @"Back"\)/);
+assert.match(app, /backBarButtonItem = \[\[UIBarButtonItem alloc\] initWithTitle:BLT\(@"Atrás", @"Back"\)/);
 assert.match(countryBands, /show5G = self\.manager\.supports5G && self\.availableNRBands\.count > 0/);
 assert.match(countryBands, /numberOfSectionsInTableView:[\s\S]*self\.show5G \? 6 : 5/);
 assert.match(countryBands, /if \(section == 0\) return self\.show5G \? 4 : 2/);
@@ -591,7 +598,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui24 UI copy, LTE-only country frequencies and rhui23 regression gates: PASS');
+console.log('BandLock rhui25 non-truncating frequency info and rhui24 regression gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain
