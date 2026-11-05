@@ -518,6 +518,7 @@ assert.doesNotMatch(analyzer, /panelWithTitle:BLT\(@"HISTORIAL"/);
 assert.match(analyzer, /Borrar mediciones/);
 assert.match(app, /Cambiar país/);
 assert.match(app, /Frecuencias del país/);
+assert.match(app, /#import "BLCountriesViewController\.h"/);
 assert.match(app, /countryValue\.text = countryName/);
 assert.match(app, /ensureBandStateThen:/);
 assert.match(app, /titleLabel\.numberOfLines = 2/);
