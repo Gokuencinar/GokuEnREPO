@@ -20,7 +20,11 @@ const countrySpectrum = JSON.parse(read('app/Resources/country-spectrum.json'));
 const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
 const abiVerifier = readFileSync('scripts/verify-bandlock-arm64e-abi-v2.py', 'utf8');
-const macWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-signal-diagnostic.yml', 'utf8');
+const macWorkflow = readFileSync('.github/workflows/build-bandlock-16-release.yml', 'utf8').replace(/\r\n/g, '\n');
+assert.match(macWorkflow, /branches: \[bandlock-1\.6-release\]/);
+assert.match(macWorkflow, /permissions:\n  contents: read/);
+assert.doesNotMatch(macWorkflow, /^  publish:/m);
+assert.doesNotMatch(macWorkflow, /git push origin HEAD:main/);
 const linuxWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-linux-diagnostic.yml', 'utf8');
 const dopamineRoot = 'tweaks/BandLock/build/BandLock-1.0-Dopamine/';
 const dopamineMain = readFileSync(dopamineRoot + 'daemon/main.m', 'utf8');
@@ -56,11 +60,11 @@ for (const relative of [
   const dopamineCommon = readFileSync(dopamineRoot + relative, 'utf8').replace(/\r\n/g, '\n');
   const rootHideCommon = read(relative).replace(/\r\n/g, '\n');
   assert.equal(dopamineCommon, rootHideCommon,
-    `Dopamine 1.6 common file diverged from rhui26: ${relative}`);
+    `Dopamine and RootHide differ: ${relative}`);
 }
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui28$/m);
+assert.match(control, /^Version: 1\.6$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(app, /status\.alignment = UIStackViewAlignmentTop;/);
 assert.match(app, /item\.numberOfLines = 2;/);
@@ -82,7 +86,7 @@ assert.match(manager, /attempt < 30/);
 assert.match(read('layout/DEBIAN/postinst'), /launchctl kickstart -k/);
 assert.match(read('layout/DEBIAN/postinst'), /wait_for_socket/);
 assert.match(read('layout/DEBIAN/postinst'), /command -v jbroot/);
-assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc7$/m);
+assert.match(dopamineControl, /^Version: 1\.6$/m);
 assert.match(dopamineCore, /static NSDictionary \*BLDerivedLegacyBand\(NSString \*rat, NSNumber \*channel\)/);
 assert.match(dopamineCore, /@"GSM 900"/);
 assert.match(dopamineCore, /@"DCS 1800"/);
@@ -144,7 +148,7 @@ assert.match(dopamineCore, /dataServiceIdentifier/);
 assert.match(dopamineCore, /serviceSubscriberCellularProviders/);
 assert.match(dopamineEntitlements, /com\.apple\.private\.memorystatus/);
 assert.doesNotMatch(dopamineMain, /#import <roothide\.h>|jbroot\(/);
-console.log('BandLock 1.6 launchd IPC hardening gates: PASS');
+console.log('BandLock 1.6 IPC: PASS');
 assert.match(manager, /BLRootHidePhysicalRootFromEnvironment/);
 assert.match(manager, /signalProbeWithCompletion:/);
 assert.match(analyzer, /Actualizar ahora/);
@@ -180,7 +184,7 @@ assert.match(passive, /sample < 12/);
 assert.match(passive, /rows\.count < BLPassiveMaxRows/);
 assert.match(passive, /@"read_only": @YES/);
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|BLScanWriteJournal|setRatSelection|setActiveBandInfo/,
-  'Passive mode must never mutate radio selection or write recovery journal');
+  'Passive mode changed radio state');
 assert.match(app, /signalScanRecoverTapped:/);
 assert.match(analyzer, /scanRecoverTapped:/);
 assert.match(core, /descriptorWithSubscriptionContext:/);
@@ -257,7 +261,7 @@ assert.doesNotMatch(scan, /Network mode changed externally/, "Unknown RAT mode s
 const writeCall = scan.indexOf('writeLTEBands:@[band]');
 const modeGate = scan.lastIndexOf('BLRHWritableQuery(manager, query, subscription, mode, &stopReason)', writeCall);
 assert.ok(writeCall > modeGate && modeGate > 0,
-  'Every per-band CoreTelephony write must follow an explicit LTE-mode gate');
+  'Band write without LTE mode check');
 assert.match(scan, /getActiveContexts:/);
 assert.match(scan, /getSubscriptionInfoWithError:/);
 assert.match(scan, /active_context_count/);
@@ -289,10 +293,10 @@ assert.ok(start !== -1 && end > start, 'Signal probe must exist');
 const probe = core.slice(start, end);
 assert.doesNotMatch(probe, /setActiveBandInfo|writeLTEBands|writeNRBands|setRatSelection/);
 assert.doesNotMatch(probe, /@"(uuid|slotID|cellId|PCI|MCC|MNC|TAC|EARFCN|NRARFCN)"/);
-console.log('RootHide experimental two-band scan regression checks: PASS');
+console.log('RootHide scan checks: PASS');
 
-// Analyzer owns signal measurement and the guarded technology-scan workflow,
-// but it must never bypass the manager with direct modem writes or store cell IDs.
+// Analyzer handles signal measurements and technology scans.
+// Modem writes stay in the manager and cell IDs are not stored.
 const delegate = read('app/BLAppDelegate.m');
 assert.match(read('app/Makefile'), /BLAnalyzerViewController\.m/);
 assert.match(delegate, /BLAnalyzerViewController/);
@@ -314,7 +318,7 @@ assert.match(analyzer, /signalScanStatusWithCompletion:/);
 assert.match(analyzer, /cancelSignalScanWithCompletion:/);
 assert.match(analyzer, /recoverSignalScanWithCompletion:/);
 assert.doesNotMatch(analyzer, /\b(?:writeLTEBands|writeNRBands|applyPendingBands|applyBands|setRatSelectionSync)\b|@"(?:imsi|imei|subscriptionUUID)"/i,
-  'Analyzer may orchestrate guarded scans, but must not directly write the modem or persist private cell IDs');
+  'Analyzer writes modem state or stores private cell IDs');
 assert.match(analyzer, /BLCountryBandsForRAT/);
 assert.match(analyzer, /BLCountryFrequenciesForRAT/);
 assert.match(analyzer, /performWithoutAnimation/);
@@ -331,9 +335,9 @@ assert.match(main, /@\[@"apply_nr", @"scan_start"\] containsObject:command/,
   'iOS18 must keep NR writes and the obsolete two-band experiment blocked');
 assert.doesNotMatch(main, /No se puede verificar el modo actual en iOS 18/,
   'The old iOS18 RAT preflight must not reject changes before calling the 1.5 setter');
-console.log('RootHide LTE 1.6 analyzer UI and read-only data gates: PASS');
+console.log('Analyzer checks: PASS');
 
-// Prevent regression to the crash-prone switch UI removed in c2efb10 (2026-09-28).
+// Keep the current button-based UI.
 for (const file of [
   'app/BLBandPickerViewController.m',
   'app/BLNRBandPickerViewController.m',
@@ -342,7 +346,7 @@ for (const file of [
 ]) {
   const source = read(file);
   assert.doesNotMatch(source, /\bUISwitch\b|\bbandSwitchChanged\b|\bccToggleChanged\b/,
-    `${file} must never reintroduce the old UISwitch handlers`);
+    `${file} contains old UISwitch handlers`);
   assert.match(source, /UITableViewCellAccessoryCheckmark/);
   assert.match(source, /didSelectRowAtIndexPath:/);
 }
@@ -356,24 +360,23 @@ assert.match(app, /openAnalyzerTapped:/);
 assert.match(app, /self\.applyLTEButton\.hidden = NO/);
 assert.match(app, /self\.signalStartButton\.hidden = readOnly18/);
 assert.match(main, /@\[@"apply_nr", @"scan_start"\] containsObject:command/);
-console.log('BandLock compact Control and historical no-switch regression: PASS');
+console.log('Control UI checks: PASS');
 
-// rhui4: the hero must not truncate a long heading on narrow iPhones.
+// Keep long headings readable on narrow iPhones.
 assert.match(app, /BLT\(@"BANDA", @"BAND"\)/);
 assert.match(app, /item\.adjustsFontSizeToFitWidth = YES/);
 assert.doesNotMatch(app, /BANDA CONECTADA\\n%@|SERVING BAND\\n%@/);
 assert.doesNotMatch(app, /ESTACIÓN DE CONTROL|BandLock Global %@/, 'Avoid duplicate headings/version labels');
-// The entire list must remain available only inside the editor / network details,
-// never in the always-visible pending bands card.
+// Keep the full band list inside the editor and network details.
 assert.match(app, /self\.pendingValue\.text = pendingCount/);
 assert.match(app, /self\.manager\.pendingBands\.count/);
 assert.doesNotMatch(app, /self\.pendingValue\.text = BLBandList\(/);
 assert.match(app, /detail\.hidden = subtitle\.length == 0/);
 assert.doesNotMatch(app, /Cambio de modo sujeto a verificación|Mode change requires verification/);
 assert.match(app, /self\.applyLTEButton\.hidden = NO/);
-console.log('BandLock rhui4 concise UI and truncated header regression: PASS');
+console.log('Header checks: PASS');
 
-// rhui5 removes verbose text-only UI, not the privacy/persistence restrictions.
+// Keep the privacy and persistence checks.
 assert.doesNotMatch(analyzer, /Solo se guardan fecha|Only time, band and valid|Observa\. Compara\. Entiende\.|Observe\. Compare\. Understand\./);
 assert.doesNotMatch(analyzer, /Gráfica de muestras válidas|Graph of valid samples|CoreTelephony · Tipado · Lectura pasiva/);
 assert.doesNotMatch(analyzer, /Mediciones LTE pasivas · Sin modificar|Passive LTE measurements · No band/);
@@ -409,10 +412,9 @@ for (const file of ['app/BLBandPickerViewController.m','app/BLNRBandPickerViewCo
 const info = read('app/BLInfoViewController.m');
 const countryBands = read('app/BLCountryBandsViewController.m');
 assert.doesNotMatch(info, /Auto always remains visible|Off: one 5G option is shown/);
-console.log('BandLock rhui5 minimal UI, read-only and no-switch regressions: PASS');
+console.log('Read-only UI checks: PASS');
 
-// rhui6: a band metadata dictionary cannot upgrade a physical LTE-only modem.
-// The hardware veto must apply at daemon, app and CC, even for persisted intents.
+// Do not infer 5G support from band metadata alone.
 const hw = readFileSync('tweaks/BandLock/build/BLHardwareCapabilities.h', 'utf8');
 const cc = readFileSync('tweaks/BandLock/build/BandLock-1.0-Dopamine/ccmodule/Module.m', 'utf8');
 assert.match(hw, /sysctlbyname\("hw\.machine"/);
@@ -442,7 +444,7 @@ assert.match(info, /UITableViewCellAccessoryCheckmark/);
 assert.match(cc, /BLDeviceIsKnownLTEOnly\(\)/);
 assert.match(cc, /A saved preference is not a modem readback/);
 assert.doesNotMatch(cc, /_CTServerConnectionSetRATSelection|bl_setRATDirect|BLCTServerConnectionCreateFn/,
-  'CC must never have a direct CoreTelephony RAT setter');
+  'Control Center contains a direct RAT setter');
 assert.doesNotMatch(main, /No se puede verificar el modo actual en iOS 18/);
 assert.doesNotMatch(main, /if \(!\[allowed containsObject:previous\]\)/);
 assert.match(cc, /BOOL readOnly18 = \[NSProcessInfo processInfo\]\.operatingSystemVersion\.majorVersion >= 18/);
@@ -460,9 +462,9 @@ const statusHandler = main.slice(main.indexOf('if ([command isEqualToString:@"st
 assert.match(statusHandler, /operatingSystemVersion\.majorVersion >= 18/);
 assert.match(statusHandler, /\[manager queryCoreTelephonyForPassiveObservation\]/,
   'iOS18 status must not call unreliable RAT getters from the CC module');
-console.log('BandLock rhui6 hardware 5G, CC UI and iOS18 read-only protections: PASS');
+console.log('5G and Control Center checks: PASS');
 
-// rhui8: signal diagnostics are strictly passive and model-gated for NR.
+// Signal diagnostics are read-only; NR depends on device support.
 assert.match(core, /BOOL supportsNR = !BLDeviceIsKnownLTEOnly\(\)/);
 assert.match(core, /if \(\[legacy\[@"rat"\] isEqualToString:@"NR"\] && !supportsNR\) continue/);
 assert.match(core, /@"supports_nr": @\(supportsNR\)/);
@@ -479,9 +481,9 @@ assert.match(main, /@"unsupported_modem_write": @YES/);
 assert.doesNotMatch(main, /if \(!\[allowed containsObject:previous\]\)/);
 assert.doesNotMatch(passive, /setActiveBandInfo|setRatSelection:|BLScanWriteJournal/);
 assert.match(scan, /!\[journalPath hasPrefix:\[directoryPath stringByAppendingString:@"\/"\]\]/);
-console.log('BandLock rhui8 NR diagnostics, concise UI, dynamic paths, guarded mode writes: PASS');
+console.log('NR diagnostic checks: PASS');
 
-// rhui9: unknown RAT selections are not user-visible "?" or verified mode.
+// Do not show an unknown RAT as a verified mode.
 assert.doesNotMatch(cc, /text = @"\?"/);
 assert.doesNotMatch(cc, /text = @"Red"/);
 assert.match(cc, /_currentModeCode = savedMode\.length \? \[savedMode copy\] : @"automatic"/);
@@ -507,9 +509,9 @@ assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|BLScanWriteJournal|setR
 assert.match(analyzer, /@"3G"/);
 assert.match(analyzer, /@"2G"/);
 assert.match(analyzer, /latestBand &&/);
-console.log('BandLock rhui9 nonmisleading mode state, 2G–5G passive diagnostics: PASS');
+console.log('Network mode checks: PASS');
 
-// rhui10 fixes the non-UI regression without running an active modem test.
+// These checks do not run an active modem test.
 const ratContextStart = core.indexOf('- (NSDictionary *)queryContextForRatChange');
 const ratContextEnd = core.indexOf('- (NSDictionary *)queryCoreTelephonyWithRatSelection:', ratContextStart);
 assert.ok(ratContextStart >= 0 && ratContextEnd > ratContextStart);
@@ -538,12 +540,10 @@ assert.match(passive, /No se ha observado señal/);
 assert.match(app, /\[weakSelf\.signalTimer invalidate\]/);
 assert.match(app, /if \(!weakSelf\.signalRunning && !weakSelf\.signalRecoveryRequired\)/);
 assert.doesNotMatch(passive, /writeLTEBands|writeNRBands|setRatSelection|BLScanWriteJournal/);
-console.log('BandLock rhui10 RAT regression isolation and independent 2G–5G read-only scans: PASS');
+console.log('RAT scan checks: PASS');
 
-// rhui12: keep accepted user intent visible on iOS18 and make the four
-// diagnostic buttons technology-directed. Exhaustive band writes are allowed
-// only when CTBandInfo exposes a live supported/active inventory; otherwise the
-// scanner falls back to real serving/neighbor observations.
+// Keep the requested mode visible while verification is pending.
+// Use modem inventory when available, otherwise use observed cells.
 assert.match(cc, /@property \(nonatomic, copy\) NSString \*pendingModeCode/);
 assert.match(cc, /self\.pendingModeCode = requestedMode/);
 assert.match(cc, /self\.currentModeCode = verified \? confirmed : requestedMode/);
@@ -593,7 +593,7 @@ assert.match(scan, /n >= 512 && n <= 810/);
 assert.match(analyzer, /@"ARFCN"/);
 assert.match(analyzer, /@"UARFCN"/);
 assert.doesNotMatch(analyzer, /\[rat isEqualToString:@"LTE"\] \|\| \[rat isEqualToString:@"3G"\]/,
-  '3G must never reuse LTE band metadata');
+  '3G uses LTE band metadata');
 assert.doesNotMatch(countryProfile, /iso2.*ES.*2G/s,
   '2G/3G country data must not be hard-coded only for Spain');
 assert.match(countryProfile, /CoreTelephony uses a private numeric namespace for GSM\/UTRAN/);
@@ -725,12 +725,12 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui28 country compatibility legend and rhui27 regression gates: PASS');
-console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
+console.log('Country compatibility checks: PASS');
+console.log('Band diagnostic checks: PASS');
 
 // Coalesce rapid Control Center taps. A later DISTINCT explicit user choice
 // may drain after the previous callback, even when that earlier write failed;
-// the same failed mode must never be automatically retried.
+// Do not retry a failed mode change automatically.
 assert.match(cc, /@property \(nonatomic, assign\) BOOL modeWriteInFlight/);
 assert.match(cc, /NSString \*savedMode = BLCCLastModeCode\(\)/);
 assert.match(cc, /_currentModeCode = savedMode\.length \? \[savedMode copy\] : @"automatic"/);
@@ -764,12 +764,9 @@ assert.match(recovery, /if \(\[saved\[@"version"\] isEqual:@3\] && !bandsRestore
 assert.match(recovery, /if \(!serviceRestored\)/);
 assert.ok(recovery.indexOf('if (!serviceRestored)') < recovery.indexOf('if (!BLScanClearJournal())'));
 assert.match(recovery, /journal cleared after positive verification/);
-console.log('BandLock rhui12 RAT single-flight and staged recovery safety: PASS');
+console.log('RAT recovery checks: PASS');
 
-// rhui13: recovery must be able to escape a detached 3G-only state. The same
-// subscription fingerprint remains mandatory, and multiple registered RATs or
-// active contexts are still rejected; only the zero-registered-RAT transition
-// is tolerated while the saved Auto/LTE mode is being restored.
+// Recovery keeps the same subscription and restores the saved network mode.
 assert.match(scan, /static BOOL BLScanRecoveryIdentityCompatible/);
 assert.match(scan, /rat && rat\.count > 1/);
 assert.match(scan, /activeCount > 1/);
@@ -778,11 +775,10 @@ assert.match(recovery, /!BLScanRecoveryIdentityCompatible\(readback, subscriptio
 assert.doesNotMatch(recovery, /if \(!BLScanSingleActiveLine\(identity\)\)/);
 assert.match(recovery, /check < 60/);
 assert.match(recovery, /dentro de 60 s/);
-console.log('BandLock rhui13 detached-RAT recovery gate: PASS');
+console.log('RAT recovery state: PASS');
 
-// rhui14: restore the 1.5 LTE selection workflow on iOS18. LTE apply keeps
-// the scan/recovery exclusion and daemon-side subset/readback validation; only
-// NR writes and the obsolete two-band experiment stay blocked by the iOS18 gate.
+// Keep LTE apply available on iOS 18.
+// NR writes and the old two-band test stay disabled there.
 assert.match(app, /Aplicar selección/);
 assert.match(app, /self\.applyLTEButton\.hidden = NO/);
 assert.match(app, /self\.restoreLTEPreviousButton\.hidden = NO/);
@@ -803,10 +799,8 @@ assert.match(applyHandler, /queryCoreTelephonyForPassiveObservation/);
 assert.match(applyHandler, /requestedSet/);
 assert.match(applyHandler, /matches = \[requestedSet isEqualToSet:/);
 
-// rhui14: a verified single-band mask may supply the missing band identity for
-// a same-RAT typed signal sample. Prioritize the already-serving band, wait a
-// longer bounded window, and make no-signal/error rows explicit instead of
-// rendering bare band numbers with no explanation.
+// A verified single-band mask may identify a same-RAT signal sample.
+// Prefer the serving band and show clear no-signal or error rows.
 assert.match(scan, /static BOOL BLScanHasAnyMetric/);
 assert.match(scan, /initialObservedBands/);
 assert.match(scan, /BLSortedBands\(initialObservedBands\.allKeys\)/);
@@ -820,11 +814,9 @@ assert.match(app, /Banda no verificada/);
 assert.match(app, /value\.doubleValue, dbm \? @"dBm" : @"dB"/);
 assert.match(app, /BLGFrequencyForBand\(band\)/);
 assert.match(metadata, /@6:\s+@\{@"frequency": @"800 MHz"/);
-console.log('BandLock rhui14 scan metrics and LTE apply regression checks: PASS');
+console.log('LTE scan checks: PASS');
 
-// rhui15+: NetMonitor-inspired coverage Analyzer is the single measurement UI.
-// It shows live serving/neighbor rows, quality categories, band details and
-// technology scans, while Control keeps only the emergency recovery action.
+// Analyzer is the main signal measurement screen.
 for (const label of ['CELDAS Y PORTADORAS', 'RED Y BARRIDO', 'EVOLUCIÓN DE SEÑAL']) {
   assert.match(analyzer, new RegExp(label));
 }
@@ -839,4 +831,4 @@ assert.match(analyzer, /persistCompletedScanIfNeeded:/);
 assert.match(scan, /@"scan_id": scanID/);
 assert.match(scan, /self\.scanState\[@"scan_id"\] = scanID/);
 assert.doesNotMatch(app, /\[self\.stackView addArrangedSubview:self\.signalSection\]/);
-console.log('BandLock rhui15 unified NetMonitor-style coverage Analyzer: PASS');
+console.log('Analyzer coverage: PASS');

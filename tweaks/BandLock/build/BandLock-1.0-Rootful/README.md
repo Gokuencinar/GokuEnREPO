@@ -1,6 +1,6 @@
-# BandLock 1.0 — Rootful
+# BandLock 1.6 — Rootful
 
-This target builds BandLock 1.0 for classic **rootful iOS 16 jailbreaks**.
+This target builds BandLock 1.6 for classic **rootful iOS 16 jailbreaks**.
 
 ## Packaging
 

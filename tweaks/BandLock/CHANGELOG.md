@@ -1,5 +1,14 @@
 # BandLock Changelog
 
+## 1.6
+
+- Added the Analyzer with saved captures and separate 2G, 3G, LTE and 5G views.
+- Improved country compatibility indicators and band information.
+- Fixed Control Center mode handling and daemon communication.
+- Improved recovery when changing network modes.
+- Updated the RootHide, Dopamine and Rootful builds.
+
+---
 ## 1.5
 
 - Fixed BandLockDaemon restarts on iOS 17 with Dopamine.
