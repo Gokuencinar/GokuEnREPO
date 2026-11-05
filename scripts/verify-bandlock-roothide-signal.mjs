@@ -58,8 +58,12 @@ for (const relative of [
 }
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui26$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui27$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
+assert.match(app, /status\.alignment = UIStackViewAlignmentTop;/);
+assert.match(app, /item\.numberOfLines = 2;/);
+assert.match(app, /item\.lineBreakMode = NSLineBreakByWordWrapping;/);
+assert.match(app, /item\.minimumScaleFactor = 0\.72;/);
 assert.match(abiVerifier, /CPU_SUBTYPE_ARM64E_ABI_V2 = 0x80000002/);
 assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py "\$cc" "\$bridge"/);
 assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py \\\n\s+\/tmp\/bandlock-extracted\/Library\/ControlCenter\/Bundles\/BandLockCCModule\.bundle\/BandLockCCModule \\\n\s+\/tmp\/bandlock-extracted\/Library\/MobileSubstrate\/DynamicLibraries\/BandLockFieldBridge\.dylib/);
@@ -703,7 +707,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui26 non-truncating frequency info and rhui24 regression gates: PASS');
+console.log('BandLock rhui27 aligned BandLock hero and rhui26 regression gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // Coalesce rapid Control Center taps. A later DISTINCT explicit user choice
