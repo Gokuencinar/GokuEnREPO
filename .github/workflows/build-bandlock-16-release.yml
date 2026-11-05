@@ -335,7 +335,7 @@ jobs:
             cp release-source/CHANGELOG.md CHANGELOG.md
             bash scripts/rebuild-packages.sh
             test "$(grep -c '^Version: 1.6$' Packages)" -ge 3
-            git add +              tweaks/BandLock/debs/com.gokuencinar.bandlock_1.6_iphoneos-arm64e.deb +              tweaks/BandLock/debs/com.gokuencinar.bandlock.dopamine_1.6_iphoneos-arm64.deb +              tweaks/BandLock/debs/com.gokuencinar.bandlock.rootful_1.6_iphoneos-arm.deb +              tweaks/BandLock/README.md tweaks/BandLock/CHANGELOG.md tweaks/BandLock/depiction.html +              README.md CHANGELOG.md Packages Packages.gz
+            git add tweaks/BandLock/debs/*_1.6_*.deb tweaks/BandLock/README.md tweaks/BandLock/CHANGELOG.md tweaks/BandLock/depiction.html README.md CHANGELOG.md Packages Packages.gz
             if git diff --cached --quiet; then
               exit 0
             fi
