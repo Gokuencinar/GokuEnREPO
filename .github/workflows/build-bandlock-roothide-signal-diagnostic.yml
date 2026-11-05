@@ -232,6 +232,7 @@ jobs:
         run: |
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-Rootful
+          chmod 755 layout/DEBIAN/postinst layout/DEBIAN/postrm
           make clean package FINALPACKAGE=1
           deb='packages/com.gokuencinar.bandlock.rootful_1.6.0~rootui1_iphoneos-arm.deb'
           test -s "$deb"
