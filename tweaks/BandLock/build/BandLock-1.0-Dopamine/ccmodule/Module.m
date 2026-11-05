@@ -418,7 +418,11 @@
                 NSString *queued = self.queuedModeCode;
                 self.queuedModeCode = nil;
                 self.modeWriteInFlight = NO;
-                if (success && queued.length && ![queued isEqualToString:requestedMode]) {
+                if (queued.length && ![queued isEqualToString:requestedMode]) {
+                    // A different queued value came from a later explicit tap.
+                    // Submit that intent even if the preceding write failed;
+                    // this is not an automatic retry of the failed setter. The
+                    // daemon's six-second gate still spaces the next write.
                     self.modeWriteInFlight = YES;
                     [self bl_applyModeThroughDaemon:queued epoch:self.stateEpoch];
                 } else if (success && queued.length && [queued isEqualToString:requestedMode]) {

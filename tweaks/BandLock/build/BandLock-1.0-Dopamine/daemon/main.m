@@ -366,6 +366,7 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             NSString *mode = [request[@"mode"] isKindOfClass:[NSString class]] ? request[@"mode"] : @"";
             if (![BLAllowedModeCodes() containsObject:mode])
                 return @{@"success": @NO, @"message": @"Modo de red no válido"};
+            BLDaemonLog([[NSString stringWithFormat:@"RAT request mode=%@", mode] UTF8String]);
             // 1.5 did not require an authoritative RAT readback before the
             // setter. The private getter is unreliable on iOS 18 and caused
             // the 1.6 path to fail before attempting a user-requested mode.
@@ -382,10 +383,11 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             }
             NSString *errorText = nil;
             if (![manager setModeCodeSync:mode errorText:&errorText]) {
-                BLDaemonLog("RAT setter failed; no automatic retry");
+                BLDaemonLog([[NSString stringWithFormat:@"RAT setter failed mode=%@; no automatic retry", mode] UTF8String]);
                 return @{@"success": @NO, @"message": errorText ?: @"RAT write failed"};
             }
             BLRememberAcceptedModeCode(mode);
+            BLDaemonLog([[NSString stringWithFormat:@"RAT setter accepted mode=%@", mode] UTF8String]);
             BOOL isIOS18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
             // iOS18 RAT getters may produce EAGAIN even after a successful
             // setter callback. Do not mistake this for a failed write and do
@@ -398,11 +400,32 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
                          @"message": @"Solicitud aceptada; modo aún sin confirmar"};
             }
             [NSThread sleepForTimeInterval:0.35];
-            NSMutableDictionary *payload =
-                [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
-            if ([payload[@"success"] boolValue]) {
-                payload[@"message"] = payload[@"mode"] ?: @"Modo actualizado";
+            NSDictionary *verificationQuery = [manager queryCoreTelephony];
+            if (verificationQuery[@"error"]) {
+                BLDaemonLog([[NSString stringWithFormat:@"RAT readback pending mode=%@ query_error", mode] UTF8String]);
+                return @{@"success": @YES, @"verification_pending": @YES,
+                         @"mode_code": @"unknown", @"accepted_mode": mode,
+                         @"message": @"Solicitud aceptada; modo aún sin confirmar"};
             }
+            NSMutableDictionary *payload = [BLStatusPayload(manager, verificationQuery) mutableCopy];
+            if (!payload) payload = [NSMutableDictionary dictionary];
+            NSString *reported = [payload[@"mode_code"] isKindOfClass:NSString.class]
+                ? payload[@"mode_code"] : @"unknown";
+            BOOL verified = reported.length && ![reported isEqualToString:@"unknown"] &&
+                [reported isEqualToString:mode];
+            // The setter callback is authoritative for whether the explicit
+            // write was accepted. A stale/failed immediate getter is only an
+            // unverified readback; it must never turn an accepted write into a
+            // false failure that makes the user tap the Control Center again.
+            payload[@"success"] = @YES;
+            payload[@"accepted_mode"] = mode;
+            payload[@"verification_pending"] = @(!verified);
+            payload[@"message"] = verified
+                ? (payload[@"mode"] ?: @"Modo actualizado")
+                : @"Solicitud aceptada; modo aún sin confirmar";
+            BLDaemonLog([[NSString stringWithFormat:verified
+                ? @"RAT readback verified mode=%@"
+                : @"RAT readback pending requested=%@ reported=%@", mode, reported] UTF8String]);
             return payload;
         }
 

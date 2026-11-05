@@ -46,7 +46,6 @@ for (const relative of [
   'app/BLCountryProfile.m',
   'app/BLCountryBandsViewController.m',
   'app/BLLocalization.m',
-  'daemon/BLTelephonyCore.m',
   'daemon/BLTelephonyManager.h',
   'shared/BLCCPreferences.m',
   'shared/BLGBandMetadata.m',
@@ -77,7 +76,19 @@ assert.match(manager, /attempt < 30/);
 assert.match(read('layout/DEBIAN/postinst'), /launchctl kickstart -k/);
 assert.match(read('layout/DEBIAN/postinst'), /wait_for_socket/);
 assert.match(read('layout/DEBIAN/postinst'), /command -v jbroot/);
-assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc3$/m);
+assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc4$/m);
+assert.match(dopamineCore, /static NSDictionary \*BLDerivedLegacyBand\(NSString \*rat, NSNumber \*channel\)/);
+assert.match(dopamineCore, /@"GSM 900"/);
+assert.match(dopamineCore, /@"DCS 1800"/);
+assert.match(dopamineCore, /@"UTRA I"/);
+assert.match(dopamineCore, /@"UTRA VIII"/);
+assert.match(dopamineCore, /512-810 is shared by DCS 1800 and PCS 1900/);
+assert.match(dopamineCore, /rangeOfString:@"Serving" options:NSCaseInsensitiveSearch/);
+assert.match(dopamineCore, /item\[@"band_source"\] = derivedBand\[@"source"\]/);
+assert.match(dopamineMain, /RAT setter accepted mode=/);
+assert.match(dopamineMain, /payload\[@"success"\] = @YES/);
+assert.match(dopamineMain, /payload\[@"verification_pending"\] = @\(!verified\)/);
+assert.match(dopamineMain, /RAT readback pending requested=/);
 assert.match(dopaminePlist, /<key>Sockets<\/key>/);
 assert.match(dopaminePlist, /<key>BandLockListener<\/key>/);
 assert.match(dopaminePlist, /<string>\/tmp\/com\.gokuencinar\.bandlockd\.dopamine\.sock<\/string>/);
@@ -685,11 +696,13 @@ assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
 console.log('BandLock rhui26 non-truncating frequency info and rhui24 regression gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
-// rhui12: coalesce rapid Control Center taps, and never automatically drain
-// the queued mode after a failed CommCenter setter.
+// Coalesce rapid Control Center taps. A later DISTINCT explicit user choice
+// may drain after the previous callback, even when that earlier write failed;
+// the same failed mode must never be automatically retried.
 assert.match(cc, /@property \(nonatomic, assign\) BOOL modeWriteInFlight/);
 assert.match(cc, /if \(self\.modeWriteInFlight\)\s*\{\s*self\.queuedModeCode = requestedMode;\s*return;/);
-assert.match(cc, /if \(success && queued\.length && !\[queued isEqualToString:requestedMode\]\)/);
+assert.match(cc, /if \(queued\.length && !\[queued isEqualToString:requestedMode\]\)/);
+assert.match(cc, /else if \(success && queued\.length && \[queued isEqualToString:requestedMode\]\)/);
 assert.match(cc, /else if \(!success && epoch != self\.stateEpoch\)/);
 assert.doesNotMatch(cc, /if \(!success && queued\.length\)\s*\[self bl_applyModeThroughDaemon:/);
 assert.match(core, /BLRatWriteQuietPeriod = 6\.0/);

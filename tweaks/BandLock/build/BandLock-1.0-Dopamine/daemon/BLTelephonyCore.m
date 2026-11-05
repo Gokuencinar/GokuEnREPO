@@ -189,6 +189,69 @@ static NSString *BLHumanRAT(id ratObject) {
     return raw;
 }
 
+static NSString *BLLegacySignalRAT(NSString *raw) {
+    if (![raw isKindOfClass:NSString.class]) return nil;
+    NSString *upper = raw.uppercaseString;
+    if ([upper containsString:@"NR"]) return @"NR";
+    if ([upper containsString:@"LTE"]) return @"LTE";
+    for (NSString *token in @[@"WCDMA", @"UMTS", @"UTRAN", @"HSPA", @"HSDPA", @"HSUPA", @"TD-SCDMA"]) {
+        if ([upper containsString:token]) return @"3G";
+    }
+    for (NSString *token in @[@"GSM", @"GPRS", @"EDGE", @"GERAN"]) {
+        if ([upper containsString:token]) return @"2G";
+    }
+    return nil;
+}
+
+static NSNumber *BLLegacyChannelFromRow(NSDictionary *row, NSString *rat, NSString **sourceKey) {
+    if (![row isKindOfClass:NSDictionary.class] || ![rat isKindOfClass:NSString.class]) return nil;
+    NSArray<NSString *> *keys = [rat isEqualToString:@"3G"]
+        ? @[@"kCTCellMonitorUARFCN", @"kCTCellMonitorChannelNumber"]
+        : ([rat isEqualToString:@"2G"]
+            ? @[@"kCTCellMonitorARFCN", @"kCTCellMonitorChannelNumber"] : @[]);
+    for (NSString *key in keys) {
+        id raw = row[key];
+        if (![raw isKindOfClass:NSNumber.class] ||
+            CFGetTypeID((__bridge CFTypeRef)raw) == CFBooleanGetTypeID()) continue;
+        double value = [raw doubleValue];
+        if (!isfinite(value) || value < 0 || value > 3279165 || floor(value) != value) continue;
+        if (sourceKey) *sourceKey = key;
+        return @((NSInteger)value);
+    }
+    return nil;
+}
+
+// CoreTelephony's numeric GSM/UTRAN band IDs are private and must not be
+// reinterpreted as LTE band numbers. Derive a STANDARD public band label only
+// from ARFCN/UARFCN ranges that are unambiguous. Ambiguous channel ranges stay
+// channel-only instead of guessing a band.
+static NSDictionary *BLDerivedLegacyBand(NSString *rat, NSNumber *channel) {
+    if (![rat isKindOfClass:NSString.class] || ![channel isKindOfClass:NSNumber.class]) return nil;
+    NSInteger n = channel.integerValue;
+    if ([rat isEqualToString:@"2G"]) {
+        if ((n >= 0 && n <= 124) || (n >= 975 && n <= 1023))
+            return @{@"label": @"GSM 900", @"frequency_mhz": @900, @"source": @"arfcn"};
+        if (n >= 128 && n <= 251)
+            return @{@"label": @"GSM 850", @"frequency_mhz": @850, @"source": @"arfcn"};
+        if (n >= 811 && n <= 885)
+            return @{@"label": @"DCS 1800", @"frequency_mhz": @1800, @"source": @"arfcn"};
+        // 512-810 is shared by DCS 1800 and PCS 1900. Do not guess.
+        return nil;
+    }
+    if ([rat isEqualToString:@"3G"]) {
+        if (n >= 10562 && n <= 10838) return @{@"label": @"UTRA I", @"frequency_mhz": @2100, @"source": @"uarfcn"};
+        if (n >= 9662 && n <= 9938) return @{@"label": @"UTRA II", @"frequency_mhz": @1900, @"source": @"uarfcn"};
+        if (n >= 1162 && n <= 1513) return @{@"label": @"UTRA III", @"frequency_mhz": @1800, @"source": @"uarfcn"};
+        if (n >= 1537 && n <= 1738) return @{@"label": @"UTRA IV", @"frequency_mhz": @1700, @"source": @"uarfcn"};
+        // UTRA VI is a subset of the UTRA V UARFCN range. Keep the overlap
+        // unresolved rather than labeling a VI channel as V.
+        if ((n >= 4357 && n <= 4386) || (n >= 4414 && n <= 4458))
+            return @{@"label": @"UTRA V", @"frequency_mhz": @850, @"source": @"uarfcn"};
+        if (n >= 2937 && n <= 3088) return @{@"label": @"UTRA VIII", @"frequency_mhz": @900, @"source": @"uarfcn"};
+    }
+    return nil;
+}
+
 static NSString *BLServingBandFromCellInfo(id cellInfo) {
     if (!cellInfo) return BLT(@"No disponible", @"Unavailable");
     SEL legacySelector = NSSelectorFromString(@"legacyInfo");
@@ -200,14 +263,36 @@ static NSString *BLServingBandFromCellInfo(id cellInfo) {
     for (id candidate in (NSArray *)legacy) {
         if (![candidate isKindOfClass:[NSDictionary class]]) continue;
         NSDictionary *dict = candidate;
-        if ([dict[@"kCTCellMonitorCellType"] isEqual:@"kCTCellMonitorCellTypeServing"]) { row = dict; break; }
+        NSString *cellType = [dict[@"kCTCellMonitorCellType"] isKindOfClass:NSString.class]
+            ? dict[@"kCTCellMonitorCellType"] : nil;
+        if ([cellType rangeOfString:@"Serving" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            row = dict;
+            break;
+        }
     }
     if (!row && [[(NSArray *)legacy firstObject] isKindOfClass:[NSDictionary class]]) row = [(NSArray *)legacy firstObject];
+    NSString *rawRAT = [row[@"kCTCellMonitorCellRadioAccessTechnology"] isKindOfClass:NSString.class]
+        ? row[@"kCTCellMonitorCellRadioAccessTechnology"] : nil;
+    NSString *ratKind = BLLegacySignalRAT(rawRAT);
+    if ([ratKind isEqualToString:@"2G"] || [ratKind isEqualToString:@"3G"]) {
+        NSNumber *channel = BLLegacyChannelFromRow(row, ratKind, nil);
+        NSDictionary *derived = BLDerivedLegacyBand(ratKind, channel);
+        NSString *humanRAT = BLHumanRAT(rawRAT);
+        if (derived) {
+            return [NSString stringWithFormat:@"%@ · %@ MHz · %@",
+                    derived[@"label"], derived[@"frequency_mhz"], humanRAT ?: ratKind];
+        }
+        if (channel) {
+            NSString *channelName = [ratKind isEqualToString:@"2G"] ? @"ARFCN" : @"UARFCN";
+            return [NSString stringWithFormat:@"%@ %@ · %@", channelName, channel, humanRAT ?: ratKind];
+        }
+        return BLT(@"No disponible", @"Unavailable");
+    }
     id band = row[@"kCTCellMonitorBandInfo"];
     if (![band respondsToSelector:@selector(integerValue)] || [band integerValue] <= 0) return BLT(@"No disponible", @"Unavailable");
     NSNumber *bandNumber = @([band integerValue]);
-    NSString *rat = row[@"kCTCellMonitorCellRadioAccessTechnology"];
-    BOOL isNR = [rat isKindOfClass:[NSString class]] && [rat rangeOfString:@"NR" options:NSCaseInsensitiveSearch].location != NSNotFound;
+    NSString *rat = rawRAT;
+    BOOL isNR = [ratKind isEqualToString:@"NR"];
     NSString *title = isNR ? BLGNRBandTitle(bandNumber) : BLGBandTitle(bandNumber);
     if ([rat isKindOfClass:[NSString class]] && rat.length) return [NSString stringWithFormat:@"%@ · %@", title, ([rat rangeOfString:@"LTE" options:NSCaseInsensitiveSearch].location != NSNotFound ? @"LTE" : rat)];
     return title;
@@ -284,17 +369,7 @@ static NSString *BLRHMetricPresence(NSDictionary *row, NSArray<NSString *> *keys
 // Keep radio-technology classification independent of the availability of
 // LTE/NR-specific signal metrics. A UMTS or GSM cell is not an LTE cell.
 static NSString *BLRHSignalRAT(NSString *raw) {
-    if (![raw isKindOfClass:NSString.class]) return nil;
-    NSString *upper = raw.uppercaseString;
-    if ([upper containsString:@"NR"]) return @"NR";
-    if ([upper containsString:@"LTE"]) return @"LTE";
-    for (NSString *token in @[@"WCDMA", @"UMTS", @"UTRAN", @"HSPA", @"HSDPA", @"HSUPA", @"TD-SCDMA"]) {
-        if ([upper containsString:token]) return @"3G";
-    }
-    for (NSString *token in @[@"GSM", @"GPRS", @"EDGE", @"GERAN"]) {
-        if ([upper containsString:token]) return @"2G";
-    }
-    return nil;
+    return BLLegacySignalRAT(raw);
 }
 
 static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
@@ -358,6 +433,13 @@ static NSDictionary *BLRHLegacySignalRow(NSDictionary *row) {
             item[[field stringByAppendingString:@"_source_key"]] = key;
             break;
         }
+    }
+    NSNumber *channel = [item[@"channel"] isKindOfClass:NSNumber.class] ? item[@"channel"] : nil;
+    NSDictionary *derivedBand = BLDerivedLegacyBand(rat, channel);
+    if (derivedBand) {
+        item[@"band_label"] = derivedBand[@"label"];
+        item[@"band_source"] = derivedBand[@"source"];
+        item[@"reference_frequency_mhz"] = derivedBand[@"frequency_mhz"];
     }
     return item;
 }
