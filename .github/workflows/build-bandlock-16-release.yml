@@ -89,7 +89,7 @@ jobs:
           sha256sum "$deb"
 
   build-dopamine:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Setup Theos
@@ -201,7 +201,7 @@ jobs:
           sha256sum "$deb"
 
   build-rootful:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Setup Theos
