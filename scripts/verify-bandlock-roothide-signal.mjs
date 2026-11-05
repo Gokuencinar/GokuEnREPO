@@ -32,6 +32,8 @@ const dopamineManager = readFileSync(dopamineRoot + 'app/BLTelephonyManager.m', 
 const dopamineAppMakefile = readFileSync(dopamineRoot + 'app/Makefile', 'utf8');
 const dopamineAnalyzer = readFileSync(dopamineRoot + 'app/BLAnalyzerViewController.m', 'utf8');
 const dopamineCaptureStore = readFileSync(dopamineRoot + 'app/BLAnalyzerCaptureStore.m', 'utf8');
+const dopamineCountries = readFileSync(dopamineRoot + 'app/BLCountriesViewController.m', 'utf8');
+const dopamineCountryDetail = readFileSync(dopamineRoot + 'app/BLCountryDetailViewController.m', 'utf8');
 const dopamineCountrySpectrum = JSON.parse(readFileSync(dopamineRoot + 'app/Resources/country-spectrum.json', 'utf8'));
 const dopamineEntitlements = readFileSync(dopamineRoot + 'daemon/Entitlements.plist', 'utf8');
 const dopaminePlist = readFileSync(dopamineRoot + 'layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist', 'utf8');
@@ -58,7 +60,7 @@ for (const relative of [
 }
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui27$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui28$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(app, /status\.alignment = UIStackViewAlignmentTop;/);
 assert.match(app, /item\.numberOfLines = 2;/);
@@ -80,7 +82,7 @@ assert.match(manager, /attempt < 30/);
 assert.match(read('layout/DEBIAN/postinst'), /launchctl kickstart -k/);
 assert.match(read('layout/DEBIAN/postinst'), /wait_for_socket/);
 assert.match(read('layout/DEBIAN/postinst'), /command -v jbroot/);
-assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc6$/m);
+assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc7$/m);
 assert.match(dopamineCore, /static NSDictionary \*BLDerivedLegacyBand\(NSString \*rat, NSNumber \*channel\)/);
 assert.match(dopamineCore, /@"GSM 900"/);
 assert.match(dopamineCore, /@"DCS 1800"/);
@@ -367,7 +369,7 @@ assert.match(app, /self\.pendingValue\.text = pendingCount/);
 assert.match(app, /self\.manager\.pendingBands\.count/);
 assert.doesNotMatch(app, /self\.pendingValue\.text = BLBandList\(/);
 assert.match(app, /detail\.hidden = subtitle\.length == 0/);
-assert.match(app, /Cambio de modo sujeto a verificación/);
+assert.doesNotMatch(app, /Cambio de modo sujeto a verificación|Mode change requires verification/);
 assert.match(app, /self\.applyLTEButton\.hidden = NO/);
 console.log('BandLock rhui4 concise UI and truncated header regression: PASS');
 
@@ -383,6 +385,22 @@ assert.match(analyzer, /\[self stopMonitoring\]/);
 const countries = read('app/BLCountriesViewController.m');
 assert.match(countries, /LTE: %lu · 5G: %lu/);
 assert.doesNotMatch(countries, /Las bandas reales dependen del operador|Actual bands vary by carrier/);
+for (const source of [countries, dopamineCountries]) {
+  assert.match(source, /compatibilityLegendView/);
+  assert.match(source, /checkmark\.circle\.fill/);
+  assert.match(source, /xmark\.circle\.fill/);
+  assert.match(source, /UIColor\.systemGreenColor/);
+  assert.match(source, /UIColor\.systemRedColor/);
+  assert.match(source, /tableHeaderView = \[self compatibilityLegendView\]/);
+}
+for (const source of [countryDetail, dopamineCountryDetail]) {
+  assert.match(source, /applyCompatibilityAccessoryToCell:/);
+  assert.match(source, /if \(!self\.manager\.hasReadState\)/);
+  assert.match(source, /xmark\.circle\.fill/);
+  assert.match(source, /UIColor\.systemRedColor/);
+  assert.doesNotMatch(source, /✓ Compatible con este iPhone|✓ Compatible with this iPhone/);
+}
+assert.doesNotMatch(dopamineApp, /Cambio de modo sujeto a verificación|Mode change requires verification/);
 for (const file of ['app/BLBandPickerViewController.m','app/BLNRBandPickerViewController.m','app/BLCountryBandsViewController.m']) {
   const picker = read(file);
   assert.doesNotMatch(picker, /cell\.detailTextLabel\.text = \[NSString stringWithFormat/);
@@ -707,7 +725,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui27 aligned BandLock hero and rhui26 regression gates: PASS');
+console.log('BandLock rhui28 country compatibility legend and rhui27 regression gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // Coalesce rapid Control Center taps. A later DISTINCT explicit user choice

@@ -13,12 +13,62 @@
 
 @implementation BLCountriesViewController
 
+- (UIView *)compatibilityLegendView {
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.tableView.bounds.size.width, 66.0)];
+    container.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+
+    UIStackView *legend = [UIStackView new];
+    legend.axis = UILayoutConstraintAxisVertical;
+    legend.spacing = 4.0;
+    legend.translatesAutoresizingMaskIntoConstraints = NO;
+
+    NSArray<NSString *> *symbols = @[@"checkmark.circle.fill", @"xmark.circle.fill"];
+    NSArray<UIColor *> *colors = @[UIColor.systemGreenColor, UIColor.systemRedColor];
+    NSArray<NSString *> *texts = @[
+        BLT(@"Compatible con este iPhone", @"Compatible with this iPhone"),
+        BLT(@"No compatible con este iPhone", @"Not compatible with this iPhone")
+    ];
+    for (NSUInteger i = 0; i < symbols.count; i++) {
+        UIStackView *row = [UIStackView new];
+        row.axis = UILayoutConstraintAxisHorizontal;
+        row.alignment = UIStackViewAlignmentCenter;
+        row.spacing = 7.0;
+
+        UIImageView *icon = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:symbols[i]]];
+        icon.tintColor = colors[i];
+        icon.contentMode = UIViewContentModeScaleAspectFit;
+        icon.translatesAutoresizingMaskIntoConstraints = NO;
+        [NSLayoutConstraint activateConstraints:@[
+            [icon.widthAnchor constraintEqualToConstant:17.0],
+            [icon.heightAnchor constraintEqualToConstant:17.0]
+        ]];
+
+        UILabel *label = [UILabel new];
+        label.text = texts[i];
+        label.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+        label.textColor = UIColor.secondaryLabelColor;
+        [row addArrangedSubview:icon];
+        [row addArrangedSubview:label];
+        [legend addArrangedSubview:row];
+    }
+
+    [container addSubview:legend];
+    [NSLayoutConstraint activateConstraints:@[
+        [legend.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:20.0],
+        [legend.trailingAnchor constraintLessThanOrEqualToAnchor:container.trailingAnchor constant:-20.0],
+        [legend.topAnchor constraintEqualToAnchor:container.topAnchor constant:8.0],
+        [legend.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-8.0]
+    ]];
+    return container;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = BLT(@"Países", @"Countries");
     self.navigationController.navigationBar.prefersLargeTitles = YES;
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
     self.tableView.rowHeight = 62.0;
+    if (!self.selectCountryOnly) self.tableView.tableHeaderView = [self compatibilityLegendView];
     [self loadDataset];
 
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];

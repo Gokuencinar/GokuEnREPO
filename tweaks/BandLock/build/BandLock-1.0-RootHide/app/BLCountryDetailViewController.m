@@ -84,9 +84,26 @@
     if (section == 1 || section == 2)
         return BLT(@"Referencia agregada de redes del país; no demuestra que la frecuencia siga activa en tu ubicación.",
                    @"Aggregated country network reference; it does not prove the frequency is still active at your location.");
-    if (section == 3 || section == 4) return BLT(@"✓ Compatible con este iPhone.", @"✓ Compatible with this iPhone.");
     if (section == 5) return BLT(@"Cambios pendientes hasta pulsar Aplicar.", @"Changes pending until Apply.");
     return nil;
+}
+
+- (void)applyCompatibilityAccessoryToCell:(UITableViewCell *)cell supported:(BOOL)supported {
+    if (!self.manager.hasReadState) {
+        cell.accessoryType = UITableViewCellAccessoryNone;
+        cell.accessoryView = nil;
+        return;
+    }
+    NSString *symbol = supported ? @"checkmark.circle.fill" : @"xmark.circle.fill";
+    UIImageView *icon = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:symbol]];
+    icon.tintColor = supported ? UIColor.systemGreenColor : UIColor.systemRedColor;
+    icon.contentMode = UIViewContentModeScaleAspectFit;
+    icon.frame = CGRectMake(0, 0, 20.0, 20.0);
+    cell.accessoryType = UITableViewCellAccessoryNone;
+    cell.accessoryView = icon;
+    cell.accessibilityValue = supported
+        ? BLT(@"Compatible con este iPhone", @"Compatible with this iPhone")
+        : BLT(@"No compatible con este iPhone", @"Not compatible with this iPhone");
 }
 
 - (UITableViewCell *)summaryCell:(NSString *)title value:(NSString *)value {
@@ -133,10 +150,7 @@
         cell.textLabel.text = BLGBandTitle(band);
         NSString *frequency = BLGFrequencyForBand(band);
         cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", frequency.length ? frequency : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), BLGDuplexForBand(band)];
-        if ([self.manager.supportedBands containsObject:band]) {
-            cell.accessoryType = UITableViewCellAccessoryCheckmark;
-            cell.tintColor = UIColor.systemGreenColor;
-        }
+        [self applyCompatibilityAccessoryToCell:cell supported:[self.manager.supportedBands containsObject:band]];
         return cell;
     }
 
@@ -146,10 +160,7 @@
         cell.textLabel.text = BLGNRBandTitle(band);
         NSString *frequency = BLGNRFrequencyForBand(band);
         cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", frequency.length ? frequency : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), BLGNRDuplexForBand(band)];
-        if ([self.manager.supportedNRBands containsObject:band]) {
-            cell.accessoryType = UITableViewCellAccessoryCheckmark;
-            cell.tintColor = UIColor.systemGreenColor;
-        }
+        [self applyCompatibilityAccessoryToCell:cell supported:[self.manager.supportedNRBands containsObject:band]];
         return cell;
     }
 

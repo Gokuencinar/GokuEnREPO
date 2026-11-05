@@ -359,13 +359,6 @@
         [status addArrangedSubview:column];
     }
     [body addArrangedSubview:status];
-    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18) {
-        UILabel *readOnly = [UILabel new];
-        readOnly.text = BLT(@"Cambio de modo sujeto a verificación", @"Mode change requires verification");
-        readOnly.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
-        readOnly.textColor = [UIColor colorWithWhite:1 alpha:0.77];
-        [body addArrangedSubview:readOnly];
-    }
     [hero addSubview:body];
     [NSLayoutConstraint activateConstraints:@[
         [body.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:19],
