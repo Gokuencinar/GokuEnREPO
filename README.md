@@ -1,61 +1,103 @@
 # GokuEnREPO
 
+Public APT repository for **iOS 16 jailbreak tweaks**, focused on **Dopamine** and **RootHide**.
 
-## Add the repo
+## 📲 Add GokuEnREPO
 
-```
-https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/
-```
+Repository URL:
 
-- [Sileo](https://gokuencinar.github.io/GokuEnREPO/add/sileo.html)
-- [Cydia](https://gokuencinar.github.io/GokuEnREPO/add/cydia.html)
-- [Zebra](https://gokuencinar.github.io/GokuEnREPO/add/zebra.html)
-- [Installer 5](https://gokuencinar.github.io/GokuEnREPO/add/installer.html)
+`https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/`
 
-## Tweaks
+<table>
+<tr>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/sileo.html"><img src="https://getsileo.app/img/icon.png" width="56" height="56" alt="Sileo"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/sileo.html">Add to Sileo</a></strong>
+</td>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/cydia.html"><img src="assets/package-managers/cydia.svg" width="56" height="56" alt="Cydia"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/cydia.html">Add to Cydia</a></strong>
+</td>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/zebra.html"><img src="https://getzbra.com/assets/zeeb.svg" width="56" height="56" alt="Zebra"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/zebra.html">Add to Zebra</a></strong>
+</td>
+<td align="center" width="25%">
+<a href="https://gokuencinar.github.io/GokuEnREPO/add/installer.html"><img src="assets/package-managers/installer.svg" width="56" height="56" alt="Installer 5"></a><br>
+<strong><a href="https://gokuencinar.github.io/GokuEnREPO/add/installer.html">Add to Installer 5</a></strong>
+</td>
+</tr>
+</table>
 
-### Better Settings
+> If your browser does not open the package manager automatically, copy the repository URL above and add it manually as a source.
 
-A convenient way to organize your tweaks, just like Shuffle did on earlier versions of iOS.
+## 📦 Available tweaks
 
-[Detalles](tweaks/BetterSettings/depiction.html)
+### 📡 BandLock Global — LTE/4G + 5G NR Band Control
 
-### BandLock Global
+Standalone jailbreak app for manually controlling LTE/4G and supported 5G NR modem selections on iOS 16. It includes network modes, independent LTE/NR pending selections, Field Test access and an offline catalogue covering 160 countries and territories.
 
-BandLock lets you manually control supported mobile network modes and LTE/5G bands on jailbroken iPhones. It also includes country band profiles, Field Test access and a Control Center module for quick network-mode switching.
+- **RootHide build:** `com.gokuencinar.bandlock` — `iphoneos-arm64e`
+- **Dopamine rootless build:** `com.gokuencinar.bandlock.dopamine` — `iphoneos-arm64`
+- **Rootful build:** `com.gokuencinar.bandlock.rootful` — `iphoneos-arm`
+- Country profiles never modify the modem automatically; compatible bands are prepared for review before applying.
+- Languages: English, Spanish, French, German, Traditional Chinese, Simplified Chinese/Mandarin and Japanese.
 
-[Details](tweaks/BandLock/README.md) · [Changelog](tweaks/BandLock/CHANGELOG.md)
+➡️ **[BandLock details](tweaks/BandLock/README.md)** · **[Changelog](tweaks/BandLock/CHANGELOG.md)**
 
-### BetterWiFi RH
+### 📶 BetterWiFi RH — Wi-Fi Tools
 
-BetterWiFi RH expands the stock Wi-Fi settings with more useful network information and diagnostic tools. It includes live signal monitoring, signal history, 2.4/5 GHz channel analysis and additional network filters.
+RootHide-compatible Wi-Fi enhancement tweak that expands the information and diagnostic tools available in iOS Settings.
 
-[Details](tweaks/BetterWiFi-RH/README.md) · [Changelog](tweaks/BetterWiFi-RH/CHANGELOG.md)
+- Extended information about the connected Wi-Fi network.
+- Live signal monitor and signal history.
+- 2.4 GHz / 5 GHz channel analyzer.
+- Network filters and diagnostic tools.
+- Shuffle / PreferenceLoader integration.
+- Manual language selector: Automatic, Spanish or English.
+- No dedicated resident daemon.
 
-### CC On & Off
+➡️ **[BetterWiFi RH details](tweaks/BetterWiFi-RH/README.md)** · **[Changelog](tweaks/BetterWiFi-RH/CHANGELOG.md)**
 
-Toggle Wi-Fi and Bluetooth On/Off from Control Center (iOS 11+, including iOS 18).
+### Nuke Wireless — In Development
 
-[Details](tweaks/CC-On-Off/README.md)
+Nuke Wireless is currently in development. Public package releases are unavailable.
 
-### RootHidePatcher FIX
+➡️ **[Nuke Wireless details](tweaks/Nuke-Wireless/README.md)**
 
-Prevents duplicate library search paths when converting tweaks with RootHidePatcher 2.1.4. RootHide only.
+## Repository layout
 
-[Details](tweaks/RootHidePatcher-FIX/README.md) · [Changelog](tweaks/RootHidePatcher-FIX/CHANGELOG.md)
+Project-specific files live under [`tweaks/`](tweaks/):
 
-### NukeWireless
+- `tweaks/BandLock/` — source snapshots, packages, diagnostics, documentation and depiction.
+- `tweaks/BetterWiFi-RH/` — package, documentation and depiction.
+- `tweaks/Nuke-Wireless/` — documentation and depiction while the project is in development.
 
-NukeWireless is a Wi-Fi and Bluetooth management toolkit. Discover and manage network devices, block connections, scan Bluetooth devices, and send Bluetooth advertisements.
+The APT entry points (`Release`, `Packages`, `Packages.gz` and repository icons) intentionally stay at the repository root so existing package-manager source URLs keep working unchanged.
 
-[Details](https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction.html)
+## Current packages
 
-Original `arpoison`, `ldid`, `network-cmds` packages and their auxiliary libraries are available for RootHide, Dopamine/rootless and rootful. [Dependencies, sources and bootstrap requirements](tweaks/NukeWireless-Dependencies/README.md).
+| Package | Version | Architecture |
+| --- | --- | --- |
+| BandLock (RootHide) | 1.6 | `iphoneos-arm64e` |
+| BandLock (Dopamine) | 1.6 | `iphoneos-arm64` |
+| BandLock (Rootful) | 1.6 | `iphoneos-arm` |
+| BetterWiFi RH | 0.3.11 | `iphoneos-arm64e` |
 
-## Support
+The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `tweaks/*/debs/` changes.
 
-[Buy Me a Coffee](https://buymeacoffee.com/GokuEn)
+## Compatibility
+
+**iOS 16.x · RootHide · Dopamine rootless · Rootful · Sileo / Cydia / Zebra / Installer 5**
+
+## ❤️ Support development
+
+If you enjoy my tweaks and would like to support their continued development, bug fixes and future projects:
+
+☕ **[Buy Me a Coffee](https://buymeacoffee.com/GokuEn)**
+
+Any support is greatly appreciated. Thank you! ❤️
 
 ---
 
-**Gokuencinar / GokuEn**
+**Developer:** Gokuencinar · GokuEn
