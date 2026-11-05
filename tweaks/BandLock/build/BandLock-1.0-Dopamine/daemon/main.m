@@ -101,7 +101,11 @@ static NSString *BLRecentAcceptedModeCode(void) {
 }
 
 static NSString *BLSocketPath(void) {
+#if BL_VARIANT_ROOTFUL
+    return @"/tmp/com.gokuencinar.bandlockd.rootful.sock";
+#else
     return @"/tmp/com.gokuencinar.bandlockd.dopamine.sock";
+#endif
 }
 
 static BOOL BLPathIsSocket(const char *path) {

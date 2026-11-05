@@ -3,7 +3,7 @@ include $(THEOS)/makefiles/common.mk
 TOOL_NAME = BandLockLauncher
 BandLockLauncher_FILES = main.m
 BandLockLauncher_FRAMEWORKS = Foundation
-BandLockLauncher_CFLAGS = -fobjc-arc
+BandLockLauncher_CFLAGS = -fobjc-arc $(BANDLOCK_VARIANT_CFLAGS)
 BandLockLauncher_INSTALL_PATH = /usr/bin
 BandLockLauncher_CODESIGN_FLAGS = -SEntitlements.plist
 
