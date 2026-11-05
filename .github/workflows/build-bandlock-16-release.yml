@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-roothide:
@@ -272,3 +272,72 @@ jobs:
           ! grep -R -a -q '/var/jb' /tmp/bandlock-rootful-extracted
           ! grep -R -a -q 'libroothide\|\.jbroot-' /tmp/bandlock-rootful-extracted
           sha256sum "$deb"
+
+  publish:
+    if: github.ref == 'refs/heads/bandlock-1.6-release'
+    needs: [verify-deb, verify-dopamine-deb, verify-rootful-deb]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/checkout@v4
+        with:
+          ref: bandlock-1.6-release
+          path: release-source
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-RootHide-1.6
+          path: /tmp/root
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Dopamine-1.6
+          path: /tmp/dop
+      - uses: actions/download-artifact@v4
+        with:
+          name: BandLock-Rootful-1.6
+          path: /tmp/rootful
+      - name: Check packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          for spec in +            'com.gokuencinar.bandlock_1.6_iphoneos-arm64e.deb com.gokuencinar.bandlock iphoneos-arm64e /tmp/root' +            'com.gokuencinar.bandlock.dopamine_1.6_iphoneos-arm64.deb com.gokuencinar.bandlock.dopamine iphoneos-arm64 /tmp/dop' +            'com.gokuencinar.bandlock.rootful_1.6_iphoneos-arm.deb com.gokuencinar.bandlock.rootful iphoneos-arm /tmp/rootful'; do
+            read -r filename package arch folder <<< "$spec"
+            deb="$folder/$filename"
+            test -s "$deb"
+            test "$(dpkg-deb -f "$deb" Package)" = "$package"
+            test "$(dpkg-deb -f "$deb" Version)" = '1.6'
+            test "$(dpkg-deb -f "$deb" Architecture)" = "$arch"
+          done
+      - name: Publish 1.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/root/com.gokuencinar.bandlock_1.6_iphoneos-arm64e.deb tweaks/BandLock/debs/
+            cp /tmp/dop/com.gokuencinar.bandlock.dopamine_1.6_iphoneos-arm64.deb tweaks/BandLock/debs/
+            cp /tmp/rootful/com.gokuencinar.bandlock.rootful_1.6_iphoneos-arm.deb tweaks/BandLock/debs/
+            cp release-source/tweaks/BandLock/README.md tweaks/BandLock/README.md
+            cp release-source/tweaks/BandLock/CHANGELOG.md tweaks/BandLock/CHANGELOG.md
+            cp release-source/tweaks/BandLock/depiction.html tweaks/BandLock/depiction.html
+            cp release-source/README.md README.md
+            cp release-source/CHANGELOG.md CHANGELOG.md
+            bash scripts/rebuild-packages.sh
+            test "$(grep -c '^Version: 1.6$' Packages)" -ge 3
+            git add +              tweaks/BandLock/debs/com.gokuencinar.bandlock_1.6_iphoneos-arm64e.deb +              tweaks/BandLock/debs/com.gokuencinar.bandlock.dopamine_1.6_iphoneos-arm64.deb +              tweaks/BandLock/debs/com.gokuencinar.bandlock.rootful_1.6_iphoneos-arm.deb +              tweaks/BandLock/README.md tweaks/BandLock/CHANGELOG.md tweaks/BandLock/depiction.html +              README.md CHANGELOG.md Packages Packages.gz
+            if git diff --cached --quiet; then
+              exit 0
+            fi
+            git commit -m 'BandLock 1.6'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1

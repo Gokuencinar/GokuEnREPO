@@ -81,7 +81,7 @@ The APT entry points (`Release`, `Packages`, `Packages.gz` and repository icons)
 | --- | --- | --- |
 | BandLock (RootHide) | 1.6 | `iphoneos-arm64e` |
 | BandLock (Dopamine) | 1.6 | `iphoneos-arm64` |
-| BandLock (Rootful) | 1.6 (hardware test pending) | `iphoneos-arm` |
+| BandLock (Rootful) | 1.6 | `iphoneos-arm` |
 | BetterWiFi RH | 0.3.11 | `iphoneos-arm64e` |
 
 The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `tweaks/*/debs/` changes.

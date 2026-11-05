@@ -2,13 +2,16 @@
 
 ## 1.6
 
-- Added the Analyzer with saved captures and separate 2G, 3G, LTE and 5G views.
-- Improved country compatibility indicators and band information.
-- Fixed Control Center mode handling and daemon communication.
-- Improved recovery when changing network modes.
-- Updated the RootHide, Dopamine and Rootful builds.
+- Added a new Analyzer for live cellular signal information, saved captures and separate 2G, 3G, LTE and 5G views.
+- Redesigned the main interface and Analyzer to make network mode, serving band and signal information easier to read.
+- Improved the Countries section with clearer band compatibility indicators and frequency information.
+- Improved the Control Center network mode selector and mode state handling.
+- Improved daemon communication and recovery when changing network modes.
+- Fixed several issues with band detection, network mode changes and interface state.
+- Updated the RootHide, Dopamine rootless and Rootful packages for BandLock 1.6.
 
 ---
+
 ## 1.5
 
 - Fixed BandLockDaemon restarts on iOS 17 with Dopamine.

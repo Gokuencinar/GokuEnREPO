@@ -4,7 +4,7 @@
 
 **BandLock Global** es la edición pública internacional de BandLock para **iOS 15–18**. Desde 1.0 se publica en tres variantes de jailbreak: **RootHide**, **Dopamine rootless** y **rootful clásico**.
 
-> Version / Versión: **1.6** · Sileo: **1.5** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
+> Current version / Versión actual: **1.6** · RootHide: **iphoneos-arm64e** · Dopamine: **iphoneos-arm64** · Rootful: **iphoneos-arm**
 
 
 ## Español
