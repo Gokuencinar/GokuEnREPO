@@ -2,6 +2,7 @@
 #import "BLTelephonyManager.h"
 #import "BLCommon.h"
 #import "BLGBandMetadata.h"
+#import "BLRHSignalScan.h"
 #import <sys/socket.h>
 #import <sys/un.h>
 #import <sys/stat.h>
@@ -15,15 +16,9 @@
 #import <stdint.h>
 #import <dlfcn.h>
 #import <stdlib.h>
-#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
-#import "BLSignalScan.h"
-#endif
 
-#if !BL_VARIANT_ROOTFUL
-// Use the same 64 MB per-process limit as the validated Dopamine iOS 17 test.
 extern int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *buffer, size_t buffersize);
 enum { BLJetsamSetTaskLimit = 6, BLJetsamLimitMB = 64 };
-#endif
 
 static void BLDaemonLog(const char *message) {
     const char *path = "/tmp/BandLock-daemon.log";
@@ -50,8 +45,10 @@ static void BLDaemonLog(const char *message) {
 
 @interface BLTelephonyManager (BandLockDaemonPrivate)
 - (NSDictionary *)queryCoreTelephony;
+- (NSDictionary *)queryCoreTelephonyForPassiveObservation;
 - (NSDictionary *)snapshotFromQuery:(NSDictionary *)query;
 - (BOOL)setRatSelectionSync:(NSString *)selection preferred:(NSString *)preferred errorText:(NSString **)errorText;
+- (BOOL)setModeCodeSync:(NSString *)mode errorText:(NSString **)errorText;
 - (BOOL)writeLTEBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
 - (NSArray<NSNumber *> *)activeLTEFromQuery:(NSDictionary *)query;
 - (BOOL)writeNRBands:(NSArray<NSNumber *> *)bands usingQuery:(NSDictionary *)query errorText:(NSString **)errorText;
@@ -69,13 +66,42 @@ static NSString * const BLRATLTE = @"kCTRegistrationRATSelectionLTE";
 static NSString * const BLRATUMTS = @"kCTRegistrationRATSelectionUMTS";
 static NSString * const BLRATNR = @"kCTRegistrationRATSelectionNR";
 static NSString * const BLRATNRSA = @"kCTRegistrationRATSelectionNRStandAlone";
+static NSString * const BLLastAcceptedModeDefaultsKey = @"BandLockLastAcceptedModeCode";
+static NSString * const BLLastAcceptedModeTimeDefaultsKey = @"BandLockLastAcceptedModeTime";
+
+static NSSet<NSString *> *BLAllowedModeCodes(void) {
+    static NSSet<NSString *> *allowed;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        allowed = [NSSet setWithArray:
+            @[@"automatic", @"2g", @"3g", @"lte", @"5g-auto", @"5g-on", @"5g-only"]];
+    });
+    return allowed;
+}
+
+static NSString *BLStoredAcceptedModeCode(void) {
+    NSString *mode = [NSUserDefaults.standardUserDefaults stringForKey:BLLastAcceptedModeDefaultsKey];
+    return [BLAllowedModeCodes() containsObject:mode] ? mode : nil;
+}
+
+static void BLRememberAcceptedModeCode(NSString *mode) {
+    if (![BLAllowedModeCodes() containsObject:mode]) return;
+    [NSUserDefaults.standardUserDefaults setObject:mode forKey:BLLastAcceptedModeDefaultsKey];
+    [NSUserDefaults.standardUserDefaults setDouble:[NSDate date].timeIntervalSince1970
+                                           forKey:BLLastAcceptedModeTimeDefaultsKey];
+}
+
+static NSString *BLRecentAcceptedModeCode(void) {
+    NSString *mode = BLStoredAcceptedModeCode();
+    if (!mode.length) return nil;
+    NSTimeInterval timestamp =
+        [NSUserDefaults.standardUserDefaults doubleForKey:BLLastAcceptedModeTimeDefaultsKey];
+    NSTimeInterval age = [NSDate date].timeIntervalSince1970 - timestamp;
+    return timestamp > 0 && age >= 0 && age <= 300.0 ? mode : nil;
+}
 
 static NSString *BLSocketPath(void) {
-#if BL_VARIANT_ROOTFUL
-    return @"/tmp/com.gokuencinar.bandlockd.rootful.sock";
-#else
     return @"/tmp/com.gokuencinar.bandlockd.dopamine.sock";
-#endif
 }
 
 static BOOL BLPathIsSocket(const char *path) {
@@ -99,7 +125,6 @@ static int BLLaunchdActivatedSocket(const char *path) {
         if (xpcHandle) dlclose(xpcHandle);
         return socketExists ? -2 : -1;
     }
-
     int *fds = NULL;
     size_t count = 0;
     int rc = activate("BandLockListener", &fds, &count);
@@ -111,18 +136,15 @@ static int BLLaunchdActivatedSocket(const char *path) {
         if (fds) free(fds);
         return fallbackAllowed ? -1 : -2;
     }
-
     if (count != 1) {
         for (size_t i = 0; i < count; i++) close(fds[i]);
         free(fds);
         BLDaemonLog("launch socket activation returned unexpected descriptor count");
         return -2;
     }
-
     int serverFD = fds[0];
     free(fds);
     int socketType = 0;
-    int accepting = 0;
     socklen_t optionLength = sizeof(int);
     struct sockaddr_un boundAddress;
     socklen_t addressLength = sizeof(boundAddress);
@@ -136,24 +158,15 @@ static int BLLaunchdActivatedSocket(const char *path) {
         close(serverFD);
         return -2;
     }
-    optionLength = sizeof(int);
-    if (getsockopt(serverFD, SOL_SOCKET, SO_ACCEPTCONN, &accepting, &optionLength) != 0) {
-        BLDaemonLog([[NSString stringWithFormat:@"launch socket SO_ACCEPTCONN query failed errno=%d", errno] UTF8String]);
+    // SO_ACCEPTCONN returns ENOPROTOOPT on some iOS 16 Dopamine builds.
+    // Calling listen again is valid for an already-listening stream socket,
+    // and also covers launchd handing us a bound-but-not-yet-listening FD.
+    if (listen(serverFD, 8) != 0) {
+        BLDaemonLog([[NSString stringWithFormat:@"launch socket listen failed errno=%d", errno] UTF8String]);
         close(serverFD);
         return -2;
     }
-    if (!accepting) {
-        // Some Dopamine/iOS launchd combinations hand the bound Unix stream
-        // socket to the daemon before listen(2) is observable via
-        // SO_ACCEPTCONN. Reusing the launchd-owned FD and calling listen here
-        // is safe and avoids unlinking/rebinding launchd's socket path.
-        if (listen(serverFD, 8) != 0) {
-            BLDaemonLog([[NSString stringWithFormat:@"launch socket listen failed errno=%d", errno] UTF8String]);
-            close(serverFD);
-            return -2;
-        }
-        BLDaemonLog("launch socket required daemon-side listen");
-    }
+    BLDaemonLog("launch socket listen ready");
     BLDaemonLog("launch socket activation acquired BandLockListener");
     return serverFD;
 }
@@ -167,7 +180,6 @@ static int BLLegacyServerSocket(const char *path) {
     memset(&address, 0, sizeof(address));
     address.sun_family = AF_UNIX;
     strlcpy(address.sun_path, path, sizeof(address.sun_path));
-
     if (bind(serverFD, (struct sockaddr *)&address, sizeof(address)) != 0) {
         BLDaemonLog([[NSString stringWithFormat:@"legacy bind failed errno=%d", errno] UTF8String]);
         close(serverFD);
@@ -187,7 +199,7 @@ static int BLLegacyServerSocket(const char *path) {
 static NSDictionary *BLStatusPayload(BLTelephonyManager *manager, NSDictionary *query) {
     if (query[@"error"]) return @{@"success": @NO, @"message": [query[@"error"] description] ?: @"CoreTelephony error"};
     NSDictionary *snapshot = [manager snapshotFromQuery:query];
-    return @{
+    NSMutableDictionary *payload = [@{
         @"success": @YES,
         @"supported": snapshot[@"supported"] ?: @[],
         @"active": snapshot[@"active"] ?: @[],
@@ -198,7 +210,10 @@ static NSDictionary *BLStatusPayload(BLTelephonyManager *manager, NSDictionary *
         @"serving": snapshot[@"serving"] ?: @"—",
         @"mode": snapshot[@"mode"] ?: @"—",
         @"mode_code": snapshot[@"mode_code"] ?: @"unknown"
-    };
+    } mutableCopy];
+    NSString *acceptedMode = BLStoredAcceptedModeCode();
+    if (acceptedMode.length) payload[@"accepted_mode"] = acceptedMode;
+    return payload;
 }
 
 static NSDictionary *BLApplyNRBandsPayload(BLTelephonyManager *manager, NSArray<NSNumber *> *requested) {
@@ -265,44 +280,97 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
         NSString *command = [request[@"cmd"] isKindOfClass:[NSString class]] ? request[@"cmd"] : @"";
         BLDaemonLog([[NSString stringWithFormat:@"handle command=%@", command] UTF8String]);
         BLTelephonyManager *manager = BLTelephonyManager.sharedManager;
-#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
-        BLSignalScan *scan = BLSignalScan.sharedScan;
-        if ([command isEqualToString:@"scan_status"]) return [scan status];
-        if ([command isEqualToString:@"scan_cancel"]) return [scan cancel];
-        if ([command isEqualToString:@"scan_recover"]) return [scan requestRecoveryWithManager:manager];
+
+        // This is a modem capability / safety gate, NOT a filesystem
+        // permissions error. NR writes and the old two-band experiment remain
+        // disabled on iOS 18. LTE apply is intentionally allowed again: the
+        // same LTE band writer is now exercised by the guarded technology scan
+        // and apply has its own subset validation + positive readback loop.
+        // Leave emergency journal recovery available: preventing restoration
+        // after a previous build wrote bands would be unsafe.
+        if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18 &&
+            [@[@"apply_nr", @"scan_start"] containsObject:command]) {
+            return @{@"success": @NO, @"unsupported_modem_write": @YES,
+                     @"message": @"El cambio de red no está verificado en este iOS"};
+        }
+
         if ([command isEqualToString:@"signal_probe"]) {
-            if ([scan isRunning]) return @{@"success": @NO, @"message": @"Scan in progress"};
-            return [scan probeWithManager:manager];
+            if ([BLRHSignalScan.sharedScan isRunning]) {
+                return @{@"success": @NO, @"message": @"A scan is already running; query scan_status"};
+            }
+            // Signal-only requests must not block on the unreliable RAT getter.
+            // Do not reuse this route to authorize any active band operation.
+            return [manager signalProbeFromQuery:[manager queryCoreTelephonyForPassiveObservation]];
         }
-        if ([command isEqualToString:@"scan_start"]) return [scan startWithManager:manager];
-        if (([command isEqualToString:@"apply"] ||
-             [command isEqualToString:@"apply_nr"] ||
-             [command isEqualToString:@"rat"]) &&
-            ([scan isRunning] || [scan hasPendingRecovery])) {
-            return @{@"success": @NO, @"message": @"Signal scan/recovery active. Restore LTE bands before other modem changes."};
+        if ([command isEqualToString:@"scan_status"]) return [BLRHSignalScan.sharedScan status];
+        if ([command isEqualToString:@"scan_line_diagnostic"]) {
+            return [BLRHSignalScan.sharedScan lineDiagnosticsWithManager:manager];
         }
-#endif
+        if ([command isEqualToString:@"band_inventory_diagnostic"]) {
+            return [BLRHSignalScan.sharedScan bandInventoryWithManager:manager];
+        }
+        if ([command isEqualToString:@"scan_cancel"]) return [BLRHSignalScan.sharedScan cancel];
+        if ([command isEqualToString:@"scan_recover"]) {
+            return [BLRHSignalScan.sharedScan requestRecoveryWithManager:manager];
+        }
+        if ([command isEqualToString:@"scan_start"]) {
+            return [BLRHSignalScan.sharedScan startWithManager:manager];
+        }
+        if ([command isEqualToString:@"scan_observe_start"]) {
+            NSString *targetRAT = [request[@"rat"] isKindOfClass:NSString.class] ? request[@"rat"] : @"";
+            if (![@[@"AUTO", @"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT])
+                return @{@"success": @NO, @"message": @"Selecciona Auto, 2G, 3G, 4G o 5G"};
+            return [BLRHSignalScan.sharedScan startPassiveObservationWithManager:manager target:targetRAT];
+        }
+        if ([command isEqualToString:@"scan_technology_start"]) {
+            NSString *targetRAT = [request[@"rat"] isKindOfClass:NSString.class] ? request[@"rat"] : @"";
+            if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:targetRAT])
+                return @{@"success": @NO, @"message": @"Selecciona una tecnología 2G, 3G, 4G o 5G"};
+            NSString *restoreMode = BLRecentAcceptedModeCode();
+            if (!restoreMode.length) {
+                return @{@"success": @NO,
+                         @"message": @"Selecciona un modo de red en BandLock (por ejemplo Auto) justo antes del barrido para establecer un punto de retorno seguro."};
+            }
+            return [BLRHSignalScan.sharedScan startTechnologyScanWithManager:manager
+                                                                      target:targetRAT
+                                                                 restoreMode:restoreMode
+                                                                  countryISO:request[@"country_iso"]
+                                                                 targetBands:request[@"target_bands"]
+                                                           targetFrequencies:request[@"target_frequencies_mhz"]];
+        }
+        if (([command isEqualToString:@"rat"] ||
+             [command isEqualToString:@"apply"] ||
+             [command isEqualToString:@"apply_nr"]) &&
+            ([BLRHSignalScan.sharedScan isRunning] ||
+             [BLRHSignalScan.sharedScan isRecovering] ||
+             [BLRHSignalScan.sharedScan hasPendingRecovery])) {
+            return @{@"success": @NO,
+                     @"message": @"LTE scan or recovery in progress. Complete the original-band restore first."};
+        }
 
         if ([command isEqualToString:@"status"]) {
             BLDaemonLog("status query begin");
-            NSDictionary *payload = nil;
-            for (NSInteger attempt = 1; attempt <= 4; attempt++) {
-                payload = BLStatusPayload(manager, [manager queryCoreTelephony]);
-                if (![payload[@"success"] boolValue] || [payload[@"supported"] count] > 0) break;
-                [NSThread sleepForTimeInterval:0.35];
-            }
-            if ([payload[@"success"] boolValue] && [payload[@"supported"] count] == 0) {
-                NSMutableDictionary *unavailable = [payload mutableCopy];
-                unavailable[@"success"] = @NO;
-                unavailable[@"message"] = @"The modem did not return LTE band capabilities yet. Tap Refresh status again.";
-                payload = unavailable;
-            }
+            // On iOS 18 neither the sync nor the async private RAT getter has
+            // produced trustworthy results on the test device. More importantly,
+            // SpringBoard requests must never enqueue that slow getter in the
+            // daemon. Report a conservative unknown selection instead.
+            BOOL passiveStatus = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+            NSDictionary *query = passiveStatus ? [manager queryCoreTelephonyForPassiveObservation]
+                                                : [manager queryCoreTelephony];
+            NSDictionary *payload = BLStatusPayload(manager, query);
             BLDaemonLog("status query end");
             return payload;
         }
 
         if ([command isEqualToString:@"rat"]) {
             NSString *mode = [request[@"mode"] isKindOfClass:[NSString class]] ? request[@"mode"] : @"";
+            if (![BLAllowedModeCodes() containsObject:mode])
+                return @{@"success": @NO, @"message": @"Modo de red no válido"};
+            // 1.5 did not require an authoritative RAT readback before the
+            // setter. The private getter is unreliable on iOS 18 and caused
+            // the 1.6 path to fail before attempting a user-requested mode.
+            // Keep the scan/recovery exclusion above; never apply band writes
+            // here. This command is only reached after explicit user action.
             BOOL requests5G = [mode hasPrefix:@"5g-"];
             if (requests5G) {
                 NSDictionary *capabilityQuery = [manager queryCoreTelephony];
@@ -312,21 +380,29 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
                     return @{@"success": @NO, @"message": @"This iPhone or active line does not report 5G support"};
                 }
             }
-            NSString *selection = BLRATAutomatic;
-            NSString *preferred = nil;
-            if ([mode isEqualToString:@"2g"]) { selection = BLRATGSM; preferred = BLGSMRAT; }
-            else if ([mode isEqualToString:@"lte"]) { selection = BLRATLTE; preferred = BLLTERAT; }
-            else if ([mode isEqualToString:@"3g"]) { selection = BLRATUMTS; preferred = BLUTRANRAT; }
-            else if ([mode isEqualToString:@"5g-auto"]) { selection = BLRATAutomatic; preferred = BLNRRAT; }
-            else if ([mode isEqualToString:@"5g-on"]) { selection = BLRATNR; preferred = BLNRRAT; }
-            else if ([mode isEqualToString:@"5g-only"]) { selection = BLRATNRSA; preferred = BLNRRAT; }
             NSString *errorText = nil;
-            if (![manager setRatSelectionSync:selection preferred:preferred errorText:&errorText]) {
+            if (![manager setModeCodeSync:mode errorText:&errorText]) {
+                BLDaemonLog("RAT setter failed; no automatic retry");
                 return @{@"success": @NO, @"message": errorText ?: @"RAT write failed"};
             }
+            BLRememberAcceptedModeCode(mode);
+            BOOL isIOS18 = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+            // iOS18 RAT getters may produce EAGAIN even after a successful
+            // setter callback. Do not mistake this for a failed write and do
+            // not issue additional private getters/repeated writes.
+            if (isIOS18) {
+                BLDaemonLog("RAT callback accepted; modem selection remains unverified");
+                return @{@"success": @YES, @"verification_pending": @YES,
+                         @"mode_code": @"unknown",
+                         @"accepted_mode": mode,
+                         @"message": @"Solicitud aceptada; modo aún sin confirmar"};
+            }
             [NSThread sleepForTimeInterval:0.35];
-            NSMutableDictionary *payload = [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
-            if ([payload[@"success"] boolValue]) payload[@"message"] = payload[@"mode"] ?: @"RAT updated";
+            NSMutableDictionary *payload =
+                [BLStatusPayload(manager, [manager queryCoreTelephony]) mutableCopy];
+            if ([payload[@"success"] boolValue]) {
+                payload[@"message"] = payload[@"mode"] ?: @"Modo actualizado";
+            }
             return payload;
         }
 
@@ -340,7 +416,10 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             }
             if (allSDL) return @{@"success": @NO, @"message": @"SDL-only LTE selections are not allowed"};
 
-            NSDictionary *query = [manager queryCoreTelephony];
+            BOOL passiveApplyQuery = [NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 18;
+            NSDictionary *query = passiveApplyQuery
+                ? [manager queryCoreTelephonyForPassiveObservation]
+                : [manager queryCoreTelephony];
             if (query[@"error"]) return @{@"success": @NO, @"message": [query[@"error"] description] ?: @"CoreTelephony error"};
             NSDictionary *before = [manager snapshotFromQuery:query];
             NSArray<NSNumber *> *supported = before[@"supported"] ?: @[];
@@ -367,7 +446,9 @@ static NSDictionary *BLHandleRequest(NSDictionary *request) {
             // a bounded window and perform only one fresh-query retry write.
             for (NSInteger attempt = 1; attempt <= 40; attempt++) {
                 [NSThread sleepForTimeInterval:0.5];
-                NSDictionary *candidate = [manager queryCoreTelephony];
+                NSDictionary *candidate = passiveApplyQuery
+                    ? [manager queryCoreTelephonyForPassiveObservation]
+                    : [manager queryCoreTelephony];
                 if (candidate[@"error"]) {
                     lastVerifyError = [candidate[@"error"] description];
                     BLDaemonLog([[NSString stringWithFormat:@"apply verify attempt=%ld error=%@", (long)attempt, lastVerifyError ?: @"unknown"] UTF8String]);
@@ -478,10 +559,7 @@ static void BLServeClient(int clientFD) {
 }
 
 int main(int argc, char *argv[]) {
-#if !BL_VARIANT_ROOTFUL
-    // Apply the validated Dopamine limit to this daemon only.
     (void)memorystatus_control(BLJetsamSetTaskLimit, (int32_t)getpid(), BLJetsamLimitMB, NULL, 0);
-#endif
     @autoreleasepool {
         signal(SIGPIPE, SIG_IGN);
         BLDaemonLog("daemon start");
@@ -493,13 +571,11 @@ int main(int argc, char *argv[]) {
         if (serverFD == -1) serverFD = BLLegacyServerSocket(path);
         if (serverFD < 0) return 72;
         BLDaemonLog("daemon listening");
-#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
-        if ([BLSignalScan.sharedScan hasPendingRecovery]) {
-            // Listen first so the app can query recovery status without
-            // blocking on CoreTelephony during reboot or daemon restart.
-            (void)[BLSignalScan.sharedScan requestRecoveryWithManager:BLTelephonyManager.sharedManager];
+        if ([BLRHSignalScan.sharedScan hasPendingRecovery]) {
+            // The recovery queue is single-flight. Set 'recovering'
+            // synchronously before accepting any other modem commands.
+            (void)[BLRHSignalScan.sharedScan requestRecoveryWithManager:BLTelephonyManager.sharedManager];
         }
-#endif
 
         while (1) {
             int clientFD = accept(serverFD, NULL, NULL);

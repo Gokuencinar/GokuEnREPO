@@ -37,9 +37,8 @@ typedef void (^BLActionCompletion)(BOOL success, NSString *message);
 - (void)restorePreviousNRBandsWithCompletion:(BLActionCompletion)completion;
 - (void)restoreAllSupportedBandsWithCompletion:(BLActionCompletion)completion;
 - (void)restoreAllSupportedNRBandsWithCompletion:(BLActionCompletion)completion;
-// Sanitized read-only rows: role, RAT, optional reported band, and only
-// validated RSRP/RSRQ/RSSI/SINR values. Cell/network identifiers are omitted.
-- (NSArray<NSDictionary *> *)signalMeasurementsFromCellInfo:(id)cellInfo;
 - (BOOL)openFieldTestWithError:(NSString **)errorText;
+// Read-only signal diagnostic; never exports raw cell/SIM identifiers.
+- (NSDictionary *)signalProbeFromQuery:(NSDictionary *)query;
 
 @end

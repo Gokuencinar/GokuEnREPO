@@ -30,7 +30,7 @@
         @{@"term": @"WCDMA / UMTS / HSPA", @"detail": BLT(@"Tecnologías 3G. HSPA/HSDPA son evoluciones de UMTS. Pueden aparecer como red actual si el iPhone abandona LTE.", @"3G technologies. HSPA/HSDPA are evolutions of UMTS. They may appear as the current network if the iPhone leaves LTE.")},
         @{@"term": @"GSM / EDGE", @"detail": BLT(@"Tecnologías 2G. Pueden existir como fallback en redes antiguas; no forman parte del selector de bandas LTE de BandLock.", @"2G technologies. They may exist as fallback on older networks; they are not part of BandLock's LTE band selector.")},
         @{@"term": @"RAT", @"detail": BLT(@"Radio Access Technology. Indica la tecnología de acceso de radio usada por el teléfono, por ejemplo LTE, UMTS/HSDPA o EDGE.", @"Radio Access Technology. It identifies the radio technology used by the phone, such as LTE, UMTS/HSDPA or EDGE.")},
-        @{@"term": @"NR / 5G", @"detail": BLT(@"New Radio es la tecnología 5G. BandLock 1.0 puede seleccionar modos 5G y bandas NR que el módem reporte como configurables.", @"New Radio is the 5G technology. BandLock 1.0 can select 5G modes and NR bands that the modem reports as configurable.")}
+        @{@"term": @"NR / 5G", @"detail": BLT(@"New Radio es la tecnología 5G. BandLock puede seleccionar modos 5G y bandas NR compatibles con este iPhone.", @"New Radio is the 5G technology. BandLock can select 5G modes and NR bands supported by this iPhone.")}
     ];
 }
 
@@ -38,8 +38,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return self.entries.count; }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    return BLT(@"La frecuencia real usada en cada momento depende del operador, la zona, la red y la agregación de portadoras.",
-               @"The frequency actually used at any moment depends on the carrier, location, network and carrier aggregation.");
+    return nil;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {

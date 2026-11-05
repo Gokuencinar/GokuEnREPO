@@ -10,6 +10,9 @@ BandLock_FILES = \
 	BLCountryProfile.m \
 	BLTelephonyManager.m \
 	BLControlViewController.m \
+	BLAnalyzerViewController.m \
+	BLAnalyzerCaptureStore.m \
+	BLAnalyzerCapturesViewController.m \
 	BLBandPickerViewController.m \
 	BLNRBandPickerViewController.m \
 	BLCountryBandsViewController.m \
@@ -20,11 +23,8 @@ BandLock_FILES = \
 	BLFrequencyGlossaryViewController.m \
 	../shared/BLCCPreferences.m \
 	../shared/BLGBandMetadata.m
-BandLock_FRAMEWORKS = UIKit Foundation
-BandLock_CFLAGS = -fobjc-arc -I../shared -DBL_APP_LOCALIZATION=1 $(BANDLOCK_VARIANT_CFLAGS)
-ifneq ($(BANDLOCK_VARIANT_CFLAGS),-DBL_VARIANT_ROOTFUL=1)
-BandLock_CFLAGS += -DBL_SIGNAL_SCAN_TEST=1
-endif
+BandLock_FRAMEWORKS = UIKit Foundation QuartzCore
+BandLock_CFLAGS = -fobjc-arc -I../shared -DBL_APP_LOCALIZATION=1
 BandLock_RESOURCE_DIRS = Resources
 BandLock_INSTALL_PATH = /Applications
 BandLock_CODESIGN_FLAGS = -SEntitlements.plist

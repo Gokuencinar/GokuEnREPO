@@ -50,9 +50,7 @@ static NSString *BLCCReadString(CFStringRef key) {
                                                      kCFPreferencesAnyHost);
     if (!value) return nil;
     NSString *result = nil;
-    if (CFGetTypeID(value) == CFStringGetTypeID()) {
-        result = [(__bridge NSString *)value copy];
-    }
+    if (CFGetTypeID(value) == CFStringGetTypeID()) result = [(__bridge NSString *)value copy];
     CFRelease(value);
     return result;
 }

@@ -53,7 +53,7 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    if (section == 0) return BLT(@"Aquí solo preparas la selección. Volver a Control y pulsar Aplicar es lo que modifica el módem.", @"This only prepares the selection. Returning to Control and tapping Apply is what changes the modem.");
+    if (section == 0) return BLT(@"Cambios pendientes hasta pulsar Aplicar.", @"Changes pending until Apply.");
     if (section == 3 && self.sdlBands.count) return BLT(@"SDL es bajada suplementaria. No conviene usar únicamente bandas SDL.", @"SDL is supplemental downlink. Avoid selecting only SDL bands.");
     return nil;
 }
@@ -83,6 +83,10 @@
         button.tag = indexPath.row;
         button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeading;
         button.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+        button.titleLabel.numberOfLines = 2;
+        button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        button.titleLabel.adjustsFontSizeToFitWidth = YES;
+        button.titleLabel.minimumScaleFactor = 0.86;
         [button setTitle:titles[indexPath.row] forState:UIControlStateNormal];
         [button setImage:[UIImage systemImageNamed:icons[indexPath.row]] forState:UIControlStateNormal];
         button.tintColor = indexPath.row == 4 ? UIColor.systemRedColor : UIColor.systemBlueColor;
@@ -100,11 +104,13 @@
     }
 
     NSNumber *band = [self bandsForSection:indexPath.section][indexPath.row];
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.textLabel.text = BLGBandTitle(band);
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", BLGFrequencyForBand(band).length ? BLGFrequencyForBand(band) : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), BLGDuplexForBand(band)];
+    // Restore the vetted no-switch design from c2efb10 (2026-09-28).
     cell.selectionStyle = UITableViewCellSelectionStyleDefault;
-    cell.accessoryType = [self.selected containsObject:band] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+    cell.accessoryType = [self.selected containsObject:band]
+        ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+    cell.tintColor = [UIColor colorWithRed:0.05 green:0.66 blue:0.58 alpha:1];
     return cell;
 }
 
@@ -136,8 +142,8 @@
         NSArray<NSNumber *> *sectionBands = [self bandsForSection:indexPath.section];
         if (indexPath.row < 0 || indexPath.row >= (NSInteger)sectionBands.count) return;
         NSNumber *band = sectionBands[(NSUInteger)indexPath.row];
-        if ([self.selected containsObject:band]) [self.selected removeObject:band];
-        else [self.selected addObject:band];
+        if (![self.selected containsObject:band]) [self.selected addObject:band];
+        else [self.selected removeObject:band];
         [self commitSelection];
         [tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
     } @catch (NSException *exception) {

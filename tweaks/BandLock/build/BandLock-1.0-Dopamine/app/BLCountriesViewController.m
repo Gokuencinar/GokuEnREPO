@@ -30,18 +30,19 @@
     self.definesPresentationContext = YES;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.tableView reloadData];
+}
+
 - (NSString *)localizedNameForCountry:(NSDictionary *)country {
     return BLLocalizedCountryName(country);
 }
 
 - (void)loadDataset {
-    NSString *path = [NSBundle.mainBundle pathForResource:@"countries" ofType:@"json"];
-    NSData *data = path ? [NSData dataWithContentsOfFile:path] : nil;
-    NSDictionary *root = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
-    NSArray *countries = [root[@"countries"] isKindOfClass:[NSArray class]] ? root[@"countries"] : @[];
-    self.datasetDate = [root[@"last_updated"] isKindOfClass:[NSString class]] ? root[@"last_updated"] : @"—";
-    NSDictionary *source = [root[@"source"] isKindOfClass:[NSDictionary class]] ? root[@"source"] : @{};
-    self.sourceName = [source[@"name"] isKindOfClass:[NSString class]] ? source[@"name"] : @"—";
+    NSArray *countries = BLAllCountryRecords();
+    self.datasetDate = @"2026-10-21";
+    self.sourceName = @"MCC-MNC.org + BandLock LTE/NR references";
     self.countries = [countries sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
         return [[self localizedNameForCountry:a] localizedCaseInsensitiveCompare:[self localizedNameForCountry:b]];
     }];
@@ -73,25 +74,37 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    return [NSString stringWithFormat:BLT(@"Datos de referencia LTE y 5G NR · actualización %@. Las bandas reales dependen del operador, región, roaming y fecha.", @"LTE and 5G NR reference data · updated %@. Actual bands vary by carrier, region, roaming and time."), self.datasetDate ?: @"—"];
+    return nil;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *country = self.filteredCountries[indexPath.row];
+    NSArray *gsm = BLCountryFrequenciesForRAT(country, @"2G");
+    NSArray *umts = BLCountryFrequenciesForRAT(country, @"3G");
     NSArray *bands = BLSortedBands(country[@"bands"]);
     NSArray *nrBands = BLSortedBands(country[@"nr_bands"]);
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.textLabel.text = [self localizedNameForCountry:country];
-    NSString *lteText = bands.count ? BLBandList(bands) : BLT(@"LTE sin datos", @"No LTE data");
-    NSString *nrText = nrBands.count ? BLNRBandList(nrBands) : BLT(@"5G sin datos", @"No 5G data");
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"LTE: %@ · 5G: %@", lteText, nrText];
+    cell.detailTextLabel.text = [NSString stringWithFormat:
+        BLT(@"2G: %lu frec. · 3G: %lu frec. · LTE: %lu · 5G: %lu",
+            @"2G: %lu freq. · 3G: %lu freq. · LTE: %lu · 5G: %lu"),
+        (unsigned long)gsm.count, (unsigned long)umts.count,
+        (unsigned long)bands.count, (unsigned long)nrBands.count];
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
     cell.detailTextLabel.numberOfLines = 2;
-    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    NSString *iso = [country[@"iso2"] isKindOfClass:NSString.class] ? [country[@"iso2"] uppercaseString] : @"";
+    BOOL selected = iso.length == 2 && [iso isEqualToString:BLSelectedCountryISO() ?: @""];
+    cell.accessoryType = selected ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryDisclosureIndicator;
+    cell.tintColor = UIColor.systemGreenColor;
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.selectCountryOnly) {
+        BLSetSelectedCountry(self.filteredCountries[indexPath.row]);
+        [self.navigationController popViewControllerAnimated:YES];
+        return;
+    }
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     @try {
         if (indexPath.row < 0 || indexPath.row >= (NSInteger)self.filteredCountries.count) return;

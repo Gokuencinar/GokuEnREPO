@@ -9,6 +9,8 @@
 @property (nonatomic, copy) NSString *datasetDate;
 @property (nonatomic, copy) NSString *sourceName;
 @property (nonatomic, strong) BLTelephonyManager *manager;
+@property (nonatomic, copy) NSArray<NSNumber *> *country2GFrequencies;
+@property (nonatomic, copy) NSArray<NSNumber *> *country3GFrequencies;
 @property (nonatomic, copy) NSArray<NSNumber *> *countryBands;
 @property (nonatomic, copy) NSArray<NSNumber *> *countryNRBands;
 @end
@@ -28,6 +30,8 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.manager = BLTelephonyManager.sharedManager;
+    self.country2GFrequencies = BLCountryFrequenciesForRAT(self.country, @"2G");
+    self.country3GFrequencies = BLCountryFrequenciesForRAT(self.country, @"3G");
     self.countryBands = BLSortedBands(self.country[@"bands"]);
     self.countryNRBands = BLSortedBands(self.country[@"nr_bands"]);
     self.title = [self localizedCountryName];
@@ -40,6 +44,14 @@
     return BLLocalizedCountryName(self.country);
 }
 
+- (NSString *)frequencyList:(NSArray<NSNumber *> *)values {
+    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:values.count];
+    for (NSNumber *value in values) {
+        if ([value isKindOfClass:NSNumber.class]) [parts addObject:value.stringValue];
+    }
+    return [parts componentsJoinedByString:@", "];
+}
+
 - (NSArray<NSNumber *> *)compatibleBands {
     return BLIntersectBands(self.manager.supportedBands, self.countryBands);
 }
@@ -48,26 +60,32 @@
     return BLIntersectBands(self.manager.supportedNRBands, self.countryNRBands);
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 4; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 6; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 5;
-    if (section == 1) return self.countryBands.count;
-    if (section == 2) return self.countryNRBands.count;
+    if (section == 0) return 9;
+    if (section == 1) return self.country2GFrequencies.count;
+    if (section == 2) return self.country3GFrequencies.count;
+    if (section == 3) return self.countryBands.count;
+    if (section == 4) return self.countryNRBands.count;
     return 1;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     if (section == 0) return BLT(@"Resumen", @"Summary");
-    if (section == 1) return BLT(@"Bandas LTE de referencia", @"Reference LTE bands");
-    if (section == 2) return BLT(@"Bandas 5G NR de referencia", @"Reference 5G NR bands");
+    if (section == 1) return BLT(@"Frecuencias 2G de referencia", @"Reference 2G frequencies");
+    if (section == 2) return BLT(@"Frecuencias 3G de referencia", @"Reference 3G frequencies");
+    if (section == 3) return BLT(@"Bandas LTE de referencia", @"Reference LTE bands");
+    if (section == 4) return BLT(@"Bandas 5G NR de referencia", @"Reference 5G NR bands");
     return BLT(@"Preparar selección", @"Prepare selection");
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    if (section == 1) return BLT(@"✓ indica que esa banda también aparece entre las soportadas por el módem de este iPhone. La lista del país es orientativa y puede variar por operador y zona.", @"✓ means that band is also reported as supported by this iPhone modem. Country data is a reference and may vary by carrier and location.");
-    if (section == 2) return BLT(@"Las bandas nXX proceden del catálogo 5G por país. ✓ indica que el módem también reporta esa banda NR como configurable.", @"The nXX bands come from the country 5G catalogue. ✓ means the modem also reports that NR band as configurable.");
-    if (section == 3) return BLT(@"El botón prepara por separado las intersecciones LTE y 5G NR. Los cambios solo se aplican después desde Control.", @"The button separately prepares the LTE and 5G NR intersections. Changes are only applied later from Control.");
+    if (section == 1 || section == 2)
+        return BLT(@"Referencia agregada de redes del país; no demuestra que la frecuencia siga activa en tu ubicación.",
+                   @"Aggregated country network reference; it does not prove the frequency is still active at your location.");
+    if (section == 3 || section == 4) return BLT(@"✓ Compatible con este iPhone.", @"✓ Compatible with this iPhone.");
+    if (section == 5) return BLT(@"Cambios pendientes hasta pulsar Aplicar.", @"Changes pending until Apply.");
     return nil;
 }
 
@@ -83,13 +101,33 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
         if (indexPath.row == 0) return [self summaryCell:BLT(@"País", @"Country") value:[self localizedCountryName]];
-        if (indexPath.row == 1) return [self summaryCell:BLT(@"Bandas LTE del país", @"Country LTE bands") value:self.countryBands.count ? BLBandList(self.countryBands) : BLT(@"Sin datos", @"No data")];
-        if (indexPath.row == 2) return [self summaryCell:BLT(@"LTE compatibles con iPhone", @"LTE compatible with iPhone") value:self.manager.hasReadState ? BLBandList([self compatibleBands]) : BLT(@"Actualiza Control primero", @"Refresh Control first")];
-        if (indexPath.row == 3) return [self summaryCell:BLT(@"Bandas 5G del país", @"Country 5G bands") value:self.countryNRBands.count ? BLNRBandList(self.countryNRBands) : BLT(@"Sin datos 5G", @"No 5G data")];
-        return [self summaryCell:BLT(@"5G compatibles con iPhone", @"5G compatible with iPhone") value:self.manager.hasReadState ? BLNRBandList([self compatibleNRBands]) : BLT(@"Actualiza Control primero", @"Refresh Control first")];
+        if (indexPath.row == 1) return [self summaryCell:@"2G" value:self.country2GFrequencies.count ? [NSString stringWithFormat:@"%@ MHz", [self frequencyList:self.country2GFrequencies]] : BLT(@"Sin datos", @"No data")];
+        if (indexPath.row == 2) return [self summaryCell:@"3G" value:self.country3GFrequencies.count ? [NSString stringWithFormat:@"%@ MHz", [self frequencyList:self.country3GFrequencies]] : BLT(@"Sin datos", @"No data")];
+        if (indexPath.row == 3) return [self summaryCell:BLT(@"Bandas LTE del país", @"Country LTE bands") value:self.countryBands.count ? BLBandList(self.countryBands) : BLT(@"Sin datos exactos", @"No exact data")];
+        if (indexPath.row == 4) return [self summaryCell:BLT(@"LTE compatibles con iPhone", @"LTE compatible with iPhone") value:self.manager.hasReadState ? BLBandList([self compatibleBands]) : BLT(@"Se comprobará automáticamente", @"Checked automatically")];
+        if (indexPath.row == 5) return [self summaryCell:BLT(@"Bandas 5G del país", @"Country 5G bands") value:self.countryNRBands.count ? BLNRBandList(self.countryNRBands) : BLT(@"Sin datos 5G exactos", @"No exact 5G data")];
+        if (indexPath.row == 6) return [self summaryCell:BLT(@"5G compatibles con iPhone", @"5G compatible with iPhone") value:self.manager.hasReadState ? BLNRBandList([self compatibleNRBands]) : BLT(@"Se comprobará automáticamente", @"Checked automatically")];
+        if (indexPath.row == 7) return [self summaryCell:BLT(@"Fuente", @"Source") value:self.sourceName ?: @"—"];
+        return [self summaryCell:BLT(@"Datos actualizados", @"Data updated") value:self.datasetDate ?: @"—"];
     }
 
     if (indexPath.section == 1) {
+        NSNumber *mhz = self.country2GFrequencies[indexPath.row];
+        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+        cell.textLabel.text = [NSString stringWithFormat:@"GSM %@ MHz", mhz];
+        cell.detailTextLabel.text = BLT(@"2G · referencia nacional", @"2G · country reference");
+        return cell;
+    }
+
+    if (indexPath.section == 2) {
+        NSNumber *mhz = self.country3GFrequencies[indexPath.row];
+        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+        cell.textLabel.text = [NSString stringWithFormat:@"UMTS %@ MHz", mhz];
+        cell.detailTextLabel.text = BLT(@"3G · referencia nacional", @"3G · country reference");
+        return cell;
+    }
+
+    if (indexPath.section == 3) {
         NSNumber *band = self.countryBands[indexPath.row];
         UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
         cell.textLabel.text = BLGBandTitle(band);
@@ -102,7 +140,7 @@
         return cell;
     }
 
-    if (indexPath.section == 2) {
+    if (indexPath.section == 4) {
         NSNumber *band = self.countryNRBands[indexPath.row];
         UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
         cell.textLabel.text = BLGNRBandTitle(band);
@@ -117,11 +155,15 @@
 
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    BOOL ready = self.manager.hasReadState && ([self compatibleBands].count > 0 || [self compatibleNRBands].count > 0);
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     button.translatesAutoresizingMaskIntoConstraints = NO;
     button.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
-    [button setTitle:(ready ? BLT(@"Preparar bandas compatibles", @"Prepare compatible bands") : BLT(@"Actualizar desde Control primero", @"Refresh from Control first")) forState:UIControlStateNormal];
+    button.titleLabel.numberOfLines = 2;
+    button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    button.titleLabel.textAlignment = NSTextAlignmentCenter;
+    button.titleLabel.adjustsFontSizeToFitWidth = YES;
+    button.titleLabel.minimumScaleFactor = 0.86;
+    [button setTitle:BLT(@"Usar este país", @"Use this country") forState:UIControlStateNormal];
     [button addTarget:self action:@selector(prepareButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [cell.contentView addSubview:button];
     [NSLayoutConstraint activateConstraints:@[
@@ -166,11 +208,24 @@
 }
 
 - (void)prepareButtonTapped:(UIButton *)sender {
-    if (!self.manager.hasReadState) {
-        [self showAlert:BLT(@"Pulsa «Actualizar estado» en Control antes de preparar un país.", @"Tap “Refresh status” in Control before preparing a country.")];
+    BLSetSelectedCountry(self.country);
+    if (self.manager.hasReadState) {
+        [self prepareCompatibleBands];
         return;
     }
-    [self prepareCompatibleBands];
+    if (self.manager.busy) return;
+    sender.enabled = NO;
+    __weak typeof(self) weakSelf = self;
+    [self.manager refreshWithCompletion:^(BOOL success, NSString *message) {
+        sender.enabled = YES;
+        [weakSelf.tableView reloadData];
+        if (!success) {
+            [weakSelf showAlert:BLT(@"País seleccionado. No se pudieron comprobar ahora las bandas compatibles.",
+                                     @"Country selected. Compatible bands could not be checked right now.")];
+            return;
+        }
+        [weakSelf prepareCompatibleBands];
+    }];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {

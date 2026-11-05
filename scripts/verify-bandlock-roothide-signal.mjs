@@ -24,10 +24,39 @@ const macWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-sign
 const linuxWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-linux-diagnostic.yml', 'utf8');
 const dopamineRoot = 'tweaks/BandLock/build/BandLock-1.0-Dopamine/';
 const dopamineMain = readFileSync(dopamineRoot + 'daemon/main.m', 'utf8');
+const dopamineCore = readFileSync(dopamineRoot + 'daemon/BLTelephonyCore.m', 'utf8');
+const dopamineScan = readFileSync(dopamineRoot + 'daemon/BLRHSignalScan.m', 'utf8');
+const dopamineDaemonMakefile = readFileSync(dopamineRoot + 'daemon/Makefile', 'utf8');
+const dopamineManager = readFileSync(dopamineRoot + 'app/BLTelephonyManager.m', 'utf8');
+const dopamineAppMakefile = readFileSync(dopamineRoot + 'app/Makefile', 'utf8');
+const dopamineAnalyzer = readFileSync(dopamineRoot + 'app/BLAnalyzerViewController.m', 'utf8');
+const dopamineCaptureStore = readFileSync(dopamineRoot + 'app/BLAnalyzerCaptureStore.m', 'utf8');
+const dopamineCountrySpectrum = JSON.parse(readFileSync(dopamineRoot + 'app/Resources/country-spectrum.json', 'utf8'));
+const dopamineEntitlements = readFileSync(dopamineRoot + 'daemon/Entitlements.plist', 'utf8');
 const dopaminePlist = readFileSync(dopamineRoot + 'layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist', 'utf8');
 const dopaminePostinst = readFileSync(dopamineRoot + 'layout/DEBIAN/postinst', 'utf8');
 const dopamineControl = readFileSync(dopamineRoot + 'control', 'utf8');
 const rootHidePlist = read('layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.plist');
+for (const relative of [
+  'app/BLAppDelegate.m',
+  'app/BLControlViewController.m',
+  'app/BLAnalyzerViewController.m',
+  'app/BLAnalyzerCaptureStore.m',
+  'app/BLAnalyzerCapturesViewController.m',
+  'app/BLCountryProfile.m',
+  'app/BLCountryBandsViewController.m',
+  'app/BLLocalization.m',
+  'daemon/BLTelephonyCore.m',
+  'daemon/BLTelephonyManager.h',
+  'shared/BLCCPreferences.m',
+  'shared/BLGBandMetadata.m',
+  'app/Resources/country-spectrum.json'
+]) {
+  const dopamineCommon = readFileSync(dopamineRoot + relative, 'utf8').replace(/\r\n/g, '\n');
+  const rootHideCommon = read(relative).replace(/\r\n/g, '\n');
+  assert.equal(dopamineCommon, rootHideCommon,
+    `Dopamine 1.6 common file diverged from rhui26: ${relative}`);
+}
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
 assert.match(control, /^Version: 1\.6\.0~rhui26$/m);
@@ -48,7 +77,7 @@ assert.match(manager, /attempt < 30/);
 assert.match(read('layout/DEBIAN/postinst'), /launchctl kickstart -k/);
 assert.match(read('layout/DEBIAN/postinst'), /wait_for_socket/);
 assert.match(read('layout/DEBIAN/postinst'), /command -v jbroot/);
-assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc2$/m);
+assert.match(dopamineControl, /^Version: 1\.6\.0~dopipc3$/m);
 assert.match(dopaminePlist, /<key>Sockets<\/key>/);
 assert.match(dopaminePlist, /<key>BandLockListener<\/key>/);
 assert.match(dopaminePlist, /<string>\/tmp\/com\.gokuencinar\.bandlockd\.dopamine\.sock<\/string>/);
@@ -58,14 +87,36 @@ assert.match(dopaminePlist, /<key>SockPassive<\/key>\s*<true\/>/);
 assert.match(dopamineMain, /activate\("BandLockListener", &fds, &count\)/);
 assert.match(dopamineMain, /if \(serverFD == -1\) serverFD = BLLegacyServerSocket\(path\)/);
 assert.match(dopamineMain, /fallbackAllowed = \(rc == ENOENT \|\| rc == ESRCH\)/);
-assert.match(dopamineMain, /SO_ACCEPTCONN/);
-assert.match(dopamineMain, /if \(!accepting\)/);
-assert.match(dopamineMain, /launch socket required daemon-side listen/);
+assert.doesNotMatch(dopamineMain, /getsockopt\(serverFD, SOL_SOCKET, SO_ACCEPTCONN/);
+assert.match(dopamineMain, /launch socket listen ready/);
 assert.match(dopamineMain, /listen\(serverFD, 8\)/);
 assert.match(dopamineMain, /BLPathIsSocket/);
 assert.match(dopaminePostinst, /wait_for_socket/);
 assert.match(dopaminePostinst, /retrying system domain/);
 assert.match(dopaminePostinst, /job registered domain=/);
+assert.match(dopamineManager, /\/tmp\/com\.gokuencinar\.bandlockd\.dopamine\.sock/);
+assert.doesNotMatch(dopamineManager, /BLRootHidePhysicalRootFromEnvironment|\.jbroot-|jbroot\(/);
+assert.match(dopamineAppMakefile, /BLAnalyzerViewController\.m/);
+assert.match(dopamineAppMakefile, /BLAnalyzerCaptureStore\.m/);
+assert.match(dopamineAppMakefile, /BLAnalyzerCapturesViewController\.m/);
+assert.match(dopamineAppMakefile, /QuartzCore/);
+assert.doesNotMatch(dopamineAppMakefile, /-lroothide/);
+assert.match(dopamineAnalyzer, /Actualizar ahora/);
+assert.match(dopamineAnalyzer, /scanTapped:/);
+assert.match(dopamineAnalyzer, /Ver capturas guardadas/);
+assert.match(dopamineCaptureStore, /BLAnalyzerCaptureDirectoryName/);
+assert.ok(Array.isArray(dopamineCountrySpectrum) || typeof dopamineCountrySpectrum === 'object');
+assert.match(dopamineDaemonMakefile, /BLRHSignalScan\.m/);
+assert.doesNotMatch(dopamineDaemonMakefile, /BLSignalScan\.m/);
+assert.match(dopamineScan, /startPassiveObservationWithManager:/);
+assert.match(dopamineScan, /startTechnologyScanWithManager:/);
+assert.match(dopamineScan, /\/var\/mobile\/Library\/Application Support\/BandLockGlobal/);
+assert.doesNotMatch(dopamineScan, /#import <roothide\.h>|jbroot\(/);
+assert.match(dopamineCore, /queryCoreTelephonyForPassiveObservation/);
+assert.match(dopamineCore, /dataServiceIdentifier/);
+assert.match(dopamineCore, /serviceSubscriberCellularProviders/);
+assert.match(dopamineEntitlements, /com\.apple\.private\.memorystatus/);
+assert.doesNotMatch(dopamineMain, /#import <roothide\.h>|jbroot\(/);
 console.log('BandLock 1.6 launchd IPC hardening gates: PASS');
 assert.match(manager, /BLRootHidePhysicalRootFromEnvironment/);
 assert.match(manager, /signalProbeWithCompletion:/);

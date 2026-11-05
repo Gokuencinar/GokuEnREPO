@@ -102,17 +102,55 @@ jobs:
         run: |
           set -euo pipefail
           d=tweaks/BandLock/build/BandLock-1.0-Dopamine
+          r=tweaks/BandLock/build/BandLock-1.0-RootHide
           plutil -lint "$d/app/Resources/Info.plist"
           plutil -lint "$d/daemon/Entitlements.plist"
           plutil -lint "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
           sh -n "$d/layout/DEBIAN/postinst"
-          grep -q '^Version: 1.6.0~dopipc2$' "$d/control"
+          grep -q '^Version: 1.6.0~dopipc3$' "$d/control"
           grep -q '^Architecture: iphoneos-arm64$' "$d/control"
+          grep -q 'BLAnalyzerViewController.m' "$d/app/Makefile"
+          grep -q 'BLAnalyzerCaptureStore.m' "$d/app/Makefile"
+          grep -q 'BLAnalyzerCapturesViewController.m' "$d/app/Makefile"
+          grep -q 'QuartzCore' "$d/app/Makefile"
+          test -s "$d/app/Resources/country-spectrum.json"
+          test -s "$d/daemon/BLRHSignalScan.m"
+          test ! -e "$d/daemon/BLSignalScan.m"
+          grep -q 'BLRHSignalScan.m' "$d/daemon/Makefile"
+          grep -q 'queryCoreTelephonyForPassiveObservation' "$d/daemon/BLTelephonyCore.m"
+          grep -q 'startTechnologyScanWithManager:' "$d/daemon/BLRHSignalScan.m"
+          ! grep -R -n -E '#import <roothide\.h>|jbroot\(' "$d/app" "$d/daemon"
+          ! grep -q -- '-lroothide' "$d/app/Makefile"
+          for f in \
+            BLAppDelegate.h BLAppDelegate.m \
+            BLBandPickerViewController.h BLBandPickerViewController.m \
+            BLControlViewController.h BLControlViewController.m \
+            BLCountriesViewController.h BLCountriesViewController.m \
+            BLCountryBandsViewController.h BLCountryBandsViewController.m \
+            BLCountryDetailViewController.h BLCountryDetailViewController.m \
+            BLCountryProfile.h BLCountryProfile.m \
+            BLFrequencyGlossaryViewController.h BLFrequencyGlossaryViewController.m \
+            BLLanguageViewController.h BLLanguageViewController.m \
+            BLLocalization.h BLLocalization.m \
+            BLNRBandPickerViewController.h BLNRBandPickerViewController.m \
+            BLAnalyzerViewController.h BLAnalyzerViewController.m \
+            BLAnalyzerCaptureStore.h BLAnalyzerCaptureStore.m \
+            BLAnalyzerCapturesViewController.h BLAnalyzerCapturesViewController.m; do
+            cmp "$d/app/$f" "$r/app/$f"
+          done
+          cmp "$d/app/Resources/country-spectrum.json" "$r/app/Resources/country-spectrum.json"
+          cmp "$d/app/Resources/countries.json" "$r/app/Resources/countries.json"
+          cmp "$d/daemon/BLTelephonyCore.m" "$r/daemon/BLTelephonyCore.m"
+          cmp "$d/daemon/BLTelephonyManager.h" "$r/daemon/BLTelephonyManager.h"
+          cmp "$d/shared/BLCCPreferences.m" "$r/shared/BLCCPreferences.m"
+          cmp "$d/shared/BLGBandMetadata.m" "$r/shared/BLGBandMetadata.m"
           grep -q '<key>BandLockListener</key>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
           grep -q '<key>SockPathOwner</key>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
           grep -q '<integer>501</integer>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
           grep -q '<integer>384</integer>' "$d/layout/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist"
           grep -q 'launch_activate_socket' "$d/daemon/main.m"
+          grep -q 'launch socket listen ready' "$d/daemon/main.m"
+          ! grep -q 'getsockopt(serverFD, SOL_SOCKET, SO_ACCEPTCONN' "$d/daemon/main.m"
           grep -q 'BLLegacyServerSocket' "$d/daemon/main.m"
           grep -q 'wait_for_socket' "$d/layout/DEBIAN/postinst"
           grep -q 'retrying system domain' "$d/layout/DEBIAN/postinst"
@@ -121,7 +159,7 @@ jobs:
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-Dopamine
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          deb='packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc2_iphoneos-arm64.deb'
+          deb='packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc3_iphoneos-arm64.deb'
           test -s "$deb"
           daemon="$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
           test -n "$daemon"
@@ -133,8 +171,8 @@ jobs:
           grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-dopamine-entitlements.plist
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-Dopamine-1.6.0-dopipc2
-          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc2_iphoneos-arm64.deb
+          name: BandLock-Dopamine-1.6.0-dopipc3
+          path: tweaks/BandLock/build/BandLock-1.0-Dopamine/packages/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc3_iphoneos-arm64.deb
 
   verify-dopamine-deb:
     needs: build-dopamine
@@ -142,19 +180,21 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-Dopamine-1.6.0-dopipc2
+          name: BandLock-Dopamine-1.6.0-dopipc3
           path: /tmp/bandlock-dopamine
       - name: Check Dopamine DEB metadata and launchd socket
         run: |
           set -euo pipefail
-          deb='/tmp/bandlock-dopamine/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc2_iphoneos-arm64.deb'
+          deb='/tmp/bandlock-dopamine/com.gokuencinar.bandlock.dopamine_1.6.0~dopipc3_iphoneos-arm64.deb'
           test -s "$deb"
           test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock.dopamine'
-          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~dopipc2'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~dopipc3'
           test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64'
           rm -rf /tmp/bandlock-dopamine-extracted
           dpkg-deb -x "$deb" /tmp/bandlock-dopamine-extracted
           plist='/tmp/bandlock-dopamine-extracted/var/jb/Library/LaunchDaemons/com.gokuencinar.bandlockd.dopamine.plist'
           grep -q 'BandLockListener' "$plist"
           grep -q '/tmp/com.gokuencinar.bandlockd.dopamine.sock' "$plist"
+          test -n "$(find /tmp/bandlock-dopamine-extracted -type f -name country-spectrum.json -print -quit)"
+          test -n "$(find /tmp/bandlock-dopamine-extracted -type f -name BandLockDaemon -print -quit)"
           sha256sum "$deb"

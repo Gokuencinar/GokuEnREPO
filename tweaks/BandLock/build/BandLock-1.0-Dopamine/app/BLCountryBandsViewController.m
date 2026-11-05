@@ -15,6 +15,7 @@
 @property (nonatomic, copy) NSArray<NSNumber *> *tddBands;
 @property (nonatomic, copy) NSArray<NSNumber *> *sdlBands;
 @property (nonatomic, copy) NSArray<NSNumber *> *otherBands;
+@property (nonatomic, assign) BOOL show5G;
 @end
 
 @implementation BLCountryBandsViewController
@@ -31,6 +32,7 @@
     self.availableBands = BLIntersectBands(self.manager.supportedBands, countryBands);
     NSArray *countryNRBands = BLSortedBands(self.country[@"nr_bands"]);
     self.availableNRBands = BLIntersectBands(self.manager.supportedNRBands, countryNRBands);
+    self.show5G = self.manager.supports5G && self.availableNRBands.count > 0;
 
     NSArray *pending = BLIntersectBands(self.manager.pendingBands, self.availableBands);
     NSArray *active = BLIntersectBands(self.manager.activeBands, self.availableBands);
@@ -53,15 +55,15 @@
     self.otherBands = BLSortedBands(other);
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 6; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return self.show5G ? 6 : 5; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 4;
+    if (section == 0) return self.show5G ? 4 : 2;
     if (section == 1) return self.fddBands.count;
     if (section == 2) return self.tddBands.count;
     if (section == 3) return self.sdlBands.count;
     if (section == 4) return self.otherBands.count;
-    return self.availableNRBands.count;
+    return self.show5G ? self.availableNRBands.count : 0;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -70,16 +72,15 @@
     if (section == 2) return @"TDD";
     if (section == 3) return @"SDL";
     if (section == 4) return BLT(@"Otras LTE", @"Other LTE");
-    return @"5G NR";
+    return self.show5G ? @"5G NR" : nil;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     if (section == 0) {
-        return BLT(@"Aquí solo cambias la selección pendiente. Pulsa Aplicar en Control para modificar el módem.",
-                   @"Changes here only update the pending selection. Tap Apply in Control to change the modem.");
+        return BLT(@"Cambios pendientes hasta pulsar Aplicar.", @"Changes pending until Apply.");
     }
     if (section == 3 && self.sdlBands.count) return BLT(@"SDL es bajada suplementaria. No conviene usar únicamente bandas SDL.", @"SDL is supplemental downlink. Avoid selecting only SDL bands.");
-    if (section == 5 && self.availableNRBands.count) return BLT(@"Las bandas nXX se preparan como una selección 5G separada. Usa «Aplicar selección 5G» en Control para escribirlas.", @"The nXX bands are prepared as a separate 5G selection. Use “Apply 5G selection” in Control to write them.");
+    if (section == 5 && self.show5G && self.availableNRBands.count) return BLT(@"Las bandas 5G se aplican por separado.", @"5G bands are applied separately.");
     return nil;
 }
 
@@ -93,13 +94,16 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
-        NSArray *titles = @[
+        NSArray *titles = self.show5G ? @[
             BLT(@"Seleccionar todas las LTE del país", @"Select all country LTE bands"),
             BLT(@"Usar las LTE activas actuales", @"Use current active LTE bands"),
             BLT(@"Seleccionar todas las 5G del país", @"Select all country 5G bands"),
             BLT(@"Usar las 5G activas actuales", @"Use current active 5G bands")
+        ] : @[
+            BLT(@"Seleccionar todas las LTE del país", @"Select all country LTE bands"),
+            BLT(@"Usar las LTE activas actuales", @"Use current active LTE bands")
         ];
-        NSArray *symbols = @[@"checkmark.circle", @"4g.lte", @"checkmark.circle", @"5g"];
+        NSArray *symbols = self.show5G ? @[@"checkmark.circle", @"4g.lte", @"checkmark.circle", @"5g"] : @[@"checkmark.circle", @"4g.lte"];
         UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
         cell.textLabel.text = titles[indexPath.row];
         cell.imageView.image = [UIImage systemImageNamed:symbols[indexPath.row]];
@@ -109,16 +113,14 @@
         return cell;
     }
 
-    BOOL nr = indexPath.section == 5;
+    BOOL nr = self.show5G && indexPath.section == 5;
     NSNumber *band = nr ? self.availableNRBands[indexPath.row] : [self bandsForSection:indexPath.section][indexPath.row];
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.textLabel.text = nr ? BLGNRBandTitle(band) : BLGBandTitle(band);
-    NSString *frequency = nr ? BLGNRFrequencyForBand(band) : BLGFrequencyForBand(band);
-    NSString *duplex = nr ? BLGNRDuplexForBand(band) : BLGDuplexForBand(band);
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", frequency.length ? frequency : BLT(@"Frecuencia sin catalogar", @"Frequency not catalogued"), duplex];
     cell.selectionStyle = UITableViewCellSelectionStyleDefault;
     BOOL selected = nr ? [self.selectedNR containsObject:band] : [self.selected containsObject:band];
     cell.accessoryType = selected ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+    cell.tintColor = [UIColor colorWithRed:0.05 green:0.66 blue:0.58 alpha:1];
     return cell;
 }
 
@@ -146,14 +148,14 @@
     if (indexPath.section == 0) {
         if (indexPath.row == 0) [self setSelectedBands:self.availableBands];
         else if (indexPath.row == 1) [self setSelectedBands:BLIntersectBands(self.manager.activeBands, self.availableBands)];
-        else if (indexPath.row == 2) [self setSelectedNRBands:self.availableNRBands];
-        else [self setSelectedNRBands:BLIntersectBands(self.manager.activeNRBands, self.availableNRBands)];
+        else if (self.show5G && indexPath.row == 2) [self setSelectedNRBands:self.availableNRBands];
+        else if (self.show5G && indexPath.row == 3) [self setSelectedNRBands:BLIntersectBands(self.manager.activeNRBands, self.availableNRBands)];
         return;
     }
-    NSArray<NSNumber *> *bands = indexPath.section == 5 ? self.availableNRBands : [self bandsForSection:indexPath.section];
+    NSArray<NSNumber *> *bands = (self.show5G && indexPath.section == 5) ? self.availableNRBands : [self bandsForSection:indexPath.section];
     if (indexPath.row < 0 || indexPath.row >= (NSInteger)bands.count) return;
     NSNumber *band = bands[(NSUInteger)indexPath.row];
-    NSMutableSet *target = indexPath.section == 5 ? self.selectedNR : self.selected;
+    NSMutableSet *target = (self.show5G && indexPath.section == 5) ? self.selectedNR : self.selected;
     if ([target containsObject:band]) [target removeObject:band];
     else [target addObject:band];
     [self commitSelection];

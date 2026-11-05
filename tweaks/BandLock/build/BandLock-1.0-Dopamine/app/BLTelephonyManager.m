@@ -1,7 +1,7 @@
 #import "BLTelephonyManager.h"
+#import "../../BLHardwareCapabilities.h"
 #import "BLCommon.h"
 #import "BLBreadcrumb.h"
-#import "BLCCPreferences.h"
 #import <sys/socket.h>
 #import <sys/stat.h>
 #import <sys/un.h>
@@ -17,14 +17,98 @@ static NSString * const BLPreviousBandsDefaultsKey = @"BandLockPreviousBands";
 static NSString * const BLPreviousNRBandsDefaultsKey = @"BandLockPreviousNRBands";
 static NSString * const BLPendingBandsDefaultsKey = @"BandLockPendingBands";
 static NSString * const BLPendingNRBandsDefaultsKey = @"BandLockPendingNRBands";
-#if BL_VARIANT_ROOTFUL
-static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.rootful.sock";
-#else
 static NSString * const BLDaemonSocketRelativePath = @"/tmp/com.gokuencinar.bandlockd.dopamine.sock";
-#endif
 
 static NSString *BLDaemonSocketPath(void) {
     return BLDaemonSocketRelativePath;
+}
+
+static NSString *BLFriendlyResultMessage(NSDictionary *result, NSString *command) {
+    BOOL success = [result[@"success"] boolValue];
+    NSString *phase = [result[@"phase"] isKindOfClass:NSString.class] ? result[@"phase"] : @"";
+    NSString *raw = [result[@"message"] isKindOfClass:NSString.class] ? result[@"message"] : @"";
+    NSString *lower = raw.lowercaseString;
+
+    if (!success) {
+        BOOL recoveryNeeded = [result[@"recovery_required"] boolValue] ||
+            [phase isEqualToString:@"recovery_required"] ||
+            ([command hasPrefix:@"scan_"] &&
+             ([lower containsString:@"recover"] || [lower containsString:@"restore"]));
+        if (recoveryNeeded) {
+            return BLT(@"Es necesario recuperar la configuración anterior antes de continuar.",
+                       @"The previous configuration must be recovered before continuing.");
+        }
+        if ([command isEqualToString:@"status"])
+            return BLT(@"No se pudo actualizar el estado.", @"Could not refresh status.");
+        if ([command isEqualToString:@"rat"])
+            return BLT(@"No se pudo cambiar el modo de red.", @"Could not change network mode.");
+        if ([command isEqualToString:@"apply"] || [command isEqualToString:@"apply_nr"])
+            return BLT(@"No se pudo aplicar la selección.", @"Could not apply the selection.");
+        if ([command isEqualToString:@"fieldtest"])
+            return BLT(@"No se pudo abrir Field Test.", @"Could not open Field Test.");
+        if ([command isEqualToString:@"signal_probe"])
+            return BLT(@"No se pudo leer la señal.", @"Could not read signal.");
+        if ([command isEqualToString:@"scan_observe_start"])
+            return BLT(@"No se pudo iniciar la observación.", @"Could not start observation.");
+        if ([command isEqualToString:@"scan_start"] || [command isEqualToString:@"scan_technology_start"])
+            return BLT(@"No se pudo iniciar el barrido.", @"Could not start the scan.");
+        if ([command isEqualToString:@"scan_status"])
+            return BLT(@"No se pudo actualizar el barrido.", @"Could not update the scan.");
+        if ([command isEqualToString:@"scan_cancel"])
+            return BLT(@"No se pudo cancelar el barrido.", @"Could not cancel the scan.");
+        if ([command isEqualToString:@"scan_recover"])
+            return BLT(@"No se pudo iniciar la recuperación.", @"Could not start recovery.");
+        return BLT(@"No se pudo completar la operación.", @"The operation could not be completed.");
+    }
+
+    if ([command isEqualToString:@"scan_status"]) {
+        NSArray *rows = [result[@"rows"] isKindOfClass:NSArray.class] ? result[@"rows"] : @[];
+        if ([phase isEqualToString:@"observing"])
+            return BLT(@"Observando la red actual…", @"Observing the current network…");
+        if ([phase isEqualToString:@"observation_complete"])
+            return rows.count ? BLT(@"Observación completada.", @"Observation completed.")
+                              : BLT(@"Observación completada sin señal medible.", @"Observation completed with no measurable signal.");
+        if ([phase isEqualToString:@"observation_cancelled"])
+            return BLT(@"Observación detenida.", @"Observation stopped.");
+        if ([phase isEqualToString:@"observation_stopped"])
+            return BLT(@"La observación se detuvo.", @"Observation stopped.");
+        if ([phase isEqualToString:@"switching_rat"])
+            return BLT(@"Preparando el barrido…", @"Preparing the scan…");
+        if ([phase isEqualToString:@"scanning"])
+            return BLT(@"Midiendo cobertura…", @"Measuring coverage…");
+        if ([phase isEqualToString:@"restoring"])
+            return BLT(@"Restaurando la configuración anterior…", @"Restoring the previous configuration…");
+        if ([phase isEqualToString:@"restored"])
+            return BLT(@"Configuración restaurada.", @"Configuration restored.");
+        if ([phase isEqualToString:@"complete"])
+            return rows.count ? BLT(@"Barrido completado.", @"Scan completed.")
+                              : BLT(@"Barrido completado sin señal medible.", @"Scan completed with no measurable signal.");
+        if ([phase isEqualToString:@"recovery_required"])
+            return BLT(@"No se pudo restaurar la configuración anterior. Usa Recuperar antes de hacer otro cambio.",
+                       @"The previous configuration could not be restored. Use Recover before making another change.");
+        return @"";
+    }
+    if ([command isEqualToString:@"scan_observe_start"])
+        return BLT(@"Observación iniciada.", @"Observation started.");
+    if ([command isEqualToString:@"scan_start"] || [command isEqualToString:@"scan_technology_start"])
+        return BLT(@"Barrido iniciado.", @"Scan started.");
+    if ([command isEqualToString:@"scan_cancel"])
+        return BLT(@"Cancelación solicitada.", @"Cancellation requested.");
+    if ([command isEqualToString:@"scan_recover"])
+        return BLT(@"Recuperación solicitada.", @"Recovery requested.");
+    return raw;
+}
+
+static NSDictionary *BLResultForUserInterface(NSDictionary *result, NSString *command) {
+    if (![result isKindOfClass:NSDictionary.class]) return @{
+        @"success": @NO,
+        @"message": BLT(@"No se pudo completar la operación.", @"The operation could not be completed.")
+    };
+    NSMutableDictionary *safe = [result mutableCopy];
+    NSString *message = BLFriendlyResultMessage(result, command ?: @"");
+    if (message.length) safe[@"message"] = message;
+    else [safe removeObjectForKey:@"message"];
+    return safe;
 }
 
 @interface BLTelephonyManager ()
@@ -91,7 +175,7 @@ static NSString *BLDaemonSocketPath(void) {
         _networkMode = BLT(@"Sin consultar", @"Not queried");
         _networkModeCode = @"unknown";
         _statusText = BLT(@"Pulsa Actualizar", @"Tap Refresh");
-        _detailText = BLT(@"BandLock usa un daemon separado para CoreTelephony. La app principal no ejecuta procesos ni APIs privadas del módem.", @"BandLock uses a separate daemon for CoreTelephony. The main app does not spawn processes or execute modem private APIs.");
+        _detailText = BLT(@"Listo para actualizar.", @"Ready to refresh.");
         _hasReadState = NO;
         _hasRefreshedStatus = NO;
         _busy = NO;
@@ -105,7 +189,7 @@ static NSString *BLDaemonSocketPath(void) {
     if (!self.hasReadState) {
         self.networkMode = BLT(@"Sin consultar", @"Not queried");
         self.statusText = BLT(@"Pulsa Actualizar", @"Tap Refresh");
-        self.detailText = BLT(@"BandLock usa un daemon separado para CoreTelephony. La app principal no ejecuta procesos ni APIs privadas del módem.", @"BandLock uses a separate daemon for CoreTelephony. The main app does not spawn processes or execute modem private APIs.");
+        self.detailText = BLT(@"Listo para actualizar.", @"Ready to refresh.");
     } else if ([self.networkModeCode isEqualToString:@"automatic"]) {
         self.networkMode = BLT(@"Automático", @"Automatic");
     } else if ([self.networkModeCode isEqualToString:@"2g"]) {
@@ -129,11 +213,17 @@ static NSString *BLDaemonSocketPath(void) {
 
 - (NSDictionary *)daemonUnavailableResult:(NSString *)detail {
     return @{@"success": @NO,
-             @"message": detail.length ? detail : BLT(@"BandLockDaemon no está disponible. Reinstala BandLock o reinicia el jailbreak.", @"BandLockDaemon is unavailable. Reinstall BandLock or restart the jailbreak.")};
+             @"message": BLT(@"No se pudo conectar con el servicio de BandLock. Inténtalo de nuevo.",
+                              @"Could not connect to BandLock. Try again.")};
 }
 
 - (NSDictionary *)sendRequestSynchronously:(NSDictionary *)request {
     BLBreadcrumb("sync request enter");
+    const char *fixedHome = getenv("CFFIXED_USER_HOME");
+    const char *home = getenv("HOME");
+    BLBreadcrumbf("env CFFIXED_USER_HOME=%s HOME=%s",
+                  fixedHome && *fixedHome ? fixedHome : "(unset)",
+                  home && *home ? home : "(unset)");
     NSError *jsonError = nil;
     BLBreadcrumb("json serialize begin");
     NSData *body = [NSJSONSerialization dataWithJSONObject:request ?: @{} options:0 error:&jsonError];
@@ -176,7 +266,7 @@ static NSString *BLDaemonSocketPath(void) {
     if (!path || strlen(path) >= sizeof(((struct sockaddr_un *)0)->sun_path)) {
         BLBreadcrumb("socket path invalid");
         close(fd);
-        return [self daemonUnavailableResult:BLT(@"La ruta del socket del daemon no es válida.", @"The daemon socket path is invalid.")];
+        return [self daemonUnavailableResult:@"socket-path-invalid"];
     }
 
     struct stat socketStat;
@@ -195,24 +285,22 @@ static NSString *BLDaemonSocketPath(void) {
     strlcpy(address.sun_path, path, sizeof(address.sun_path));
 
     int connected = -1;
-    int connectErrno = 0;
     for (NSInteger attempt = 0; attempt < 30; attempt++) {
         BLBreadcrumbf("connect begin attempt=%ld", (long)attempt + 1);
         connected = connect(fd, (struct sockaddr *)&address, sizeof(address));
-        connectErrno = connected == 0 ? 0 : errno;
         BLBreadcrumbf("connect end attempt=%ld rc=%d errno=%d",
                       (long)attempt + 1,
                       connected,
-                      connectErrno);
+                      connected == 0 ? 0 : errno);
         if (connected == 0) break;
-        if (connectErrno != ENOENT && connectErrno != ECONNREFUSED) break;
+        if (errno != ENOENT && errno != ECONNREFUSED) break;
         usleep(200000);
     }
     if (connected != 0) {
-        int savedErrno = connectErrno;
+        int savedErrno = errno;
         BLBreadcrumbf("connect failed final errno=%d", savedErrno);
         close(fd);
-        return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"No se pudo conectar con BandLockDaemon (errno %d).", @"Could not connect to BandLockDaemon (errno %d)."), savedErrno]];
+        return [self daemonUnavailableResult:[NSString stringWithFormat:@"connect-failed:%d", savedErrno]];
     }
 
     const uint8_t *bytes = wire.bytes;
@@ -227,7 +315,7 @@ static NSString *BLDaemonSocketPath(void) {
         if (written <= 0) {
             int savedErrno = errno;
             close(fd);
-            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La comunicación con el daemon falló al enviar (errno %d).", @"Daemon communication failed while sending (errno %d)."), savedErrno]];
+            return [self daemonUnavailableResult:[NSString stringWithFormat:@"send-failed:%d", savedErrno]];
         }
         bytes += written;
         remaining -= (NSUInteger)written;
@@ -246,7 +334,7 @@ static NSString *BLDaemonSocketPath(void) {
         if (count < 0) {
             int savedErrno = errno;
             close(fd);
-            return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"La respuesta del daemon falló (errno %d).", @"Daemon response failed (errno %d)."), savedErrno]];
+            return [self daemonUnavailableResult:[NSString stringWithFormat:@"receive-failed:%d", savedErrno]];
         }
         if (count == 0) break;
         [responseData appendBytes:buffer length:(NSUInteger)count];
@@ -258,7 +346,7 @@ static NSString *BLDaemonSocketPath(void) {
 
     if (!responseData.length) {
         BLBreadcrumb("empty response");
-        return [self daemonUnavailableResult:BLT(@"BandLockDaemon cerró la conexión sin responder. Si CoreTelephony hizo fallar el daemon, la app principal permanece abierta.", @"BandLockDaemon closed the connection without replying. If CoreTelephony crashed the daemon, the main app remains open.")];
+        return [self daemonUnavailableResult:@"empty-response"];
     }
 
     BLBreadcrumb("json parse begin");
@@ -267,8 +355,7 @@ static NSString *BLDaemonSocketPath(void) {
     NSDictionary *result = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:&jsonError];
     if (![result isKindOfClass:[NSDictionary class]]) {
         BLBreadcrumb("json parse invalid dictionary");
-        NSString *raw = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] ?: @"—";
-        return [self daemonUnavailableResult:[NSString stringWithFormat:BLT(@"Respuesta inválida del daemon: %@", @"Invalid daemon response: %@"), raw]];
+        return [self daemonUnavailableResult:@"invalid-response"];
     }
     BLBreadcrumb("json parse end dictionary");
     BLBreadcrumb("sync request return");
@@ -308,14 +395,15 @@ static NSString *BLDaemonSocketPath(void) {
             if (completion) {
                 @try {
                     BLBreadcrumb("client completion begin");
-                    completion(result ?: @{@"success": @NO, @"message": @"No result"});
+                    NSString *command = [request[@"cmd"] isKindOfClass:NSString.class] ? request[@"cmd"] : @"";
+                    completion(BLResultForUserInterface(result, command));
                     BLBreadcrumb("client completion end");
                 } @catch (NSException *exception) {
                     BLBreadcrumbf("client completion exception name=%s reason=%s",
                                   exception.name.UTF8String ?: "(null)",
                                   exception.reason.UTF8String ?: "(null)");
-                    self.statusText = BLT(@"Error de cliente", @"Client error");
-                    self.detailText = [NSString stringWithFormat:@"Client exception: %@", exception.reason ?: exception.name];
+                    self.statusText = BLT(@"No disponible", @"Unavailable");
+                    self.detailText = BLT(@"No se pudo completar la operación.", @"The operation could not be completed.");
                 }
             }
             BLBreadcrumb("main queue completion end");
@@ -344,12 +432,15 @@ static NSString *BLDaemonSocketPath(void) {
     self.supportedNRBands = [supportedNRValue isKindOfClass:[NSArray class]] ? BLSortedBands(supportedNRValue) : @[];
     id activeNRValue = result[@"active_nr"];
     self.activeNRBands = [activeNRValue isKindOfClass:[NSArray class]] ? BLSortedBands(activeNRValue) : @[];
-    self.supports5G = [result[@"supports_5g"] boolValue] || self.supportedNRBands.count > 0;
+    self.supports5G = !BLDeviceIsKnownLTEOnly() &&
+        ([result[@"supports_5g"] boolValue] || self.supportedNRBands.count > 0);
+    if (!self.supports5G) { self.supportedNRBands = @[]; self.activeNRBands = @[]; }
     self.radioAccessTechnology = [result[@"rat"] isKindOfClass:[NSString class]] ? result[@"rat"] : @"—";
     BLBreadcrumb("consume rat assigned");
     self.servingBand = [result[@"serving"] isKindOfClass:[NSString class]] ? result[@"serving"] : @"—";
     BLBreadcrumb("consume serving assigned");
     NSString *modeCode = [result[@"mode_code"] isKindOfClass:[NSString class]] ? result[@"mode_code"] : nil;
+    if (!self.supports5G && [modeCode hasPrefix:@"5g-"]) modeCode = @"unknown";
     self.networkModeCode = modeCode ?: @"other";
     if ([modeCode isEqualToString:@"automatic"]) self.networkMode = BLT(@"Automático", @"Automatic");
     else if ([modeCode isEqualToString:@"2g"]) self.networkMode = BLT(@"Solo 2G", @"2G only");
@@ -371,18 +462,8 @@ static NSString *BLDaemonSocketPath(void) {
         [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingBandsDefaultsKey];
         [NSUserDefaults.standardUserDefaults removeObjectForKey:BLPendingNRBandsDefaultsKey];
     } else {
-        if (!self.hasExplicitPendingBands) {
-            _pendingBands = [self.activeBands copy];
-        } else if (self.supportedBands.count) {
-            _pendingBands = [BLIntersectBands(self.supportedBands, _pendingBands) copy];
-            [NSUserDefaults.standardUserDefaults setObject:_pendingBands forKey:BLPendingBandsDefaultsKey];
-        }
-        if (!self.hasExplicitPendingNRBands) {
-            _pendingNRBands = [self.activeNRBands copy];
-        } else if (self.supportedNRBands.count) {
-            _pendingNRBands = [BLIntersectBands(self.supportedNRBands, _pendingNRBands) copy];
-            [NSUserDefaults.standardUserDefaults setObject:_pendingNRBands forKey:BLPendingNRBandsDefaultsKey];
-        }
+        if (!self.hasExplicitPendingBands) _pendingBands = [self.activeBands copy];
+        if (!self.hasExplicitPendingNRBands) _pendingNRBands = [self.activeNRBands copy];
     }
     BLBreadcrumb("consume pending assigned");
     BLBreadcrumb("consume status end");
@@ -394,7 +475,7 @@ static NSString *BLDaemonSocketPath(void) {
     NSString *daemonMessage = [result[@"message"] isKindOfClass:[NSString class]] ? result[@"message"] : nil;
     NSString *message = success ? (successMessage ?: daemonMessage ?: BLT(@"Operación completada.", @"Operation completed."))
                                 : (daemonMessage ?: BLT(@"Operación fallida.", @"Operation failed."));
-    self.statusText = success ? BLT(@"Listo", @"Ready") : BLT(@"Error del daemon", @"Daemon error");
+    self.statusText = success ? BLT(@"Listo", @"Ready") : BLT(@"No disponible", @"Unavailable");
     self.detailText = message ?: @"";
     if (completion) {
         BLBreadcrumb("action completion begin");
@@ -406,13 +487,12 @@ static NSString *BLDaemonSocketPath(void) {
 
 - (void)refreshWithCompletion:(BLActionCompletion)completion {
     BLBreadcrumb("refreshWithCompletion enter");
-    self.statusText = BLT(@"Consultando daemon…", @"Querying daemon…");
+    self.statusText = BLT(@"Actualizando…", @"Refreshing…");
     [self sendRequest:@{@"cmd": @"status"} completion:^(NSDictionary *result) {
         BLBreadcrumb("refresh result block enter");
-        BOOL success = [result[@"success"] boolValue];
-        if (success) [self consumeStatusResult:result resetPending:NO];
-        self.hasRefreshedStatus = success;
-        [self finishResult:result successMessage:BLT(@"Estado del módem actualizado.", @"Modem state updated.") completion:completion];
+        if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:NO];
+        self.hasRefreshedStatus = YES;
+        [self finishResult:result successMessage:BLT(@"Estado actualizado.", @"Status updated.") completion:completion];
         BLBreadcrumb("refresh result block end");
     }];
     BLBreadcrumb("refreshWithCompletion return");
@@ -435,12 +515,8 @@ static NSString *BLDaemonSocketPath(void) {
 }
 
 - (void)setNetworkMode:(NSString *)mode completion:(BLActionCompletion)completion {
-    NSString *requestedMode = mode.length ? mode : @"automatic";
-    [self sendRequest:@{@"cmd": @"rat", @"mode": requestedMode} completion:^(NSDictionary *result) {
-        if ([result[@"success"] boolValue]) {
-            BLCCSetLastModeCode(requestedMode);
-            [self consumeStatusResult:result resetPending:NO];
-        }
+    [self sendRequest:@{@"cmd": @"rat", @"mode": mode ?: @"automatic"} completion:^(NSDictionary *result) {
+        if ([result[@"success"] boolValue]) [self consumeStatusResult:result resetPending:NO];
         [self finishResult:result successMessage:BLT(@"Modo de red actualizado.", @"Network mode updated.") completion:completion];
     }];
 }
@@ -547,22 +623,59 @@ static NSString *BLDaemonSocketPath(void) {
     }];
 }
 
-#if BL_SIGNAL_SCAN_TEST && !BL_VARIANT_ROOTFUL
-- (void)signalProbeWithCompletion:(void (^)(NSDictionary *))completion {
+- (void)signalProbeWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"signal_probe"} completion:completion];
 }
-- (void)startSignalScanWithCompletion:(void (^)(NSDictionary *))completion {
+
+- (void)startSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"scan_start"} completion:completion];
 }
-- (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *))completion {
+
+- (void)startPassiveSignalObservationForRAT:(NSString *)rat
+                               completion:(void (^)(NSDictionary *result))completion {
+    if (![@[@"AUTO", @"2G", @"3G", @"LTE", @"NR"] containsObject:rat]) {
+        if (completion) completion(@{@"success": @NO, @"message": @"Tecnología no válida"});
+        return;
+    }
+    [self sendRequest:@{@"cmd": @"scan_observe_start", @"rat": rat} completion:completion];
+}
+
+- (void)startTechnologySignalScanForRAT:(NSString *)rat
+                              completion:(void (^)(NSDictionary *result))completion {
+    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat]) {
+        if (completion) completion(@{@"success": @NO, @"message": @"Tecnología no válida"});
+        return;
+    }
+    [self sendRequest:@{@"cmd": @"scan_technology_start", @"rat": rat} completion:completion];
+}
+
+- (void)signalScanStatusWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"scan_status"} completion:completion];
 }
-- (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *))completion {
+
+- (void)startTechnologySignalScanForRAT:(NSString *)rat country:(NSString *)iso
+                            targetBands:(NSArray<NSNumber *> *)bands
+                      targetFrequencies:(NSArray<NSNumber *> *)frequencies
+                             completion:(void (^)(NSDictionary *result))completion {
+    if (![@[@"2G", @"3G", @"LTE", @"NR"] containsObject:rat] ||
+        ![iso isKindOfClass:NSString.class] || iso.length != 2 ||
+        ![bands isKindOfClass:NSArray.class] || bands.count > 64 ||
+        ![frequencies isKindOfClass:NSArray.class] || frequencies.count > 64 ||
+        (!bands.count && !frequencies.count)) {
+        if (completion) completion(@{@"success": @NO, @"message": @"País, tecnología o frecuencias no válidos"});
+        return;
+    }
+    [self sendRequest:@{@"cmd": @"scan_technology_start", @"rat": rat,
+                        @"country_iso": iso, @"target_bands": bands,
+                        @"target_frequencies_mhz": frequencies} completion:completion];
+}
+
+- (void)cancelSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"scan_cancel"} completion:completion];
 }
-- (void)recoverSignalScanWithCompletion:(void (^)(NSDictionary *))completion {
+
+- (void)recoverSignalScanWithCompletion:(void (^)(NSDictionary *result))completion {
     [self sendRequest:@{@"cmd": @"scan_recover"} completion:completion];
 }
-#endif
 
 @end
