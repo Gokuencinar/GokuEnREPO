@@ -126,7 +126,9 @@ jobs:
           daemon="$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
           test -n "$daemon"
           file "$daemon" | grep -q Mach-O
-          codesign -d --entitlements :- "$daemon" > /tmp/bandlock-dopamine-entitlements.plist 2>/dev/null
+          command -v ldid >/dev/null 2>&1
+          ! otool -L "$daemon" | grep -q 'libroothide.dylib'
+          ldid -e "$daemon" > /tmp/bandlock-dopamine-entitlements.plist
           grep -q 'com.apple.private.memorystatus' /tmp/bandlock-dopamine-entitlements.plist
           grep -q 'com.apple.CommCenter.fine-grained' /tmp/bandlock-dopamine-entitlements.plist
       - uses: actions/upload-artifact@v4
