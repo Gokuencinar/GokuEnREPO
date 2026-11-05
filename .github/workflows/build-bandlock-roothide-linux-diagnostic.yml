@@ -23,18 +23,18 @@ jobs:
           set -euo pipefail
           node scripts/verify-bandlock-roothide-signal.mjs
           d=tweaks/BandLock/build/BandLock-1.0-RootHide
-          grep -q '^Version: 1.6.0~rhui22$' "$d/control"
+          grep -q '^Version: 1.6.0~rhui23$' "$d/control"
           test -x "$d/layout/DEBIAN/prerm"
       - name: Compile RootHide on Linux for diagnostics only
         run: |
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-RootHide
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
-          deb='packages/com.gokuencinar.bandlock_1.6.0~rhui22_iphoneos-arm64e.deb'
+          deb='packages/com.gokuencinar.bandlock_1.6.0~rhui23_iphoneos-arm64e.deb'
           test -s "$deb"
           file "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)" | grep -q 'Mach-O'
           test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock'
-          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~rhui22'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~rhui23'
           test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64e'
           dpkg-deb -c "$deb" > /tmp/bandlock-contents
           grep -q 'BandLockDaemon' /tmp/bandlock-contents

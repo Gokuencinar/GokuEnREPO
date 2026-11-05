@@ -218,8 +218,6 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 @property (nonatomic, strong) UIButton *scanButton;
 @property (nonatomic, strong) UIButton *scanCancelButton;
 @property (nonatomic, strong) UIButton *scanRecoverButton;
-@property (nonatomic, strong) UILabel *historyLabel;
-@property (nonatomic, strong) UILabel *comparisonLabel;
 @property (nonatomic, strong) BLAnalyzerGraph *graph;
 @property (nonatomic, strong) UILabel *graphStatsLabel;
 @property (nonatomic, strong) UIButton *monitorButton;
@@ -296,6 +294,11 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     [button setTitle:title forState:UIControlStateNormal];
     [button setImage:[UIImage systemImageNamed:symbol] forState:UIControlStateNormal];
     button.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    button.titleLabel.numberOfLines = 2;
+    button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    button.titleLabel.textAlignment = NSTextAlignmentCenter;
+    button.titleLabel.adjustsFontSizeToFitWidth = YES;
+    button.titleLabel.minimumScaleFactor = 0.86;
     [button addTarget:self action:selector forControlEvents:UIControlEventTouchUpInside];
     [button.heightAnchor constraintGreaterThanOrEqualToConstant:48].active = YES;
     return button;
@@ -437,22 +440,17 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
     [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"EVOLUCIÓN DE SEÑAL", @"SIGNAL TREND")
         children:@[self.graphStatsLabel, self.graph]]];
 
-    self.comparisonLabel = [self text:@"—" size:14 color:UIColor.whiteColor weight:UIFontWeightMedium];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"COMPARATIVA POR BANDA", @"BAND COMPARISON") children:@[self.comparisonLabel]]];
-    self.historyLabel = [self text:@"—" size:13 color:UIColor.whiteColor weight:UIFontWeightRegular];
-    [self.stack addArrangedSubview:[self panelWithTitle:BLT(@"HISTORIAL", @"HISTORY") children:@[self.historyLabel]]];
-
     UIButton *png = [self action:BLT(@"Guardar Captura", @"Save Capture") icon:@"photo.on.rectangle.angled"
                                selector:@selector(pngTapped:) strong:NO];
     UIButton *captures = [self action:BLT(@"Ver capturas guardadas", @"View saved captures") icon:@"photo.stack"
                                     selector:@selector(viewCapturesTapped:) strong:NO];
     UIButton *export = [self action:BLT(@"Exportar JSON", @"Export JSON") icon:@"square.and.arrow.up"
                                   selector:@selector(exportTapped:) strong:NO];
-    UIButton *clear = [self action:BLT(@"Borrar historial", @"Clear history") icon:@"trash"
+    UIButton *clear = [self action:BLT(@"Borrar mediciones", @"Clear measurements") icon:@"trash"
                                  selector:@selector(clearTapped:) strong:NO];
     UIStackView *exportActions = [UIStackView new];
-    exportActions.axis = UILayoutConstraintAxisHorizontal;
-    exportActions.distribution = UIStackViewDistributionFillEqually;
+    exportActions.axis = UILayoutConstraintAxisVertical;
+    exportActions.distribution = UIStackViewDistributionFill;
     exportActions.spacing = 9;
     [exportActions addArrangedSubview:png];
     [exportActions addArrangedSubview:captures];
@@ -912,11 +910,11 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
                            forState:UIControlStateNormal];
     NSString *rat = [self selectedScanRAT];
     if ([rat isEqualToString:@"AUTO"]) {
-        self.scanCountryButton.enabled = NO;
-        self.scanCountryButton.alpha = 0.45;
+        self.scanCountryButton.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
+        self.scanCountryButton.alpha = 1.0;
         self.scanBandsLabel.text = BLT(
-            @"Auto muestra la red y la tecnología activas sin cambiar bandas.",
-            @"Auto shows the active network and technology without changing bands.");
+            @"Auto muestra la red actual. El país seleccionado se usará al elegir una tecnología.",
+            @"Auto shows the current network. The selected country will be used when you choose a technology.");
         [self.scanButton setTitle:BLT(@"Observar red en Auto", @"Observe network in Auto") forState:UIControlStateNormal];
         self.scanButton.enabled = !self.scanRunning && !self.recoveryRequired && !self.manager.busy;
         return;
@@ -1132,30 +1130,10 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 - (void)refreshHistoryUI {
     NSUInteger count = self.history.count;
     if (!count) {
-        self.historyLabel.text = BLT(@"Sin lecturas", @"No readings");
-        self.comparisonLabel.text = BLT(@"Sin datos", @"No data");
         self.graphStatsLabel.text = @"—";
         self.graph.samples = @[];
         return;
     }
-    NSDateFormatter *formatter = [NSDateFormatter new];
-    formatter.dateStyle = NSDateFormatterNoStyle;
-    formatter.timeStyle = NSDateFormatterShortStyle;
-    NSMutableArray<NSString *> *lines = [NSMutableArray array];
-    NSInteger start = MAX((NSInteger)count-10, 0);
-    for (NSInteger index = (NSInteger)count-1; index >= start; index--) {
-        NSDictionary *item = self.history[(NSUInteger)index];
-        NSDate *date = [NSDate dateWithTimeIntervalSince1970:[item[@"timestamp"] doubleValue]];
-        NSNumber *power = BLAnalyzerPrimaryMetric(item);
-        NSString *rat = item[@"rat"] ?: @"LTE";
-        NSString *bandName = item[@"band"] ? [NSString stringWithFormat:@"%@ %@%@", BLAnalyzerDisplayRAT(rat),
-            [rat isEqualToString:@"NR"] ? @"n" : @"B", item[@"band"]] : BLAnalyzerDisplayRAT(rat);
-        NSString *source = [item[@"source"] isEqualToString:@"scan"] ? BLT(@"barrido", @"scan") : BLT(@"vivo", @"live");
-        [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %.1f dBm · %@ · %@",
-            [formatter stringFromDate:date], bandName, power.doubleValue, BLAnalyzerQuality(item), source]];
-    }
-    self.historyLabel.text = [lines componentsJoinedByString:@"\n"];
-
     NSUInteger chartStart = count > 61 ? count-61 : 0;
     NSNumber *latestBand = self.history.lastObject[@"band"];
     NSString *latestRAT = self.history.lastObject[@"rat"] ?: @"LTE";
@@ -1182,30 +1160,6 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
             (unsigned long)valid, minValue, sum/valid, maxValue] : @"—";
     } else self.graphStatsLabel.text = @"—";
 
-    NSMutableDictionary<NSString *, NSMutableDictionary *> *groups = [NSMutableDictionary dictionary];
-    for (NSDictionary *sample in self.history) {
-        NSNumber *value = BLAnalyzerPrimaryMetric(sample), *band = sample[@"band"];
-        NSString *rat = sample[@"rat"] ?: @"LTE";
-        if (!value || !band) continue;
-        NSString *key = [NSString stringWithFormat:@"%@:%@", rat, band];
-        NSMutableDictionary *group = groups[key];
-        if (!group) { group = [@{@"sum": @0.0, @"count": @0} mutableCopy]; groups[key] = group; }
-        group[@"sum"] = @([group[@"sum"] doubleValue]+value.doubleValue);
-        group[@"count"] = @([group[@"count"] integerValue]+1);
-    }
-    NSMutableArray *comparison = [NSMutableArray array];
-    for (NSString *key in [groups.allKeys sortedArrayUsingSelector:@selector(compare:)]) {
-        NSDictionary *group = groups[key];
-        NSInteger n = [group[@"count"] integerValue];
-        if (!n) continue;
-        NSArray *parts = [key componentsSeparatedByString:@":"];
-        NSString *rat = parts.firstObject;
-        NSString *display = [NSString stringWithFormat:@"%@ %@%@", BLAnalyzerDisplayRAT(rat),
-            [rat isEqualToString:@"NR"] ? @"n" : @"B", parts.lastObject];
-        [comparison addObject:[NSString stringWithFormat:@"%@   %.1f dBm · %ld %@", display,
-            [group[@"sum"] doubleValue]/n, (long)n, BLT(@"muestras", @"samples")]];
-    }
-    self.comparisonLabel.text = comparison.count ? [comparison componentsJoinedByString:@"\n"] : BLT(@"Sin datos", @"No data");
 }
 
 - (UIStackView *)reportRowsForMeasurements:(NSArray<NSDictionary *> *)rows scan:(BOOL)scan {
@@ -1327,7 +1281,7 @@ static NSNumber *BLAnalyzerReferenceFrequencyForRow(NSDictionary *row) {
 }
 
 - (void)clearTapped:(UIButton *)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Borrar historial", @"Clear history")
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:BLT(@"Borrar mediciones", @"Clear measurements")
        message:BLT(@"Se eliminarán todas las mediciones guardadas en este iPhone.",
                    @"All locally stored measurements will be removed from this iPhone.") preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:BLT(@"Cancelar", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];

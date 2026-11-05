@@ -15,6 +15,7 @@ const captureStore = read('app/BLAnalyzerCaptureStore.m');
 const capturesController = read('app/BLAnalyzerCapturesViewController.m');
 const countryProfile = read('app/BLCountryProfile.m');
 const countriesController = read('app/BLCountriesViewController.m');
+const countryDetail = read('app/BLCountryDetailViewController.m');
 const countrySpectrum = JSON.parse(read('app/Resources/country-spectrum.json'));
 const metadata = read('shared/BLGBandMetadata.m');
 const control = read('control');
@@ -23,7 +24,7 @@ const macWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-sign
 const linuxWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-linux-diagnostic.yml', 'utf8');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui22$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui23$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(abiVerifier, /CPU_SUBTYPE_ARM64E_ABI_V2 = 0x80000002/);
 assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py "\$cc" "\$bridge"/);
@@ -510,6 +511,24 @@ assert.match(analyzer, /SECUNDARIA LTE/);
 assert.match(analyzer, /Posible CA/);
 assert.match(analyzer, /Guardar Captura/);
 assert.match(analyzer, /Ver capturas guardadas/);
+assert.match(analyzer, /exportActions\.axis = UILayoutConstraintAxisVertical/);
+assert.match(analyzer, /titleLabel\.numberOfLines = 2/);
+assert.doesNotMatch(analyzer, /COMPARATIVA POR BANDA|BAND COMPARISON/);
+assert.doesNotMatch(analyzer, /panelWithTitle:BLT\(@"HISTORIAL"/);
+assert.match(analyzer, /Borrar mediciones/);
+assert.match(app, /Cambiar país/);
+assert.match(app, /Frecuencias del país/);
+assert.match(app, /countryValue\.text = countryName/);
+assert.match(app, /ensureBandStateThen:/);
+assert.match(app, /titleLabel\.numberOfLines = 2/);
+assert.doesNotMatch(app, /Pulsa «Actualizar estado» antes de gestionar las frecuencias del país/);
+assert.doesNotMatch(app, /Pulsa «Actualizar estado» antes de editar bandas/);
+assert.match(countryDetail, /Usar este país/);
+assert.match(countryDetail, /Se comprobará automáticamente/);
+assert.match(countryDetail, /\[self\.manager refreshWithCompletion:/);
+assert.doesNotMatch(countryDetail, /Actualizar desde Control primero|Pulsa «Actualizar estado» en Control/);
+assert.match(countriesController, /BLSelectedCountryISO/);
+assert.match(countriesController, /UITableViewCellAccessoryCheckmark/);
 assert.match(analyzer, /\[BLAnalyzerCaptureStore displayMode:\[self currentCaptureMode\]\]/);
 assert.doesNotMatch(analyzer, /displayCaptureMode:/);
 assert.match(analyzer, /UIGraphicsImageRenderer/);
@@ -563,7 +582,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui22 saved capture library, opaque tab bar and user-facing copy gates: PASS');
+console.log('BandLock rhui23 UX, country flow, saved captures and user-facing copy gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain
@@ -649,10 +668,10 @@ assert.match(app, /BLGFrequencyForBand\(band\)/);
 assert.match(metadata, /@6:\s+@\{@"frequency": @"800 MHz"/);
 console.log('BandLock rhui14 scan metrics and LTE apply regression checks: PASS');
 
-// rhui15: NetMonitor-inspired coverage Analyzer is the single measurement UI.
+// rhui15+: NetMonitor-inspired coverage Analyzer is the single measurement UI.
 // It shows live serving/neighbor rows, quality categories, band details and
 // technology scans, while Control keeps only the emergency recovery action.
-for (const label of ['CELDAS Y PORTADORAS', 'RED Y BARRIDO', 'COMPARATIVA POR BANDA']) {
+for (const label of ['CELDAS Y PORTADORAS', 'RED Y BARRIDO', 'EVOLUCIÓN DE SEÑAL']) {
   assert.match(analyzer, new RegExp(label));
 }
 for (const quality of ['Excelente', 'Buena', 'Moderada', 'Mala', 'Muy mala']) {

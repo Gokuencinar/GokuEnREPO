@@ -173,6 +173,8 @@
 @property (nonatomic, strong) UILabel *heroNetworkValue;
 @property (nonatomic, strong) UILabel *heroBandValue;
 @property (nonatomic, strong) UIButton *refreshButton;
+@property (nonatomic, strong) UILabel *countryValue;
+@property (nonatomic, strong) UIButton *countrySelectButton;
 @property (nonatomic, strong) UIButton *countryManageButton;
 @property (nonatomic, strong) UIButton *fiveGModeButton;
 @property (nonatomic, strong) UIView *nrBandsCard;
@@ -376,6 +378,11 @@
     button.translatesAutoresizingMaskIntoConstraints = NO;
     button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeading;
     button.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+    button.titleLabel.numberOfLines = 2;
+    button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    button.titleLabel.textAlignment = NSTextAlignmentLeft;
+    button.titleLabel.adjustsFontSizeToFitWidth = YES;
+    button.titleLabel.minimumScaleFactor = 0.84;
     [button setTitle:title forState:UIControlStateNormal];
     [button setTitleColor:(destructive ? UIColor.systemRedColor : UIColor.systemBlueColor) forState:UIControlStateNormal];
     if (symbol.length) {
@@ -472,8 +479,15 @@
     ]];
     self.modeValue = mode;
 
-    self.countryManageButton = [self buttonWithTitle:@"" symbol:@"globe.europe.africa.fill" selector:@selector(manageCountryBandsTapped:) destructive:NO];
-    self.countryManageButton.hidden = YES;
+    UILabel *countryValue = nil;
+    UIView *countryRow = [self rowWithTitle:BLT(@"País", @"Country") valueLabel:&countryValue];
+    self.countryValue = countryValue;
+    self.countrySelectButton = [self buttonWithTitle:BLT(@"Cambiar país", @"Change country")
+                                                 symbol:@"globe.europe.africa.fill"
+                                               selector:@selector(selectCountryTapped:) destructive:NO];
+    self.countryManageButton = [self buttonWithTitle:BLT(@"Frecuencias del país", @"Country frequencies")
+                                                 symbol:@"dot.radiowaves.left.and.right"
+                                               selector:@selector(manageCountryBandsTapped:) destructive:NO];
     UIButton *edit = [self buttonWithTitle:BLT(@"Editar bandas", @"Edit bands") symbol:@"slider.horizontal.3" selector:@selector(editBandsTapped:) destructive:NO];
     UIButton *apply = [self buttonWithTitle:BLT(@"Aplicar selección", @"Apply selection") symbol:@"checkmark.circle.fill" selector:@selector(applyTapped:) destructive:NO];
     UIButton *restorePrevious = [self buttonWithTitle:BLT(@"Restaurar selección anterior", @"Restore previous selection") symbol:@"arrow.uturn.backward" selector:@selector(restorePreviousTapped:) destructive:NO];
@@ -483,8 +497,11 @@
     self.restoreLTEAllButton = restoreAll;
     UILabel *pending = nil;
     UIView *bandsCard = [self cardWithTitle:BLT(@"BANDAS LTE", @"LTE BANDS") content:@[
+        countryRow,
+        self.countrySelectButton,
+        self.countryManageButton,
         [self rowWithTitle:BLT(@"Seleccionadas", @"Selected") valueLabel:&pending],
-        self.countryManageButton, edit, apply
+        edit, apply
     ]];
     self.pendingValue = pending;
     [self.stackView addArrangedSubview:bandsCard];
@@ -558,11 +575,15 @@
     self.restoreLTEAllButton.hidden = NO;
     self.restoreLTEAllButton.enabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
     NSDictionary *selectedCountry = BLSelectedCountryRecord();
-    self.countryManageButton.hidden = selectedCountry == nil;
+    BOOL countryActionsEnabled = !self.manager.busy && !self.signalRunning && !self.signalRecoveryRequired;
+    self.countrySelectButton.enabled = countryActionsEnabled;
+    self.countryManageButton.hidden = NO;
+    self.countryManageButton.enabled = selectedCountry != nil && countryActionsEnabled;
     if (selectedCountry) {
         NSString *countryName = BLLocalizedCountryName(selectedCountry);
-        [self.countryManageButton setTitle:[NSString stringWithFormat:BLT(@"Gestionar frecuencias de %@", @"Manage frequencies for %@"), countryName]
-                                      forState:UIControlStateNormal];
+        self.countryValue.text = countryName;
+    } else {
+        self.countryValue.text = BLT(@"Sin seleccionar", @"Not selected");
     }
     self.refreshButton.enabled = !self.manager.busy;
     [self.refreshButton setTitle:(self.manager.busy ? BLT(@"Actualizando…", @"Refreshing…") : BLT(@"Actualizar", @"Refresh")) forState:UIControlStateNormal];
@@ -585,14 +606,12 @@
     BLBreadcrumb("UI showAlert end");
 }
 
-- (void)manageCountryBandsTapped:(UIButton *)sender {
+- (void)openCountryBandsForSelectedCountry {
     NSDictionary *country = BLSelectedCountryRecord();
     if (!country) {
-        [self showAlert:BLT(@"Selecciona primero un país desde la pestaña Países.", @"Select a country from the Countries tab first.")];
-        return;
-    }
-    if (!self.manager.hasReadState) {
-        [self showAlert:BLT(@"Pulsa «Actualizar estado» antes de gestionar las frecuencias del país.", @"Tap “Refresh status” before managing country frequencies.")];
+        BLCountriesViewController *picker = [[BLCountriesViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
+        picker.selectCountryOnly = YES;
+        [self.navigationController pushViewController:picker animated:YES];
         return;
     }
     NSArray *countryBands = BLSortedBands(country[@"bands"]);
@@ -605,6 +624,40 @@
     }
     BLCountryBandsViewController *controller = [[BLCountryBandsViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
     [self.navigationController pushViewController:controller animated:YES];
+}
+
+- (void)selectCountryTapped:(UIButton *)sender {
+    if (self.manager.busy || self.signalRunning || self.signalRecoveryRequired) return;
+    BLCountriesViewController *picker = [[BLCountriesViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
+    picker.selectCountryOnly = YES;
+    [self.navigationController pushViewController:picker animated:YES];
+}
+
+- (void)ensureBandStateThen:(dispatch_block_t)block {
+    if (self.manager.hasReadState) {
+        if (block) block();
+        return;
+    }
+    if (self.manager.busy) return;
+    __weak typeof(self) weakSelf = self;
+    [self.manager refreshWithCompletion:^(BOOL success, NSString *message) {
+        [weakSelf refreshDisplay];
+        if (!success) {
+            [weakSelf showAlert:message.length ? message : BLT(@"No se pudo cargar el estado de bandas.", @"Could not load band status.")];
+            return;
+        }
+        if (block) block();
+    }];
+    [self refreshDisplay];
+}
+
+- (void)manageCountryBandsTapped:(UIButton *)sender {
+    if (!BLSelectedCountryRecord()) {
+        [self openCountryBandsForSelectedCountry];
+        return;
+    }
+    __weak typeof(self) weakSelf = self;
+    [self ensureBandStateThen:^{ [weakSelf openCountryBandsForSelectedCountry]; }];
 }
 
 - (void)handleCompletion:(NSString *)action success:(BOOL)success message:(NSString *)message {
@@ -684,21 +737,27 @@
 }
 
 - (void)editBandsTapped:(UIButton *)sender {
-    if (!self.manager.supportedBands.count) {
-        [self showAlert:BLT(@"Pulsa «Actualizar estado» antes de editar bandas.", @"Tap “Refresh status” before editing bands.")];
-        return;
-    }
-    BLBandPickerViewController *picker = [[BLBandPickerViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
-    [self.navigationController pushViewController:picker animated:YES];
+    __weak typeof(self) weakSelf = self;
+    [self ensureBandStateThen:^{
+        if (!weakSelf.manager.supportedBands.count) {
+            [weakSelf showAlert:BLT(@"Este iPhone no reporta bandas LTE configurables.", @"This iPhone does not report configurable LTE bands.")];
+            return;
+        }
+        BLBandPickerViewController *picker = [[BLBandPickerViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
+        [weakSelf.navigationController pushViewController:picker animated:YES];
+    }];
 }
 
 - (void)editNRBandsTapped:(UIButton *)sender {
-    if (!self.manager.supportedNRBands.count) {
-        [self showAlert:BLT(@"Este iPhone no reporta bandas 5G NR configurables. Actualiza el estado y comprueba que la línea tenga 5G.", @"This iPhone does not report configurable 5G NR bands. Refresh status and check that the line has 5G.")];
-        return;
-    }
-    BLNRBandPickerViewController *picker = [[BLNRBandPickerViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
-    [self.navigationController pushViewController:picker animated:YES];
+    __weak typeof(self) weakSelf = self;
+    [self ensureBandStateThen:^{
+        if (!weakSelf.manager.supportedNRBands.count) {
+            [weakSelf showAlert:BLT(@"Este iPhone no reporta bandas 5G NR configurables.", @"This iPhone does not report configurable 5G NR bands.")];
+            return;
+        }
+        BLNRBandPickerViewController *picker = [[BLNRBandPickerViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
+        [weakSelf.navigationController pushViewController:picker animated:YES];
+    }];
 }
 
 - (void)applyTapped:(UIButton *)sender {

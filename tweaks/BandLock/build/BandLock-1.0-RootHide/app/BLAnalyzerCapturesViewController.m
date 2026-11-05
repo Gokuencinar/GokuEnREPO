@@ -117,7 +117,12 @@ static UIColor *BLCaptureMuted(void) { return [UIColor colorWithRed:0.78 green:0
     [button setTitle:title forState:UIControlStateNormal];
     [button setImage:[UIImage systemImageNamed:symbol] forState:UIControlStateNormal];
     button.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    [button.heightAnchor constraintEqualToConstant:48].active = YES;
+    button.titleLabel.numberOfLines = 2;
+    button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    button.titleLabel.textAlignment = NSTextAlignmentCenter;
+    button.titleLabel.adjustsFontSizeToFitWidth = YES;
+    button.titleLabel.minimumScaleFactor = 0.86;
+    [button.heightAnchor constraintGreaterThanOrEqualToConstant:48].active = YES;
     [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
     return button;
 }

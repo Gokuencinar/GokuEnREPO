@@ -104,9 +104,9 @@
         if (indexPath.row == 1) return [self summaryCell:@"2G" value:self.country2GFrequencies.count ? [NSString stringWithFormat:@"%@ MHz", [self frequencyList:self.country2GFrequencies]] : BLT(@"Sin datos", @"No data")];
         if (indexPath.row == 2) return [self summaryCell:@"3G" value:self.country3GFrequencies.count ? [NSString stringWithFormat:@"%@ MHz", [self frequencyList:self.country3GFrequencies]] : BLT(@"Sin datos", @"No data")];
         if (indexPath.row == 3) return [self summaryCell:BLT(@"Bandas LTE del país", @"Country LTE bands") value:self.countryBands.count ? BLBandList(self.countryBands) : BLT(@"Sin datos exactos", @"No exact data")];
-        if (indexPath.row == 4) return [self summaryCell:BLT(@"LTE compatibles con iPhone", @"LTE compatible with iPhone") value:self.manager.hasReadState ? BLBandList([self compatibleBands]) : BLT(@"Actualiza Control primero", @"Refresh Control first")];
+        if (indexPath.row == 4) return [self summaryCell:BLT(@"LTE compatibles con iPhone", @"LTE compatible with iPhone") value:self.manager.hasReadState ? BLBandList([self compatibleBands]) : BLT(@"Se comprobará automáticamente", @"Checked automatically")];
         if (indexPath.row == 5) return [self summaryCell:BLT(@"Bandas 5G del país", @"Country 5G bands") value:self.countryNRBands.count ? BLNRBandList(self.countryNRBands) : BLT(@"Sin datos 5G exactos", @"No exact 5G data")];
-        if (indexPath.row == 6) return [self summaryCell:BLT(@"5G compatibles con iPhone", @"5G compatible with iPhone") value:self.manager.hasReadState ? BLNRBandList([self compatibleNRBands]) : BLT(@"Actualiza Control primero", @"Refresh Control first")];
+        if (indexPath.row == 6) return [self summaryCell:BLT(@"5G compatibles con iPhone", @"5G compatible with iPhone") value:self.manager.hasReadState ? BLNRBandList([self compatibleNRBands]) : BLT(@"Se comprobará automáticamente", @"Checked automatically")];
         if (indexPath.row == 7) return [self summaryCell:BLT(@"Fuente", @"Source") value:self.sourceName ?: @"—"];
         return [self summaryCell:BLT(@"Datos actualizados", @"Data updated") value:self.datasetDate ?: @"—"];
     }
@@ -155,11 +155,15 @@
 
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    BOOL ready = self.manager.hasReadState && ([self compatibleBands].count > 0 || [self compatibleNRBands].count > 0);
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     button.translatesAutoresizingMaskIntoConstraints = NO;
     button.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
-    [button setTitle:(ready ? BLT(@"Preparar bandas compatibles", @"Prepare compatible bands") : BLT(@"Actualizar desde Control primero", @"Refresh from Control first")) forState:UIControlStateNormal];
+    button.titleLabel.numberOfLines = 2;
+    button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    button.titleLabel.textAlignment = NSTextAlignmentCenter;
+    button.titleLabel.adjustsFontSizeToFitWidth = YES;
+    button.titleLabel.minimumScaleFactor = 0.86;
+    [button setTitle:BLT(@"Usar este país", @"Use this country") forState:UIControlStateNormal];
     [button addTarget:self action:@selector(prepareButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [cell.contentView addSubview:button];
     [NSLayoutConstraint activateConstraints:@[
@@ -204,11 +208,24 @@
 }
 
 - (void)prepareButtonTapped:(UIButton *)sender {
-    if (!self.manager.hasReadState) {
-        [self showAlert:BLT(@"Pulsa «Actualizar estado» en Control antes de preparar un país.", @"Tap “Refresh status” in Control before preparing a country.")];
+    BLSetSelectedCountry(self.country);
+    if (self.manager.hasReadState) {
+        [self prepareCompatibleBands];
         return;
     }
-    [self prepareCompatibleBands];
+    if (self.manager.busy) return;
+    sender.enabled = NO;
+    __weak typeof(self) weakSelf = self;
+    [self.manager refreshWithCompletion:^(BOOL success, NSString *message) {
+        sender.enabled = YES;
+        [weakSelf.tableView reloadData];
+        if (!success) {
+            [weakSelf showAlert:BLT(@"País seleccionado. No se pudieron comprobar ahora las bandas compatibles.",
+                                     @"Country selected. Compatible bands could not be checked right now.")];
+            return;
+        }
+        [weakSelf prepareCompatibleBands];
+    }];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {

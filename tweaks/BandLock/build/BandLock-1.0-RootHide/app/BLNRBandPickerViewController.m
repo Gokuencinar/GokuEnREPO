@@ -80,6 +80,10 @@
         button.tag = indexPath.row;
         button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeading;
         button.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+        button.titleLabel.numberOfLines = 2;
+        button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        button.titleLabel.adjustsFontSizeToFitWidth = YES;
+        button.titleLabel.minimumScaleFactor = 0.86;
         [button setTitle:titles[indexPath.row] forState:UIControlStateNormal];
         [button setImage:[UIImage systemImageNamed:icons[indexPath.row]] forState:UIControlStateNormal];
         button.tintColor = indexPath.row == 4 ? UIColor.systemRedColor : UIColor.systemBlueColor;

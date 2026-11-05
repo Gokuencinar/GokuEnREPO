@@ -33,7 +33,7 @@ jobs:
           d=tweaks/BandLock/build/BandLock-1.0-RootHide
           plutil -lint "$d/app/Resources/Info.plist"
           plutil -lint "$d/daemon/Entitlements.plist"
-          grep -q '^Version: 1.6.0~rhui22$' "$d/control"
+          grep -q '^Version: 1.6.0~rhui23$' "$d/control"
           grep -q '<key>CFBundleShortVersionString</key><string>1.6.0</string>' "$d/app/Resources/Info.plist"
           test -x "$d/layout/DEBIAN/prerm"
       - name: Build RootHide LTE scan experiment
@@ -41,7 +41,7 @@ jobs:
           set -euo pipefail
           cd tweaks/BandLock/build/BandLock-1.0-RootHide
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
-          deb='packages/com.gokuencinar.bandlock_1.6.0~rhui22_iphoneos-arm64e.deb'
+          deb='packages/com.gokuencinar.bandlock_1.6.0~rhui23_iphoneos-arm64e.deb'
           test -s "$deb"
           test -f "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)"
           file "$(find .theos/_ -type f -name BandLockDaemon | head -n 1)" | grep -q Mach-O
@@ -52,8 +52,8 @@ jobs:
           python3 ../../../../scripts/verify-bandlock-arm64e-abi-v2.py "$cc" "$bridge"
       - uses: actions/upload-artifact@v4
         with:
-          name: BandLock-RootHide-1.6.0-rhui22
-          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.6.0~rhui22_iphoneos-arm64e.deb
+          name: BandLock-RootHide-1.6.0-rhui23
+          path: tweaks/BandLock/build/BandLock-1.0-RootHide/packages/com.gokuencinar.bandlock_1.6.0~rhui23_iphoneos-arm64e.deb
 
   verify-deb:
     needs: build-roothide
@@ -62,15 +62,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: BandLock-RootHide-1.6.0-rhui22
+          name: BandLock-RootHide-1.6.0-rhui23
           path: /tmp/bandlock
       - name: Check RootHide DEB metadata
         run: |
           set -euo pipefail
-          deb='/tmp/bandlock/com.gokuencinar.bandlock_1.6.0~rhui22_iphoneos-arm64e.deb'
+          deb='/tmp/bandlock/com.gokuencinar.bandlock_1.6.0~rhui23_iphoneos-arm64e.deb'
           test -s "$deb"
           test "$(dpkg-deb -f "$deb" Package)" = 'com.gokuencinar.bandlock'
-          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~rhui22'
+          test "$(dpkg-deb -f "$deb" Version)" = '1.6.0~rhui23'
           test "$(dpkg-deb -f "$deb" Architecture)" = 'iphoneos-arm64e'
           dpkg-deb -c "$deb" > /tmp/bandlock-contents
           grep -q 'BandLockDaemon' /tmp/bandlock-contents

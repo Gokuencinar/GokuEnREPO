@@ -30,6 +30,11 @@
     self.definesPresentationContext = YES;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.tableView reloadData];
+}
+
 - (NSString *)localizedNameForCountry:(NSDictionary *)country {
     return BLLocalizedCountryName(country);
 }
@@ -87,7 +92,10 @@
         (unsigned long)bands.count, (unsigned long)nrBands.count];
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
     cell.detailTextLabel.numberOfLines = 2;
-    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    NSString *iso = [country[@"iso2"] isKindOfClass:NSString.class] ? [country[@"iso2"] uppercaseString] : @"";
+    BOOL selected = iso.length == 2 && [iso isEqualToString:BLSelectedCountryISO() ?: @""];
+    cell.accessoryType = selected ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryDisclosureIndicator;
+    cell.tintColor = UIColor.systemGreenColor;
     return cell;
 }
 
