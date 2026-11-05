@@ -24,7 +24,7 @@ const macWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-sign
 const linuxWorkflow = readFileSync('.github/workflows/build-bandlock-roothide-linux-diagnostic.yml', 'utf8');
 
 assert.match(control, /^Package: com\.gokuencinar\.bandlock$/m);
-assert.match(control, /^Version: 1\.6\.0~rhui23$/m);
+assert.match(control, /^Version: 1\.6\.0~rhui24$/m);
 assert.match(control, /^Architecture: iphoneos-arm64e$/m);
 assert.match(abiVerifier, /CPU_SUBTYPE_ARM64E_ABI_V2 = 0x80000002/);
 assert.match(macWorkflow, /verify-bandlock-arm64e-abi-v2\.py "\$cc" "\$bridge"/);
@@ -280,6 +280,7 @@ for (const file of ['app/BLBandPickerViewController.m','app/BLNRBandPickerViewCo
   assert.match(picker, /UITableViewCellAccessoryCheckmark/);
 }
 const info = read('app/BLInfoViewController.m');
+const countryBands = read('app/BLCountryBandsViewController.m');
 assert.doesNotMatch(info, /Auto always remains visible|Off: one 5G option is shown/);
 console.log('BandLock rhui5 minimal UI, read-only and no-switch regressions: PASS');
 
@@ -530,6 +531,13 @@ assert.match(countryDetail, /\[self\.manager refreshWithCompletion:/);
 assert.doesNotMatch(countryDetail, /Actualizar desde Control primero|Pulsa «Actualizar estado» en Control/);
 assert.match(countriesController, /BLSelectedCountryISO/);
 assert.match(countriesController, /UITableViewCellAccessoryCheckmark/);
+assert.match(info, /Información sobre las frecuencias/);
+assert.doesNotMatch(info, /Más información sobre las frecuencias/);
+assert.match(app, /backButtonTitle = BLT\(@"Atrás", @"Back"\)/);
+assert.match(countryBands, /show5G = self\.manager\.supports5G && self\.availableNRBands\.count > 0/);
+assert.match(countryBands, /numberOfSectionsInTableView:[\s\S]*self\.show5G \? 6 : 5/);
+assert.match(countryBands, /if \(section == 0\) return self\.show5G \? 4 : 2/);
+assert.match(countryBands, /return self\.show5G \? @"5G NR" : nil/);
 assert.match(analyzer, /\[BLAnalyzerCaptureStore displayMode:\[self currentCaptureMode\]\]/);
 assert.doesNotMatch(analyzer, /displayCaptureMode:/);
 assert.match(analyzer, /UIGraphicsImageRenderer/);
@@ -583,7 +591,7 @@ assert.match(scan, /cellID \? @\(4000000LL \+ cellID\.longLongValue\)/);
 assert.match(analyzer, /MEDIDA · FREC\. DESCONOCIDA/);
 assert.doesNotMatch(passive, /setModeCodeSync|writeBands:/,
   'Auto observation must stay read-only and never write RAT/bands');
-console.log('BandLock rhui23 UX, country flow, saved captures and user-facing copy gates: PASS');
+console.log('BandLock rhui24 UI copy, LTE-only country frequencies and rhui23 regression gates: PASS');
 console.log('BandLock rhui12 pending RAT intent and technology-directed all-band diagnostics: PASS');
 
 // rhui12: coalesce rapid Control Center taps, and never automatically drain

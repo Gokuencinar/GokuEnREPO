@@ -210,7 +210,7 @@ typedef NS_ENUM(NSInteger, BLCCSwitchTag) {
     if (indexPath.section == 3 && indexPath.row == 0) return [self valueCell:BLT(@"Buscar actualizaciones", @"Check for updates") detail:nil symbol:@"arrow.triangle.2.circlepath" disclosure:YES];
     if (indexPath.section == 3) return [self valueCell:BLT(@"Notas de actualización", @"Release notes") detail:nil symbol:@"doc.text" disclosure:YES];
     if (indexPath.section == 4 && indexPath.row == 0) return [self valueCell:BLT(@"Visitar GokuEnREPO", @"Visit GokuEnREPO") detail:nil symbol:@"link" disclosure:YES];
-    if (indexPath.section == 4) return [self valueCell:BLT(@"Más información sobre las frecuencias", @"More information about frequencies") detail:nil symbol:@"info.circle" disclosure:YES];
+    if (indexPath.section == 4) return [self valueCell:BLT(@"Información sobre las frecuencias", @"Frequency information") detail:nil symbol:@"info.circle" disclosure:YES];
     return [self valueCell:@"Buy Me a Coffee" detail:nil symbol:@"heart.circle.fill" disclosure:YES];
 }
 

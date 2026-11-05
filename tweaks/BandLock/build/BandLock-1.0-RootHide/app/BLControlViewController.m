@@ -624,6 +624,7 @@
         return;
     }
     BLCountryBandsViewController *controller = [[BLCountryBandsViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
+    self.navigationItem.backButtonTitle = BLT(@"Atrás", @"Back");
     [self.navigationController pushViewController:controller animated:YES];
 }
 
