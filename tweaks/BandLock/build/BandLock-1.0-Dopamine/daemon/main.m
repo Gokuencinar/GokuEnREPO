@@ -129,13 +129,30 @@ static int BLLaunchdActivatedSocket(const char *path) {
     memset(&boundAddress, 0, sizeof(boundAddress));
     if (getsockopt(serverFD, SOL_SOCKET, SO_TYPE, &socketType, &optionLength) != 0 ||
         socketType != SOCK_STREAM ||
-        getsockopt(serverFD, SOL_SOCKET, SO_ACCEPTCONN, &accepting, &optionLength) != 0 ||
-        !accepting ||
         getsockname(serverFD, (struct sockaddr *)&boundAddress, &addressLength) != 0 ||
         boundAddress.sun_family != AF_UNIX) {
-        BLDaemonLog("launch socket activation returned invalid listener");
+        BLDaemonLog([[NSString stringWithFormat:@"launch socket activation invalid type/family type=%d family=%d errno=%d",
+                      socketType, (int)boundAddress.sun_family, errno] UTF8String]);
         close(serverFD);
         return -2;
+    }
+    optionLength = sizeof(int);
+    if (getsockopt(serverFD, SOL_SOCKET, SO_ACCEPTCONN, &accepting, &optionLength) != 0) {
+        BLDaemonLog([[NSString stringWithFormat:@"launch socket SO_ACCEPTCONN query failed errno=%d", errno] UTF8String]);
+        close(serverFD);
+        return -2;
+    }
+    if (!accepting) {
+        // Some Dopamine/iOS launchd combinations hand the bound Unix stream
+        // socket to the daemon before listen(2) is observable via
+        // SO_ACCEPTCONN. Reusing the launchd-owned FD and calling listen here
+        // is safe and avoids unlinking/rebinding launchd's socket path.
+        if (listen(serverFD, 8) != 0) {
+            BLDaemonLog([[NSString stringWithFormat:@"launch socket listen failed errno=%d", errno] UTF8String]);
+            close(serverFD);
+            return -2;
+        }
+        BLDaemonLog("launch socket required daemon-side listen");
     }
     BLDaemonLog("launch socket activation acquired BandLockListener");
     return serverFD;
