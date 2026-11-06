@@ -1,4 +1,4 @@
-name: Verify RootHidePatcher FIX
+name: RootHidePatcher FIX
 on:
   push:
     paths:

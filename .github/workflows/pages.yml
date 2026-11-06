@@ -1,4 +1,4 @@
-name: Deploy repository site
+name: Website
 
 on:
   push:

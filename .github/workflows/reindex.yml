@@ -1,4 +1,4 @@
-name: Rebuild APT index
+name: Sileo repository
 
 on:
   push:
@@ -42,7 +42,7 @@ jobs:
             if git diff --cached --quiet; then
               exit 0
             fi
-            git commit -m "Rebuild APT package index"
+            git commit -m "Update package index"
             if git push origin HEAD:main; then
               exit 0
             fi
