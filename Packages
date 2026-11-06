@@ -308,6 +308,27 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.ht
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
 Name: BandLock (RootHide)
 
+Package: com.gokuencinar.bandlock
+Version: 1.6.1
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 2328
+Depends: firmware (>= 15.0), firmware (<= 18.99)
+Recommends: com.opa334.ccsupport
+Conflicts: com.gokuencinar.bandlock.dopamine, com.gokuencinar.bandlock.rootful
+Filename: tweaks/BandLock/debs/com.gokuencinar.bandlock_1.6.1_iphoneos-arm64e.deb
+Size: 365806
+MD5sum: 2af735edcf3a5cc3aa61c6d73ae85c6e
+SHA1: 0b09ef09d233f3521c41be2b9d1c9d30c5e85f26
+SHA256: 82b68577cf53ac1c0244e372bb4218013fe767dd19302ad1f9eb47120fe459fa
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Name: BandLock (RootHide)
+
 Package: com.gokuencinar.bandlock.dopamine
 Version: 0.6.34
 Architecture: iphoneos-arm64
@@ -490,6 +511,27 @@ Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.ht
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
 Name: BandLock (Dopamine)
 
+Package: com.gokuencinar.bandlock.dopamine
+Version: 1.6.1
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Installed-Size: 2328
+Depends: firmware (>= 15.0), firmware (<< 19.0), mobilesubstrate
+Recommends: com.opa334.ccsupport
+Conflicts: com.gokuencinar.bandlock, com.gokuencinar.bandlock.rootful
+Filename: tweaks/BandLock/debs/com.gokuencinar.bandlock.dopamine_1.6.1_iphoneos-arm64.deb
+Size: 365978
+MD5sum: bf749c97bc7b40f47862988bf1e95f9c
+SHA1: c0ffb39655f85144e69025f572f506d7f871e82e
+SHA256: c7321aa994b927b050de69410be14538be579a2b720b02020e512490b2f44eb7
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Name: BandLock (Dopamine)
+
 Package: com.gokuencinar.bandlock.rootful
 Version: 1.0
 Architecture: iphoneos-arm
@@ -627,6 +669,27 @@ Size: 268708
 MD5sum: bbae2e095ce4decbe3a02bade5ffcec4
 SHA1: 7ffb73341d3e3bb899049de86125ed8dd11c08aa
 SHA256: 1cf488a8f9e5fa0cabf74cfe13c41d119956f4775053fe0a64da283164988839
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
+Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.
+Author: Gokuencinar
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/BandLock/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/BandLock/assets/icon.png
+Name: BandLock (Rootful)
+
+Package: com.gokuencinar.bandlock.rootful
+Version: 1.6.1
+Architecture: iphoneos-arm
+Maintainer: Gokuencinar
+Installed-Size: 1208
+Depends: firmware (>= 15.0), firmware (<< 17.0), mobilesubstrate
+Recommends: com.opa334.ccsupport
+Conflicts: com.gokuencinar.bandlock, com.gokuencinar.bandlock.dopamine
+Filename: tweaks/BandLock/debs/com.gokuencinar.bandlock.rootful_1.6.1_iphoneos-arm.deb
+Size: 269034
+MD5sum: c4ee174ba43309b9c826294b3723b1c9
+SHA1: 0ecf91a647d539780541e6e4a370b9b7fa9dd6f7
+SHA256: ebc142e7fd7ce11362fb760b126ffc5e57b73d6fd00e4d6eba1300acb885b8fc
 Section: Tweaks
 Homepage: https://github.com/Gokuencinar/GokuEnREPO/blob/main/tweaks/BandLock/README.md
 Description: Control cellular network modes and LTE/5G bands, monitor live signal data with the Analyzer, check country band compatibility, and access quick network controls from Control Center.

@@ -1,5 +1,13 @@
 # BandLock Changelog
 
+## 1.6.1
+
+- Changed the Analyzer wording so it clearly describes signal strength instead of overall connection quality.
+- Added a short explanation of RSRP, RSRQ and SNR to make the readings easier to understand.
+- Added a note explaining that Field Test's Dashboard may be empty and that All Metrics can be used instead.
+
+---
+
 ## 1.6
 
 - Added a new Analyzer for live cellular signal information, saved captures and separate 2G, 3G, LTE and 5G views.
