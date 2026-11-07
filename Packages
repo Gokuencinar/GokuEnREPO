@@ -1,3 +1,66 @@
+Package: com.gokuencinar.appfirewall.poc
+Version: 1.0
+Architecture: iphoneos-arm
+Maintainer: Gokuencinar
+Installed-Size: 560
+Depends: mobilesubstrate
+Filename: tweaks/AppFirewall/debs/com.gokuencinar.appfirewall.poc_1.0_iphoneos-arm.deb
+Size: 196634
+MD5sum: e477c398b10db9fad077746c4556890f
+SHA1: 400d8713f4a89c4281466e0c65004b0fda11f91b
+SHA256: 8c81381ec44cfbe7005749b9a5e82033c76b9f051a4ddb0edf83f756f1919f96
+Section: Development
+Priority: optional
+Author: Gokuencinar
+Name: AppFirewall (Rootful)
+Description: Controla el acceso a Wi-Fi y datos móviles de cada aplicación.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png
+
+Package: com.gokuencinar.appfirewall.poc
+Version: 1.0
+Architecture: iphoneos-arm64
+Maintainer: Gokuencinar
+Installed-Size: 560
+Depends: mobilesubstrate
+Filename: tweaks/AppFirewall/debs/com.gokuencinar.appfirewall.poc_1.0_iphoneos-arm64.deb
+Size: 196686
+MD5sum: 7bf25a22187d8a3208f2c440f9b11ba2
+SHA1: 2028c1dade24fc096be2435590a48a7a0e22fa1a
+SHA256: 65f87ffd5c4faf0f5c180a91f7025490ef17ca98efb762be92fd88a9e431fba2
+Section: Development
+Priority: optional
+Author: Gokuencinar
+Name: AppFirewall (Dopamine / Rootless)
+Description: Controla el acceso a Wi-Fi y datos móviles de cada aplicación.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png
+
+Package: com.gokuencinar.appfirewall.poc
+Version: 1.0
+Architecture: iphoneos-arm64e
+Maintainer: Gokuencinar
+Installed-Size: 560
+Depends: mobilesubstrate
+Filename: tweaks/AppFirewall/debs/com.gokuencinar.appfirewall.poc_1.0_iphoneos-arm64e.deb
+Size: 197114
+MD5sum: ae6a794707137b9333de84a3ce746ec7
+SHA1: 18b5ddf27e90dce35323d2fc290535c3879609e6
+SHA256: be543cd51ba2dfa9588f98392d8f0e90bfdef70252027bb1ae38b2356798e29d
+Section: Development
+Priority: optional
+Author: Gokuencinar
+Name: AppFirewall (RootHide)
+Description: Controla el acceso a Wi-Fi y datos móviles de cada aplicación.
+Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
+SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json
+Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png
+
 Package: com.gokuencinar.bandlock
 Version: 0.5.0
 Architecture: iphoneos-arm64e
