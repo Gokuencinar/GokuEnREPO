@@ -79,6 +79,28 @@ for block in blocks:
         ])
         block = "\n".join(rewritten)
 
+    if package == "com.gokuencinar.appfirewall.poc":
+        variants = {
+            "iphoneos-arm64": "Dopamine / Rootless",
+            "iphoneos-arm64e": "RootHide",
+            "iphoneos-arm": "Rootful",
+        }
+        variant = variants.get(fields.get("Architecture"))
+        if variant is None or fields.get("Version") != "1.0":
+            raise SystemExit(f"Unsupported public AppFirewall package: {fields}")
+        rewritten = [line for line in block.splitlines()
+                     if not line.startswith(("Name: ", "Description: ", "Depiction: ",
+                                             "SileoDepiction: ", "Homepage: ", "Icon: "))]
+        rewritten.extend([
+            f"Name: AppFirewall ({variant})",
+            "Description: Controla el acceso a Wi-Fi y datos móviles de cada aplicación.",
+            "Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html",
+            "SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json",
+            "Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html",
+            "Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png",
+        ])
+        block = "\n".join(rewritten)
+
     if package == "com.betterwifirh.tweak":
         continue
 

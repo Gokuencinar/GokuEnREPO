@@ -37,6 +37,7 @@ jobs:
             python3 scripts/verify-dependency-mirror.py
             bash scripts/rebuild-packages.sh
             python3 -m unittest scripts/test_bandlock_publication.py
+            python3 -m unittest scripts/test_appfirewall_publication.py
             python3 scripts/verify-dependency-mirror.py --index
             git add Packages Packages.gz
             if git diff --cached --quiet; then

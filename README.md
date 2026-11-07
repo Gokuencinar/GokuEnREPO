@@ -33,6 +33,12 @@ Repository URL:
 
 ## 📦 Available tweaks
 
+### AppFirewall
+
+Controla el acceso a Wi-Fi y datos móviles de cada aplicación.
+
+➡️ **[AppFirewall](tweaks/AppFirewall/depiction.html)**
+
 ### 📡 BandLock Global — LTE/4G + 5G NR Band Control
 
 Standalone jailbreak app for manually controlling LTE/4G and supported 5G NR modem selections on iOS 16. It includes network modes, independent LTE/NR pending selections, Field Test access and an offline catalogue covering 160 countries and territories.

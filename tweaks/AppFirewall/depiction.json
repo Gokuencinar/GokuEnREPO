@@ -1,0 +1,17 @@
+{
+  "class": "DepictionTabView",
+  "minVersion": "0.4",
+  "tintColor": "#ED593A",
+  "tabs": [
+    {
+      "class": "DepictionStackView",
+      "tabname": "Detalles",
+      "views": [
+        {
+          "class": "DepictionMarkdownView",
+          "markdown": "Controla el acceso a Wi-Fi y datos móviles de cada aplicación."
+        }
+      ]
+    }
+  ]
+}
