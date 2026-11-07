@@ -7,7 +7,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGE = "com.gokuencinar.appfirewall.poc"
-DESCRIPTION = "Controla el acceso a Wi-Fi y datos móviles de cada aplicación."
+DESCRIPTION = "Control Wi-Fi and cellular data access for each app individually without having to turn off your device's connection. Compatible with iOS 15 through iOS 18. Other versions later than iOS 18 may not function correctly."
 ARCH_NAMES = {
     "iphoneos-arm64": "Dopamine / Rootless",
     "iphoneos-arm64e": "RootHide",
@@ -43,7 +43,7 @@ class AppFirewallPublicationTests(unittest.TestCase):
                 self.assertIn("/tweaks/AppFirewall/depiction.json", entry["SileoDepiction"])
                 self.assertIn("/tweaks/AppFirewall/assets/icon.png", entry["Icon"])
 
-    def test_depictions_are_function_only(self):
+    def test_depictions_match_package_description(self):
         base = ROOT / "tweaks" / "AppFirewall"
         native = json.loads((base / "depiction.json").read_text(encoding="utf-8"))
         self.assertEqual(native["tabs"][0]["views"][0]["markdown"], DESCRIPTION)

@@ -1,4 +1,3 @@
 # AppFirewall
 
-Control Wi-Fi and cellular data access for each app individually without having to turn off your device's connection. Compatible with iOS 15 through iOS 18.
-Other versions later than iOS 18 may not function correctly.
+Control Wi-Fi and cellular data access for each app individually without having to turn off your device's connection. Compatible with iOS 15 through iOS 18. Other versions later than iOS 18 may not function correctly.
