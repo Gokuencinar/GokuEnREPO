@@ -5,10 +5,10 @@ Maintainer: Gokuencinar
 Installed-Size: 560
 Depends: mobilesubstrate
 Filename: tweaks/AppFirewall/debs/com.gokuencinar.appfirewall.poc_1.0_iphoneos-arm.deb
-Size: 196634
-MD5sum: e477c398b10db9fad077746c4556890f
-SHA1: 400d8713f4a89c4281466e0c65004b0fda11f91b
-SHA256: 8c81381ec44cfbe7005749b9a5e82033c76b9f051a4ddb0edf83f756f1919f96
+Size: 188422
+MD5sum: 949753bf010527c6863309ee90f588c2
+SHA1: ade0c60c93eb8be9eb130e3e9b22cf8712237179
+SHA256: e352574179369ad0a1735229b571dd0c610c4830514611c0110c1b35c8fcb37b
 Section: Development
 Priority: optional
 Author: Gokuencinar
@@ -17,7 +17,7 @@ Description: Control Wi-Fi and cellular data access for each app individually wi
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
 SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon-wifi-corrected.png
 
 Package: com.gokuencinar.appfirewall.poc
 Version: 1.0
@@ -26,10 +26,10 @@ Maintainer: Gokuencinar
 Installed-Size: 560
 Depends: mobilesubstrate
 Filename: tweaks/AppFirewall/debs/com.gokuencinar.appfirewall.poc_1.0_iphoneos-arm64.deb
-Size: 196686
-MD5sum: 7bf25a22187d8a3208f2c440f9b11ba2
-SHA1: 2028c1dade24fc096be2435590a48a7a0e22fa1a
-SHA256: 65f87ffd5c4faf0f5c180a91f7025490ef17ca98efb762be92fd88a9e431fba2
+Size: 188496
+MD5sum: a83f1841b50c1621887e1e6c406b9496
+SHA1: 0930a668cda9847d10ab45915536db0c9190d542
+SHA256: c149623a9be29ff18cf1aaa82eee0d55acb706555386df03436a5c0968bd89ec
 Section: Development
 Priority: optional
 Author: Gokuencinar
@@ -38,7 +38,7 @@ Description: Control Wi-Fi and cellular data access for each app individually wi
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
 SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon-wifi-corrected.png
 
 Package: com.gokuencinar.appfirewall.poc
 Version: 1.0
@@ -47,10 +47,10 @@ Maintainer: Gokuencinar
 Installed-Size: 560
 Depends: mobilesubstrate
 Filename: tweaks/AppFirewall/debs/com.gokuencinar.appfirewall.poc_1.0_iphoneos-arm64e.deb
-Size: 197114
-MD5sum: ae6a794707137b9333de84a3ce746ec7
-SHA1: 18b5ddf27e90dce35323d2fc290535c3879609e6
-SHA256: be543cd51ba2dfa9588f98392d8f0e90bfdef70252027bb1ae38b2356798e29d
+Size: 188970
+MD5sum: 8e8a754df294086b97ad893169e2d2f7
+SHA1: b97467092204588be50f30650353b1c21e5e7769
+SHA256: b6a26fbb05a9fdd15a3fdc9299d67ae8cfeb7b008d9dd73d66e655294b83947e
 Section: Development
 Priority: optional
 Author: Gokuencinar
@@ -59,7 +59,7 @@ Description: Control Wi-Fi and cellular data access for each app individually wi
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
 SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json
 Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html
-Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png
+Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon-wifi-corrected.png
 
 Package: com.gokuencinar.bandlock
 Version: 0.5.0
