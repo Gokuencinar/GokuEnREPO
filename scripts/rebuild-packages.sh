@@ -97,7 +97,7 @@ for block in blocks:
             "Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html",
             "SileoDepiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.json",
             "Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/AppFirewall/depiction.html",
-            "Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon.png",
+            "Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/AppFirewall/assets/icon-wifi-corrected.png",
         ])
         block = "\n".join(rewritten)
 

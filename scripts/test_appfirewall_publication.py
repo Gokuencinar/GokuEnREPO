@@ -41,7 +41,7 @@ class AppFirewallPublicationTests(unittest.TestCase):
                 self.assertGreater(int(entry["Size"]), 100000)
                 self.assertIn("/tweaks/AppFirewall/depiction.html", entry["Depiction"])
                 self.assertIn("/tweaks/AppFirewall/depiction.json", entry["SileoDepiction"])
-                self.assertIn("/tweaks/AppFirewall/assets/icon.png", entry["Icon"])
+                self.assertIn("/tweaks/AppFirewall/assets/icon-wifi-corrected.png", entry["Icon"])
 
     def test_depictions_match_package_description(self):
         base = ROOT / "tweaks" / "AppFirewall"
@@ -49,6 +49,7 @@ class AppFirewallPublicationTests(unittest.TestCase):
         self.assertEqual(native["tabs"][0]["views"][0]["markdown"], DESCRIPTION)
         html = (base / "depiction.html").read_text(encoding="utf-8")
         self.assertIn(DESCRIPTION, html)
+        self.assertIn('src="assets/icon-wifi-corrected.png"', html)
         for forbidden in ("probado", "dispositivos", "firmware", "test devices", "NECP"):
             self.assertNotIn(forbidden.casefold(), html.casefold())
 
