@@ -1,4 +1,4 @@
-"""Ensure Sileo sees exactly one clean AppFirewall 1.0 entry per bootstrap."""
+"""Ensure Sileo sees exactly one clean AppFirewall 1.0.1 entry per bootstrap."""
 
 from pathlib import Path
 import json
@@ -32,11 +32,11 @@ class AppFirewallPublicationTests(unittest.TestCase):
         for entry in entries:
             with self.subTest(architecture=entry["Architecture"]):
                 arch = entry["Architecture"]
-                self.assertEqual(entry["Version"], "1.0")
+                self.assertEqual(entry["Version"], "1.0.1")
                 self.assertEqual(entry["Name"], f"AppFirewall ({ARCH_NAMES[arch]})")
                 self.assertEqual(entry["Description"], DESCRIPTION)
                 path = Path(entry["Filename"])
-                self.assertEqual(path.name, f"{PACKAGE}_1.0_{arch}.deb")
+                self.assertEqual(path.name, f"{PACKAGE}_1.0.1_{arch}.deb")
                 self.assertTrue((ROOT / path).is_file())
                 self.assertGreater(int(entry["Size"]), 100000)
                 self.assertIn("/tweaks/AppFirewall/depiction.html", entry["Depiction"])

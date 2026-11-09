@@ -79,6 +79,11 @@ for block in blocks:
         ])
         block = "\n".join(rewritten)
 
+    # Keep older direct downloads working but expose only the latest release
+    # in the package-manager index.
+    if package == "com.gokuencinar.appfirewall.poc" and fields.get("Version") != "1.0.1":
+        continue
+
     if package == "com.gokuencinar.appfirewall.poc":
         variants = {
             "iphoneos-arm64": "Dopamine / Rootless",
@@ -86,7 +91,7 @@ for block in blocks:
             "iphoneos-arm": "Rootful",
         }
         variant = variants.get(fields.get("Architecture"))
-        if variant is None or fields.get("Version") != "1.0":
+        if variant is None or fields.get("Version") != "1.0.1":
             raise SystemExit(f"Unsupported public AppFirewall package: {fields}")
         rewritten = [line for line in block.splitlines()
                      if not line.startswith(("Name: ", "Description: ", "Depiction: ",
