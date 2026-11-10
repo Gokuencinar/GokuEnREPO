@@ -1,8 +1,8 @@
 # GokuEnREPO
 
-Public APT repository for **iOS 16 jailbreak tweaks**, focused on **Dopamine** and **RootHide**.
+ **iOS  jailbreak tweaks**
 
-## 📲 Add GokuEnREPO
+##  Add GokuEnREPO *
 
 Repository URL:
 
@@ -29,13 +29,13 @@ Repository URL:
 </tr>
 </table>
 
-> If your browser does not open the package manager automatically, copy the repository URL above and add it manually as a source.
+> *If your browser does not open the package manager automatically, copy the repository URL above and add it manually as a source.
 
 ## 📦 Available tweaks
 
 ### AppFirewall
 
-Controla el acceso a Wi-Fi y datos móviles de cada aplicación.
+Control access to Wi-Fi and mobile data for each app.
 
 ➡️ **[AppFirewall](tweaks/AppFirewall/depiction.html)**
 
