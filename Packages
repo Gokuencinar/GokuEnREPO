@@ -1414,6 +1414,41 @@ Author: Paisseon (original creator), GokuEn (fork maintenance, RootHide compatib
 Icon: https://paisseon.github.io/icons/Erika.png
 Name: Erika Reborn
 
+Package: emt.paisseon.erika
+Version: 2.0.2
+Architecture: iphoneos-arm64e
+Maintainer: GokuEn
+Pre-Depends: rootless-compat(>= 0.9)
+Depends: mobilesubstrate, rootless-compat (>= 0.9)
+Filename: tweaks/Erika/debs/emt.paisseon.erika_2.0.2_iphoneos-arm64e.deb
+Size: 256302
+MD5sum: cecb488025cb2ba06ef8d3c6d1f50ca1
+SHA1: 947cd013bff1df604520726a1c8f2b375d1e322b
+SHA256: 293a1bdb2f3538221ea27dd19d5ae703c339fd18b4fb7485c3cf664eecaef18a
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/Erika-Reborn
+Description: Erika Reborn is an updated fork of Paisseon's Erika package downloader for Sileo. Updated by GokuEn with RootHide compatibility, improved Sileo integration, and a version selector showing releases found in Erika's online archive rather than only versions listed in Sileo's APT repositories.
+Author: Paisseon (original creator), GokuEn (fork maintenance, RootHide compatibility, version selector)
+Icon: https://paisseon.github.io/icons/Erika.png
+Name: Erika Reborn
+
+Package: emt.paisseon.erika
+Version: 2.0.2
+Architecture: iphoneos-arm64
+Maintainer: GokuEn
+Depends: mobilesubstrate, rootless-compat (>= 0.9)
+Filename: tweaks/Erika/debs/emt.paisseon.erika_2.0.2_iphoneos-arm64.deb
+Size: 261176
+MD5sum: 3bcc7252f8ecc10054f9ef557b34f545
+SHA1: 9645b085199c6aafd05bb1eb27a3259e347d6afa
+SHA256: ab005e9e71ab04b1bd74485e90a1f2a687b23abb43ca84846c21d1fedd480068
+Section: Tweaks
+Homepage: https://github.com/Gokuencinar/Erika-Reborn
+Description: Erika Reborn is an updated fork of Paisseon's Erika package downloader for Sileo. Updated by GokuEn with RootHide compatibility, improved Sileo integration, and a version selector showing releases found in Erika's online archive rather than only versions listed in Sileo's APT repositories.
+Author: Paisseon (original creator), GokuEn (fork maintenance, RootHide compatibility, version selector)
+Icon: https://paisseon.github.io/icons/Erika.png
+Name: Erika Reborn
+
 Package: arpoison
 Version: 0.7
 Architecture: iphoneos-arm64e
@@ -1946,42 +1981,3 @@ Author: Gokuencinar
 Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/RootHidePatcher-FIX/depiction.html
 Icon: https://gokuencinar.github.io/GokuEnREPO/CydiaIcon.png
 Name: RootHidePatcher FIX
-
-Package: emt.paisseon.erika
-Name: Erika Reborn
-Version: 2.0.2
-Architecture: iphoneos-arm64e
-Description: Erika Reborn is an updated fork of Paisseon's Erika package downloader for Sileo. Updated by GokuEn with RootHide compatibility, improved Sileo integration, and a version selector showing releases found in Erika's online archive rather than only versions listed in Sileo's APT repositories.
-Maintainer: GokuEn
-Author: Paisseon (original creator), GokuEn (fork maintenance, RootHide compatibility, version selector)
-Section: Tweaks
-Depends: mobilesubstrate, rootless-compat (>= 0.9)
-Homepage: https://github.com/Gokuencinar/Erika-Reborn
-Icon: https://paisseon.github.io/icons/Erika.png
-Pre-Depends: rootless-compat(>= 0.9)
-Priority: optional
-Filename: tweaks/Erika/debs/emt.paisseon.erika_2.0.2_iphoneos-arm64e.deb
-Size: 256302
-MD5sum: cecb488025cb2ba06ef8d3c6d1f50ca1
-SHA1: 947cd013bff1df604520726a1c8f2b375d1e322b
-SHA256: 293a1bdb2f3538221ea27dd19d5ae703c339fd18b4fb7485c3cf664eecaef18a
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Erika/depiction.html
-
-Package: emt.paisseon.erika
-Name: Erika Reborn
-Version: 2.0.2
-Architecture: iphoneos-arm64
-Description: Erika Reborn is an updated fork of Paisseon's Erika package downloader for Sileo. Updated by GokuEn with RootHide compatibility, improved Sileo integration, and a version selector showing releases found in Erika's online archive rather than only versions listed in Sileo's APT repositories.
-Maintainer: GokuEn
-Author: Paisseon (original creator), GokuEn (fork maintenance, RootHide compatibility, version selector)
-Section: Tweaks
-Depends: mobilesubstrate, rootless-compat (>= 0.9)
-Homepage: https://github.com/Gokuencinar/Erika-Reborn
-Icon: https://paisseon.github.io/icons/Erika.png
-Priority: optional
-Filename: tweaks/Erika/debs/emt.paisseon.erika_2.0.2_iphoneos-arm64.deb
-Size: 261176
-MD5sum: 3bcc7252f8ecc10054f9ef557b34f545
-SHA1: 9645b085199c6aafd05bb1eb27a3259e347d6afa
-SHA256: ab005e9e71ab04b1bd74485e90a1f2a687b23abb43ca84846c21d1fedd480068
-Depiction: https://gokuencinar.github.io/GokuEnREPO/tweaks/Erika/depiction.html
