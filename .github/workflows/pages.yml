@@ -32,9 +32,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Assemble website without Debian packages or build artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pages-site
+          cp index.html sitemap.xml robots.txt pages-site/
+          cp -R add assets pages-site/
+          while IFS= read -r -d '' asset; do
+            mkdir -p "pages-site/$(dirname "$asset")"
+            cp "$asset" "pages-site/$asset"
+          done < <(find tweaks -type f \( \
+              -name 'depiction.html' -o -name 'depiction.json' -o \
+              -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o \
+              -name '*.webp' -o -name '*.svg' -o -name '*.gif' -o \
+              -name '*.css' -o -name '*.js' -o -name '*.woff' -o -name '*.woff2' \
+            \) -print0)
+          touch pages-site/.nojekyll
+          test -s pages-site/tweaks/Erika/depiction.html
+          du -sh pages-site
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: pages-site
+      - name: Allow the uploaded Pages artifact to become available
+        shell: bash
+        run: sleep 15
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
