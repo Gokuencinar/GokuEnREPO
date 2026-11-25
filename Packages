@@ -1832,12 +1832,12 @@ Maintainer: GokuEn
 Installed-Size: 172
 Depends: firmware (>= 16.0), ellekit
 Filename: tweaks/Radarbot-Gold/debs/com.gokuencinar.radarbotlicenseprobe_9.48_iphoneos-arm64e.deb
-Size: 11000
-MD5sum: db5f841ee90a38350e049304643f1ae1
-SHA1: e4096f805069398778f05118fb92f4605781270d
-SHA256: dbecd35066d66f6ecfbc74785e02c5408dd2210bfd47ff39b541cac322297818
+Size: 10980
+MD5sum: 4258d88aca6c2eb36c7c14f576f40b3e
+SHA1: 1fac3ec7af027f1d9c8967e26e86f20862fa1081
+SHA256: c6a7d9db8dca4a96a03c1693b6ba52e6951f26fa8d254ba57a12dd5ef18e5318
 Section: Tweaks
-Description: Radarbot Gold for Radarbot 9.48
+Description: Radarbot Gold for Radarbot 9.48 and later.
 Author: GokuEn
 Name: Radarbot Gold
 
@@ -1848,12 +1848,12 @@ Maintainer: GokuEn
 Installed-Size: 76
 Depends: firmware (>= 16.0), ellekit
 Filename: tweaks/Radarbot-Gold/debs/com.gokuencinar.radarbotlicenseprobe_9.48_iphoneos-arm64.deb
-Size: 8200
-MD5sum: 80552da3d828a0698221f75396dc0c93
-SHA1: ccbbbd0e65ffc98abf46571837d6d297e8f0edb7
-SHA256: 093f0962671b357f44d6db183701039945d5c13d1351a5bc97dc2548ddb5cdd3
+Size: 8180
+MD5sum: 5eb671c5d9a0276e86f6667ab027bd5b
+SHA1: 6e6674b57de7ab39e0d129edb8311577675b0b0d
+SHA256: 4a676c0ca075325027d30dc24c15bd3240480d7b6b49710b0795d6690f71f11f
 Section: Tweaks
-Description: Radarbot Gold for Radarbot 9.48
+Description: Radarbot Gold for Radarbot 9.48 and later.
 Author: GokuEn
 Name: Radarbot Gold
 
