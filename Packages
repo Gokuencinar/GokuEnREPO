@@ -1826,18 +1826,34 @@ Homepage: https://gokuencinar.github.io/GokuEnREPO/tweaks/NukeWireless/depiction
 Icon: https://raw.githubusercontent.com/Gokuencinar/GokuEnREPO/main/tweaks/NukeWireless/assets/icon.png
 
 Package: com.gokuencinar.radarbotlicenseprobe
-Version: 223
+Version: 9.48
 Architecture: iphoneos-arm64e
 Maintainer: GokuEn
 Installed-Size: 172
-Depends: firmware (>= 18.0), ellekit
-Filename: tweaks/Radarbot-Gold/debs/com.gokuencinar.radarbotlicenseprobe_223_iphoneos-arm64e.deb
-Size: 11026
-MD5sum: c9f05684adab7a4fe41e1c8701cb17cc
-SHA1: bae640876d1a5c94375305e9d084838cb94bcf65
-SHA256: 294e8dec78afdd6279affaa0ef9cdfdeb027e7f0f1dc6cd773219ce0d8bc209e
+Depends: firmware (>= 16.0), ellekit
+Filename: tweaks/Radarbot-Gold/debs/com.gokuencinar.radarbotlicenseprobe_9.48_iphoneos-arm64e.deb
+Size: 11000
+MD5sum: db5f841ee90a38350e049304643f1ae1
+SHA1: e4096f805069398778f05118fb92f4605781270d
+SHA256: dbecd35066d66f6ecfbc74785e02c5408dd2210bfd47ff39b541cac322297818
 Section: Tweaks
-Description: Radarbot Gold compatibility tweak for RootHide with runtime method checks. Compatibility beyond Radarbot 9.48 (223) is experimental.
+Description: Radarbot Gold for Radarbot 9.48
+Author: GokuEn
+Name: Radarbot Gold
+
+Package: com.gokuencinar.radarbotlicenseprobe
+Version: 9.48
+Architecture: iphoneos-arm64
+Maintainer: GokuEn
+Installed-Size: 76
+Depends: firmware (>= 16.0), ellekit
+Filename: tweaks/Radarbot-Gold/debs/com.gokuencinar.radarbotlicenseprobe_9.48_iphoneos-arm64.deb
+Size: 8200
+MD5sum: 80552da3d828a0698221f75396dc0c93
+SHA1: ccbbbd0e65ffc98abf46571837d6d297e8f0edb7
+SHA256: 093f0962671b357f44d6db183701039945d5c13d1351a5bc97dc2548ddb5cdd3
+Section: Tweaks
+Description: Radarbot Gold for Radarbot 9.48
 Author: GokuEn
 Name: Radarbot Gold
 
