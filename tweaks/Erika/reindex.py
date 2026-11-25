@@ -1,4 +1,4 @@
-"""Add Erika Reborn 2.0's audited .deb metadata to GokuEnREPO's APT index.
+"""Add Erika Reborn 2.0.1's audited .deb metadata to GokuEnREPO's APT index.
 
 Run from any directory with Python 3. This preserves all unrelated Packages
 stanzas and regenerates Packages.gz with reproducible gzip metadata.
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PKG = "emt.paisseon.erika"
-VERSION = "2.0"
+VERSION = "2.0.1"
 ARCHES = ("iphoneos-arm64e", "iphoneos-arm64")
 DEPICTION = "https://gokuencinar.github.io/GokuEnREPO/tweaks/Erika/depiction.html"
 
