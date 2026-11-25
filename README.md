@@ -39,6 +39,16 @@ Control access to Wi-Fi and mobile data for each app.
 
 ➡️ **[AppFirewall](tweaks/AppFirewall/depiction.html)**
 
+### Erika Reborn 2.0
+
+An updated fork of Paisseon's Erika package downloader for Sileo. Maintained by GokuEn, with RootHide compatibility and a selector that finds available versions in Erika's online archive beyond the versions listed by Sileo's APT sources.
+
+- Packages: `iphoneos-arm64e` (RootHide) and `iphoneos-arm64` (rootless).
+- Original creator: **Paisseon**. Fork improvements and maintenance: **GokuEn**.
+- Archive download redirects currently require third-party authorization; availability of downloads is not guaranteed.
+
+➡️ **[Erika Reborn details](tweaks/Erika/depiction.html)** · **[Public source](https://github.com/Gokuencinar/Erika-Reborn)**
+
 ### 📡 BandLock Global — LTE/4G + 5G NR Band Control
 
 Standalone jailbreak app for manually controlling LTE/4G and supported 5G NR modem selections on iOS 16. It includes network modes, independent LTE/NR pending selections, Field Test access and an offline catalogue covering 160 countries and territories.
