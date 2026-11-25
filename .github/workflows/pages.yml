@@ -49,7 +49,6 @@ jobs:
               -name '*.css' -o -name '*.js' -o -name '*.woff' -o -name '*.woff2' \
             \) -print0)
           touch pages-site/.nojekyll
-          test -s pages-site/tweaks/Erika/depiction.html
           du -sh pages-site
       - uses: actions/upload-pages-artifact@v3
         with:
