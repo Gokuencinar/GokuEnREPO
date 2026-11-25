@@ -39,13 +39,13 @@ Control access to Wi-Fi and mobile data for each app.
 
 ➡️ **[AppFirewall](tweaks/AppFirewall/depiction.html)**
 
-### Erika Reborn 2.0.2
+### Erika Reborn 2.0.3
 
 An updated fork of Paisseon's Erika package downloader for Sileo. Maintained by GokuEn, with RootHide compatibility and a selector combining public APT versions and Erika's remote archive.
 
 - Packages: `iphoneos-arm64e` (RootHide) and `iphoneos-arm64` (rootless).
 - Original creator: **Paisseon**. Fork improvements and maintenance: **GokuEn**.
-- Fully English interface. Downloads public APT-listed versions over HTTPS with SHA-256 and Debian structure validation; archive-only releases require authorized Chomikuj access.
+- Fully English interface. One-tap, in-app downloads of public APT packages with SHA-256 and Debian validation. No external URLs or Safari; archive-only releases requiring authorization are not directly downloadable.
 
 ➡️ **[Erika Reborn details](tweaks/Erika/depiction.html)** · **[Public source](https://github.com/Gokuencinar/Erika-Reborn)**
 
