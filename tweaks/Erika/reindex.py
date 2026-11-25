@@ -1,7 +1,7 @@
-"""Add Erika Reborn 2.0.1's audited .deb metadata to GokuEnREPO's APT index.
+"""Add Erika Reborn 2.0.2's audited .deb metadata to GokuEnREPO's APT index.
 
 Run from any directory with Python 3. This preserves all unrelated Packages
-stanzas and regenerates Packages.gz with reproducible gzip metadata.
+stanzas AND older Erika releases, and regenerates Packages.gz reproducibly.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PKG = "emt.paisseon.erika"
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 ARCHES = ("iphoneos-arm64e", "iphoneos-arm64")
 DEPICTION = "https://gokuencinar.github.io/GokuEnREPO/tweaks/Erika/depiction.html"
 
@@ -102,7 +102,9 @@ def main() -> None:
     preserved = []
     removed = 0
     for block in blocks:
-        if block.startswith(f"Package: {PKG}\n") or block.startswith(f"Package: {PKG}\r\n"):
+        if (block.startswith(f"Package: {PKG}\n") or block.startswith(f"Package: {PKG}\r\n")) and re.search(
+            rf"(?m)^Version: {re.escape(VERSION)}$", block
+        ):
             removed += 1
         elif block.strip():
             preserved.append(block.replace("\r\n", "\n"))
@@ -110,7 +112,11 @@ def main() -> None:
     index.write_bytes(output)
     (ROOT / "Packages.gz").write_bytes(gzip.compress(output, compresslevel=9, mtime=0))
     assert gzip.decompress((ROOT / "Packages.gz").read_bytes()) == output
-    assert output.count(f"Package: {PKG}\n".encode()) == len(ARCHES)
+    entries = [
+        block for block in output.decode("utf-8").split("\n\n")
+        if block.startswith(f"Package: {PKG}\n") and f"Version: {VERSION}\n" in block
+    ]
+    assert len(entries) == len(ARCHES)
     print(f"Reindexed Erika Reborn {VERSION} ({', '.join(ARCHES)})")
     print(f"Preserved {len(preserved)} other stanzas; replaced {removed}; total {len(preserved)+len(ARCHES)}")
 
