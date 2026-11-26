@@ -65,11 +65,17 @@ RootHide-compatible Wi-Fi enhancement tweak that expands the information and dia
 
 ➡️ **[BetterWiFi RH details](tweaks/BetterWiFi-RH/README.md)** · **[Changelog](tweaks/BetterWiFi-RH/CHANGELOG.md)**
 
-### Nuke Wireless — In Development
+### 📡 NukeWireless — Network & Bluetooth Tools
 
-Nuke Wireless is currently in development. Public package releases are unavailable.
+NukeWireless 1.0.2 provides Wi-Fi and personal hotspot device management and Bluetooth tools.
 
-➡️ **[Nuke Wireless details](tweaks/Nuke-Wireless/README.md)**
+- Block and unblock Wi-Fi devices.
+- Manage and block devices connected to your personal hotspot.
+- Scan nearby BLE devices and send Bluetooth advertisements.
+- Device name resolution, custom names and favorites.
+- Available for Dopamine, RootHide and Rootful.
+
+➡️ **[NukeWireless details](tweaks/NukeWireless/depiction.html)**
 
 ## ❤️ Support development
 
