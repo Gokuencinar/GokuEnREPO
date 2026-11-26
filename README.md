@@ -71,31 +71,6 @@ Nuke Wireless is currently in development. Public package releases are unavailab
 
 ➡️ **[Nuke Wireless details](tweaks/Nuke-Wireless/README.md)**
 
-## Repository layout
-
-Project-specific files live under [`tweaks/`](tweaks/):
-
-- `tweaks/BandLock/` — source snapshots, packages, diagnostics, documentation and depiction.
-- `tweaks/BetterWiFi-RH/` — package, documentation and depiction.
-- `tweaks/Nuke-Wireless/` — documentation and depiction while the project is in development.
-
-The APT entry points (`Release`, `Packages`, `Packages.gz` and repository icons) intentionally stay at the repository root so existing package-manager source URLs keep working unchanged.
-
-## Current packages
-
-| Package | Version | Architecture |
-| --- | --- | --- |
-| BandLock (RootHide) | 1.6.1 | `iphoneos-arm64e` |
-| BandLock (Dopamine) | 1.6.1 | `iphoneos-arm64` |
-| BandLock (Rootful) | 1.6.1 | `iphoneos-arm` |
-| BetterWiFi RH | 0.3.11 | `iphoneos-arm64e` |
-
-The `Packages` and `Packages.gz` indexes are automatically regenerated when a package inside `tweaks/*/debs/` changes.
-
-## Compatibility
-
-**iOS 16.x · RootHide · Dopamine rootless · Rootful · Sileo / Cydia / Zebra / Installer 5**
-
 ## ❤️ Support development
 
 If you enjoy my tweaks and would like to support their continued development, bug fixes and future projects:
